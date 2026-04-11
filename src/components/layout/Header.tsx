@@ -1,0 +1,111 @@
+'use client';
+
+import { signOut } from 'next-auth/react';
+import { LogOut, User, Menu, X } from 'lucide-react';
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard, ClipboardList, FileText, Target, BarChart3, ClipboardPlus, HelpCircle,
+} from 'lucide-react';
+
+const navItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/actividades', label: 'Actividades', icon: ClipboardList },
+  { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
+  { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
+  { href: '/oportunidades', label: 'Oportunidades', icon: Target },
+  { href: '/analitica', label: 'Analítica', icon: BarChart3 },
+  { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
+];
+
+const roleLabels: Record<string, string> = {
+  ADMIN: 'Administrador',
+  SUPERVISOR: 'Supervisor',
+  INGENIERO: 'Ingeniero',
+};
+
+interface HeaderProps {
+  user: { name: string; email: string; role: string };
+}
+
+export function Header({ user }: HeaderProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  return (
+    <>
+      <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shadow-sm flex-shrink-0">
+        {/* Mobile menu button */}
+        <button
+          className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
+        {/* Page context */}
+        <div className="hidden md:block" />
+
+        {/* User info */}
+        <div className="flex items-center gap-3">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-medium text-slate-800">{user.name}</p>
+            <p className="text-xs text-slate-500">{roleLabels[user.role] || user.role}</p>
+          </div>
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+            {user.name.charAt(0)}
+          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+            title="Cerrar sesión"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile menu overlay */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)}>
+          <div
+            className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl animate-slide-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center h-16 px-4 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg overflow-hidden shadow-lg shadow-indigo-500/20">
+                  <img src="/perry-logo.jpg" alt="Perry" width={36} height={36} className="w-full h-full object-cover" />
+                </div>
+                <span className="text-lg font-bold text-slate-800">PERRY APP</span>
+              </div>
+            </div>
+            <nav className="py-4 px-3 space-y-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    )}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

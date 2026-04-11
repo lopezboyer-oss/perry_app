@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUMS (SQLite doesn't support native enums, using String fields) ─────
+
+// Role: ADMIN, SUPERVISOR, INGENIERO
+// ActivityType: VISITA_CAMPO, COTIZACION, EJECUCION, PLANEACION
+// ActivityStatus: PENDIENTE, EN_PROGRESO, COMPLETADA, CANCELADA
+// OpportunityStatus: PROGRAMADA, VISITADA, EN_ESPERA_INFORMACION, COTIZACION_EN_PROCESO, COTIZACION_ENVIADA, GANADA, PERDIDA
+// ReportSource: MANUAL, WHATSAPP_IMPORT
+
+// ─── MODELS ─────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("INGENIERO")
+  supervisorId  String?
+  supervisor    User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
+  team          User[]    @relation("SupervisorTeam")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  activities    Activity[]
+  opportunities Opportunity[]
+  dailyReports  DailyReport[]
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  name      String
+  code      String?   @unique
+  status    String    @default("ACTIVO")
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  contacts      Contact[]
+  activities    Activity[]
+  opportunities Opportunity[]
+}
+
+model Contact {
+  id        String  @id @default(cuid())
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name      String
+  position  String?
+  email     String?
+  phone     String?
+  notes     String?
+
+  activities    Activity[]
+  opportunities Opportunity[]
+}
+
+model DailyReport {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  reportDate DateTime
+  rawText    String
+  source     String   @default("MANUAL")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  activities Activity[]
+}
+
+model Activity {
+  id              String       @id @default(cuid())
+  dailyReportId   String?
+  dailyReport     DailyReport? @relation(fields: [dailyReportId], references: [id])
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  clientId        String?
+  client          Client?      @relation(fields: [clientId], references: [id])
+  contactId       String?
+  contact         Contact?     @relation(fields: [contactId], references: [id])
+  opportunityId   String?
+  opportunity     Opportunity? @relation(fields: [opportunityId], references: [id])
+  workOrderFolio  String?
+  date            DateTime
+  type            String
+  status          String       @default("PENDIENTE")
+  projectArea     String?
+  title           String
+  result          String?
+  nextStep        String?
+  commitmentDate  DateTime?
+  startTime       String?
+  endTime         String?
+  durationMinutes Int?
+  location        String?
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Opportunity {
+  id                 String    @id @default(cuid())
+  folio              String    @unique
+  clientId           String
+  client             Client    @relation(fields: [clientId], references: [id])
+  contactId          String?
+  contact            Contact?  @relation(fields: [contactId], references: [id])
+  userId             String
+  user               User      @relation(fields: [userId], references: [id])
+  title              String
+  description        String?
+  requestDate        DateTime?
+  scheduledVisitDate DateTime?
+  actualVisitDate    DateTime?
+  infoCompleteDate   DateTime?
+  quotationDueDate   DateTime?
+  quotationSentDate  DateTime?
+  status             String    @default("PROGRAMADA")
+  delayReason        String?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  activities Activity[]
+}

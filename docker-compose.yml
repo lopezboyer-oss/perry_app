@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: perry_app_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: perry
+      POSTGRES_PASSWORD: perry_secret_2024
+      POSTGRES_DB: perry_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - perry_data:/var/lib/postgresql/data
+
+volumes:
+  perry_data:
