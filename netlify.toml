@@ -1,5 +1,0 @@
-[build]
-  command = "prisma generate && next build"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
