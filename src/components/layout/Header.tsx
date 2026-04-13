@@ -1,6 +1,6 @@
 'use client';
 
-import { signOut } from 'next-auth/react';
+import { logoutAction } from '@/app/actions/auth';
 import { LogOut, User, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -57,13 +57,15 @@ export function Header({ user }: HeaderProps) {
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
             {user.name.charAt(0)}
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-            title="Cerrar sesión"
-          >
-            <LogOut size={18} />
-          </button>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+              title="Cerrar sesión"
+            >
+              <LogOut size={18} />
+            </button>
+          </form>
         </div>
       </header>
 
