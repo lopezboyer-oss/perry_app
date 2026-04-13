@@ -102,7 +102,14 @@ export function OdooContactImportDialog({ open, onOpenChange, onSuccess }: OdooC
         body: JSON.stringify({ contacts: preview })
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        throw new Error(`Fallo del servidor (No es JSON): ${text.substring(0, 100)}...`);
+      }
+
       if (!res.ok) throw new Error(data.error || 'Error importando contactos');
 
       setSuccessMsg(`¡Éxito! ${data.created} contactos guardados, ${data.skipped} omitidos (duplicados), ${data.newClients || 0} nuevos clientes generados de forma automática.`);
