@@ -59,14 +59,19 @@ export function OdooContactImportDialog({ open, onOpenChange, onSuccess }: OdooC
           return;
         }
 
-        // Mapear Odoo columns
+        // Mapear Odoo columns de forma inteligente para ignorar problemas de codificación UTF-8 (ej. COMPAA)
         const mappedData = results.data.map((row: any) => {
-          // Normalizar posibles nombres de columnas en español e inglés provenientes de Odoo
-          const name = row['Name'] || row['Nombre'] || row['Contact Name'] || row['Contacto'] || '';
-          const companyName = row['Company Name'] || row['Compañía Relacionada'] || row['Company'] || row['Cliente'] || '';
-          const position = row['Job Position'] || row['Puesto'] || row['Cargo'] || '';
-          const email = row['Email'] || row['Correo'] || '';
-          const phone = row['Phone'] || row['Teléfono'] || row['Mobile'] || '';
+          const keys = Object.keys(row);
+          const getVal = (keywords: string[]) => {
+            const key = keys.find(k => keywords.some(kw => k.toUpperCase().includes(kw)));
+            return key ? row[key] : '';
+          };
+          
+          const name = getVal(['NAME', 'NOMBRE', 'CONTACT', 'CONTACTO']);
+          const companyName = getVal(['COMPAN', 'COMPA', 'CLIENTE']); // Atrapa 'COMPAÑIA', 'COMPAA', 'COMPANY', 'COMPAA'
+          const position = getVal(['JOB', 'PUESTO', 'CARGO', 'POSITION']);
+          const email = getVal(['EMAIL', 'CORREO']);
+          const phone = getVal(['PHONE', 'TELEF', 'MOBILE', 'MOVIL']);
           
           return {
             name: String(name).trim(),
