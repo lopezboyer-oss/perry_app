@@ -20,6 +20,7 @@ export function OpportunityForm({ users, clients, currentUserId, nextFolio, init
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
+    folio: initialData?.folio || nextFolio,
     clientId: initialData?.clientId || '',
     contactId: initialData?.contactId || '',
     userId: initialData?.userId || currentUserId,
@@ -52,7 +53,6 @@ export function OpportunityForm({ users, clients, currentUserId, nextFolio, init
     try {
       const body = {
         ...form,
-        folio: initialData?.folio || nextFolio,
         contactId: form.contactId || null,
         description: form.description || null,
         requestDate: form.requestDate || null,
@@ -95,8 +95,8 @@ export function OpportunityForm({ users, clients, currentUserId, nextFolio, init
         <h2 className="text-lg font-semibold text-slate-800 mb-4">Información de la Oportunidad</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Folio</label>
-            <input type="text" value={initialData?.folio || nextFolio} disabled className="w-full bg-slate-50 font-mono" />
+            <label className="block text-sm font-medium text-slate-700 mb-1">Folio ODOO *</label>
+            <input type="text" value={form.folio} onChange={(e) => setForm({ ...form, folio: e.target.value })} required className="w-full font-mono" placeholder="Ej: S012345" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Estatus</label>

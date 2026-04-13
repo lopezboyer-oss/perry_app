@@ -96,7 +96,7 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
               />
             )}
             {activity.workOrderFolio && (
-              <DetailItem label="Folio OT" value={activity.workOrderFolio} />
+              <DetailItem label="Folio ODOO" value={activity.workOrderFolio} />
             )}
             {activity.projectArea && (
               <DetailItem label="Proyecto / Área" value={activity.projectArea} />

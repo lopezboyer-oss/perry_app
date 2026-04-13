@@ -220,12 +220,12 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Folio OT</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Folio ODOO</label>
             <input
               type="text"
               value={form.workOrderFolio}
               onChange={(e) => setForm({ ...form, workOrderFolio: e.target.value })}
-              placeholder="Ej: OT-2024-001"
+              placeholder="Ej: S012345"
               className="w-full"
             />
           </div>
