@@ -15,15 +15,15 @@ interface GuiaClientProps {
 const steps = [
   {
     id: 'bienvenida',
-    title: '¡Hola! Soy Perry 🦆',
-    perryMood: 'happy',
+    title: 'Guía del Sistema PERRY',
+    perryMood: 'teaching',
     content: (
       <>
         <p className="text-lg mb-4">
-          ¡Bienvenido a <strong>PERRY APP</strong>! Soy Perry, tu ornitorrinco asistente, y estoy aquí para ayudarte a registrar tus actividades de forma rápida y sencilla.
+          Bienvenido a la <strong>Plataforma PERRY</strong>. Este módulo de asistencia está diseñado para facilitar el registro estandarizado de sus actividades de ingeniería.
         </p>
         <p className="text-slate-600 mb-4">
-          En esta guía aprenderás las <strong>2 formas</strong> principales de cargar tu información:
+          A continuación, se describen los <strong>dos métodos</strong> autorizados para el ingreso de información al sistema:
         </p>
         <div className="grid gap-3">
           <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
@@ -40,8 +40,8 @@ const steps = [
               <FileText className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="font-semibold text-purple-900">Método 2: Importar Reporte</p>
-              <p className="text-sm text-purple-700">Pegas el texto de tu reporte de WhatsApp y Perry lo clasifica automáticamente</p>
+              <p className="font-semibold text-purple-900">Método 2: Extracción Automática (Reporte Múltiple)</p>
+              <p className="text-sm text-purple-700">Procesa lotes de actividades mediante análisis de texto (ej. copias de reportes generados vía WhatsApp)</p>
             </div>
           </div>
         </div>
@@ -106,14 +106,14 @@ const steps = [
   },
   {
     id: 'importar-reporte',
-    title: 'Método 2: Importar Reporte',
-    perryMood: 'excited',
+    title: 'Método 2: Multi-registro por Texto',
+    perryMood: 'teaching',
     content: (
       <>
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-5 flex gap-3">
           <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-purple-800">
-            <strong>¡Este es el método más rápido!</strong> Pega tu reporte diario tal como lo envías por WhatsApp y Perry se encarga de clasificarlo.
+            <strong>Optimización de Tiempos:</strong> El sistema cuenta con un motor de parsing que analiza bloques de texto convencionales (como reportes enviados vía correo o WhatsApp) y pre-clasifica las actividades de manera automatizada.
           </p>
         </div>
 
@@ -135,10 +135,10 @@ const steps = [
 
         <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">2</span>
-          Haz clic en "Analizar y Clasificar"
+          Ejecutar Clasificación de Datos
         </h4>
         <p className="text-slate-600 mb-3 ml-8">
-          Perry analizará cada línea de tu reporte y las clasificará automáticamente:
+          El servidor procesará cada línea extraída asignando una caracterización estadística. Parámetros de reconocimiento:
         </p>
         <div className="ml-8 mb-5 grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
@@ -205,21 +205,21 @@ const steps = [
   },
   {
     id: 'tips',
-    title: 'Tips de Perry 💡',
-    perryMood: 'happy',
+    title: 'Estándares de Documentación',
+    perryMood: 'teaching',
     content: (
       <>
         <p className="text-slate-600 mb-5">
-          Sigue estos consejos y tu supervisor te lo va a agradecer:
+          Para mantener la integridad corporativa de la base de datos, favor de seguir los siguientes lineamientos:
         </p>
         <div className="space-y-4">
           {[
             { emoji: '📝', tip: 'Sé específico en el título', detail: 'En vez de "Reunión" escribe "Reunión con Ing. Campos para levantamiento de botoneras CEMEX".' },
             { emoji: '⏰', tip: 'Registra tus horarios', detail: 'La hora de inicio y fin ayuda a medir productividad. No es para controlarte, es para entender la carga de trabajo del equipo.' },
             { emoji: '✅', tip: 'Llena el campo de Resultado', detail: 'Qué se logró, qué se acordó, cuántas piezas se instalaron. Esto evita dudas posteriores.' },
-            { emoji: '➡️', tip: 'Indica el Siguiente Paso', detail: 'Si la actividad continúa, documenta qué falta. Ej: "Falta prueba de presión, completar lunes".' },
-            { emoji: '🏢', tip: 'Siempre asigna Cliente', detail: 'Aunque sea una actividad interna, vincúlala al cliente cuando aplique. Así se puede analizar el esfuerzo por cliente.' },
-            { emoji: '📱', tip: 'Usa WhatsApp Import', detail: 'Si ya mandas tu reporte por WhatsApp, ¡solo pégalo aquí! Perry hace la clasificación por ti y te ahorras el trabajo doble.' },
+            { emoji: '➡️', tip: 'Definir Siguiente Paso', detail: 'Si el proceso no ha concluido, establezca el hito pendiente para asegurar la trazabilidad. Ej: "Pendiente prueba de vacío (Lunes)".' },
+            { emoji: '🏢', tip: 'Vinculación de Cliente ineludible', detail: 'El registro fidedigno de cuentas permite computar métricas y costos operativos asociados a cada razón social consultor.' },
+            { emoji: '📱', tip: 'Sinergia de Herramientas', detail: 'Utilice el módulo de Importación Masiva para aprovechar el texto de sus reportes informales, reduciendo el margen de tiempo administrativo.' },
           ].map((item, i) => (
             <div key={i} className="flex gap-4 items-start bg-gradient-to-r from-slate-50 to-white border border-slate-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
               <span className="text-2xl flex-shrink-0">{item.emoji}</span>
@@ -235,20 +235,19 @@ const steps = [
   },
   {
     id: 'listo',
-    title: '¡Eso es todo! 🎉',
-    perryMood: 'excited',
+    title: 'Configuración Terminada',
+    perryMood: 'teaching',
     content: (
       <>
         <p className="text-lg text-slate-700 mb-6">
-          Ya sabes todo lo necesario para registrar tus actividades como un profesional.
+          Ha concluido la revisión del estándar operativo del sistema.
         </p>
         <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-6 text-center mb-6">
-          <p className="text-3xl mb-3">🏗️</p>
-          <p className="text-lg font-semibold text-indigo-900 mb-1">Recuerda</p>
+          <p className="text-3xl mb-3">⏱️</p>
+          <p className="text-lg font-semibold text-indigo-900 mb-1">Cultura Organizacional</p>
           <p className="text-indigo-700">
-            Registrar tus actividades no es burocracia —<br />
-            es la forma de <strong>hacer visible tu trabajo</strong> y que el equipo pueda<br />
-            dar mejor seguimiento a los clientes.
+            La correcta documentación técnica garantiza la <strong>trazabilidad de los proyectos</strong> y<br />
+            brinda a la Gerencia directrices verídicas para la toma de decisiones.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
@@ -322,15 +321,15 @@ export function GuiaClient({ userName }: GuiaClientProps) {
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-1">
               <MessageCircle className="w-4 h-4 text-indigo-400" />
-              <span className="text-xs text-indigo-400 font-medium">Perry dice:</span>
+              <span className="text-xs text-indigo-400 font-medium">Asistente Ejecutivo PERRY:</span>
             </div>
             <p className="text-slate-700">
-              {currentStep === 0 && `¡Hola ${firstName}! Vamos a aprender a registrar tus actividades. ¡Es fácil, te lo prometo!`}
-              {currentStep === 1 && `Este método es perfecto cuando necesitas registrar una actividad con todo detalle.`}
-              {currentStep === 2 && `¡Este es mi favorito! 🌟 Solo pega tu reporte y yo hago la magia de clasificarlo.`}
-              {currentStep === 3 && `Es importante elegir el tipo correcto. Aquí te explico cada uno.`}
-              {currentStep === 4 && `Estos tips van a hacer que tu registro sea de 10. ¡Tú puedes!`}
-              {currentStep === 5 && `¡Excelente, ${firstName}! Ya estás listo para registrar actividades como profesional. Si tienes dudas, siempre puedes volver aquí. 🦆`}
+              {currentStep === 0 && `Bienvenido, ${firstName}. El sistema operativo está listo para facilitar la documentación de sus labores técnicas.`}
+              {currentStep === 1 && `Este es el método idóneo para incorporar registros únicos con alta densidad de especificaciones técnicas.`}
+              {currentStep === 2 && `El módulo de "Importación de Texto" procesa en lote la captura del día. Recomendamos utilizarlo para volúmenes altos.`}
+              {currentStep === 3 && `La taxonomía de actividades es mandatoria para los indicadores clave de rendimiento (KPIs) del Área de Ingeniería.`}
+              {currentStep === 4 && `El cumplimiento de los protocolos de información es integral para lograr los estándares de calidad ISO y operativos de la compañía.`}
+              {currentStep === 5 && `Usted se encuentra facultado para utilizar la plataforma PERRY. Cualquier duda técnica dirígela al Área Administrativa.`}
             </p>
           </div>
         </div>

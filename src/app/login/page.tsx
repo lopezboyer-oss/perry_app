@@ -122,30 +122,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-xs text-slate-400 text-center mb-3">Credenciales de demostración</p>
-            <div className="grid gap-2 text-xs">
-              {[
-                { role: 'Admin', email: 'admin@perryapp.com', pass: 'admin123' },
-                { role: 'Supervisor', email: 'supervisor@perryapp.com', pass: 'super123' },
-                { role: 'Ingeniero', email: 'pedro@perryapp.com', pass: 'ing123' },
-              ].map((cred) => (
-                <button
-                  key={cred.email}
-                  type="button"
-                  onClick={() => {
-                    setEmail(cred.email);
-                    setPassword(cred.pass);
-                  }}
-                  className="flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-slate-300 transition-colors"
-                >
-                  <span className="font-medium">{cred.role}</span>
-                  <span className="text-slate-500">{cred.email}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+
         </div>
 
         <p className="text-center text-slate-500 text-xs mt-6">
