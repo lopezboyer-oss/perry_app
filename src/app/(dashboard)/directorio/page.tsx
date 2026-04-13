@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Building2, Users, Search, FolderDown } from 'lucid
 import { ClientFormDialog, ClientFormData } from './components/ClientFormDialog';
 import { ContactFormDialog, ContactFormData } from './components/ContactFormDialog';
 import { OdooImportDialog } from './components/OdooImportDialog';
+import { OdooContactImportDialog } from './components/OdooContactImportDialog';
 
 export default function DirectorioPage() {
   const [tab, setTab] = useState<'CLIENTES' | 'CONTACTOS'>('CLIENTES');
@@ -17,6 +18,7 @@ export default function DirectorioPage() {
   const [clientFormOpen, setClientFormOpen] = useState(false);
   const [contactFormOpen, setContactFormOpen] = useState(false);
   const [odooImportOpen, setOdooImportOpen] = useState(false);
+  const [odooContactImportOpen, setOdooContactImportOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<any>(undefined);
   const [editingContact, setEditingContact] = useState<any>(undefined);
 
@@ -138,10 +140,16 @@ export default function DirectorioPage() {
               </button>
             </>
           ) : (
-            <button onClick={() => { setEditingContact(undefined); setContactFormOpen(true); }} className="btn-primary">
-              <Plus size={18} />
-              Nuevo Contacto
-            </button>
+            <>
+              <button onClick={() => setOdooContactImportOpen(true)} className="btn bg-white border border-slate-200 text-slate-700 hover:bg-slate-50">
+                <FolderDown size={18} className="text-blue-600" />
+                Importar Contactos
+              </button>
+              <button onClick={() => { setEditingContact(undefined); setContactFormOpen(true); }} className="btn-primary">
+                <Plus size={18} />
+                Nuevo Contacto
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -264,6 +272,7 @@ export default function DirectorioPage() {
       </div>
 
       <OdooImportDialog open={odooImportOpen} onOpenChange={setOdooImportOpen} onSuccess={fetchData} />
+      <OdooContactImportDialog open={odooContactImportOpen} onOpenChange={setOdooContactImportOpen} onSuccess={fetchData} />
       <ClientFormDialog open={clientFormOpen} onOpenChange={setClientFormOpen} initialData={editingClient} onSubmit={handleSaveClient} />
       <ContactFormDialog open={contactFormOpen} onOpenChange={setContactFormOpen} initialData={editingContact} onSubmit={handleSaveContact} clients={clients.map(c=>({id: c.id, name: c.name}))} />
     </div>
