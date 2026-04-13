@@ -67,7 +67,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
       `"${a.title.replace(/"/g, '""')}"`,
       activityTypeLabels[a.type] || a.type,
       activityStatusLabels[a.status] || a.status,
-      a.user.name,
+      a.user?.name || 'POR ASIGNAR',
       a.client?.name || '',
       formatDuration(a.durationMinutes),
       a.opportunity?.folio || '',
@@ -255,7 +255,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
                         {activityTypeLabels[act.type] || act.type}
                       </span>
                     </td>
-                    <td className="hidden sm:table-cell text-sm">{act.user.name}</td>
+                    <td className="hidden sm:table-cell text-sm">{act.user?.name || 'POR ASIGNAR'}</td>
                     <td className="hidden md:table-cell text-sm">{act.client?.name || '-'}</td>
                     <td>
                       <span className={`badge ${activityStatusColors[act.status] || ''}`}>

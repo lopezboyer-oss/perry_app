@@ -137,7 +137,7 @@ export default async function DashboardPage() {
       type: a.type,
       status: a.status,
       date: a.date.toISOString(),
-      userName: a.user.name,
+      userName: a.user?.name || 'POR ASIGNAR',
       clientName: a.client?.name || '-',
     })),
     activitiesByUser: activitiesByUser.map((g) => ({

@@ -102,6 +102,21 @@ export function Header({ user }: HeaderProps) {
                   </Link>
                 );
               })}
+              
+              {/* Only ADMIN sees User Management */}
+              {user.role === 'ADMIN' && (
+                <Link
+                  href="/usuarios"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-4 border-t border-slate-100 pt-4',
+                    pathname === '/usuarios' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:bg-slate-100'
+                  )}
+                >
+                  <User size={20} className={pathname === '/usuarios' ? 'text-purple-600' : 'text-slate-400'} />
+                  Gestión de Personal
+                </Link>
+              )}
             </nav>
           </div>
         </div>

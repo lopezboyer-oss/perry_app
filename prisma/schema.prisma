@@ -24,6 +24,7 @@ model User {
   email         String    @unique
   passwordHash  String
   role          String    @default("INGENIERO")
+  isActive      Boolean   @default(true)
   supervisorId  String?
   supervisor    User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
   team          User[]    @relation("SupervisorTeam")
@@ -80,8 +81,8 @@ model Activity {
   id              String       @id @default(cuid())
   dailyReportId   String?
   dailyReport     DailyReport? @relation(fields: [dailyReportId], references: [id])
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
+  userId          String?
+  user            User?        @relation(fields: [userId], references: [id])
   clientId        String?
   client          Client?      @relation(fields: [clientId], references: [id])
   contactId       String?
@@ -113,8 +114,8 @@ model Opportunity {
   client             Client    @relation(fields: [clientId], references: [id])
   contactId          String?
   contact            Contact?  @relation(fields: [contactId], references: [id])
-  userId             String
-  user               User      @relation(fields: [userId], references: [id])
+  userId             String?
+  user               User?     @relation(fields: [userId], references: [id])
   title              String
   description        String?
   requestDate        DateTime?

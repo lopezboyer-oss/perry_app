@@ -1,5 +1,5 @@
 DATABASE_URL="postgresql://postgres.gqkgefsyqssmbcsagxsf:PerryQuant24..@aws-1-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://postgres.gqkgefsyqssmbcsagxsf:PerryQuant24..@aws-1-us-west-2.pooler.supabase.com:5432/postgres"
 AUTH_SECRET="perryapp-super-secret-key-change-in-production-2024"
-NEXTAUTH_URL="https://[NOMBRE_DE_TU_SITIO_AQUI].netlify.app"
+NEXTAUTH_URL="https://perryapp.netlify.app"
 AUTH_TRUST_HOST=true

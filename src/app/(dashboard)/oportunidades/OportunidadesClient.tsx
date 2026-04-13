@@ -81,7 +81,7 @@ export function OportunidadesClient({ opportunities, users, clients, filters, us
         o.folio,
         `"${o.title.replace(/"/g, '""')}"`,
         o.client.name,
-        o.user.name,
+        o.user?.name || 'POR ASIGNAR',
         opportunityStatusLabels[o.status] || o.status,
         formatDate(o.scheduledVisitDate),
         formatDate(o.actualVisitDate),
@@ -207,7 +207,7 @@ export function OportunidadesClient({ opportunities, users, clients, filters, us
                         <p className="text-xs text-slate-400">{opp.activitiesCount} actividades</p>
                       </td>
                       <td className="hidden sm:table-cell text-sm">{opp.client.name}</td>
-                      <td className="hidden md:table-cell text-sm">{opp.user.name}</td>
+                      <td className="hidden md:table-cell text-sm">{opp.user?.name || 'POR ASIGNAR'}</td>
                       <td>
                         <span className={`badge ${opportunityStatusColors[opp.status] || ''}`}>
                           {opportunityStatusLabels[opp.status] || opp.status}
