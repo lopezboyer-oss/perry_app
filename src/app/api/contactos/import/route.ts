@@ -19,33 +19,44 @@ export async function POST(req: Request) {
     let skippedCount = 0;
     let newClientsGeneratedCount = 0;
 
+    // Caché en memoria para evitar consultar la misma empresa 50 veces seguidas en el mismo bucle
+    const clientCache = new Map<string, string>(); // Caches trimmed uppercase name -> clientId
+
     for (const contact of contacts) {
       if (!contact.name || !contact.companyName) continue;
 
       const trimmedCompany = contact.companyName.trim();
+      const companyKey = trimmedCompany.toUpperCase();
       
-      // 1. Resolver el cliente al que pertenece
-      let dbClient = await prisma.client.findFirst({
-        where: { name: { equals: trimmedCompany, mode: 'insensitive' } }
-      });
+      let clientId = clientCache.get(companyKey);
 
-      // Opción B: Crear la empresa dinámicamente si no existe
-      if (!dbClient) {
-        dbClient = await prisma.client.create({
-          data: {
-            name: trimmedCompany,
-            status: 'ACTIVO',
-            notes: 'Añadido automáticamente en importación de contactos de Odoo',
-          }
+      if (!clientId) {
+        // 1. Resolver el cliente al que pertenece si no lo hemos buscado aún en esta sesión
+        let dbClient = await prisma.client.findFirst({
+          where: { name: { equals: trimmedCompany, mode: 'insensitive' } }
         });
-        newClientsGeneratedCount++;
+
+        // Opción B: Crear la empresa dinámicamente si no existe
+        if (!dbClient) {
+          dbClient = await prisma.client.create({
+            data: {
+              name: trimmedCompany,
+              status: 'ACTIVO',
+              notes: 'Añadido automáticamente en importación de contactos de Odoo',
+            }
+          });
+          newClientsGeneratedCount++;
+        }
+        
+        clientId = dbClient.id;
+        clientCache.set(companyKey, clientId);
       }
 
       // 2. Comprobar si este contacto exacto ya existe en ese cliente
       const existingContact = await prisma.contact.findFirst({
         where: {
           name: { equals: contact.name, mode: 'insensitive' },
-          clientId: dbClient.id
+          clientId: clientId
         }
       });
 
@@ -54,7 +65,7 @@ export async function POST(req: Request) {
         await prisma.contact.create({
           data: {
             name: contact.name,
-            clientId: dbClient.id,
+            clientId: clientId,
             position: contact.position || null,
             email: contact.email || null,
             phone: contact.phone || null,
