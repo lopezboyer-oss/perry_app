@@ -15,7 +15,7 @@ const navItems = [
   { href: '/actividades', label: 'Actividades', icon: ClipboardList },
   { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
-  { href: '/oportunidades', label: 'Oportunidades', icon: Target },
+  // { href: '/oportunidades', label: 'Oportunidades', icon: Target },
   { href: '/analitica', label: 'Analítica', icon: BarChart3 },
   { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
 ];

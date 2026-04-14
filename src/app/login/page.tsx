@@ -61,7 +61,7 @@ export default function LoginPage() {
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl">
           <h2 className="text-xl font-semibold text-white mb-6">Iniciar Sesión</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">
                 Correo electrónico
@@ -74,6 +74,10 @@ export default function LoginPage() {
                 className="w-full !bg-slate-800/50 border-white/20 text-white placeholder:text-slate-400 focus:border-indigo-400 focus:ring-indigo-400/30"
                 required
                 autoFocus
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck="false"
               />
             </div>
 
@@ -89,6 +93,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   className="w-full !bg-slate-800/50 border-white/20 text-white placeholder:text-slate-400 focus:border-indigo-400 focus:ring-indigo-400/30 pr-10"
                   required
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
@@ -126,7 +131,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-slate-500 text-xs mt-6">
-          © 2024 Perry App — Gestión de Actividades
+          &copy; 2026 Perry App - By Chigüire Labs & Ivan Lopez
         </p>
       </div>
     </div>
