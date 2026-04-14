@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   activityTypeLabels, activityStatusLabels, activityTypeColors,
@@ -44,9 +45,12 @@ interface DashboardData {
     clientName: string;
   }[];
   activitiesByUser: { userName: string; count: number }[];
+  availableUsers?: { id: string; name: string }[];
+  selectedUserId?: string | null;
 }
 
 export function DashboardClient({ data }: { data: DashboardData }) {
+  const router = useRouter();
   const typeChartData = data.activitiesByType.map((item) => ({
     name: activityTypeLabels[item.type] || item.type,
     value: item.count,
@@ -56,10 +60,35 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
   return (
     <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
-      {/* Title */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Dashboard</h1>
-        <p className="text-slate-500 text-sm mt-1">Resumen general de actividades y oportunidades</p>
+      {/* Title & Filter */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Dashboard</h1>
+          <p className="text-slate-500 text-sm mt-1">Resumen general de actividades y oportunidades</p>
+        </div>
+        
+        {/* User Filter Dropdown */}
+        {data.availableUsers && data.availableUsers.length > 0 && (
+          <div className="w-full md:w-64">
+            <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Filtrar por Responsable</label>
+            <select
+              value={data.selectedUserId || ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  router.push(`/dashboard?user=${e.target.value}`);
+                } else {
+                  router.push('/dashboard');
+                }
+              }}
+              className="w-full bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Vista Global (Todos)</option>
+              {data.availableUsers.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* KPI Cards */}

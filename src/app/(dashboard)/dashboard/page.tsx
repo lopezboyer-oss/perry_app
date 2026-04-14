@@ -3,23 +3,52 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { DashboardClient } from './DashboardClient';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: { user?: string } }) {
   const session = await auth();
   if (!session) redirect('/login');
 
   const userId = session.user.id;
   const role = session.user.role;
 
-  // Build where clause based on role
-  const userFilter = role === 'ADMIN' ? {} 
-    : role === 'SUPERVISOR' 
-      ? { userId: { in: await getTeamUserIds(userId) } }
-      : { userId };
+  // Recopilar usuarios disponibles para el dropdown
+  let availableUsers: { id: string; name: string }[] = [];
+  let teamIds: string[] = [];
 
-  const oppFilter = role === 'ADMIN' ? {}
-    : role === 'SUPERVISOR'
-      ? { userId: { in: await getTeamUserIds(userId) } }
-      : { userId };
+  if (role === 'SUPERVISOR') {
+    teamIds = await getTeamUserIds(userId);
+  }
+
+  if (role === 'ADMIN') {
+    availableUsers = await prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } });
+  } else if (role === 'SUPERVISOR') {
+    availableUsers = await prisma.user.findMany({ 
+      where: { id: { in: teamIds } }, 
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' }
+    });
+  }
+
+  const targetUserId = searchParams?.user;
+  
+  // Validar si el target solicitado es visible para el usuario actual
+  let isAuthorized = false;
+  if (targetUserId) {
+    if (role === 'ADMIN') isAuthorized = true;
+    else if (role === 'SUPERVISOR') isAuthorized = teamIds.includes(targetUserId);
+  }
+
+  // Construir filtros finales
+  let userFilter: any = {};
+  if (targetUserId && isAuthorized) {
+    userFilter = { userId: targetUserId };
+  } else {
+    userFilter = role === 'ADMIN' ? {} 
+      : role === 'SUPERVISOR' 
+        ? { userId: { in: teamIds } }
+        : { userId };
+  }
+
+  const oppFilter = userFilter;
 
   // Fetch all data in parallel
   const [
@@ -144,6 +173,8 @@ export default async function DashboardPage() {
       userName: userMap[g.userId] || 'Desconocido',
       count: g._count.id,
     })),
+    availableUsers,
+    selectedUserId: isAuthorized ? targetUserId : null,
   };
 
   return <DashboardClient data={data} />;
