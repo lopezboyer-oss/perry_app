@@ -44,11 +44,15 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
   const [showFilters, setShowFilters] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters);
 
-  const applyFilters = () => {
+  const applyFilters = (overrides?: any) => {
     const params = new URLSearchParams();
-    Object.entries(localFilters).forEach(([key, value]) => {
-      if (value) params.set(key, value);
+    const finalFilters = { ...localFilters, ...overrides };
+    Object.entries(finalFilters).forEach(([key, value]) => {
+      if (value) params.set(key, value as string);
     });
+    if (overrides) {
+      setLocalFilters(finalFilters);
+    }
     router.push(`/actividades?${params.toString()}`);
   };
 
@@ -58,6 +62,28 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
   };
 
   const hasActiveFilters = Object.values(filters).some((v) => v !== '');
+
+  // Helper date for Quick Filters
+  const getLocalISODate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const todayStr = getLocalISODate(new Date());
+  
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = getLocalISODate(yesterday);
+  
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = getLocalISODate(weekAgo);
+
+  const isHoy = localFilters.fechaDesde === todayStr && localFilters.fechaHasta === todayStr;
+  const isAyer = localFilters.fechaDesde === yesterdayStr && localFilters.fechaHasta === yesterdayStr;
+  const isSemana = localFilters.fechaDesde === weekAgoStr && localFilters.fechaHasta === todayStr;
 
   // CSV Export
   const exportCSV = () => {
@@ -99,6 +125,53 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
             <Plus size={16} /> Nueva
           </Link>
         </div>
+      </div>
+
+      {/* Quick Filters Bar */}
+      <div className="flex flex-wrap items-center gap-2 bg-white border border-slate-200 p-2 rounded-xl shadow-sm">
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1 mr-2 hidden sm:block">Vistas Rápidas:</span>
+        <div className="flex gap-1 border-r border-slate-200 pr-3">
+          <button
+            onClick={() => applyFilters({ fechaDesde: todayStr, fechaHasta: todayStr })}
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              isHoy ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            HOY
+          </button>
+          <button
+            onClick={() => applyFilters({ fechaDesde: yesterdayStr, fechaHasta: yesterdayStr })}
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              isAyer ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            AYER
+          </button>
+          <button
+            onClick={() => applyFilters({ fechaDesde: weekAgoStr, fechaHasta: todayStr })}
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              isSemana ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            SEMANA
+          </button>
+        </div>
+
+        {/* Quick Engineer Selector */}
+        {userRole !== 'INGENIERO' && (
+          <div className="flex-1 min-w-[150px] sm:ml-2">
+            <select
+              value={localFilters.responsable}
+              onChange={(e) => applyFilters({ responsable: e.target.value })}
+              className="w-full sm:max-w-xs text-sm border-none bg-slate-50 rounded-lg py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
+            >
+              <option value="">Equipos (Todos)</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Search + Filter toggle */}
