@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FileText, Wand2, Save, X, Check, Edit3, AlertCircle
+  FileText, Wand2, Save, X, Check, Edit3, AlertCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { activityTypeLabels, activityTypeColors } from '@/lib/utils';
+import { activityTypeLabels, activityTypeColors, activityStatusLabels, calculateDuration } from '@/lib/utils';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 interface ParsedLine {
   index: number;
@@ -22,6 +23,27 @@ interface Props {
   currentUserId: string;
 }
 
+interface EditedLine {
+  selected: boolean;
+  isExpanded: boolean;
+  title: string;
+  type: string;
+  status: string;
+  clientId: string;
+  contactId: string;
+  opportunityId: string;
+  workOrderFolio: string;
+  projectArea: string;
+  result: string;
+  nextStep: string;
+  commitmentDate: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: string;
+  location: string;
+  notes: string;
+}
+
 export function ImportClient({ users, clients, currentUserId }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<'input' | 'preview' | 'done'>('input');
@@ -29,30 +51,15 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
   const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
   const [userId, setUserId] = useState(currentUserId);
   const [parsedLines, setParsedLines] = useState<ParsedLine[]>([]);
-  const [editedLines, setEditedLines] = useState<
-    {
-      selected: boolean;
-      title: string;
-      type: string;
-      clientId: string;
-      contactId: string;
-    }[]
-  >([]);
+  const [editedLines, setEditedLines] = useState<EditedLine[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savedCount, setSavedCount] = useState(0);
 
   const exampleText = `Buena tarde anexo reporte de actividades:
 - Se atiende reunión con Ing Alexis Campos para instalación de guarda para botonera
-- Se atiende reunión con Ing Jesus Montalvo para instalación de alumbrado led en P2
-- Se atiende reunión con Ing Jesus Montalvo para cálculo estructural para barandal
-- Se envía documentación para liberación de permisos de fin de semana
-- Se anexa solicitud de materiales para actividades
 - Reemplazo de cableado expuesto
-- Instalación de lámparas de 2ft en MR1
-- Instalación de guarda para botonera
-- Conexión de sistema neumático en lado RH
-- Se atiende reunión con Miguel González para determinar datos pendientes para trabajos de fin de semana en casa de aire`;
+- Instalación de lámparas de 2ft en MR1`;
 
   const handleParse = async () => {
     if (!rawText.trim()) {
@@ -77,10 +84,23 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
       setEditedLines(
         lines.map((line) => ({
           selected: true,
+          isExpanded: false,
           title: line.cleanText,
           type: line.suggestedType,
+          status: 'COMPLETADA',
           clientId: '',
           contactId: '',
+          opportunityId: '',
+          workOrderFolio: '',
+          projectArea: '',
+          result: '',
+          nextStep: '',
+          commitmentDate: '',
+          startTime: '',
+          endTime: '',
+          durationMinutes: '',
+          location: '',
+          notes: '',
         }))
       );
       setStep('preview');
@@ -110,13 +130,25 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
           reportDate,
           userId,
           activities: editedLines
-            .map((line, index) => {
+            .map((line) => {
               if (!line.selected) return null;
               return {
                 title: line.title,
                 type: line.type,
+                status: line.status,
                 clientId: line.clientId || null,
                 contactId: line.contactId || null,
+                opportunityId: line.opportunityId || null,
+                workOrderFolio: line.workOrderFolio || null,
+                projectArea: line.projectArea || null,
+                result: line.result || null,
+                nextStep: line.nextStep || null,
+                commitmentDate: line.commitmentDate || null,
+                startTime: line.startTime || null,
+                endTime: line.endTime || null,
+                durationMinutes: line.durationMinutes ? parseInt(line.durationMinutes) : null,
+                location: line.location || null,
+                notes: line.notes || null,
               };
             })
             .filter(Boolean),
@@ -135,9 +167,24 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
     }
   };
 
-  const updateLine = (index: number, updates: Partial<typeof editedLines[0]>) => {
+  const updateLine = (index: number, updates: Partial<EditedLine>) => {
     setEditedLines((prev) =>
-      prev.map((line, i) => (i === index ? { ...line, ...updates } : line))
+      prev.map((line, i) => {
+        if (i !== index) return line;
+        const newLine = { ...line, ...updates };
+
+        // Auto-calculate duration if times changed
+        if (updates.startTime !== undefined || updates.endTime !== undefined) {
+          const start = updates.startTime !== undefined ? updates.startTime : line.startTime;
+          const end = updates.endTime !== undefined ? updates.endTime : line.endTime;
+          if (start && end) {
+            const dur = calculateDuration(start, end);
+            if (dur) newLine.durationMinutes = dur.toString();
+          }
+        }
+
+        return newLine;
+      })
     );
   };
 
@@ -252,82 +299,225 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
 
       {step === 'preview' && (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex max-sm:flex-col items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-slate-800">
-                Previsualización — {editedLines.filter((l) => l.selected).length} actividades seleccionadas
+                Previsualización — {editedLines.filter((l) => l.selected).length} seleccionadas
               </h2>
               <p className="text-sm text-slate-500">
-                Revisa y edita cada línea antes de guardar. Puedes cambiar el tipo, título, cliente y contacto.
+                Opcionalmente expande las actividades para cargar el resto de detalles operativos.
               </p>
             </div>
-            <button onClick={() => setStep('input')} className="btn-ghost text-sm">
-              <ArrowLeft size={14} /> Volver
+            <button onClick={() => setStep('input')} className="btn-ghost text-sm shrink-0">
+              <ArrowLeft size={14} /> Volver a Pegar
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {editedLines.map((line, index) => {
               const selectedClient = clients.find((c) => c.id === line.clientId);
+              const contactsOpts = selectedClient?.contacts || [];
+
               return (
                 <div
                   key={index}
-                  className={`card p-4 transition-opacity ${!line.selected ? 'opacity-50' : ''}`}
+                  className={`card p-4 transition-all duration-300 ${!line.selected ? 'opacity-50 grayscale' : 'border-l-4 border-l-indigo-500'}`}
                 >
+                  {/* Básico Header Visible siempre */}
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
                       checked={line.selected}
                       onChange={(e) => updateLine(index, { selected: e.target.checked })}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      className="mt-1.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-3">
                       <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <span>Línea {index + 1}</span>
+                        <span className="font-bold text-slate-600">REQ. {index + 1}</span>
                         <span>·</span>
-                        <span className="italic">{parsedLines[index]?.originalText.substring(0, 60)}...</span>
+                        <span className="italic truncate">{parsedLines[index]?.originalText.substring(0, 80)}...</span>
                       </div>
-                      <input
-                        type="text"
-                        value={line.title}
-                        onChange={(e) => updateLine(index, { title: e.target.value })}
-                        className="w-full text-sm"
-                      />
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <select
-                          value={line.type}
-                          onChange={(e) => updateLine(index, { type: e.target.value })}
-                          className="text-sm"
-                        >
-                          {Object.entries(activityTypeLabels).map(([k, v]) => (
-                            <option key={k} value={k}>{v}</option>
-                          ))}
-                        </select>
-                        <select
-                          value={line.clientId}
-                          onChange={(e) => updateLine(index, { clientId: e.target.value, contactId: '' })}
-                          className="text-sm"
-                        >
-                          <option value="">Sin cliente</option>
-                          {clients.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
-                        <select
-                          value={line.contactId}
-                          onChange={(e) => updateLine(index, { contactId: e.target.value })}
-                          className="text-sm"
-                          disabled={!line.clientId}
-                        >
-                          <option value="">Sin contacto</option>
-                          {(selectedClient?.contacts || []).map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        <div className="md:col-span-12">
+                          <input
+                            type="text"
+                            value={line.title}
+                            placeholder="Título Analizado"
+                            onChange={(e) => updateLine(index, { title: e.target.value })}
+                            className="w-full font-medium"
+                          />
+                        </div>
+                        
+                        <div className="md:col-span-3">
+                          <select
+                            value={line.type}
+                            onChange={(e) => updateLine(index, { type: e.target.value })}
+                            className="w-full text-sm"
+                          >
+                            {Object.entries(activityTypeLabels).map(([k, v]) => (
+                              <option key={k} value={k}>{v}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div className="md:col-span-4">
+                           <SearchableSelect
+                              options={[
+                                { id: '', name: 'Cte. General (Sin Asignar)' },
+                                ...clients.map((c) => ({ id: c.id, name: c.name }))
+                              ]}
+                              value={line.clientId}
+                              onChange={(val) => updateLine(index, { clientId: val, contactId: '' })}
+                              placeholder="Buscar cliente..."
+                              size="sm"
+                           />
+                        </div>
+                        
+                        <div className="md:col-span-5 flex gap-2">
+                           <div className="flex-1">
+                             <SearchableSelect
+                                options={[
+                                  { id: '', name: 'Atención no específica' },
+                                  ...contactsOpts.map((c) => ({ id: c.id, name: c.name }))
+                                ]}
+                                value={line.contactId}
+                                onChange={(val) => updateLine(index, { contactId: val })}
+                                placeholder="Buscar contacto..."
+                                disabled={!line.clientId}
+                                size="sm"
+                             />
+                           </div>
+                           <button 
+                             type="button" 
+                             onClick={() => updateLine(index, { isExpanded: !line.isExpanded })}
+                             className="btn-secondary px-3 py-1 text-xs shrink-0"
+                             title="Expandir Campos Detallados"
+                           >
+                              {line.isExpanded ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
+                           </button>
+                        </div>
                       </div>
-                      <span className={`badge ${activityTypeColors[line.type] || ''} text-xs`}>
-                        {activityTypeLabels[line.type] || line.type}
-                      </span>
+
+                      {/* --- CAMPOS EXTRA (ACORDEÓN) --- */}
+                      {line.isExpanded && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100 animate-fade-in bg-slate-50 p-4 rounded-xl">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Estatus</label>
+                            <select
+                              value={line.status}
+                              onChange={(e) => updateLine(index, { status: e.target.value })}
+                              className="w-full text-sm"
+                            >
+                              {Object.entries(activityStatusLabels).map(([k, v]) => (
+                                <option key={k} value={k}>{v}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">ID Oportunidad (OPP)</label>
+                            <input
+                              type="text"
+                              value={line.opportunityId}
+                              onChange={(e) => updateLine(index, { opportunityId: e.target.value })}
+                              className="w-full text-sm"
+                              placeholder="Ej. OPP-2024-001"
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-xs font-medium text-slate-700 mb-1">Inicio</label>
+                              <input
+                                type="time"
+                                value={line.startTime}
+                                onChange={(e) => updateLine(index, { startTime: e.target.value })}
+                                className="w-full text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-700 mb-1">Fin</label>
+                              <input
+                                type="time"
+                                value={line.endTime}
+                                onChange={(e) => updateLine(index, { endTime: e.target.value })}
+                                className="w-full text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-700 mb-1">Mins</label>
+                              <input
+                                type="number"
+                                value={line.durationMinutes}
+                                onChange={(e) => updateLine(index, { durationMinutes: e.target.value })}
+                                className="w-full text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Folio (O.T. / Ticket)</label>
+                            <input
+                              type="text"
+                              value={line.workOrderFolio}
+                              onChange={(e) => updateLine(index, { workOrderFolio: e.target.value })}
+                              className="w-full text-sm uppercase"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Célula / Área</label>
+                            <input
+                              type="text"
+                              value={line.projectArea}
+                              onChange={(e) => updateLine(index, { projectArea: e.target.value })}
+                              className="w-full text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Lugar de Ejecución</label>
+                            <input
+                              type="text"
+                              value={line.location}
+                              onChange={(e) => updateLine(index, { location: e.target.value })}
+                              className="w-full text-sm"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Resultados</label>
+                            <textarea
+                              value={line.result}
+                              onChange={(e) => updateLine(index, { result: e.target.value })}
+                              className="w-full text-sm"
+                              rows={2}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Siguiente Paso</label>
+                            <textarea
+                              value={line.nextStep}
+                              onChange={(e) => updateLine(index, { nextStep: e.target.value })}
+                              className="w-full text-sm"
+                              rows={2}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Notas / Bitácora</label>
+                            <textarea
+                              value={line.notes}
+                              onChange={(e) => updateLine(index, { notes: e.target.value })}
+                              className="w-full text-sm"
+                              rows={2}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">Fecha de Compromiso</label>
+                            <input
+                              type="date"
+                              value={line.commitmentDate}
+                              onChange={(e) => updateLine(index, { commitmentDate: e.target.value })}
+                              className="w-full text-sm"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -342,20 +532,20 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
             </div>
           )}
 
-          <div className="flex gap-3">
-            <button onClick={() => setStep('input')} className="btn-secondary">
-              <X size={16} /> Cancelar
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 shrink-0">
+            <button onClick={() => setStep('input')} className="btn-secondary justify-center">
+              <X size={16} /> Cancelar Reconstrucción
             </button>
             <button
               onClick={handleSave}
               disabled={loading}
-              className="btn-primary flex-1 sm:flex-initial"
+              className="btn-primary flex-1 justify-center"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <Save size={16} /> Guardar {editedLines.filter((l) => l.selected).length} Actividades
+                  <Save size={16} /> Guardar (x{editedLines.filter((l) => l.selected).length}) e Ingresar
                 </>
               )}
             </button>

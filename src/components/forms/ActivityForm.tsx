@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft } from 'lucide-react';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { activityTypeLabels, activityStatusLabels, calculateDuration } from '@/lib/utils';
 
 interface Props {
@@ -181,30 +182,28 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
-            <select
+            <SearchableSelect
+              options={[
+                { id: '', name: 'Selecciona...' },
+                ...clients.map((c) => ({ id: c.id, name: c.name }))
+              ]}
               value={form.clientId}
-              onChange={(e) => setForm({ ...form, clientId: e.target.value, contactId: '' })}
-              className="w-full"
-            >
-              <option value="">Sin cliente</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              onChange={(val) => setForm({ ...form, clientId: val, contactId: '' })}
+              placeholder="Buscar cliente..."
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Contacto</label>
-            <select
+            <SearchableSelect
+              options={[
+                { id: '', name: 'Selecciona...' },
+                ...contacts.map((c) => ({ id: c.id, name: c.name }))
+              ]}
               value={form.contactId}
-              onChange={(e) => setForm({ ...form, contactId: e.target.value })}
-              className="w-full"
+              onChange={(val) => setForm({ ...form, contactId: val })}
+              placeholder="Buscar contacto..."
               disabled={!form.clientId}
-            >
-              <option value="">Sin contacto</option>
-              {contacts.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Oportunidad (OPP)</label>
