@@ -340,6 +340,7 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
                       
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                         <div className="md:col-span-12">
+                          <label className="block text-xs font-medium text-slate-700 mb-1">Título de la Actividad</label>
                           <input
                             type="text"
                             value={line.title}
@@ -350,6 +351,20 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
                         </div>
                         
                         <div className="md:col-span-3">
+                          <label className="block text-xs font-medium text-slate-700 mb-1">Estatus</label>
+                          <select
+                            value={line.status}
+                            onChange={(e) => updateLine(index, { status: e.target.value })}
+                            className="w-full text-sm font-semibold text-slate-800 border-slate-300"
+                          >
+                            {Object.entries(activityStatusLabels).map(([k, v]) => (
+                              <option key={k} value={k}>{v}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="md:col-span-3">
+                          <label className="block text-xs font-medium text-slate-700 mb-1">Tipo</label>
                           <select
                             value={line.type}
                             onChange={(e) => updateLine(index, { type: e.target.value })}
@@ -361,10 +376,11 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
                           </select>
                         </div>
                         
-                        <div className="md:col-span-4">
+                        <div className="md:col-span-3">
+                           <label className="block text-xs font-medium text-slate-700 mb-1">Cliente</label>
                            <SearchableSelect
                               options={[
-                                { id: '', name: 'Cte. General (Sin Asignar)' },
+                                { id: '', name: 'Sin Asignar' },
                                 ...clients.map((c) => ({ id: c.id, name: c.name }))
                               ]}
                               value={line.clientId}
@@ -374,11 +390,12 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
                            />
                         </div>
                         
-                        <div className="md:col-span-5 flex gap-2">
+                        <div className="md:col-span-3 flex items-end gap-2">
                            <div className="flex-1">
+                             <label className="block text-xs font-medium text-slate-700 mb-1">Contacto</label>
                              <SearchableSelect
                                 options={[
-                                  { id: '', name: 'Atención no específica' },
+                                  { id: '', name: 'No específico' },
                                   ...contactsOpts.map((c) => ({ id: c.id, name: c.name }))
                                 ]}
                                 value={line.contactId}
@@ -391,29 +408,17 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
                            <button 
                              type="button" 
                              onClick={() => updateLine(index, { isExpanded: !line.isExpanded })}
-                             className="btn-secondary px-3 py-1 text-xs shrink-0"
-                             title="Expandir Campos Detallados"
+                             className={`px-3 py-[7px] text-xs shrink-0 rounded-lg border transition-colors ${line.isExpanded ? 'bg-indigo-100 border-indigo-200 text-indigo-700' : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'}`}
+                             title="Expandir Módulo de Control (OT, Tiempos, Resultados)"
                            >
-                              {line.isExpanded ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
+                              {line.isExpanded ? <ChevronUp size={18}/> : <ChevronDown size={18}/>}
                            </button>
                         </div>
                       </div>
 
                       {/* --- CAMPOS EXTRA (ACORDEÓN) --- */}
                       {line.isExpanded && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100 animate-fade-in bg-slate-50 p-4 rounded-xl">
-                          <div>
-                            <label className="block text-xs font-medium text-slate-700 mb-1">Estatus</label>
-                            <select
-                              value={line.status}
-                              onChange={(e) => updateLine(index, { status: e.target.value })}
-                              className="w-full text-sm"
-                            >
-                              {Object.entries(activityStatusLabels).map(([k, v]) => (
-                                <option key={k} value={k}>{v}</option>
-                              ))}
-                            </select>
-                          </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100 animate-fade-in bg-slate-50 p-4 rounded-xl shadow-inner">
                           <div>
                             <label className="block text-xs font-medium text-slate-700 mb-1">ID Oportunidad (OPP)</label>
                             <input
