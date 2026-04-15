@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ClipboardPlus,
   HelpCircle,
+  CalendarDays,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/actividades', label: 'Actividades', icon: ClipboardList },
+  { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },
   { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
   // { href: '/oportunidades', label: 'Oportunidades', icon: Target },
