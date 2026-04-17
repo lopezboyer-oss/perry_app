@@ -2,7 +2,35 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AtcFindeClient } from './AtcFindeClient';
-import { getTijuanaDayOfWeek } from '@/lib/timezone';
+import { getTijuanaDayOfWeek, getTijuanaToday, parseLocalDate } from '@/lib/timezone';
+
+/**
+ * Calcula las fechas del Sábado y Domingo del fin de semana inmediato,
+ * usando la zona horaria de Tijuana como referencia.
+ *
+ * - Lun-Vie → el próximo Sáb y Dom
+ * - Sábado  → hoy (Sáb) y mañana (Dom)
+ * - Domingo → ayer (Sáb) y hoy (Dom)
+ */
+function getImmediateWeekendDates(): { saturday: string; sunday: string } {
+  const todayStr = getTijuanaToday(); // "YYYY-MM-DD"
+  const today = new Date(`${todayStr}T12:00:00`);
+  const dow = today.getDay(); // 0=Sun … 6=Sat
+
+  let satOffset: number;
+  if (dow === 6) satOffset = 0;        // Today is Saturday
+  else if (dow === 0) satOffset = -1;   // Today is Sunday → Saturday was yesterday
+  else satOffset = 6 - dow;             // Mon(1)→5, Tue(2)→4 … Fri(5)→1
+
+  const saturday = new Date(today);
+  saturday.setDate(today.getDate() + satOffset);
+
+  const sunday = new Date(saturday);
+  sunday.setDate(saturday.getDate() + 1);
+
+  const fmt = (d: Date) => d.toISOString().split('T')[0];
+  return { saturday: fmt(saturday), sunday: fmt(sunday) };
+}
 
 export default async function AtcFindePage() {
   const session = await auth();
@@ -10,6 +38,10 @@ export default async function AtcFindePage() {
 
   const userId = session.user.id;
   const role = session.user.role;
+
+  const { saturday, sunday } = getImmediateWeekendDates();
+  const satDate = parseLocalDate(saturday);
+  const sunDate = parseLocalDate(sunday);
 
   // Build where clause based on role
   const where: any = {};
@@ -23,10 +55,10 @@ export default async function AtcFindePage() {
     where.userId = { in: [userId, ...team.map((u) => u.id)] };
   }
 
-  // We only fetch recent and future activities to avoid massive payload
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  where.date = { gte: thirtyDaysAgo };
+  // Only fetch activities whose date falls on THIS Saturday or Sunday
+  const satStart = new Date(satDate); satStart.setHours(0, 0, 0, 0);
+  const sunEnd = new Date(sunDate); sunEnd.setHours(23, 59, 59, 999);
+  where.date = { gte: satStart, lte: sunEnd };
 
   const [activities, users] = await Promise.all([
     prisma.activity.findMany({
@@ -36,7 +68,7 @@ export default async function AtcFindePage() {
         client: { select: { id: true, name: true } },
         opportunity: { select: { id: true, folio: true } },
       },
-      orderBy: { date: 'asc' },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     }),
     prisma.user.findMany({
       select: { id: true, name: true, role: true },
@@ -44,38 +76,15 @@ export default async function AtcFindePage() {
     }),
   ]);
 
-  // Filter strictly for weekends using Tijuana timezone (6 = Saturday, 0 = Sunday)
-  const weekendActivities = activities
-    .filter((a) => {
-      const dow = getTijuanaDayOfWeek(a.date);
-      return dow === 0 || dow === 6;
-    })
-    .sort((a, b) => {
-      // 1. Sort by date ascending
-      const dateA = a.date.getTime();
-      const dateB = b.date.getTime();
-      if (dateA !== dateB) return dateA - dateB;
-
-      // 2. Within same date: Saturday (6) before Sunday (0)
-      const dowA = getTijuanaDayOfWeek(a.date);
-      const dowB = getTijuanaDayOfWeek(b.date);
-      if (dowA !== dowB) return dowB - dowA; // 6 (Sat) comes before 0 (Sun)
-
-      // 3. Within same day: sort by startTime ascending
-      const timeA = a.startTime || '99:99'; // No time goes to the bottom
-      const timeB = b.startTime || '99:99';
-      return timeA.localeCompare(timeB);
-    });
-
   return (
     <AtcFindeClient
-      activities={weekendActivities.map((a) => ({
+      activities={activities.map((a) => ({
         ...a,
         date: a.date.toISOString(),
       }))}
       users={users}
       userRole={role}
+      weekendLabel={`${saturday} — ${sunday}`}
     />
   );
 }
-

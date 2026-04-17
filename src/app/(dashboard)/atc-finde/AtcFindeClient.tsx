@@ -22,9 +22,10 @@ interface Props {
   activities: Activity[];
   users: { id: string; name: string; role: string }[];
   userRole: string;
+  weekendLabel: string;
 }
 
-export function AtcFindeClient({ activities, users, userRole }: Props) {
+export function AtcFindeClient({ activities, users, userRole, weekendLabel }: Props) {
   const router = useRouter();
 
   // CSV Export focused on ATC Finde (Plan de Trabajo weekend layout)
@@ -60,7 +61,7 @@ export function AtcFindeClient({ activities, users, userRole }: Props) {
             Plan ATC FINDE
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Visualización estricta de actividades programadas para fines de semana (Sábados y Domingos).
+            Fin de semana inmediato: <span className="font-semibold text-indigo-600">{weekendLabel}</span>
           </p>
         </div>
         <div className="flex gap-2">
