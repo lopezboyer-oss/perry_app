@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { activitySchema } from '@/lib/validators';
+import { parseLocalDate } from '@/lib/timezone';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const activity = await prisma.activity.create({
       data: {
-        date: new Date(data.date),
+        date: parseLocalDate(data.date),
         userId: data.userId,
         type: data.type as any,
         status: data.status as any,

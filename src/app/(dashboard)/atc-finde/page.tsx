@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AtcFindeClient } from './AtcFindeClient';
+import { getTijuanaDayOfWeek } from '@/lib/timezone';
 
 export default async function AtcFindePage() {
   const session = await auth();
@@ -43,11 +44,28 @@ export default async function AtcFindePage() {
     }),
   ]);
 
-  // Filter mathematically strictly for weekends (0 = Sunday, 6 = Saturday)
-  const weekendActivities = activities.filter((a) => {
-    const dow = a.date.getUTCDay();
-    return dow === 0 || dow === 6;
-  });
+  // Filter strictly for weekends using Tijuana timezone (6 = Saturday, 0 = Sunday)
+  const weekendActivities = activities
+    .filter((a) => {
+      const dow = getTijuanaDayOfWeek(a.date);
+      return dow === 0 || dow === 6;
+    })
+    .sort((a, b) => {
+      // 1. Sort by date ascending
+      const dateA = a.date.getTime();
+      const dateB = b.date.getTime();
+      if (dateA !== dateB) return dateA - dateB;
+
+      // 2. Within same date: Saturday (6) before Sunday (0)
+      const dowA = getTijuanaDayOfWeek(a.date);
+      const dowB = getTijuanaDayOfWeek(b.date);
+      if (dowA !== dowB) return dowB - dowA; // 6 (Sat) comes before 0 (Sun)
+
+      // 3. Within same day: sort by startTime ascending
+      const timeA = a.startTime || '99:99'; // No time goes to the bottom
+      const timeB = b.startTime || '99:99';
+      return timeA.localeCompare(timeB);
+    });
 
   return (
     <AtcFindeClient
@@ -60,3 +78,4 @@ export default async function AtcFindePage() {
     />
   );
 }
+

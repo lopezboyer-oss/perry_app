@@ -10,6 +10,25 @@ export const authConfig = {
         token.id = user.id;
         token.role = (user as any).role;
       }
+
+      // Re-fetch role from DB on every request to guarantee
+      // that role changes (e.g. SUPERVISOR → ADMIN) take effect immediately
+      if (token.id) {
+        try {
+          const { prisma } = await import('./prisma');
+          const freshUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true, name: true },
+          });
+          if (freshUser) {
+            token.role = freshUser.role;
+            token.name = freshUser.name;
+          }
+        } catch {
+          // If DB is unreachable, keep the cached role
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -22,3 +41,4 @@ export const authConfig = {
   },
   providers: [], // Los providers pesados se inyectan en auth.ts
 } satisfies NextAuthConfig;
+

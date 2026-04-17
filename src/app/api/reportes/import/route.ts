@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { parseLocalDate } from '@/lib/timezone';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     const report = await prisma.dailyReport.create({
       data: {
         userId,
-        reportDate: new Date(reportDate),
+        reportDate: parseLocalDate(reportDate),
         rawText,
         source: 'WHATSAPP_IMPORT',
       },
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
           data: {
             dailyReportId: report.id,
             userId,
-            date: new Date(reportDate),
+            date: parseLocalDate(reportDate),
             type: act.type,
             status: act.status || 'COMPLETADA',
             title: act.title,
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
             projectArea: act.projectArea || null,
             result: act.result || null,
             nextStep: act.nextStep || null,
-            commitmentDate: act.commitmentDate ? new Date(act.commitmentDate) : null,
+            commitmentDate: act.commitmentDate ? parseLocalDate(act.commitmentDate) : null,
             startTime: act.startTime || null,
             endTime: act.endTime || null,
             durationMinutes: act.durationMinutes ? parseInt(act.durationMinutes) : null,

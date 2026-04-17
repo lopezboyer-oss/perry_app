@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { activitySchema } from '@/lib/validators';
+import { parseLocalDate } from '@/lib/timezone';
 
 export async function GET(
   req: NextRequest,
@@ -59,7 +60,7 @@ export async function PUT(
     const activity = await prisma.activity.update({
       where: { id: params.id },
       data: {
-        date: new Date(data.date),
+        date: parseLocalDate(data.date),
         userId: data.userId,
         type: data.type as any,
         status: data.status as any,
@@ -71,7 +72,7 @@ export async function PUT(
         projectArea: data.projectArea || null,
         result: data.result || null,
         nextStep: data.nextStep || null,
-        commitmentDate: data.commitmentDate ? new Date(data.commitmentDate) : null,
+        commitmentDate: data.commitmentDate ? parseLocalDate(data.commitmentDate) : null,
         startTime: data.startTime || null,
         endTime: data.endTime || null,
         durationMinutes: data.durationMinutes || null,
