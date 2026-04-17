@@ -108,6 +108,23 @@ export const activityTypeColors: Record<string, string> = {
 };
 
 /**
+ * Etiquetas para roles de usuario
+ */
+export const roleLabels: Record<string, string> = {
+  ADMIN: 'Administrador',
+  SUPERVISOR: 'Supervisor',
+  SUPERVISOR_SAFETY_LP: 'Supervisor Safety & L.P.',
+  INGENIERO: 'Ingeniero',
+};
+
+export const roleColors: Record<string, string> = {
+  ADMIN: 'bg-purple-100 text-purple-700',
+  SUPERVISOR: 'bg-amber-100 text-amber-700',
+  SUPERVISOR_SAFETY_LP: 'bg-teal-100 text-teal-700',
+  INGENIERO: 'bg-emerald-100 text-emerald-700',
+};
+
+/**
  * Colores para estatus de oportunidad
  */
 export const opportunityStatusColors: Record<string, string> = {

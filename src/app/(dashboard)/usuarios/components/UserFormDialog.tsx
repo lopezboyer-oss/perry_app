@@ -4,7 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-type Role = 'ADMIN' | 'SUPERVISOR' | 'INGENIERO';
+type Role = 'ADMIN' | 'SUPERVISOR' | 'SUPERVISOR_SAFETY_LP' | 'INGENIERO';
 
 export interface UserFormData {
   name: string;
@@ -137,6 +137,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
               >
                 <option value="INGENIERO">👨‍🔧 Ingeniero de Campo</option>
                 <option value="SUPERVISOR">👨‍💼 Supervisor</option>
+                <option value="SUPERVISOR_SAFETY_LP">🛡️ Supervisor Safety & L.P.</option>
                 <option value="ADMIN">👑 Administrador</option>
               </select>
             </div>

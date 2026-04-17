@@ -2,29 +2,20 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AtcFindeClient } from './AtcFindeClient';
-import { getTijuanaDayOfWeek, getTijuanaToday, parseLocalDate } from '@/lib/timezone';
+import { getTijuanaToday, parseLocalDate } from '@/lib/timezone';
 
-/**
- * Calcula las fechas del Sábado y Domingo del fin de semana inmediato,
- * usando la zona horaria de Tijuana como referencia.
- *
- * - Lun-Vie → el próximo Sáb y Dom
- * - Sábado  → hoy (Sáb) y mañana (Dom)
- * - Domingo → ayer (Sáb) y hoy (Dom)
- */
 function getImmediateWeekendDates(): { saturday: string; sunday: string } {
-  const todayStr = getTijuanaToday(); // "YYYY-MM-DD"
+  const todayStr = getTijuanaToday();
   const today = new Date(`${todayStr}T12:00:00`);
-  const dow = today.getDay(); // 0=Sun … 6=Sat
+  const dow = today.getDay();
 
   let satOffset: number;
-  if (dow === 6) satOffset = 0;        // Today is Saturday
-  else if (dow === 0) satOffset = -1;   // Today is Sunday → Saturday was yesterday
-  else satOffset = 6 - dow;             // Mon(1)→5, Tue(2)→4 … Fri(5)→1
+  if (dow === 6) satOffset = 0;
+  else if (dow === 0) satOffset = -1;
+  else satOffset = 6 - dow;
 
   const saturday = new Date(today);
   saturday.setDate(today.getDate() + satOffset);
-
   const sunday = new Date(saturday);
   sunday.setDate(saturday.getDate() + 1);
 
@@ -43,7 +34,6 @@ export default async function AtcFindePage() {
   const satDate = parseLocalDate(saturday);
   const sunDate = parseLocalDate(sunday);
 
-  // Build where clause based on role
   const where: any = {};
   if (role === 'INGENIERO') {
     where.userId = userId;
@@ -54,13 +44,13 @@ export default async function AtcFindePage() {
     });
     where.userId = { in: [userId, ...team.map((u) => u.id)] };
   }
+  // ADMIN and SUPERVISOR_SAFETY_LP see all
 
-  // Only fetch activities whose date falls on THIS Saturday or Sunday
   const satStart = new Date(satDate); satStart.setHours(0, 0, 0, 0);
   const sunEnd = new Date(sunDate); sunEnd.setHours(23, 59, 59, 999);
   where.date = { gte: satStart, lte: sunEnd };
 
-  const [activities, users] = await Promise.all([
+  const [activities, technicians, safetyDedicados, techAssignments, safetyAssignments] = await Promise.all([
     prisma.activity.findMany({
       where,
       include: {
@@ -70,9 +60,21 @@ export default async function AtcFindePage() {
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     }),
-    prisma.user.findMany({
-      select: { id: true, name: true, role: true },
+    prisma.technician.findMany({
+      where: { isActive: true },
       orderBy: { name: 'asc' },
+    }),
+    prisma.safetyDedicado.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.weekendTechAssignment.findMany({
+      where: { weekendOf: saturday },
+      include: { technician: true },
+    }),
+    prisma.weekendSafetyAssignment.findMany({
+      where: { weekendOf: saturday },
+      include: { safetyDedicado: true },
     }),
   ]);
 
@@ -82,8 +84,12 @@ export default async function AtcFindePage() {
         ...a,
         date: a.date.toISOString(),
       }))}
-      users={users}
+      technicians={technicians}
+      safetyDedicados={safetyDedicados}
+      techAssignments={techAssignments}
+      safetyAssignments={safetyAssignments}
       userRole={role}
+      weekendOf={saturday}
       weekendLabel={`${saturday} — ${sunday}`}
     />
   );

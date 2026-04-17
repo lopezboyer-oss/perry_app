@@ -8,13 +8,14 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ─── ENUMS (SQLite doesn't support native enums, using String fields) ─────
+// ─── ENUMS (using String fields) ────────────────────────────────
 
-// Role: ADMIN, SUPERVISOR, INGENIERO
-// ActivityType: VISITA_CAMPO, COTIZACION, EJECUCION, PLANEACION
+// Role: ADMIN, SUPERVISOR, SUPERVISOR_SAFETY_LP, INGENIERO
+// ActivityType: VISITA_CAMPO, COTIZACION, EJECUCION, PLANEACION, DISENO
 // ActivityStatus: PENDIENTE, EN_PROGRESO, COMPLETADA, CANCELADA
 // OpportunityStatus: PROGRAMADA, VISITADA, EN_ESPERA_INFORMACION, COTIZACION_EN_PROCESO, COTIZACION_ENVIADA, GANADA, PERDIDA
 // ReportSource: MANUAL, WHATSAPP_IMPORT
+// TechnicianType: PROPIO, EXTERNO
 
 // ─── MODELS ─────────────────────────────────────────────────────
 
@@ -105,6 +106,9 @@ model Activity {
   notes           String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  weekendTechAssignments   WeekendTechAssignment[]
+  weekendSafetyAssignments WeekendSafetyAssignment[]
 }
 
 model Opportunity {
@@ -131,4 +135,51 @@ model Opportunity {
   updatedAt          DateTime  @updatedAt
 
   activities Activity[]
+}
+
+// ─── PERSONAL OPERATIVO (FINDE) ─────────────────────────────────
+
+model Technician {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("PROPIO") // PROPIO | EXTERNO
+  isCruzVerde Boolean  @default(false)    // Acreditación Safety Designado
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  weekendAssignments WeekendTechAssignment[]
+}
+
+model SafetyDedicado {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  weekendAssignments WeekendSafetyAssignment[]
+}
+
+model WeekendTechAssignment {
+  id           String     @id @default(cuid())
+  activityId   String
+  activity     Activity   @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  technicianId String
+  technician   Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  role         String     @default("TECNICO") // TECNICO | SAFETY_DESIGNADO
+  weekendOf    String     // "YYYY-MM-DD" del sábado de ese fin de semana
+
+  @@unique([activityId, technicianId, weekendOf])
+}
+
+model WeekendSafetyAssignment {
+  id               String         @id @default(cuid())
+  activityId       String
+  activity         Activity       @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  safetyDedicadoId String
+  safetyDedicado   SafetyDedicado @relation(fields: [safetyDedicadoId], references: [id], onDelete: Cascade)
+  weekendOf        String
+
+  @@unique([activityId, safetyDedicadoId, weekendOf])
 }
