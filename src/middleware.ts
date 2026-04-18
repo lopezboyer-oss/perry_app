@@ -13,9 +13,6 @@ export default auth((req) => {
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
   if (isPublicRoute) {
-    if (isLoggedIn && pathname === '/login') {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
     return NextResponse.next();
   }
 

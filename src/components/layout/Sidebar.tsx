@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { logoutAction } from '@/app/actions/auth';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -125,14 +125,16 @@ export function Sidebar({ user }: SidebarProps) {
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="w-full flex items-center justify-center gap-2 py-2 mt-1 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-sm"
-            title="Cerrar Sesión"
-          >
-            <LogOut size={16} />
-            {!collapsed && 'Cerrar Sesión'}
-          </button>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-2 py-2 mt-1 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-sm"
+              title="Cerrar Sesión"
+            >
+              <LogOut size={16} />
+              {!collapsed && 'Cerrar Sesión'}
+            </button>
+          </form>
         </div>
       </aside>
 

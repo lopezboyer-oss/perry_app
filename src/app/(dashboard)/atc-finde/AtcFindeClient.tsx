@@ -258,11 +258,11 @@ export function AtcFindeClient({
   // ── CSV EXPORT ──
   const exportCSV = () => {
     const headers = [
-      'Día', 'Hora Inicio', 'Hora Fin', 'Responsable',
+      '#', 'Día', 'Hora Inicio', 'Hora Fin', 'Responsable',
       'Cliente', 'Actividad', 'Técnicos Asignados',
       'Safety Designado', 'Safety Dedicado',
     ];
-    const rows = activities.map((a) => {
+    const rows = activities.map((a, idx) => {
       const techs = techAssignments
         .filter((ta) => ta.activityId === a.id && ta.role === 'TECNICO')
         .map((ta) => ta.technician.name).join('; ');
@@ -274,6 +274,7 @@ export function AtcFindeClient({
         .map((sa) => sa.safetyDedicado.name).join('; ');
 
       return [
+        idx + 1,
         formatDate(a.date),
         a.startTime || '-',
         a.endTime || '-',
@@ -303,8 +304,29 @@ export function AtcFindeClient({
   const getSafetyForActivity = (actId: string) =>
     safetyAssignments.filter((sa) => sa.activityId === actId);
 
+  // ── STATS ──
+  const satActivities = activities.filter((a) => new Date(a.date).getUTCDay() === 6);
+  const sunActivities = activities.filter((a) => new Date(a.date).getUTCDay() === 0);
+
+  const engineerMap = new Map<string, number>();
+  activities.forEach((a) => {
+    const name = a.user?.name || 'Sin asignar';
+    engineerMap.set(name, (engineerMap.get(name) || 0) + 1);
+  });
+
+  // Unique technicians assigned on saturday/sunday
+  const satTechIds = new Set(techAssignments.filter((ta) => {
+    const act = activities.find((a) => a.id === ta.activityId);
+    return act && new Date(act.date).getUTCDay() === 6;
+  }).map((ta) => ta.technicianId));
+  const sunTechIds = new Set(techAssignments.filter((ta) => {
+    const act = activities.find((a) => a.id === ta.activityId);
+    return act && new Date(act.date).getUTCDay() === 0;
+  }).map((ta) => ta.technicianId));
+  const allTechIds = new Set(techAssignments.map((ta) => ta.technicianId));
+
   return (
-    <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
+    <div className="space-y-5 pb-20 md:pb-0 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -319,6 +341,49 @@ export function AtcFindeClient({
         <button onClick={exportCSV} className="btn-secondary text-sm shrink-0">
           <Download size={16} /> Exportar Plan
         </button>
+      </div>
+
+      {/* Mini Dashboard */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Actividades */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Actividades</p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-bold text-slate-800">{activities.length}</span>
+            <span className="text-xs text-slate-400">total</span>
+          </div>
+          <div className="flex gap-3 mt-2 text-xs">
+            <span className="text-indigo-600 font-semibold">SÁB {satActivities.length}</span>
+            <span className="text-purple-600 font-semibold">DOM {sunActivities.length}</span>
+          </div>
+        </div>
+
+        {/* Técnicos */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Técnicos Asignados</p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-2xl font-bold text-sky-700">{allTechIds.size}</span>
+            <span className="text-xs text-slate-400">total</span>
+          </div>
+          <div className="flex gap-3 mt-2 text-xs">
+            <span className="text-indigo-600 font-semibold">SÁB {satTechIds.size}</span>
+            <span className="text-purple-600 font-semibold">DOM {sunTechIds.size}</span>
+          </div>
+        </div>
+
+        {/* Ingenieros */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm col-span-2">
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Actividades por Ingeniero</p>
+          <div className="flex flex-wrap gap-2">
+            {Array.from(engineerMap.entries()).sort((a, b) => b[1] - a[1]).map(([name, count]) => (
+              <span key={name} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-xs">
+                <span className="font-semibold text-slate-800">{name}</span>
+                <span className="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{count}</span>
+              </span>
+            ))}
+            {engineerMap.size === 0 && <span className="text-xs text-slate-400">Sin datos</span>}
+          </div>
+        </div>
       </div>
 
       {/* Legend */}
@@ -340,6 +405,7 @@ export function AtcFindeClient({
           <table className="data-table">
             <thead>
               <tr className="bg-slate-50">
+                <th className="font-semibold w-[40px] text-center">#</th>
                 <th className="font-semibold w-[110px]">Día</th>
                 <th className="font-semibold w-[100px]">Horario</th>
                 <th className="font-semibold w-[120px]">Responsable</th>
@@ -353,20 +419,23 @@ export function AtcFindeClient({
             <tbody>
               {activities.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-16">
+                  <td colSpan={9} className="text-center py-16">
                     <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-600" />
                     <p className="font-medium text-lg text-slate-400">Fin de Semana Despejado</p>
                     <p className="text-sm mt-1 text-slate-400">No hay actividades para este fin de semana.</p>
                   </td>
                 </tr>
               ) : (
-                activities.map((act) => {
+                activities.map((act, index) => {
                   const actTechs = getTechsForActivity(act.id, 'TECNICO');
                   const actDesignados = getTechsForActivity(act.id, 'SAFETY_DESIGNADO');
                   const actDedicados = getSafetyForActivity(act.id);
 
                   return (
                     <tr key={act.id} className="hover:bg-slate-50/50 transition-colors align-top">
+                      <td className="text-center">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">{index + 1}</span>
+                      </td>
                       <td className="whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="font-medium text-slate-800 text-xs">{formatDate(act.date)}</span>
