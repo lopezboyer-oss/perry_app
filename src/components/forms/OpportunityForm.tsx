@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft } from 'lucide-react';
-import { opportunityStatusLabels } from '@/lib/utils';
+import { opportunityStatusLabels, getLocalToday } from '@/lib/utils';
 
 interface Props {
   users: { id: string; name: string }[];
@@ -26,7 +26,7 @@ export function OpportunityForm({ users, clients, currentUserId, nextFolio, init
     userId: initialData?.userId || currentUserId,
     title: initialData?.title || '',
     description: initialData?.description || '',
-    requestDate: initialData?.requestDate || new Date().toISOString().split('T')[0],
+    requestDate: initialData?.requestDate || getLocalToday(),
     scheduledVisitDate: initialData?.scheduledVisitDate || '',
     actualVisitDate: initialData?.actualVisitDate || '',
     infoCompleteDate: initialData?.infoCompleteDate || '',

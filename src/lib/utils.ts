@@ -6,6 +6,19 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Devuelve la fecha de HOY en zona horaria de Tijuana como "YYYY-MM-DD".
+ * Seguro para uso en cliente (navegador) y servidor.
+ */
+export function getLocalToday(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Tijuana',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+/**
  * Calcula duración en minutos entre dos horarios HH:mm
  */
 export function calculateDuration(startTime: string, endTime: string): number | null {
@@ -47,6 +60,7 @@ export function daysBetween(start: Date | string | null, end: Date | string | nu
 export function formatDate(date: Date | string | null): string {
   if (!date) return '-';
   return new Date(date).toLocaleDateString('es-MX', {
+    timeZone: 'America/Tijuana',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -58,8 +72,14 @@ export function formatDate(date: Date | string | null): string {
  */
 export function toInputDate(date: Date | string | null): string {
   if (!date) return '';
+  // Use Intl to get the date in Tijuana timezone as YYYY-MM-DD
   const d = new Date(date);
-  return d.toISOString().split('T')[0];
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Tijuana',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
 }
 
 /**

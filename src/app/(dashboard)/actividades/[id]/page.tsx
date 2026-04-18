@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { ActivityForm } from '@/components/forms/ActivityForm';
 import { ActivityDetail } from '@/components/forms/ActivityDetail';
+import { toInputDate } from '@/lib/utils';
 
 export default async function ActividadDetailPage({
   params,
@@ -58,8 +59,8 @@ export default async function ActividadDetailPage({
           userRole={session.user.role}
           initialData={{
             ...activity,
-            date: activity.date.toISOString().split('T')[0],
-            commitmentDate: activity.commitmentDate?.toISOString().split('T')[0] || null,
+            date: toInputDate(activity.date),
+            commitmentDate: toInputDate(activity.commitmentDate),
           }}
         />
       </div>

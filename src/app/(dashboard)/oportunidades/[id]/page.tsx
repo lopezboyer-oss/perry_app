@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { OpportunityDetail } from '@/components/forms/OpportunityDetail';
 import { OpportunityForm } from '@/components/forms/OpportunityForm';
+import { toInputDate } from '@/lib/utils';
 
 export default async function OportunidadDetailPage({
   params,
@@ -46,8 +47,6 @@ export default async function OportunidadDetailPage({
       }),
     ]);
 
-    const toDateStr = (d: Date | null) => d ? d.toISOString().split('T')[0] : '';
-
     return (
       <div className="max-w-4xl mx-auto pb-20 md:pb-0 animate-fade-in">
         <h1 className="text-2xl font-bold text-slate-800 mb-6">Editar Oportunidad</h1>
@@ -58,12 +57,12 @@ export default async function OportunidadDetailPage({
           nextFolio={opportunity.folio}
           initialData={{
             ...opportunity,
-            requestDate: toDateStr(opportunity.requestDate),
-            scheduledVisitDate: toDateStr(opportunity.scheduledVisitDate),
-            actualVisitDate: toDateStr(opportunity.actualVisitDate),
-            infoCompleteDate: toDateStr(opportunity.infoCompleteDate),
-            quotationDueDate: toDateStr(opportunity.quotationDueDate),
-            quotationSentDate: toDateStr(opportunity.quotationSentDate),
+            requestDate: toInputDate(opportunity.requestDate),
+            scheduledVisitDate: toInputDate(opportunity.scheduledVisitDate),
+            actualVisitDate: toInputDate(opportunity.actualVisitDate),
+            infoCompleteDate: toInputDate(opportunity.infoCompleteDate),
+            quotationDueDate: toInputDate(opportunity.quotationDueDate),
+            quotationSentDate: toInputDate(opportunity.quotationSentDate),
           }}
         />
       </div>

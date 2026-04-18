@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   FileText, Wand2, Save, X, Check, Edit3, AlertCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { activityTypeLabels, activityTypeColors, activityStatusLabels, calculateDuration } from '@/lib/utils';
+import { activityTypeLabels, activityTypeColors, activityStatusLabels, calculateDuration, getLocalToday } from '@/lib/utils';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 interface ParsedLine {
@@ -48,7 +48,7 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<'input' | 'preview' | 'done'>('input');
   const [rawText, setRawText] = useState('');
-  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reportDate, setReportDate] = useState(getLocalToday());
   const [userId, setUserId] = useState(currentUserId);
   const [parsedLines, setParsedLines] = useState<ParsedLine[]>([]);
   const [editedLines, setEditedLines] = useState<EditedLine[]>([]);

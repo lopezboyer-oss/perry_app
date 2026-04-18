@@ -19,7 +19,12 @@ function getImmediateWeekendDates(): { saturday: string; sunday: string } {
   const sunday = new Date(saturday);
   sunday.setDate(saturday.getDate() + 1);
 
-  const fmt = (d: Date) => d.toISOString().split('T')[0];
+  const fmt = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
   return { saturday: fmt(saturday), sunday: fmt(sunday) };
 }
 

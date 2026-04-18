@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { activityTypeLabels, activityStatusLabels, calculateDuration } from '@/lib/utils';
+import { activityTypeLabels, activityStatusLabels, calculateDuration, getLocalToday } from '@/lib/utils';
 
 interface Props {
   users: { id: string; name: string }[];
@@ -22,7 +22,7 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
-    date: initialData?.date || new Date().toISOString().split('T')[0],
+    date: initialData?.date || getLocalToday(),
     userId: initialData?.userId || currentUserId,
     type: initialData?.type || 'VISITA_CAMPO',
     status: initialData?.status || 'PENDIENTE',
