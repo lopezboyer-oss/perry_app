@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -17,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { signOut } from 'next-auth/react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -84,7 +84,7 @@ export function Sidebar({ user }: SidebarProps) {
             );
           })}
           
-          {(user.role === 'ADMIN' || user.role === 'SUPERVISOR_SAFETY_LP') && (
+          {user.role === 'ADMIN' && (
             <Link
               href="/usuarios"
               className={cn(

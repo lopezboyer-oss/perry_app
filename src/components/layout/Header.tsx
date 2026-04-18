@@ -22,6 +22,7 @@ const navItems = [
 const roleLabels: Record<string, string> = {
   ADMIN: 'Administrador',
   SUPERVISOR: 'Supervisor',
+  SUPERVISOR_SAFETY_LP: 'Sup. Safety & L.P.',
   INGENIERO: 'Ingeniero',
 };
 

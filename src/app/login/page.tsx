@@ -68,6 +68,8 @@ export default function LoginPage() {
               </label>
               <input
                 type="email"
+                id="login-email"
+                name="login-email-field"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
@@ -75,9 +77,8 @@ export default function LoginPage() {
                 required
                 autoFocus
                 autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck="false"
+                data-lpignore="true"
+                data-form-type="other"
               />
             </div>
 
@@ -88,12 +89,16 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  id="login-pass"
+                  name="login-pass-field"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full !bg-slate-800/50 border-white/20 text-white placeholder:text-slate-400 focus:border-indigo-400 focus:ring-indigo-400/30 pr-10"
                   required
-                  autoComplete="new-password"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-form-type="other"
                 />
                 <button
                   type="button"
