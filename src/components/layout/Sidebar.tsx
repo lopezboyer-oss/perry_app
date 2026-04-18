@@ -13,9 +13,11 @@ import {
   ClipboardPlus,
   HelpCircle,
   CalendarDays,
+  LogOut,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { signOut } from 'next-auth/react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -82,7 +84,7 @@ export function Sidebar({ user }: SidebarProps) {
             );
           })}
           
-          {user.role === 'ADMIN' && (
+          {(user.role === 'ADMIN' || user.role === 'SUPERVISOR_SAFETY_LP') && (
             <Link
               href="/usuarios"
               className={cn(
@@ -98,7 +100,7 @@ export function Sidebar({ user }: SidebarProps) {
             </Link>
           )}
 
-          {(user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
+          {['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(user.role) && (
             <Link
               href="/directorio"
               className={cn(
@@ -122,6 +124,14 @@ export function Sidebar({ user }: SidebarProps) {
             className="w-full flex items-center justify-center py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="w-full flex items-center justify-center gap-2 py-2 mt-1 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-sm"
+            title="Cerrar Sesión"
+          >
+            <LogOut size={16} />
+            {!collapsed && 'Cerrar Sesión'}
           </button>
         </div>
       </aside>

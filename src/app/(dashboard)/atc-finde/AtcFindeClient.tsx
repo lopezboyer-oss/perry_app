@@ -371,7 +371,7 @@ export function AtcFindeClient({
                         <div className="flex flex-col">
                           <span className="font-medium text-slate-800 text-xs">{formatDate(act.date)}</span>
                           <span className="text-[10px] text-indigo-500 uppercase tracking-widest font-bold">
-                            {new Date(act.date).getUTCDay() === 6 ? 'SÁB' : 'DOM'}
+                            {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][new Date(act.date).getUTCDay()]}
                           </span>
                         </div>
                       </td>

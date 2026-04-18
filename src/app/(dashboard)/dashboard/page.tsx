@@ -18,7 +18,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     teamIds = await getTeamUserIds(userId);
   }
 
-  if (role === 'ADMIN') {
+  if (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP') {
     availableUsers = await prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } });
   } else if (role === 'SUPERVISOR') {
     availableUsers = await prisma.user.findMany({ 
@@ -33,7 +33,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   // Validar si el target solicitado es visible para el usuario actual
   let isAuthorized = false;
   if (targetUserId) {
-    if (role === 'ADMIN') isAuthorized = true;
+    if (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP') isAuthorized = true;
     else if (role === 'SUPERVISOR') isAuthorized = teamIds.includes(targetUserId);
   }
 
@@ -42,7 +42,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   if (targetUserId && isAuthorized) {
     userFilter = { userId: targetUserId };
   } else {
-    userFilter = role === 'ADMIN' ? {} 
+    userFilter = (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP') ? {} 
       : role === 'SUPERVISOR' 
         ? { userId: { in: teamIds } }
         : { userId };
@@ -84,7 +84,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       orderBy: { date: 'desc' },
       take: 10,
     }),
-    role === 'ADMIN' ? prisma.user.findMany({ select: { id: true, name: true, role: true } }) : [],
+    (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP') ? prisma.user.findMany({ select: { id: true, name: true, role: true } }) : [],
     prisma.activity.aggregate({
       where: { ...userFilter, durationMinutes: { not: null } },
       _sum: { durationMinutes: true },

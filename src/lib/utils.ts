@@ -60,7 +60,7 @@ export function daysBetween(start: Date | string | null, end: Date | string | nu
 export function formatDate(date: Date | string | null): string {
   if (!date) return '-';
   return new Date(date).toLocaleDateString('es-MX', {
-    timeZone: 'America/Tijuana',
+    timeZone: 'UTC',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -68,14 +68,14 @@ export function formatDate(date: Date | string | null): string {
 }
 
 /**
- * Formato de fecha para input type="date"
+ * Formato de fecha para input type="date" — usa UTC porque las fechas
+ * en BD son calendar dates almacenadas en UTC (noon o midnight).
  */
 export function toInputDate(date: Date | string | null): string {
   if (!date) return '';
-  // Use Intl to get the date in Tijuana timezone as YYYY-MM-DD
   const d = new Date(date);
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Tijuana',
+    timeZone: 'UTC',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
