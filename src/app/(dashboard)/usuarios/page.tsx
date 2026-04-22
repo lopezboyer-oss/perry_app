@@ -151,7 +151,7 @@ export default function UsuariosPage() {
     <div className="p-6 md:p-8 max-w-7xl mx-auto animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Gestión de Personal</h1>
+          <h1 className="text-3xl font-bold text-slate-800">Gestión de Recursos</h1>
           <p className="text-slate-500 mt-1">Administra usuarios, técnicos, vehículos y recursos operativos.</p>
         </div>
       </div>
