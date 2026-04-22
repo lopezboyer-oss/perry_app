@@ -91,6 +91,8 @@ model Activity {
   opportunityId   String?
   opportunity     Opportunity? @relation(fields: [opportunityId], references: [id])
   workOrderFolio  String?
+  purchaseOrder   String?
+  loto            Boolean      @default(false)
   date            DateTime
   type            String
   status          String       @default("PENDIENTE")
@@ -107,8 +109,11 @@ model Activity {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  weekendTechAssignments   WeekendTechAssignment[]
-  weekendSafetyAssignments WeekendSafetyAssignment[]
+  weekendTechAssignments    WeekendTechAssignment[]
+  weekendSafetyAssignments  WeekendSafetyAssignment[]
+  weekendVehicleAssignments WeekendVehicleAssignment[]
+  weekendDriverAssignments  WeekendDriverAssignment[]
+  weekendEquipAssignments   WeekendEquipAssignment[]
 }
 
 model Opportunity {
@@ -161,6 +166,40 @@ model SafetyDedicado {
   weekendAssignments WeekendSafetyAssignment[]
 }
 
+model Vehicle {
+  id          String   @id @default(cuid())
+  name        String
+  isAvailable Boolean  @default(true)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  weekendAssignments WeekendVehicleAssignment[]
+}
+
+model Driver {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  weekendAssignments WeekendDriverAssignment[]
+}
+
+model ElevationEquip {
+  id        String   @id @default(cuid())
+  name      String
+  ownership String   @default("PROPIO") // PROPIO | RENTADO
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  weekendAssignments WeekendEquipAssignment[]
+}
+
+// ─── ASIGNACIONES FINDE ─────────────────────────────────────────
+
 model WeekendTechAssignment {
   id           String     @id @default(cuid())
   activityId   String
@@ -182,4 +221,37 @@ model WeekendSafetyAssignment {
   weekendOf        String
 
   @@unique([activityId, safetyDedicadoId, weekendOf])
+}
+
+model WeekendVehicleAssignment {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  vehicleId  String
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  weekendOf  String
+
+  @@unique([activityId, vehicleId, weekendOf])
+}
+
+model WeekendDriverAssignment {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  driverId   String
+  driver     Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  weekendOf  String
+
+  @@unique([activityId, driverId, weekendOf])
+}
+
+model WeekendEquipAssignment {
+  id         String         @id @default(cuid())
+  activityId String
+  activity   Activity       @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  equipId    String
+  equip      ElevationEquip @relation(fields: [equipId], references: [id], onDelete: Cascade)
+  weekendOf  String
+
+  @@unique([activityId, equipId, weekendOf])
 }

@@ -32,55 +32,42 @@ export default async function AtcFindePage() {
   const session = await auth();
   if (!session) redirect('/login');
 
-  const userId = session.user.id;
   const role = session.user.role;
-
   const { saturday, sunday } = getImmediateWeekendDates();
   const satDate = parseLocalDate(saturday);
   const sunDate = parseLocalDate(sunday);
 
-  const where: any = {};
-  if (role === 'INGENIERO') {
-    where.userId = userId;
-  } else if (role === 'SUPERVISOR') {
-    const team = await prisma.user.findMany({
-      where: { supervisorId: userId },
-      select: { id: true },
-    });
-    where.userId = { in: [userId, ...team.map((u) => u.id)] };
-  }
-  // ADMIN and SUPERVISOR_SAFETY_LP see all
-
+  // ALL users see ALL activities in ATC Finde (no user/team filter)
   const satStart = new Date(satDate); satStart.setHours(0, 0, 0, 0);
   const sunEnd = new Date(sunDate); sunEnd.setHours(23, 59, 59, 999);
-  where.date = { gte: satStart, lte: sunEnd };
+  const where = { date: { gte: satStart, lte: sunEnd } };
 
-  const [activities, technicians, safetyDedicados, techAssignments, safetyAssignments] = await Promise.all([
+  const [
+    activities, technicians, safetyDedicados,
+    vehicles, drivers, elevationEquips,
+    techAssignments, safetyAssignments,
+    vehicleAssignments, driverAssignments, equipAssignments,
+  ] = await Promise.all([
     prisma.activity.findMany({
       where,
       include: {
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
+        contact: { select: { id: true, name: true } },
         opportunity: { select: { id: true, folio: true } },
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     }),
-    prisma.technician.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
-    }),
-    prisma.safetyDedicado.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
-    }),
-    prisma.weekendTechAssignment.findMany({
-      where: { weekendOf: saturday },
-      include: { technician: true },
-    }),
-    prisma.weekendSafetyAssignment.findMany({
-      where: { weekendOf: saturday },
-      include: { safetyDedicado: true },
-    }),
+    prisma.technician.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    prisma.safetyDedicado.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    prisma.vehicle.findMany({ where: { isActive: true, isAvailable: true }, orderBy: { name: 'asc' } }),
+    prisma.driver.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    prisma.elevationEquip.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
+    prisma.weekendTechAssignment.findMany({ where: { weekendOf: saturday }, include: { technician: true } }),
+    prisma.weekendSafetyAssignment.findMany({ where: { weekendOf: saturday }, include: { safetyDedicado: true } }),
+    prisma.weekendVehicleAssignment.findMany({ where: { weekendOf: saturday }, include: { vehicle: true } }),
+    prisma.weekendDriverAssignment.findMany({ where: { weekendOf: saturday }, include: { driver: true } }),
+    prisma.weekendEquipAssignment.findMany({ where: { weekendOf: saturday }, include: { equip: true } }),
   ]);
 
   return (
@@ -91,8 +78,14 @@ export default async function AtcFindePage() {
       }))}
       technicians={technicians}
       safetyDedicados={safetyDedicados}
+      vehicles={vehicles}
+      drivers={drivers}
+      elevationEquips={elevationEquips}
       techAssignments={techAssignments}
       safetyAssignments={safetyAssignments}
+      vehicleAssignments={vehicleAssignments}
+      driverAssignments={driverAssignments}
+      equipAssignments={equipAssignments}
       userRole={role}
       weekendOf={saturday}
       weekendLabel={`${saturday} — ${sunday}`}

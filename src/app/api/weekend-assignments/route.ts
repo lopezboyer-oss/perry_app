@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const weekendOf = req.nextUrl.searchParams.get('weekendOf');
     if (!weekendOf) return NextResponse.json({ error: 'weekendOf requerido' }, { status: 400 });
 
-    const [techAssignments, safetyAssignments] = await Promise.all([
+    const [techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments] = await Promise.all([
       prisma.weekendTechAssignment.findMany({
         where: { weekendOf },
         include: { technician: true },
@@ -20,15 +20,27 @@ export async function GET(req: NextRequest) {
         where: { weekendOf },
         include: { safetyDedicado: true },
       }),
+      prisma.weekendVehicleAssignment.findMany({
+        where: { weekendOf },
+        include: { vehicle: true },
+      }),
+      prisma.weekendDriverAssignment.findMany({
+        where: { weekendOf },
+        include: { driver: true },
+      }),
+      prisma.weekendEquipAssignment.findMany({
+        where: { weekendOf },
+        include: { equip: true },
+      }),
     ]);
 
-    return NextResponse.json({ techAssignments, safetyAssignments });
+    return NextResponse.json({ techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments });
   } catch (error) {
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
   }
 }
 
-// POST: Create an assignment (tech or safety)
+// POST: Create an assignment
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -48,11 +60,11 @@ export async function POST(req: NextRequest) {
       select: { startTime: true, endTime: true, title: true },
     });
 
+    // ── TECH / SAFETY DESIGNADO ──
     if (type === 'TECH' || type === 'SAFETY_DESIGNADO') {
       const { technicianId } = body;
       if (!technicianId) return NextResponse.json({ error: 'technicianId requerido' }, { status: 400 });
 
-      // Check for time conflicts
       const conflicts = await detectTechConflicts(technicianId, activityId, weekendOf, activity);
 
       const assignment = await prisma.weekendTechAssignment.create({
@@ -67,8 +79,8 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ assignment, conflicts }, { status: 201 });
 
+    // ── SAFETY DEDICADO ──
     } else if (type === 'SAFETY_DEDICADO') {
-      // Only ADMIN or SUPERVISOR_SAFETY_LP can assign
       if (role !== 'ADMIN' && role !== 'SUPERVISOR_SAFETY_LP') {
         return NextResponse.json({ error: 'Solo Supervisor Safety & L.P. o Admin puede asignar Safety Dedicado' }, { status: 403 });
       }
@@ -76,13 +88,8 @@ export async function POST(req: NextRequest) {
       const { safetyDedicadoId } = body;
       if (!safetyDedicadoId) return NextResponse.json({ error: 'safetyDedicadoId requerido' }, { status: 400 });
 
-      // Check if this safety dedicado is already assigned to another activity this weekend
       const existing = await prisma.weekendSafetyAssignment.findMany({
-        where: {
-          safetyDedicadoId,
-          weekendOf,
-          activityId: { not: activityId },
-        },
+        where: { safetyDedicadoId, weekendOf, activityId: { not: activityId } },
         include: { activity: { select: { title: true, startTime: true, endTime: true } } },
       });
 
@@ -99,13 +106,51 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({ assignment, conflicts: [] }, { status: 201 });
+
+    // ── VEHICLE ──
+    } else if (type === 'VEHICLE') {
+      const { vehicleId } = body;
+      if (!vehicleId) return NextResponse.json({ error: 'vehicleId requerido' }, { status: 400 });
+
+      const assignment = await prisma.weekendVehicleAssignment.create({
+        data: { activityId, vehicleId, weekendOf },
+        include: { vehicle: true },
+      });
+
+      return NextResponse.json({ assignment, conflicts: [] }, { status: 201 });
+
+    // ── DRIVER ──
+    } else if (type === 'DRIVER') {
+      const { driverId } = body;
+      if (!driverId) return NextResponse.json({ error: 'driverId requerido' }, { status: 400 });
+
+      const assignment = await prisma.weekendDriverAssignment.create({
+        data: { activityId, driverId, weekendOf },
+        include: { driver: true },
+      });
+
+      return NextResponse.json({ assignment, conflicts: [] }, { status: 201 });
+
+    // ── ELEVATION EQUIP ──
+    } else if (type === 'EQUIP') {
+      const { equipId } = body;
+      if (!equipId) return NextResponse.json({ error: 'equipId requerido' }, { status: 400 });
+
+      // Detect time conflicts for equipment
+      const conflicts = await detectEquipConflicts(equipId, activityId, weekendOf, activity);
+
+      const assignment = await prisma.weekendEquipAssignment.create({
+        data: { activityId, equipId, weekendOf },
+        include: { equip: true },
+      });
+
+      return NextResponse.json({ assignment, conflicts }, { status: 201 });
     }
 
     return NextResponse.json({ error: 'Tipo no válido' }, { status: 400 });
   } catch (error: any) {
-    // Handle unique constraint violation
     if (error?.code === 'P2002') {
-      return NextResponse.json({ error: 'Esta persona ya está asignada a esta actividad' }, { status: 409 });
+      return NextResponse.json({ error: 'Ya está asignado a esta actividad' }, { status: 409 });
     }
     console.error('Error creating assignment:', error);
     return NextResponse.json({ error: 'Error al asignar' }, { status: 500 });
@@ -127,6 +172,12 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
       }
       await prisma.weekendSafetyAssignment.delete({ where: { id: assignmentId } });
+    } else if (assignmentType === 'VEHICLE') {
+      await prisma.weekendVehicleAssignment.delete({ where: { id: assignmentId } });
+    } else if (assignmentType === 'DRIVER') {
+      await prisma.weekendDriverAssignment.delete({ where: { id: assignmentId } });
+    } else if (assignmentType === 'EQUIP') {
+      await prisma.weekendEquipAssignment.delete({ where: { id: assignmentId } });
     } else {
       await prisma.weekendTechAssignment.delete({ where: { id: assignmentId } });
     }
@@ -143,7 +194,7 @@ function timesOverlap(
   s1: string | null, e1: string | null,
   s2: string | null, e2: string | null
 ): boolean {
-  if (!s1 || !e1 || !s2 || !e2) return true; // If times missing, assume potential conflict
+  if (!s1 || !e1 || !s2 || !e2) return true;
   return s1 < e2 && s2 < e1;
 }
 
@@ -154,30 +205,27 @@ async function detectTechConflicts(
   currentActivity: { startTime: string | null; endTime: string | null; title: string } | null
 ) {
   const otherAssignments = await prisma.weekendTechAssignment.findMany({
-    where: {
-      technicianId,
-      weekendOf,
-      activityId: { not: currentActivityId },
-    },
-    include: {
-      activity: { select: { title: true, startTime: true, endTime: true, date: true } },
-    },
+    where: { technicianId, weekendOf, activityId: { not: currentActivityId } },
+    include: { activity: { select: { title: true, startTime: true, endTime: true, date: true } } },
   });
 
-  const conflicts = otherAssignments
-    .filter((a) =>
-      timesOverlap(
-        currentActivity?.startTime || null,
-        currentActivity?.endTime || null,
-        a.activity.startTime,
-        a.activity.endTime
-      )
-    )
-    .map((a) => ({
-      activityTitle: a.activity.title,
-      startTime: a.activity.startTime,
-      endTime: a.activity.endTime,
-    }));
+  return otherAssignments
+    .filter((a) => timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
+    .map((a) => ({ activityTitle: a.activity.title, startTime: a.activity.startTime, endTime: a.activity.endTime }));
+}
 
-  return conflicts;
+async function detectEquipConflicts(
+  equipId: string,
+  currentActivityId: string,
+  weekendOf: string,
+  currentActivity: { startTime: string | null; endTime: string | null; title: string } | null
+) {
+  const otherAssignments = await prisma.weekendEquipAssignment.findMany({
+    where: { equipId, weekendOf, activityId: { not: currentActivityId } },
+    include: { activity: { select: { title: true, startTime: true, endTime: true } } },
+  });
+
+  return otherAssignments
+    .filter((a) => timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
+    .map((a) => ({ activityTitle: a.activity.title, startTime: a.activity.startTime, endTime: a.activity.endTime }));
 }
