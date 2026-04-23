@@ -35,6 +35,7 @@ interface Props {
     fechaDesde: string;
     fechaHasta: string;
     buscar: string;
+    folioOdoo: string;
   };
   userRole: string;
 }
@@ -57,7 +58,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
   };
 
   const clearFilters = () => {
-    setLocalFilters({ tipo: '', estatus: '', responsable: '', cliente: '', fechaDesde: '', fechaHasta: '', buscar: '' });
+    setLocalFilters({ tipo: '', estatus: '', responsable: '', cliente: '', fechaDesde: '', fechaHasta: '', buscar: '', folioOdoo: '' });
     router.push('/actividades');
   };
 
@@ -272,6 +273,17 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
                 type="date"
                 value={localFilters.fechaHasta}
                 onChange={(e) => setLocalFilters({ ...localFilters, fechaHasta: e.target.value })}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Folio Odoo</label>
+              <input
+                type="text"
+                maxLength={6}
+                placeholder="Ej: 123456"
+                value={localFilters.folioOdoo}
+                onChange={(e) => setLocalFilters({ ...localFilters, folioOdoo: e.target.value })}
                 className="w-full"
               />
             </div>

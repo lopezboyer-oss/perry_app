@@ -12,13 +12,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const { id } = params;
     const body = await req.json();
-    const { name, email, password, role, supervisorId } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado } = body;
 
     const dataToUpdate: any = {
       name,
       email,
       role,
       supervisorId: role === 'INGENIERO' ? supervisorId : null,
+      isSafetyDesignado: isSafetyDesignado || false,
     };
 
     if (password && password.trim() !== '') {

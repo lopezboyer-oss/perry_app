@@ -33,6 +33,7 @@ export default async function AtcFindePage() {
   if (!session) redirect('/login');
 
   const role = session.user.role;
+  const userId = session.user.id;
   const { saturday, sunday } = getImmediateWeekendDates();
   const satDate = parseLocalDate(saturday);
   const sunDate = parseLocalDate(sunday);
@@ -47,6 +48,7 @@ export default async function AtcFindePage() {
     vehicles, drivers, elevationEquips,
     techAssignments, safetyAssignments,
     vehicleAssignments, driverAssignments, equipAssignments,
+    safetyDesignadoUsers,
   ] = await Promise.all([
     prisma.activity.findMany({
       where,
@@ -68,6 +70,7 @@ export default async function AtcFindePage() {
     prisma.weekendVehicleAssignment.findMany({ where: { weekendOf: saturday }, include: { vehicle: true } }),
     prisma.weekendDriverAssignment.findMany({ where: { weekendOf: saturday }, include: { driver: true } }),
     prisma.weekendEquipAssignment.findMany({ where: { weekendOf: saturday }, include: { equip: true } }),
+    prisma.user.findMany({ where: { isActive: true, isSafetyDesignado: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
 
   return (
@@ -86,7 +89,9 @@ export default async function AtcFindePage() {
       vehicleAssignments={vehicleAssignments}
       driverAssignments={driverAssignments}
       equipAssignments={equipAssignments}
+      safetyDesignadoUsers={safetyDesignadoUsers}
       userRole={role}
+      userId={userId}
       weekendOf={saturday}
       weekendLabel={`${saturday} — ${sunday}`}
     />

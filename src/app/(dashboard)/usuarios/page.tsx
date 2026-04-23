@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { roleLabels, roleColors } from '@/lib/utils';
 
 interface SupervisorRef { id: string; name: string; }
-interface UserData { id: string; name: string; email: string; role: string; supervisorId: string | null; supervisor: { name: string } | null; isActive: boolean; }
+interface UserData { id: string; name: string; email: string; role: string; isSafetyDesignado: boolean; supervisorId: string | null; supervisor: { name: string } | null; isActive: boolean; }
 interface TechnicianData { id: string; name: string; type: string; isCruzVerde: boolean; isActive: boolean; }
 interface SafetyData { id: string; name: string; isActive: boolean; }
 interface VehicleData { id: string; name: string; isAvailable: boolean; isActive: boolean; }
@@ -69,7 +69,7 @@ export default function UsuariosPage() {
 
   // ── User CRUD ──
   const handleOpenNew = () => { setEditingUser(undefined); setFormOpen(true); };
-  const handleOpenEdit = (user: UserData) => { setEditingUser({ id: user.id, name: user.name, email: user.email, role: user.role, supervisorId: user.supervisorId }); setFormOpen(true); };
+  const handleOpenEdit = (user: UserData) => { setEditingUser({ id: user.id, name: user.name, email: user.email, role: user.role, supervisorId: user.supervisorId, isSafetyDesignado: user.isSafetyDesignado }); setFormOpen(true); };
   const handleDelete = async (user: UserData) => { if (!window.confirm(`¿Eliminar a ${user.name}?`)) return; await fetch(`/api/users/${user.id}`, { method: 'DELETE' }); await fetchAll(); };
   const handleFormSubmit = async (data: UserFormData) => {
     if (editingUser?.id) { const res = await fetch(`/api/users/${editingUser.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (!res.ok) throw new Error(await res.text()); }

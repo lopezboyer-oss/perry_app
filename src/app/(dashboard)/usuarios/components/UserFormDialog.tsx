@@ -12,6 +12,7 @@ export interface UserFormData {
   password?: string;
   role: Role;
   supervisorId?: string | null;
+  isSafetyDesignado?: boolean;
 }
 
 interface UserFormDialogProps {
@@ -31,6 +32,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
     password: '',
     role: 'INGENIERO',
     supervisorId: null,
+    isSafetyDesignado: false,
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -42,12 +44,13 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
         setFormData({
           name: initialData.name || '',
           email: initialData.email || '',
-          password: '', // Blank by default when editing
+          password: '',
           role: initialData.role || 'INGENIERO',
           supervisorId: initialData.supervisorId || null,
+          isSafetyDesignado: initialData.isSafetyDesignado || false,
         });
       } else {
-        setFormData({ name: '', email: '', password: '', role: 'INGENIERO', supervisorId: null });
+        setFormData({ name: '', email: '', password: '', role: 'INGENIERO', supervisorId: null, isSafetyDesignado: false });
       }
     }
   }, [open, initialData]);
@@ -157,6 +160,18 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
                 </select>
               </div>
             )}
+
+            <div className="flex items-center gap-2 py-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isSafetyDesignado || false}
+                  onChange={(e) => setFormData({ ...formData, isSafetyDesignado: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-sm font-medium text-slate-700">🟢 Acreditado como Safety Designado</span>
+              </label>
+            </div>
 
             <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
               <button

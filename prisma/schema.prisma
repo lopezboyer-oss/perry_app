@@ -20,17 +20,18 @@ datasource db {
 // ─── MODELS ─────────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  passwordHash  String
-  role          String    @default("INGENIERO")
-  isActive      Boolean   @default(true)
-  supervisorId  String?
-  supervisor    User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
-  team          User[]    @relation("SupervisorTeam")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  passwordHash      String
+  role              String    @default("INGENIERO")
+  isActive          Boolean   @default(true)
+  isSafetyDesignado Boolean   @default(false)
+  supervisorId      String?
+  supervisor        User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
+  team              User[]    @relation("SupervisorTeam")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   activities    Activity[]
   opportunities Opportunity[]
@@ -103,9 +104,13 @@ model Activity {
   commitmentDate  DateTime?
   startTime       String?
   endTime         String?
+  actualStartTime String?
+  actualEndTime   String?
   durationMinutes Int?
   location        String?
   notes           String?
+  weekendNotes    String?
+  auditNotes      String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 

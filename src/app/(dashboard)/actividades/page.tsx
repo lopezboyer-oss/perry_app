@@ -22,6 +22,7 @@ export default async function ActividadesPage({
   const fechaDesde = searchParams.fechaDesde || '';
   const fechaHasta = searchParams.fechaHasta || '';
   const buscar = searchParams.buscar || '';
+  const folioOdoo = searchParams.folioOdoo || '';
 
   // Build where clause
   const where: any = {};
@@ -50,6 +51,7 @@ export default async function ActividadesPage({
       { result: { contains: buscar } },
     ];
   }
+  if (folioOdoo) where.workOrderFolio = { contains: folioOdoo };
 
   const [activities, users, clients] = await Promise.all([
     prisma.activity.findMany({
@@ -77,7 +79,7 @@ export default async function ActividadesPage({
       }))}
       users={users}
       clients={clients}
-      filters={{ tipo, estatus, responsable, cliente, fechaDesde, fechaHasta, buscar }}
+      filters={{ tipo, estatus, responsable, cliente, fechaDesde, fechaHasta, buscar, folioOdoo }}
       userRole={role}
     />
   );
