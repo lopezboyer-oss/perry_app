@@ -48,7 +48,7 @@ export default async function AtcFindePage() {
     vehicles, drivers, elevationEquips,
     techAssignments, safetyAssignments,
     vehicleAssignments, driverAssignments, equipAssignments,
-    safetyDesignadoUsers,
+    safetyDesignadoUsers, userSafetyAssignments,
   ] = await Promise.all([
     prisma.activity.findMany({
       where,
@@ -71,6 +71,7 @@ export default async function AtcFindePage() {
     prisma.weekendDriverAssignment.findMany({ where: { weekendOf: saturday }, include: { driver: true } }),
     prisma.weekendEquipAssignment.findMany({ where: { weekendOf: saturday }, include: { equip: true } }),
     prisma.user.findMany({ where: { isActive: true, isSafetyDesignado: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+    prisma.weekendUserSafetyAssignment.findMany({ where: { weekendOf: saturday }, include: { user: { select: { id: true, name: true } } } }),
   ]);
 
   return (
@@ -90,6 +91,7 @@ export default async function AtcFindePage() {
       driverAssignments={driverAssignments}
       equipAssignments={equipAssignments}
       safetyDesignadoUsers={safetyDesignadoUsers}
+      userSafetyAssignments={userSafetyAssignments}
       userRole={role}
       userId={userId}
       weekendOf={saturday}

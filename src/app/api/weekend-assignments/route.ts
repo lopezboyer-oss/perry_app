@@ -145,6 +145,18 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({ assignment, conflicts }, { status: 201 });
+
+    // ── USER SAFETY DESIGNADO (engineers with isSafetyDesignado) ──
+    } else if (type === 'USER_SAFETY_DESIGNADO') {
+      const { userId } = body;
+      if (!userId) return NextResponse.json({ error: 'userId requerido' }, { status: 400 });
+
+      const assignment = await prisma.weekendUserSafetyAssignment.create({
+        data: { activityId, userId, weekendOf },
+        include: { user: { select: { id: true, name: true } } },
+      });
+
+      return NextResponse.json({ assignment, conflicts: [] }, { status: 201 });
     }
 
     return NextResponse.json({ error: 'Tipo no válido' }, { status: 400 });
@@ -178,6 +190,8 @@ export async function DELETE(req: NextRequest) {
       await prisma.weekendDriverAssignment.delete({ where: { id: assignmentId } });
     } else if (assignmentType === 'EQUIP') {
       await prisma.weekendEquipAssignment.delete({ where: { id: assignmentId } });
+    } else if (assignmentType === 'USER_SAFETY_DESIGNADO') {
+      await prisma.weekendUserSafetyAssignment.delete({ where: { id: assignmentId } });
     } else {
       await prisma.weekendTechAssignment.delete({ where: { id: assignmentId } });
     }

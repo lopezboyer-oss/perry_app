@@ -38,6 +38,7 @@ interface SafetyAssignment { id: string; activityId: string; safetyDedicadoId: s
 interface VehicleAssignment { id: string; activityId: string; vehicleId: string; vehicle: Vehicle; }
 interface DriverAssignment { id: string; activityId: string; driverId: string; driver: Driver; }
 interface EquipAssignment { id: string; activityId: string; equipId: string; equip: ElevationEquip; }
+interface UserSafetyAssignment { id: string; activityId: string; userId: string; user: { id: string; name: string }; }
 
 interface Props {
   activities: Activity[];
@@ -52,6 +53,7 @@ interface Props {
   vehicleAssignments: VehicleAssignment[];
   driverAssignments: DriverAssignment[];
   equipAssignments: EquipAssignment[];
+  userSafetyAssignments: UserSafetyAssignment[];
   userRole: string;
   userId: string;
   weekendOf: string;
@@ -173,6 +175,7 @@ export function AtcFindeClient({
   vehicleAssignments: initialVehicleAssignments,
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
+  userSafetyAssignments: initialUserSafetyAssignments,
   userRole, userId, weekendOf, weekendLabel,
 }: Props) {
   const router = useRouter();
@@ -181,6 +184,7 @@ export function AtcFindeClient({
   const [vehicleAssignments, setVehicleAssignments] = useState(initialVehicleAssignments);
   const [driverAssignments, setDriverAssignments] = useState(initialDriverAssignments);
   const [equipAssignments, setEquipAssignments] = useState(initialEquipAssignments);
+  const [userSafetyAssignments, setUserSafetyAssignments] = useState(initialUserSafetyAssignments);
   const [conflictAlerts, setConflictAlerts] = useState<Record<string, string[]>>({});
 
   const [lotoState, setLotoState] = useState<Record<string, boolean>>(Object.fromEntries(activities.map((a) => [a.id, a.loto])));
@@ -210,6 +214,17 @@ export function AtcFindeClient({
   // ── ASSIGN ──
   const handleAssign = async (type: string, activityId: string, personId: string) => {
     try {
+      // Detect usr- prefix for user-based Safety Designado
+      if (type === 'SAFETY_DESIGNADO' && personId.startsWith('usr-')) {
+        const realUserId = personId.replace('usr-', '');
+        const body = { type: 'USER_SAFETY_DESIGNADO', activityId, weekendOf, userId: realUserId };
+        const res = await fetch('/api/weekend-assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Error al asignar'); return; }
+        setUserSafetyAssignments((prev) => [...prev, data.assignment]);
+        return;
+      }
+
       const body: any = { type, activityId, weekendOf };
       if (type === 'SAFETY_DEDICADO') body.safetyDedicadoId = personId;
       else if (type === 'VEHICLE') body.vehicleId = personId;
@@ -243,6 +258,7 @@ export function AtcFindeClient({
       else if (assignmentType === 'VEHICLE') setVehicleAssignments((p) => p.filter((a) => a.id !== assignmentId));
       else if (assignmentType === 'DRIVER') setDriverAssignments((p) => p.filter((a) => a.id !== assignmentId));
       else if (assignmentType === 'EQUIP') setEquipAssignments((p) => p.filter((a) => a.id !== assignmentId));
+      else if (assignmentType === 'USER_SAFETY_DESIGNADO') setUserSafetyAssignments((p) => p.filter((a) => a.id !== assignmentId));
       else setTechAssignments((p) => p.filter((a) => a.id !== assignmentId));
     } catch { alert('Error de conexión'); }
   };
@@ -371,10 +387,17 @@ export function AtcFindeClient({
               ) : activities.map((act, idx) => {
                 const aT = getTechs(act.id, 'TECNICO');
                 const aD = getTechs(act.id, 'SAFETY_DESIGNADO');
+                const aUserSafety = userSafetyAssignments.filter((x) => x.activityId === act.id);
                 const aS = getSafety(act.id);
                 const aV = getVehicles(act.id);
                 const aDr = getDrivers(act.id);
                 const aE = getEquips(act.id);
+
+                // Merge tech-based and user-based Safety Designado assignments for display
+                const allDesignados = [
+                  ...aD.map((x) => ({ assignmentId: x.id, id: x.technicianId, name: x.technician.name, removeType: 'TECH' as const })),
+                  ...aUserSafety.map((x) => ({ assignmentId: x.id, id: `usr-${x.userId}`, name: x.user.name, removeType: 'USER_SAFETY_DESIGNADO' as const })),
+                ];
 
                 return (
                   <tr key={act.id} className="hover:bg-slate-50/50 transition-colors align-top">
@@ -437,7 +460,7 @@ export function AtcFindeClient({
                     <td><AssignDropdown label="Técnico" options={technicians.map((t) => ({ id: t.id, name: t.name, badge: t.type }))} assigned={aT.map((x) => ({ assignmentId: x.id, id: x.technicianId, name: x.technician.name, hasConflict: !!conflictAlerts[`${act.id}-${x.technicianId}`] }))} onAssign={(id) => handleAssign('TECH', act.id, id)} onRemove={(id) => handleRemove(id, 'TECH')} disabled={!canAssign} colorClass="bg-sky-100 text-sky-700" /></td>
 
                     {/* SAFETY DESIGNADO */}
-                    <td><AssignDropdown label="Designado" options={designadoOptions} assigned={aD.map((x) => ({ assignmentId: x.id, id: x.technicianId, name: x.technician.name, hasConflict: !!conflictAlerts[`${act.id}-${x.technicianId}`] }))} onAssign={(id) => handleAssign('SAFETY_DESIGNADO', act.id, id)} onRemove={(id) => handleRemove(id, 'TECH')} disabled={!canAssign} colorClass="bg-emerald-100 text-emerald-700" /></td>
+                    <td><AssignDropdown label="Designado" options={designadoOptions} assigned={allDesignados.map((x) => ({ assignmentId: x.assignmentId, id: x.id, name: x.name }))} onAssign={(id) => handleAssign('SAFETY_DESIGNADO', act.id, id)} onRemove={(assignmentId) => { const found = allDesignados.find((d) => d.assignmentId === assignmentId); handleRemove(assignmentId, found?.removeType || 'TECH'); }} disabled={!canAssign} colorClass="bg-emerald-100 text-emerald-700" /></td>
 
                     {/* SAFETY DEDICADO */}
                     <td><AssignDropdown label="Dedicado" options={safetyDedicados.map((s) => ({ id: s.id, name: s.name }))} assigned={aS.map((x) => ({ assignmentId: x.id, id: x.safetyDedicadoId, name: x.safetyDedicado.name }))} onAssign={(id) => handleAssign('SAFETY_DEDICADO', act.id, id)} onRemove={(id) => handleRemove(id, 'SAFETY_DEDICADO')} disabled={!canAssignSafetyDedicado} colorClass="bg-amber-100 text-amber-700" /></td>

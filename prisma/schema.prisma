@@ -36,6 +36,7 @@ model User {
   activities    Activity[]
   opportunities Opportunity[]
   dailyReports  DailyReport[]
+  userSafetyAssignments WeekendUserSafetyAssignment[]
 }
 
 model Client {
@@ -119,6 +120,7 @@ model Activity {
   weekendVehicleAssignments WeekendVehicleAssignment[]
   weekendDriverAssignments  WeekendDriverAssignment[]
   weekendEquipAssignments   WeekendEquipAssignment[]
+  weekendUserSafetyAssignments WeekendUserSafetyAssignment[]
 }
 
 model Opportunity {
@@ -259,4 +261,15 @@ model WeekendEquipAssignment {
   weekendOf  String
 
   @@unique([activityId, equipId, weekendOf])
+}
+
+model WeekendUserSafetyAssignment {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekendOf  String
+
+  @@unique([activityId, userId, weekendOf])
 }
