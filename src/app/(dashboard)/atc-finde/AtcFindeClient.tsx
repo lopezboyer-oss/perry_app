@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
@@ -196,6 +196,32 @@ export function AtcFindeClient({
   const canEditFields = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canViewAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+
+  // Odoo lookup state
+  const [odooLoading, setOdooLoading] = useState<Record<string, boolean>>({});
+  const [odooInfo, setOdooInfo] = useState<Record<string, { client?: string; state?: string; found: boolean }>>({});
+
+  const lookupOdoo = async (actId: string, folio: string) => {
+    // Save the folio first
+    updateField(actId, 'workOrderFolio', folio || null);
+    if (!folio || folio.length < 4) return;
+
+    setOdooLoading((p) => ({ ...p, [actId]: true }));
+    try {
+      const res = await fetch(`/api/odoo/lookup?folio=${encodeURIComponent(folio)}`);
+      const data = await res.json();
+      if (data.found) {
+        setOdooInfo((p) => ({ ...p, [actId]: { client: data.client, state: data.stateLabel, found: true } }));
+        if (data.purchaseOrder) {
+          setPoState((p) => ({ ...p, [actId]: data.purchaseOrder }));
+          updateField(actId, 'purchaseOrder', data.purchaseOrder);
+        }
+      } else {
+        setOdooInfo((p) => ({ ...p, [actId]: { found: false } }));
+      }
+    } catch { /* silent */ }
+    setOdooLoading((p) => ({ ...p, [actId]: false }));
+  };
 
   // Safety Designado dropdown: Cruz Verde techs + Safety Dedicados + Users with isSafetyDesignado
   const designadoOptions = [
@@ -424,11 +450,14 @@ export function AtcFindeClient({
                     {/* FOLIO ODOO */}
                     <td>
                       {canEditFields ? (
-                        <input type="text" maxLength={6} className="w-[70px] text-xs px-1.5 py-1 rounded border border-slate-200 font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                          value={folioState[act.id] || ''} placeholder="—"
-                          onChange={(e) => setFolioState((p) => ({ ...p, [act.id]: e.target.value.slice(0, 6) }))}
-                          onBlur={() => updateField(act.id, 'workOrderFolio', folioState[act.id] || null)}
-                        />
+                        <div className="relative">
+                          <input type="text" maxLength={6} className={`w-[70px] text-xs px-1.5 py-1 rounded border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
+                            value={folioState[act.id] || ''} placeholder="—"
+                            onChange={(e) => setFolioState((p) => ({ ...p, [act.id]: e.target.value.slice(0, 6).toUpperCase() }))}
+                            onBlur={() => lookupOdoo(act.id, folioState[act.id])}
+                          />
+                          {odooLoading[act.id] && <Loader2 size={12} className="absolute right-1 top-1.5 animate-spin text-indigo-500" />}
+                        </div>
                       ) : <span className="text-xs font-mono text-slate-600">{act.workOrderFolio || '-'}</span>}
                     </td>
 
@@ -436,12 +465,15 @@ export function AtcFindeClient({
                     <td>
                       {canEditFields ? (
                         <div>
-                          <input type="text" maxLength={10} className="w-[85px] text-xs px-1.5 py-1 rounded border border-slate-200 font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          <input type="text" maxLength={10} className={`w-[85px] text-xs px-1.5 py-1 rounded border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${poState[act.id] ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
                             value={poState[act.id] || ''} placeholder="PENDIENTE"
                             onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setPoState((p) => ({ ...p, [act.id]: v })); }}
                             onBlur={() => updateField(act.id, 'purchaseOrder', poState[act.id] || null)}
                           />
                           {!poState[act.id] && <span className="block text-[9px] text-red-500 font-bold mt-0.5">PENDIENTE</span>}
+                          {odooInfo[act.id]?.found && odooInfo[act.id]?.client && (
+                            <span className="block text-[9px] text-emerald-600 mt-0.5 truncate max-w-[120px]" title={odooInfo[act.id].client}>✓ {odooInfo[act.id].client?.split(',')[0]}</span>
+                          )}
                         </div>
                       ) : <span className={`text-xs font-mono ${act.purchaseOrder ? 'text-slate-700' : 'text-red-500 font-bold'}`}>{act.purchaseOrder || 'PENDIENTE'}</span>}
                     </td>
