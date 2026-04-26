@@ -4,36 +4,41 @@ import { NextRequest, NextResponse } from 'next/server';
 // Cache the UID to avoid re-authenticating on every request
 let cachedUid: number | null = null;
 
+interface OdooConfig {
+  url: string;
+  user: string;
+  key: string;
+}
+
+function getOdooConfig(): OdooConfig {
+  const encoded = process.env.ODOO_CONFIG;
+  if (!encoded) throw new Error('ODOO_CONFIG env var is not set');
+
+  try {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+    return JSON.parse(decoded);
+  } catch {
+    throw new Error('Failed to decode ODOO_CONFIG');
+  }
+}
+
 function getOdooDb(url: string): string {
   // Extract DB name from Odoo URL: https://perryapp.odoo.com -> perryapp
-  try {
-    const hostname = new URL(url).hostname;
-    return hostname.split('.')[0];
-  } catch {
-    return '';
-  }
+  return new URL(url).hostname.split('.')[0];
 }
 
 async function getUid(): Promise<number> {
   if (cachedUid) return cachedUid;
 
-  const url = process.env.ODOO_URL;
-  const user = process.env.ODOO_USER;
-  const apiKey = process.env.ODOO_API_KEY;
+  const config = getOdooConfig();
+  const db = getOdooDb(config.url);
 
-  if (!url || !user || !apiKey) {
-    throw new Error(`Odoo env vars missing - url:${!!url} user:${!!user} key:${!!apiKey}`);
-  }
-
-  const db = getOdooDb(url);
-  if (!db) throw new Error('Could not extract DB name from ODOO_URL');
-
-  const res = await fetch(`${url}/jsonrpc`, {
+  const res = await fetch(`${config.url}/jsonrpc`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       jsonrpc: '2.0', method: 'call', id: 1,
-      params: { service: 'common', method: 'authenticate', args: [db, user, apiKey, {}] },
+      params: { service: 'common', method: 'authenticate', args: [db, config.user, config.key, {}] },
     }),
   });
   const data = await res.json();
@@ -44,18 +49,17 @@ async function getUid(): Promise<number> {
 
 async function searchOrder(folio: string) {
   const uid = await getUid();
-  const url = process.env.ODOO_URL!;
-  const apiKey = process.env.ODOO_API_KEY!;
-  const db = getOdooDb(url);
+  const config = getOdooConfig();
+  const db = getOdooDb(config.url);
 
-  const res = await fetch(`${url}/jsonrpc`, {
+  const res = await fetch(`${config.url}/jsonrpc`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       jsonrpc: '2.0', method: 'call', id: 2,
       params: {
         service: 'object', method: 'execute_kw',
-        args: [db, uid, apiKey, 'sale.order', 'search_read',
+        args: [db, uid, config.key, 'sale.order', 'search_read',
           [[['name', '=', folio]]],
           { fields: ['name', 'x_studio_po_cliente_1', 'partner_id', 'state'], limit: 1 },
         ],
@@ -97,7 +101,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Odoo lookup error:', error);
-    if (error.message?.includes('auth') || error.message?.includes('missing')) cachedUid = null;
+    if (error.message?.includes('auth') || error.message?.includes('ODOO_CONFIG')) cachedUid = null;
     return NextResponse.json({ error: 'Error al consultar Odoo', detail: error.message }, { status: 500 });
   }
 }
