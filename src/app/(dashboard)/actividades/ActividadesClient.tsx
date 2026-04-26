@@ -135,7 +135,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
           <button onClick={exportCSV} className="btn-secondary text-sm">
             <Download size={16} /> CSV
           </button>
-          <div className="flex items-center">
+          <div className="flex items-center gap-1">
             <input
               type="text"
               maxLength={6}
@@ -143,9 +143,9 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
               value={quickFolio}
               onChange={(e) => setQuickFolio(e.target.value.toUpperCase().slice(0, 6))}
               onKeyDown={(e) => e.key === 'Enter' && handleQuickNew()}
-              className="w-[90px] text-xs font-mono px-2 py-1.5 rounded-l-lg border border-r-0 border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-[90px] text-xs font-mono px-2 py-1.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
-            <button onClick={handleQuickNew} className="btn-primary text-sm rounded-l-none">
+            <button onClick={handleQuickNew} className="btn-primary text-sm">
               <Plus size={16} /> Nueva
             </button>
           </div>
