@@ -46,6 +46,16 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
   const router = useRouter();
   const [showFilters, setShowFilters] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters);
+  const [quickFolio, setQuickFolio] = useState('');
+
+  const handleQuickNew = () => {
+    const folio = quickFolio.trim().toUpperCase();
+    if (folio && folio.length >= 4) {
+      router.push(`/actividades/nueva?folio=${encodeURIComponent(folio)}`);
+    } else {
+      router.push('/actividades/nueva');
+    }
+  };
 
   const applyFilters = (overrides?: any) => {
     const params = new URLSearchParams();
@@ -121,13 +131,24 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
           <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Actividades</h1>
           <p className="text-slate-500 text-sm">{activities.length} actividades encontradas</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button onClick={exportCSV} className="btn-secondary text-sm">
             <Download size={16} /> CSV
           </button>
-          <Link href="/actividades/nueva" className="btn-primary text-sm">
-            <Plus size={16} /> Nueva
-          </Link>
+          <div className="flex items-center">
+            <input
+              type="text"
+              maxLength={6}
+              placeholder="Ej: S06309"
+              value={quickFolio}
+              onChange={(e) => setQuickFolio(e.target.value.toUpperCase().slice(0, 6))}
+              onKeyDown={(e) => e.key === 'Enter' && handleQuickNew()}
+              className="w-[90px] text-xs font-mono px-2 py-1.5 rounded-l-lg border border-r-0 border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <button onClick={handleQuickNew} className="btn-primary text-sm rounded-l-none">
+              <Plus size={16} /> Nueva
+            </button>
+          </div>
         </div>
       </div>
 

@@ -3,7 +3,11 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { ActivityForm } from '@/components/forms/ActivityForm';
 
-export default async function NuevaActividadPage() {
+export default async function NuevaActividadPage({
+  searchParams,
+}: {
+  searchParams: { folio?: string };
+}) {
   const session = await auth();
   if (!session) redirect('/login');
 
@@ -19,6 +23,8 @@ export default async function NuevaActividadPage() {
     }),
   ]);
 
+  const prefillFolio = searchParams.folio?.trim().toUpperCase() || '';
+
   return (
     <div className="max-w-4xl mx-auto pb-20 md:pb-0 animate-fade-in">
       <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-6">Nueva Actividad</h1>
@@ -28,6 +34,7 @@ export default async function NuevaActividadPage() {
         opportunities={opportunities}
         currentUserId={session.user.id}
         userRole={session.user.role}
+        prefillFolio={prefillFolio}
       />
     </div>
   );

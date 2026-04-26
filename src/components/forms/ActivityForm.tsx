@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft, Search, Loader2 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -13,9 +13,10 @@ interface Props {
   currentUserId: string;
   userRole: string;
   initialData?: any;
+  prefillFolio?: string;
 }
 
-export function ActivityForm({ users, clients, opportunities, currentUserId, userRole, initialData }: Props) {
+export function ActivityForm({ users, clients, opportunities, currentUserId, userRole, initialData, prefillFolio }: Props) {
   const router = useRouter();
   const isEdit = !!initialData;
   const [loading, setLoading] = useState(false);
@@ -93,6 +94,47 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
     }
     setOdooLoading(false);
   };
+
+  // Auto-lookup if prefillFolio is provided from URL
+  useEffect(() => {
+    if (prefillFolio && prefillFolio.length >= 4 && !isEdit) {
+      setForm((f) => ({ ...f, workOrderFolio: prefillFolio }));
+      // Delay to let state settle, then trigger lookup
+      setTimeout(() => {
+        const doLookup = async () => {
+          setOdooLoading(true);
+          try {
+            const res = await fetch(`/api/odoo/lookup?folio=${encodeURIComponent(prefillFolio)}`);
+            const data = await res.json();
+            if (data.found) {
+              const updates: any = { workOrderFolio: prefillFolio };
+              if (data.project) updates.title = data.project;
+              if (data.purchaseOrder) updates.purchaseOrder = data.purchaseOrder;
+              if (data.companyName) {
+                const odooCompany = data.companyName.toUpperCase();
+                const matched = clients.find((c) => odooCompany.includes(c.name.toUpperCase()) || c.name.toUpperCase().includes(odooCompany));
+                if (matched) {
+                  updates.clientId = matched.id;
+                  if (data.contactName) {
+                    const ct = matched.contacts.find((ct) => data.contactName.toUpperCase().includes(ct.name.toUpperCase()) || ct.name.toUpperCase().includes(data.contactName.toUpperCase()));
+                    if (ct) updates.contactId = ct.id;
+                  }
+                }
+              }
+              setForm((f) => ({ ...f, ...updates }));
+              const parts = [data.companyName, data.contactName, data.stateLabel].filter(Boolean);
+              setOdooMsg({ type: 'ok', text: `✓ ${parts.join(' · ')}` });
+            } else {
+              setOdooMsg({ type: 'err', text: '✗ Folio no encontrado en Odoo' });
+            }
+          } catch { setOdooMsg({ type: 'err', text: 'Error al conectar con Odoo' }); }
+          setOdooLoading(false);
+        };
+        doLookup();
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-calculate duration
   const handleTimeChange = (field: 'startTime' | 'endTime', value: string) => {
