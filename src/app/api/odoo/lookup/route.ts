@@ -1,23 +1,32 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-const ODOO_URL = process.env.ODOO_URL!;
-const ODOO_DB = process.env.ODOO_DB!;
-const ODOO_USER = process.env.ODOO_USER!;
-const ODOO_API_KEY = process.env.ODOO_API_KEY!;
-
 // Cache the UID to avoid re-authenticating on every request
 let cachedUid: number | null = null;
 
+function getConfig() {
+  return {
+    url: process.env.ODOO_URL || '',
+    db: process.env.ODOO_DB || '',
+    user: process.env.ODOO_USER || '',
+    apiKey: process.env.ODOO_API_KEY || '',
+  };
+}
+
 async function getUid(): Promise<number> {
   if (cachedUid) return cachedUid;
+  const { url, db, user, apiKey } = getConfig();
 
-  const res = await fetch(`${ODOO_URL}/jsonrpc`, {
+  if (!url || !db || !user || !apiKey) {
+    throw new Error(`Odoo config missing: url=${!!url}, db=${!!db}, user=${!!user}, key=${!!apiKey}`);
+  }
+
+  const res = await fetch(`${url}/jsonrpc`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       jsonrpc: '2.0', method: 'call', id: 1,
-      params: { service: 'common', method: 'authenticate', args: [ODOO_DB, ODOO_USER, ODOO_API_KEY, {}] },
+      params: { service: 'common', method: 'authenticate', args: [db, user, apiKey, {}] },
     }),
   });
   const data = await res.json();
@@ -28,15 +37,16 @@ async function getUid(): Promise<number> {
 
 async function searchOrder(folio: string) {
   const uid = await getUid();
+  const { url, db, apiKey } = getConfig();
 
-  const res = await fetch(`${ODOO_URL}/jsonrpc`, {
+  const res = await fetch(`${url}/jsonrpc`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       jsonrpc: '2.0', method: 'call', id: 2,
       params: {
         service: 'object', method: 'execute_kw',
-        args: [ODOO_DB, uid, ODOO_API_KEY, 'sale.order', 'search_read',
+        args: [db, uid, apiKey, 'sale.order', 'search_read',
           [[['name', '=', folio]]],
           { fields: ['name', 'x_studio_po_cliente_1', 'partner_id', 'state'], limit: 1 },
         ],
@@ -74,12 +84,11 @@ export async function GET(req: NextRequest) {
       purchaseOrder: hasPO ? poValue : null,
       client: order.partner_id ? order.partner_id[1] : null,
       state: order.state,
-      stateLabel: { draft: 'Borrador', sent: 'Enviada', sale: 'Confirmada', cancel: 'Cancelada' }[order.state] || order.state,
+      stateLabel: ({ draft: 'Borrador', sent: 'Enviada', sale: 'Confirmada', cancel: 'Cancelada' } as Record<string, string>)[order.state] || order.state,
     });
   } catch (error: any) {
     console.error('Odoo lookup error:', error);
-    // Reset cached UID on auth errors
-    if (error.message?.includes('auth')) cachedUid = null;
+    if (error.message?.includes('auth') || error.message?.includes('config')) cachedUid = null;
     return NextResponse.json({ error: 'Error al consultar Odoo', detail: error.message }, { status: 500 });
   }
 }
