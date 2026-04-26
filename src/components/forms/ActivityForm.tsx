@@ -59,9 +59,30 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
         const updates: any = {};
         if (data.project && !form.title) updates.title = data.project;
         if (data.purchaseOrder) updates.purchaseOrder = data.purchaseOrder;
+
+        // Auto-match client by company name
+        if (data.companyName && !form.clientId) {
+          const odooCompany = data.companyName.toUpperCase();
+          const matched = clients.find((c) =>
+            odooCompany.includes(c.name.toUpperCase()) || c.name.toUpperCase().includes(odooCompany)
+          );
+          if (matched) {
+            updates.clientId = matched.id;
+            // Auto-match contact within that client
+            if (data.contactName) {
+              const odooContact = data.contactName.toUpperCase();
+              const matchedContact = matched.contacts.find((ct) =>
+                odooContact.includes(ct.name.toUpperCase()) || ct.name.toUpperCase().includes(odooContact)
+              );
+              if (matchedContact) updates.contactId = matchedContact.id;
+            }
+          }
+        }
+
         if (Object.keys(updates).length) setForm((f) => ({ ...f, ...updates }));
         const parts = [];
-        if (data.client) parts.push(data.client.split(',')[0]);
+        if (data.companyName) parts.push(data.companyName);
+        if (data.contactName) parts.push(data.contactName);
         if (data.stateLabel) parts.push(data.stateLabel);
         setOdooMsg({ type: 'ok', text: `✓ ${parts.join(' · ')}` });
       } else {

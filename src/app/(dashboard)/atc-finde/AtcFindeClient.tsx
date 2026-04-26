@@ -473,7 +473,7 @@ export function AtcFindeClient({
                     <td>
                       {canEditFields ? (
                         <div className="flex items-center gap-0.5">
-                          <input type="text" maxLength={6} className={`w-[62px] text-xs px-1 py-1 rounded-l border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
+                          <input type="text" maxLength={6} className={`w-[62px] text-[10px] px-1 py-0.5 rounded-l border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
                             value={folioState[act.id] || ''} placeholder="—"
                             onChange={(e) => setFolioState((p) => ({ ...p, [act.id]: e.target.value.slice(0, 6).toUpperCase() }))}
                             onBlur={() => lookupOdoo(act.id, folioState[act.id])}
@@ -495,7 +495,7 @@ export function AtcFindeClient({
                     <td>
                       {canEditFields ? (
                         <div>
-                          <input type="text" maxLength={10} className={`w-[85px] text-xs px-1.5 py-1 rounded border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${poState[act.id] ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
+                          <input type="text" maxLength={10} className={`w-[80px] text-[10px] px-1 py-0.5 rounded border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${poState[act.id] ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
                             value={poState[act.id] || ''} placeholder="PENDIENTE"
                             onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setPoState((p) => ({ ...p, [act.id]: v })); }}
                             onBlur={() => updateField(act.id, 'purchaseOrder', poState[act.id] || null)}

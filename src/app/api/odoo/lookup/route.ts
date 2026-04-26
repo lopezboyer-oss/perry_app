@@ -61,7 +61,7 @@ async function searchOrder(folio: string) {
         service: 'object', method: 'execute_kw',
         args: [db, uid, config.key, 'sale.order', 'search_read',
           [[['name', '=', folio]]],
-          { fields: ['name', 'x_studio_po_cliente_1', 'x_studio_proyecto', 'partner_id', 'state'], limit: 1 },
+          { fields: ['name', 'x_studio_po_cliente_1', 'x_studio_proyecto', 'x_studio_empresa_relacionada', 'partner_id', 'state'], limit: 1 },
         ],
       },
     }),
@@ -91,12 +91,23 @@ export async function GET(req: NextRequest) {
     const poValue = order.x_studio_po_cliente_1;
     const hasPO = poValue && poValue !== 'NO' && poValue !== 'no' && poValue !== 'N/A' && poValue.trim() !== '';
 
+    // Extract company and contact names
+    const partnerFull = order.partner_id ? order.partner_id[1] : '';
+    const empresa = order.x_studio_empresa_relacionada ? order.x_studio_empresa_relacionada[1] : null;
+    // Contact name: partner_id often has "COMPANY, CONTACT" format
+    let contactName: string | null = null;
+    if (partnerFull && partnerFull.includes(',')) {
+      contactName = partnerFull.split(',').slice(1).join(',').trim();
+    }
+
     return NextResponse.json({
       found: true,
       folio: order.name,
       purchaseOrder: hasPO ? poValue : null,
       project: order.x_studio_proyecto || null,
-      client: order.partner_id ? order.partner_id[1] : null,
+      client: partnerFull,
+      companyName: empresa || (partnerFull ? partnerFull.split(',')[0].trim() : null),
+      contactName,
       state: order.state,
       stateLabel: ({ draft: 'Borrador', sent: 'Enviada', sale: 'Confirmada', cancel: 'Cancelada' } as Record<string, string>)[order.state] || order.state,
     });
