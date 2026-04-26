@@ -201,9 +201,8 @@ export function AtcFindeClient({
   const [odooLoading, setOdooLoading] = useState<Record<string, boolean>>({});
   const [odooInfo, setOdooInfo] = useState<Record<string, { client?: string; state?: string; found: boolean }>>({});
 
-  const lookupOdoo = async (actId: string, folio: string) => {
-    // Save the folio first
-    updateField(actId, 'workOrderFolio', folio || null);
+  const lookupOdoo = async (actId: string, folio: string, save = true) => {
+    if (save) updateField(actId, 'workOrderFolio', folio || null);
     if (!folio || folio.length < 4) return;
 
     setOdooLoading((p) => ({ ...p, [actId]: true }));
@@ -222,6 +221,19 @@ export function AtcFindeClient({
     } catch { /* silent */ }
     setOdooLoading((p) => ({ ...p, [actId]: false }));
   };
+
+  // Auto-lookup on page load: for activities that have a folio but no P.O.
+  useEffect(() => {
+    if (!canEditFields) return;
+    activities.forEach((act) => {
+      const folio = folioState[act.id];
+      const po = poState[act.id];
+      if (folio && folio.length >= 4 && !po) {
+        lookupOdoo(act.id, folio, false);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Safety Designado dropdown: Cruz Verde techs + Safety Dedicados + Users with isSafetyDesignado
   const designadoOptions = [
@@ -450,13 +462,21 @@ export function AtcFindeClient({
                     {/* FOLIO ODOO */}
                     <td>
                       {canEditFields ? (
-                        <div className="relative">
-                          <input type="text" maxLength={6} className={`w-[70px] text-xs px-1.5 py-1 rounded border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
+                        <div className="flex items-center gap-0.5">
+                          <input type="text" maxLength={6} className={`w-[62px] text-xs px-1 py-1 rounded-l border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
                             value={folioState[act.id] || ''} placeholder="—"
                             onChange={(e) => setFolioState((p) => ({ ...p, [act.id]: e.target.value.slice(0, 6).toUpperCase() }))}
                             onBlur={() => lookupOdoo(act.id, folioState[act.id])}
                           />
-                          {odooLoading[act.id] && <Loader2 size={12} className="absolute right-1 top-1.5 animate-spin text-indigo-500" />}
+                          <button
+                            type="button"
+                            disabled={!folioState[act.id] || odooLoading[act.id]}
+                            onClick={() => lookupOdoo(act.id, folioState[act.id], false)}
+                            className="px-1 py-1 rounded-r border border-l-0 border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-colors disabled:opacity-30"
+                            title="Buscar P.O. en Odoo"
+                          >
+                            {odooLoading[act.id] ? <Loader2 size={12} className="animate-spin text-indigo-500" /> : <Search size={12} className="text-indigo-500" />}
+                          </button>
                         </div>
                       ) : <span className="text-xs font-mono text-slate-600">{act.workOrderFolio || '-'}</span>}
                     </td>
