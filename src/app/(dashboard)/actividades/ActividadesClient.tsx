@@ -2,9 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  Plus, Search, Download, Filter, X, ChevronDown
+  Plus, Search, Download, Filter, X, ChevronDown, FileText, Clock, Calendar, Users, BarChart3, AlertTriangle
 } from 'lucide-react';
 import {
   activityTypeLabels, activityStatusLabels, activityTypeColors,
@@ -307,7 +307,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
                 maxLength={6}
                 placeholder="Ej: 123456"
                 value={localFilters.folioOdoo}
-                onChange={(e) => setLocalFilters({ ...localFilters, folioOdoo: e.target.value })}
+                onChange={(e) => setLocalFilters({ ...localFilters, folioOdoo: e.target.value.toUpperCase() })}
                 className="w-full"
               />
             </div>
@@ -320,6 +320,8 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
           </div>
         </div>
       )}
+      {/* Folio KPI Dashboard */}
+      {filters.folioOdoo && <FolioKPIDashboard activities={activities} folio={filters.folioOdoo} />}
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -387,6 +389,170 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+function FolioKPIDashboard({ activities, folio }: { activities: Activity[]; folio: string }) {
+  const stats = useMemo(() => {
+    const totalActivities = activities.length;
+    if (totalActivities === 0) return null;
+
+    // Total duration
+    const totalMinutes = activities.reduce((sum, a) => sum + (a.durationMinutes || 0), 0);
+    const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
+
+    // By type
+    const byType: Record<string, { count: number; minutes: number }> = {};
+    activities.forEach((a) => {
+      if (!byType[a.type]) byType[a.type] = { count: 0, minutes: 0 };
+      byType[a.type].count++;
+      byType[a.type].minutes += a.durationMinutes || 0;
+    });
+
+    // Weekend vs weekday
+    let weekend = 0, weekday = 0;
+    activities.forEach((a) => {
+      const day = new Date(a.date).getDay();
+      if (day === 0 || day === 6) weekend++; else weekday++;
+    });
+
+    // By status
+    const byStatus: Record<string, number> = {};
+    activities.forEach((a) => {
+      byStatus[a.status] = (byStatus[a.status] || 0) + 1;
+    });
+
+    // Engineers
+    const engineers = new Map<string, string>();
+    activities.forEach((a) => { if (a.user) engineers.set(a.user.id, a.user.name); });
+
+    // Date range
+    const dates = activities.map((a) => new Date(a.date).getTime());
+    const minDate = new Date(Math.min(...dates));
+    const maxDate = new Date(Math.max(...dates));
+
+    // Max count for bar scaling
+    const maxTypeCount = Math.max(...Object.values(byType).map((t) => t.count));
+
+    // P.O. status
+    const po = activities[0]?.purchaseOrder;
+
+    return { totalActivities, totalMinutes, totalHours, byType, weekend, weekday, byStatus, engineers, minDate, maxDate, maxTypeCount, po };
+  }, [activities]);
+
+  if (!stats) return null;
+
+  const fmtDate = (d: Date) => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  return (
+    <div className="animate-fade-in">
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl p-4 mb-1 text-white">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-indigo-200 text-xs font-medium tracking-wider uppercase">Análisis de Proyecto</p>
+            <h2 className="text-xl font-bold">{folio}</h2>
+          </div>
+          {stats.po && (
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5">
+              <p className="text-[10px] text-indigo-200">P.O. Cliente</p>
+              <p className="text-sm font-bold font-mono">{stats.po}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-indigo-200">
+          <Calendar size={12} />
+          <span>{fmtDate(stats.minDate)} — {fmtDate(stats.maxDate)}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        {/* KPI Cards */}
+        <div className="card p-3 text-center">
+          <FileText size={18} className="mx-auto text-indigo-500 mb-1" />
+          <p className="text-2xl font-bold text-slate-800">{stats.totalActivities}</p>
+          <p className="text-[10px] text-slate-500 font-medium">Actividades</p>
+        </div>
+        <div className="card p-3 text-center">
+          <Clock size={18} className="mx-auto text-violet-500 mb-1" />
+          <p className="text-2xl font-bold text-slate-800">{stats.totalHours}<span className="text-sm text-slate-400"> hrs</span></p>
+          <p className="text-[10px] text-slate-500 font-medium">Tiempo Total</p>
+        </div>
+        <div className="card p-3 text-center">
+          <Users size={18} className="mx-auto text-emerald-500 mb-1" />
+          <p className="text-2xl font-bold text-slate-800">{stats.engineers.size}</p>
+          <p className="text-[10px] text-slate-500 font-medium">Ingenieros</p>
+        </div>
+        <div className="card p-3 text-center">
+          <AlertTriangle size={18} className={`mx-auto mb-1 ${stats.weekend > 0 ? 'text-amber-500' : 'text-slate-300'}`} />
+          <p className="text-2xl font-bold text-slate-800">{stats.weekend}</p>
+          <p className="text-[10px] text-slate-500 font-medium">Fin de Semana</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+        {/* Type Breakdown */}
+        <div className="card p-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <BarChart3 size={14} className="text-indigo-500" />
+            <h3 className="text-xs font-semibold text-slate-700">Por Tipo de Actividad</h3>
+          </div>
+          <div className="space-y-1.5">
+            {Object.entries(stats.byType).sort((a, b) => b[1].count - a[1].count).map(([type, data]) => (
+              <div key={type}>
+                <div className="flex justify-between text-[10px] mb-0.5">
+                  <span className="font-medium text-slate-600">{activityTypeLabels[type] || type}</span>
+                  <span className="text-slate-500">{data.count} act · {Math.round(data.minutes / 60 * 10) / 10}h</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all"
+                    style={{ width: `${(data.count / stats.maxTypeCount) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Status + Calendar Split */}
+        <div className="space-y-2">
+          <div className="card p-3">
+            <h3 className="text-xs font-semibold text-slate-700 mb-2">Por Estatus</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(stats.byStatus).map(([status, count]) => (
+                <span key={status} className={`badge text-[10px] ${activityStatusColors[status] || ''}`}>
+                  {activityStatusLabels[status] || status}: {count}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="card p-3">
+            <h3 className="text-xs font-semibold text-slate-700 mb-2">Distribución Semanal</h3>
+            <div className="flex gap-3">
+              <div className="flex-1 text-center">
+                <div className="h-2 bg-emerald-500 rounded-full mb-1" style={{ width: `${stats.weekday / (stats.weekday + stats.weekend) * 100}%`, minWidth: '4px' }} />
+                <p className="text-lg font-bold text-slate-800">{stats.weekday}</p>
+                <p className="text-[10px] text-slate-500">L-V</p>
+              </div>
+              <div className="flex-1 text-center">
+                <div className="h-2 bg-amber-500 rounded-full mb-1" style={{ width: `${stats.weekend / (stats.weekday + stats.weekend) * 100}%`, minWidth: stats.weekend > 0 ? '4px' : '0' }} />
+                <p className="text-lg font-bold text-slate-800">{stats.weekend}</p>
+                <p className="text-[10px] text-slate-500">S-D</p>
+              </div>
+            </div>
+          </div>
+          {stats.engineers.size > 0 && (
+            <div className="card p-3">
+              <h3 className="text-xs font-semibold text-slate-700 mb-1.5">Equipo</h3>
+              <div className="flex flex-wrap gap-1">
+                {Array.from(stats.engineers.values()).map((name) => (
+                  <span key={name} className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md">{name}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -51,7 +51,7 @@ export default async function ActividadesPage({
       { result: { contains: buscar } },
     ];
   }
-  if (folioOdoo) where.workOrderFolio = { contains: folioOdoo };
+  if (folioOdoo) where.workOrderFolio = { contains: folioOdoo.toUpperCase() };
 
   const [activities, users, clients] = await Promise.all([
     prisma.activity.findMany({
