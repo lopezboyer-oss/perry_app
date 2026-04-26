@@ -88,14 +88,35 @@ export async function POST(req: NextRequest) {
       const { safetyDedicadoId } = body;
       if (!safetyDedicadoId) return NextResponse.json({ error: 'safetyDedicadoId requerido' }, { status: 400 });
 
+      // Get the date of the current activity to check same-day conflicts only
+      const currentActivity = await prisma.activity.findUnique({
+        where: { id: activityId },
+        select: { date: true },
+      });
+
+      if (!currentActivity) {
+        return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 });
+      }
+
+      // Check: same safety dedicado assigned to another activity on the SAME DAY (not whole weekend)
+      const dayStart = new Date(currentActivity.date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(currentActivity.date);
+      dayEnd.setHours(23, 59, 59, 999);
+
       const existing = await prisma.weekendSafetyAssignment.findMany({
-        where: { safetyDedicadoId, weekendOf, activityId: { not: activityId } },
+        where: {
+          safetyDedicadoId,
+          weekendOf,
+          activityId: { not: activityId },
+          activity: { date: { gte: dayStart, lte: dayEnd } },
+        },
         include: { activity: { select: { title: true, startTime: true, endTime: true } } },
       });
 
       if (existing.length > 0) {
         return NextResponse.json({
-          error: `Este Safety Dedicado ya está asignado a: "${existing[0].activity.title}". Un Safety Dedicado solo puede cubrir una actividad a la vez.`,
+          error: `Este Safety Dedicado ya está asignado a: "${existing[0].activity.title}" el mismo día. Un Safety Dedicado solo puede cubrir una actividad por día.`,
           blocked: true,
         }, { status: 409 });
       }
