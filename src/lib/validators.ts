@@ -17,6 +17,7 @@ export const activitySchema = z.object({
   contactId: z.string().optional().nullable(),
   opportunityId: z.string().optional().nullable(),
   workOrderFolio: z.string().optional().nullable(),
+  purchaseOrder: z.string().optional().nullable(),
   projectArea: z.string().optional().nullable(),
   result: z.string().optional().nullable(),
   nextStep: z.string().optional().nullable(),

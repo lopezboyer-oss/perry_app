@@ -500,7 +500,7 @@ export function AtcFindeClient({
                             onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setPoState((p) => ({ ...p, [act.id]: v })); }}
                             onBlur={() => updateField(act.id, 'purchaseOrder', poState[act.id] || null)}
                           />
-                          {!poState[act.id] && !odooInfo[act.id] && <span className="block text-[9px] text-red-500 font-bold mt-0.5">PENDIENTE</span>}
+                          {!poState[act.id] && !odooInfo[act.id] && <span className="block text-[9px] text-red-500 font-bold mt-0.5">Sin Cotización</span>}
                           {odooInfo[act.id]?.found && odooInfo[act.id]?.hasPO && odooInfo[act.id]?.client && (
                             <span className="block text-[9px] text-emerald-600 mt-0.5 truncate max-w-[120px]" title={odooInfo[act.id].client}>✓ {odooInfo[act.id].client?.split(',')[0]}</span>
                           )}
@@ -511,7 +511,7 @@ export function AtcFindeClient({
                             <span className="block text-[9px] text-red-500 mt-0.5">✗ Folio no encontrado</span>
                           )}
                         </div>
-                      ) : <span className={`text-xs font-mono ${act.purchaseOrder ? 'text-slate-700' : 'text-red-500 font-bold'}`}>{act.purchaseOrder || 'PENDIENTE'}</span>}
+                      ) : <span className={`text-xs font-mono ${act.purchaseOrder ? 'text-slate-700' : 'text-red-500 font-bold'}`}>{act.purchaseOrder || 'Sin Cotización'}</span>}
                     </td>
 
                     {/* LOTO */}

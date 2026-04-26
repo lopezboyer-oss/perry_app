@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
         contactId: data.contactId || null,
         opportunityId: data.opportunityId || null,
         workOrderFolio: data.workOrderFolio || null,
+        purchaseOrder: data.purchaseOrder || null,
         projectArea: data.projectArea || null,
         result: data.result || null,
         nextStep: data.nextStep || null,

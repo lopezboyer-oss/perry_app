@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Search, Loader2 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { activityTypeLabels, activityStatusLabels, calculateDuration, getLocalToday } from '@/lib/utils';
 
@@ -31,6 +31,7 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
     contactId: initialData?.contactId || '',
     opportunityId: initialData?.opportunityId || '',
     workOrderFolio: initialData?.workOrderFolio || '',
+    purchaseOrder: initialData?.purchaseOrder || '',
     projectArea: initialData?.projectArea || '',
     result: initialData?.result || '',
     nextStep: initialData?.nextStep || '',
@@ -41,6 +42,36 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
     location: initialData?.location || '',
     notes: initialData?.notes || '',
   });
+
+  // Odoo lookup
+  const [odooLoading, setOdooLoading] = useState(false);
+  const [odooMsg, setOdooMsg] = useState<{ type: 'ok' | 'warn' | 'err'; text: string } | null>(null);
+
+  const lookupOdoo = async () => {
+    const folio = form.workOrderFolio?.trim().toUpperCase();
+    if (!folio || folio.length < 4) return;
+    setOdooLoading(true);
+    setOdooMsg(null);
+    try {
+      const res = await fetch(`/api/odoo/lookup?folio=${encodeURIComponent(folio)}`);
+      const data = await res.json();
+      if (data.found) {
+        const updates: any = {};
+        if (data.project && !form.title) updates.title = data.project;
+        if (data.purchaseOrder) updates.purchaseOrder = data.purchaseOrder;
+        if (Object.keys(updates).length) setForm((f) => ({ ...f, ...updates }));
+        const parts = [];
+        if (data.client) parts.push(data.client.split(',')[0]);
+        if (data.stateLabel) parts.push(data.stateLabel);
+        setOdooMsg({ type: 'ok', text: `✓ ${parts.join(' · ')}` });
+      } else {
+        setOdooMsg({ type: 'err', text: '✗ Folio no encontrado en Odoo' });
+      }
+    } catch {
+      setOdooMsg({ type: 'err', text: 'Error al conectar con Odoo' });
+    }
+    setOdooLoading(false);
+  };
 
   // Auto-calculate duration
   const handleTimeChange = (field: 'startTime' | 'endTime', value: string) => {
@@ -75,6 +106,7 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
         contactId: form.contactId || null,
         opportunityId: form.opportunityId || null,
         workOrderFolio: form.workOrderFolio || null,
+        purchaseOrder: form.purchaseOrder || null,
         projectArea: form.projectArea || null,
         result: form.result || null,
         nextStep: form.nextStep || null,
@@ -220,12 +252,41 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Folio ODOO</label>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                maxLength={6}
+                value={form.workOrderFolio}
+                onChange={(e) => setForm({ ...form, workOrderFolio: e.target.value.toUpperCase().slice(0, 6) })}
+                onBlur={lookupOdoo}
+                placeholder="Ej: S06309"
+                className={`flex-1 font-mono ${odooMsg?.type === 'ok' ? 'border-emerald-300 bg-emerald-50' : odooMsg?.type === 'err' ? 'border-red-300 bg-red-50' : ''}`}
+              />
+              <button
+                type="button"
+                disabled={!form.workOrderFolio || odooLoading}
+                onClick={lookupOdoo}
+                className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-colors disabled:opacity-30"
+                title="Buscar en Odoo"
+              >
+                {odooLoading ? <Loader2 size={16} className="animate-spin text-indigo-500" /> : <Search size={16} className="text-indigo-500" />}
+              </button>
+            </div>
+            {odooMsg && (
+              <p className={`text-xs mt-1 ${odooMsg.type === 'ok' ? 'text-emerald-600' : odooMsg.type === 'warn' ? 'text-amber-600' : 'text-red-500'}`}>
+                {odooMsg.text}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">P.O. Cliente</label>
             <input
               type="text"
-              value={form.workOrderFolio}
-              onChange={(e) => setForm({ ...form, workOrderFolio: e.target.value })}
-              placeholder="Ej: S012345"
-              className="w-full"
+              maxLength={10}
+              value={form.purchaseOrder}
+              onChange={(e) => setForm({ ...form, purchaseOrder: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              placeholder="Se autocompleta desde Odoo"
+              className={`w-full font-mono ${form.purchaseOrder ? 'border-emerald-300 bg-emerald-50' : ''}`}
             />
           </div>
           <div>

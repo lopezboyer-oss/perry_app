@@ -96,8 +96,13 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
               />
             )}
             {activity.workOrderFolio && (
-              <DetailItem label="Folio ODOO" value={activity.workOrderFolio} />
+              <DetailItem label="Folio ODOO" value={<span className="font-mono">{activity.workOrderFolio}</span>} />
             )}
+            {activity.purchaseOrder ? (
+              <DetailItem label="P.O. Cliente" value={<span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">{activity.purchaseOrder}</span>} />
+            ) : activity.workOrderFolio ? (
+              <DetailItem label="P.O. Cliente" value={<span className="text-amber-600 font-bold text-xs">Sin P.O.</span>} />
+            ) : null}
             {activity.projectArea && (
               <DetailItem label="Proyecto / Área" value={activity.projectArea} />
             )}

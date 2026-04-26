@@ -76,6 +76,8 @@ export default async function ActividadesPage({
         commitmentDate: a.commitmentDate?.toISOString() || null,
         createdAt: a.createdAt.toISOString(),
         updatedAt: a.updatedAt.toISOString(),
+        purchaseOrder: a.purchaseOrder || null,
+        workOrderFolio: a.workOrderFolio || null,
       }))}
       users={users}
       clients={clients}

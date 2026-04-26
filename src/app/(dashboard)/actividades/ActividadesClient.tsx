@@ -18,6 +18,8 @@ interface Activity {
   status: string;
   date: string;
   durationMinutes: number | null;
+  workOrderFolio: string | null;
+  purchaseOrder: string | null;
   user: { id: string; name: string };
   client: { id: string; name: string } | null;
   opportunity: { id: string; folio: string } | null;
@@ -88,7 +90,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
 
   // CSV Export
   const exportCSV = () => {
-    const headers = ['Fecha', 'Título', 'Tipo', 'Estatus', 'Responsable', 'Cliente', 'Duración', 'OPP'];
+    const headers = ['Fecha', 'Título', 'Tipo', 'Estatus', 'Responsable', 'Cliente', 'P.O.', 'Duración', 'OPP'];
     const rows = activities.map((a) => [
       formatDate(a.date),
       `"${a.title.replace(/"/g, '""')}"`,
@@ -96,6 +98,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
       activityStatusLabels[a.status] || a.status,
       a.user?.name || 'POR ASIGNAR',
       a.client?.name || '',
+      a.purchaseOrder || (a.workOrderFolio ? 'Sin P.O.' : 'Sin Cotización'),
       formatDuration(a.durationMinutes),
       a.opportunity?.folio || '',
     ]);
@@ -308,6 +311,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
                 <th>Tipo</th>
                 <th className="hidden sm:table-cell">Responsable</th>
                 <th className="hidden md:table-cell">Cliente</th>
+                <th className="hidden lg:table-cell">P.O.</th>
                 <th>Estatus</th>
                 <th className="hidden lg:table-cell">Duración</th>
               </tr>
@@ -315,7 +319,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
             <tbody>
               {activities.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={8} className="text-center py-12">
                     <div className="text-slate-400">
                       <ClipboardIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
                       <p className="font-medium">No hay actividades</p>
@@ -342,6 +346,15 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
                     </td>
                     <td className="hidden sm:table-cell text-sm">{act.user?.name || 'POR ASIGNAR'}</td>
                     <td className="hidden md:table-cell text-sm">{act.client?.name || '-'}</td>
+                    <td className="hidden lg:table-cell">
+                      {act.purchaseOrder ? (
+                        <span className="text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">{act.purchaseOrder}</span>
+                      ) : act.workOrderFolio ? (
+                        <span className="text-[10px] font-bold text-amber-600">Sin P.O.</span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-red-500">Sin Cotización</span>
+                      )}
+                    </td>
                     <td>
                       <span className={`badge ${activityStatusColors[act.status] || ''}`}>
                         {activityStatusLabels[act.status] || act.status}
