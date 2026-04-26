@@ -199,36 +199,46 @@ export function AtcFindeClient({
 
   // Odoo lookup state
   const [odooLoading, setOdooLoading] = useState<Record<string, boolean>>({});
-  const [odooInfo, setOdooInfo] = useState<Record<string, { client?: string; state?: string; found: boolean }>>({});
+  const [odooInfo, setOdooInfo] = useState<Record<string, { client?: string; state?: string; found: boolean; hasPO: boolean }>>({});
 
   const lookupOdoo = async (actId: string, folio: string, save = true) => {
     if (save) updateField(actId, 'workOrderFolio', folio || null);
-    if (!folio || folio.length < 4) return;
+    if (!folio || folio.length < 4) {
+      // Clear Odoo info if folio is too short
+      if (save) {
+        setOdooInfo((p) => { const n = { ...p }; delete n[actId]; return n; });
+      }
+      return;
+    }
 
     setOdooLoading((p) => ({ ...p, [actId]: true }));
     try {
       const res = await fetch(`/api/odoo/lookup?folio=${encodeURIComponent(folio)}`);
       const data = await res.json();
       if (data.found) {
-        setOdooInfo((p) => ({ ...p, [actId]: { client: data.client, state: data.stateLabel, found: true } }));
-        if (data.purchaseOrder) {
-          setPoState((p) => ({ ...p, [actId]: data.purchaseOrder }));
-          updateField(actId, 'purchaseOrder', data.purchaseOrder);
-        }
+        setOdooInfo((p) => ({ ...p, [actId]: { client: data.client, state: data.stateLabel, found: true, hasPO: !!data.purchaseOrder } }));
+        // Always update the P.O. field based on Odoo result
+        const newPO = data.purchaseOrder || '';
+        setPoState((p) => ({ ...p, [actId]: newPO }));
+        if (save) updateField(actId, 'purchaseOrder', newPO || null);
       } else {
-        setOdooInfo((p) => ({ ...p, [actId]: { found: false } }));
+        setOdooInfo((p) => ({ ...p, [actId]: { found: false, hasPO: false } }));
+        // Clear PO if folio not found in Odoo
+        if (save) {
+          setPoState((p) => ({ ...p, [actId]: '' }));
+          updateField(actId, 'purchaseOrder', null);
+        }
       }
     } catch { /* silent */ }
     setOdooLoading((p) => ({ ...p, [actId]: false }));
   };
 
-  // Auto-lookup on page load: for activities that have a folio but no P.O.
+  // Auto-lookup on page load for all activities with a folio
   useEffect(() => {
     if (!canEditFields) return;
     activities.forEach((act) => {
       const folio = folioState[act.id];
-      const po = poState[act.id];
-      if (folio && folio.length >= 4 && !po) {
+      if (folio && folio.length >= 4) {
         lookupOdoo(act.id, folio, false);
       }
     });
@@ -490,9 +500,15 @@ export function AtcFindeClient({
                             onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setPoState((p) => ({ ...p, [act.id]: v })); }}
                             onBlur={() => updateField(act.id, 'purchaseOrder', poState[act.id] || null)}
                           />
-                          {!poState[act.id] && <span className="block text-[9px] text-red-500 font-bold mt-0.5">PENDIENTE</span>}
-                          {odooInfo[act.id]?.found && odooInfo[act.id]?.client && (
+                          {!poState[act.id] && !odooInfo[act.id] && <span className="block text-[9px] text-red-500 font-bold mt-0.5">PENDIENTE</span>}
+                          {odooInfo[act.id]?.found && odooInfo[act.id]?.hasPO && odooInfo[act.id]?.client && (
                             <span className="block text-[9px] text-emerald-600 mt-0.5 truncate max-w-[120px]" title={odooInfo[act.id].client}>✓ {odooInfo[act.id].client?.split(',')[0]}</span>
+                          )}
+                          {odooInfo[act.id]?.found && !odooInfo[act.id]?.hasPO && (
+                            <span className="block text-[9px] text-amber-600 mt-0.5">⚠ Sin P.O. en Odoo</span>
+                          )}
+                          {odooInfo[act.id]?.found === false && (
+                            <span className="block text-[9px] text-red-500 mt-0.5">✗ Folio no encontrado</span>
                           )}
                         </div>
                       ) : <span className={`text-xs font-mono ${act.purchaseOrder ? 'text-slate-700' : 'text-red-500 font-bold'}`}>{act.purchaseOrder || 'PENDIENTE'}</span>}
