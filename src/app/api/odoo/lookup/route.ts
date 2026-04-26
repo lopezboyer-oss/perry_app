@@ -4,17 +4,29 @@ import { NextRequest, NextResponse } from 'next/server';
 // Cache the UID to avoid re-authenticating on every request
 let cachedUid: number | null = null;
 
+function getOdooDb(url: string): string {
+  // Extract DB name from Odoo URL: https://perryapp.odoo.com -> perryapp
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname.split('.')[0];
+  } catch {
+    return '';
+  }
+}
+
 async function getUid(): Promise<number> {
   if (cachedUid) return cachedUid;
 
   const url = process.env.ODOO_URL;
-  const db = process.env.ODOO_DB;
   const user = process.env.ODOO_USER;
   const apiKey = process.env.ODOO_API_KEY;
 
-  if (!url || !db || !user || !apiKey) {
-    throw new Error(`Odoo env vars missing - url:${!!url} db:${!!db} user:${!!user} key:${!!apiKey}`);
+  if (!url || !user || !apiKey) {
+    throw new Error(`Odoo env vars missing - url:${!!url} user:${!!user} key:${!!apiKey}`);
   }
+
+  const db = getOdooDb(url);
+  if (!db) throw new Error('Could not extract DB name from ODOO_URL');
 
   const res = await fetch(`${url}/jsonrpc`, {
     method: 'POST',
@@ -33,8 +45,8 @@ async function getUid(): Promise<number> {
 async function searchOrder(folio: string) {
   const uid = await getUid();
   const url = process.env.ODOO_URL!;
-  const db = process.env.ODOO_DB!;
   const apiKey = process.env.ODOO_API_KEY!;
+  const db = getOdooDb(url);
 
   const res = await fetch(`${url}/jsonrpc`, {
     method: 'POST',
@@ -85,9 +97,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Odoo lookup error:', error);
-    if (error.message?.includes('auth') || error.message?.includes('config') || error.message?.includes('missing')) {
-      cachedUid = null;
-    }
+    if (error.message?.includes('auth') || error.message?.includes('missing')) cachedUid = null;
     return NextResponse.json({ error: 'Error al consultar Odoo', detail: error.message }, { status: 500 });
   }
 }
