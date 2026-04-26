@@ -4,21 +4,16 @@ import { NextRequest, NextResponse } from 'next/server';
 // Cache the UID to avoid re-authenticating on every request
 let cachedUid: number | null = null;
 
-function getConfig() {
-  return {
-    url: process.env.ODOO_URL || '',
-    db: process.env.ODOO_DB || '',
-    user: process.env.ODOO_USER || '',
-    apiKey: process.env.ODOO_API_KEY || '',
-  };
-}
-
 async function getUid(): Promise<number> {
   if (cachedUid) return cachedUid;
-  const { url, db, user, apiKey } = getConfig();
+
+  const url = process.env.ODOO_URL;
+  const db = process.env.ODOO_DB;
+  const user = process.env.ODOO_USER;
+  const apiKey = process.env.ODOO_API_KEY;
 
   if (!url || !db || !user || !apiKey) {
-    throw new Error(`Odoo config missing: url=${!!url}, db=${!!db}, user=${!!user}, key=${!!apiKey}`);
+    throw new Error(`Odoo env vars missing - url:${!!url} db:${!!db} user:${!!user} key:${!!apiKey}`);
   }
 
   const res = await fetch(`${url}/jsonrpc`, {
@@ -37,7 +32,9 @@ async function getUid(): Promise<number> {
 
 async function searchOrder(folio: string) {
   const uid = await getUid();
-  const { url, db, apiKey } = getConfig();
+  const url = process.env.ODOO_URL!;
+  const db = process.env.ODOO_DB!;
+  const apiKey = process.env.ODOO_API_KEY!;
 
   const res = await fetch(`${url}/jsonrpc`, {
     method: 'POST',
@@ -88,7 +85,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Odoo lookup error:', error);
-    if (error.message?.includes('auth') || error.message?.includes('config')) cachedUid = null;
+    if (error.message?.includes('auth') || error.message?.includes('config') || error.message?.includes('missing')) {
+      cachedUid = null;
+    }
     return NextResponse.json({ error: 'Error al consultar Odoo', detail: error.message }, { status: 500 });
   }
 }
