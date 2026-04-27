@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { odooExecute, resetUid } from '@/lib/odoo';
+import { prisma } from '@/lib/prisma';
 
 // GET /api/odoo/invoices — fetch all unpaid/partial invoices from Odoo
 export async function GET(req: NextRequest) {
@@ -55,6 +56,25 @@ export async function GET(req: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Cross-reference folios with Perry activities to find supervisors
+    const folios = [...new Set(invoices.map((inv: any) => inv.invoice_origin).filter(Boolean))];
+    const supervisorMap: Record<string, string> = {};
+
+    if (folios.length > 0) {
+      const activities = await prisma.activity.findMany({
+        where: { workOrderFolio: { in: folios } },
+        select: {
+          workOrderFolio: true,
+          user: { select: { name: true, supervisor: { select: { name: true } } } },
+        },
+      });
+      activities.forEach((a) => {
+        if (a.workOrderFolio && a.user?.supervisor?.name) {
+          supervisorMap[a.workOrderFolio] = a.user.supervisor.name;
+        }
+      });
+    }
+
     const mapped = (invoices || []).map((inv: any) => {
       const dueDate = inv.invoice_date_due ? new Date(inv.invoice_date_due) : null;
       let daysUntilDue: number | null = null;
@@ -88,6 +108,7 @@ export async function GET(req: NextRequest) {
         urgency,
         company,
         contact,
+        supervisor: inv.invoice_origin ? (supervisorMap[inv.invoice_origin] || null) : null,
       };
     });
 
