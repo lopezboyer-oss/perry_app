@@ -47,7 +47,7 @@ export async function getUid(): Promise<number> {
     }),
   });
   const data = await res.json();
-  if (!data.result) throw new Error(`Odoo auth failed (db=${db}, user=${config.user}, keyLen=${config.key?.length})`);
+  if (!data.result) throw new Error('Odoo authentication failed');
   cachedUid = data.result as number;
   return cachedUid;
 }

@@ -15,11 +15,13 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch UNPAID invoices (the ones we need to track) — no limit
+    // Filter by GRUPO CASEME (company_id=1) — future: make configurable for multi-company
     const unpaidInvoices = await odooExecute('account.move', 'search_read', [
       [[
         ['move_type', '=', 'out_invoice'],
         ['state', '=', 'posted'],
         ['payment_state', 'in', ['not_paid', 'partial']],
+        ['company_id', '=', 1],
       ]],
       {
         fields: [
@@ -38,6 +40,7 @@ export async function GET(req: NextRequest) {
         ['move_type', '=', 'out_invoice'],
         ['state', '=', 'posted'],
         ['payment_state', 'in', ['paid', 'in_payment']],
+        ['company_id', '=', 1],
       ]],
       {
         fields: [
