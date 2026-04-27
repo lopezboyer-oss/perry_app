@@ -265,48 +265,24 @@ export function CobranzaClient() {
 
       {/* Contacts breakdown */}
       {!loading && Object.keys(stats.byContact).length > 0 && (
-        <div className="card p-4">
-          <div className="flex items-center gap-1.5 mb-3">
-            <Users size={14} className="text-indigo-500" />
-            <h3 className="text-sm font-semibold text-slate-700">Pendiente por Contacto (Requisitor)</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {Object.entries(stats.byContact)
-              .sort((a, b) => b[1].amount - a[1].amount)
-              .map(([contact, data]) => (
-                <div key={contact} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-                  <div>
-                    <p className="text-xs font-medium text-slate-700">{contact}</p>
-                    <p className="text-[10px] text-slate-400">{data.count} factura{data.count > 1 ? 's' : ''}</p>
-                  </div>
-                  <p className="text-sm font-bold text-slate-800">{fmt(data.amount)}</p>
-                </div>
-              ))}
-          </div>
-        </div>
+        <BreakdownCard
+          title="Pendiente por Contacto (Requisitor)"
+          icon={<Users size={14} className="text-indigo-500" />}
+          data={stats.byContact}
+          palette={PALETTE_INDIGO}
+          bgClass="bg-slate-50"
+        />
       )}
 
       {/* Engineer breakdown */}
       {!loading && Object.keys(stats.byEngineer).length > 0 && (
-        <div className="card p-4">
-          <div className="flex items-center gap-1.5 mb-3">
-            <Users size={14} className="text-violet-500" />
-            <h3 className="text-sm font-semibold text-slate-700">Pendiente por Ingeniero</h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {Object.entries(stats.byEngineer)
-              .sort((a, b) => b[1].amount - a[1].amount)
-              .map(([engineer, data]) => (
-                <div key={engineer} className="flex items-center justify-between bg-violet-50/50 rounded-lg px-3 py-2">
-                  <div>
-                    <p className="text-xs font-medium text-slate-700">{engineer}</p>
-                    <p className="text-[10px] text-slate-400">{data.count} factura{data.count > 1 ? 's' : ''}</p>
-                  </div>
-                  <p className="text-sm font-bold text-slate-800">{fmt(data.amount)}</p>
-                </div>
-              ))}
-          </div>
-        </div>
+        <BreakdownCard
+          title="Pendiente por Ingeniero"
+          icon={<Users size={14} className="text-violet-500" />}
+          data={stats.byEngineer}
+          palette={PALETTE_VIOLET}
+          bgClass="bg-violet-50/50"
+        />
       )}
 
       {/* Filters */}
@@ -468,6 +444,92 @@ export function CobranzaClient() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Donut Chart + Breakdown Card ───────────────────────────────
+
+const PALETTE_INDIGO = ['#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#e0e7ff', '#4f46e5', '#4338ca', '#3730a3'];
+const PALETTE_VIOLET = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe', '#7c3aed', '#6d28d9', '#5b21b6'];
+
+function DonutChart({ data, palette, total }: { data: [string, { amount: number }][]; palette: string[]; total: number }) {
+  const size = 140;
+  const stroke = 28;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  let accumulated = 0;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="flex-shrink-0">
+      {/* Background circle */}
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f1f5f9" strokeWidth={stroke} />
+      {/* Segments */}
+      {data.map(([key, val], i) => {
+        const pct = total > 0 ? val.amount / total : 0;
+        const dashLen = pct * circumference;
+        const dashOffset = -accumulated * circumference;
+        accumulated += pct;
+        return (
+          <circle
+            key={key}
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={palette[i % palette.length]}
+            strokeWidth={stroke}
+            strokeDasharray={`${dashLen} ${circumference - dashLen}`}
+            strokeDashoffset={dashOffset}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            className="transition-all duration-500"
+          />
+        );
+      })}
+      {/* Center text */}
+      <text x={size / 2} y={size / 2 - 6} textAnchor="middle" className="fill-slate-800 text-[11px] font-bold">{data.length}</text>
+      <text x={size / 2} y={size / 2 + 8} textAnchor="middle" className="fill-slate-400 text-[8px]">registros</text>
+    </svg>
+  );
+}
+
+function BreakdownCard({
+  title, icon, data, palette, bgClass,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  data: Record<string, { count: number; amount: number }>;
+  palette: string[];
+  bgClass: string;
+}) {
+  const sorted = Object.entries(data).sort((a, b) => b[1].amount - a[1].amount);
+  const total = sorted.reduce((s, [, v]) => s + v.amount, 0);
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-center gap-1.5 mb-3">
+        {icon}
+        <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start">
+        {/* Donut */}
+        <DonutChart data={sorted} palette={palette} total={total} />
+        {/* List */}
+        <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-2 gap-1.5">
+          {sorted.map(([name, val], i) => (
+            <div key={name} className={`flex items-center justify-between ${bgClass} rounded-lg px-3 py-2`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: palette[i % palette.length] }} />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-slate-700 truncate">{name}</p>
+                  <p className="text-[10px] text-slate-400">{val.count} factura{val.count > 1 ? 's' : ''}</p>
+                </div>
+              </div>
+              <p className="text-xs font-bold text-slate-800 ml-2 flex-shrink-0">{fmt(val.amount)}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
