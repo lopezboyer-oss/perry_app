@@ -13,11 +13,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
 
-    // Fetch posted invoices (customer invoices only)
-    const invoices = await odooExecute('account.move', 'search_read', [
+    // Fetch UNPAID invoices (the ones we need to track) — no limit
+    const unpaidInvoices = await odooExecute('account.move', 'search_read', [
       [[
         ['move_type', '=', 'out_invoice'],
         ['state', '=', 'posted'],
+        ['payment_state', 'in', ['not_paid', 'partial']],
       ]],
       {
         fields: [
@@ -27,9 +28,29 @@ export async function GET(req: NextRequest) {
           'ref', 'partner_id', 'invoice_origin',
         ],
         order: 'invoice_date_due asc',
-        limit: 200,
       },
     ]);
+
+    // Fetch recent PAID invoices (for context, last 30)
+    const paidInvoices = await odooExecute('account.move', 'search_read', [
+      [[
+        ['move_type', '=', 'out_invoice'],
+        ['state', '=', 'posted'],
+        ['payment_state', 'in', ['paid', 'in_payment']],
+      ]],
+      {
+        fields: [
+          'name', 'state', 'payment_state',
+          'amount_total', 'amount_residual',
+          'invoice_date', 'invoice_date_due',
+          'ref', 'partner_id', 'invoice_origin',
+        ],
+        order: 'invoice_date desc',
+        limit: 30,
+      },
+    ]);
+
+    const invoices = [...(unpaidInvoices || []), ...(paidInvoices || [])];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
