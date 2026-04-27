@@ -21,6 +21,8 @@ export function getOdooConfig(): OdooConfig {
 }
 
 export function getOdooDb(url: string): string {
+  // Use explicit env var first, fallback to hostname extraction
+  if (process.env.ODOO_DB) return process.env.ODOO_DB;
   return new URL(url).hostname.split('.')[0];
 }
 
