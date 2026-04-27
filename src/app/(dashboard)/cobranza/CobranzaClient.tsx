@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   DollarSign, AlertTriangle, Clock, CheckCircle, Search, RefreshCw,
-  FileText, TrendingDown, Calendar, Users, ChevronDown, ChevronUp,
+  FileText, Calendar, Users, ChevronDown, ChevronUp, Check, X, Loader2,
 } from 'lucide-react';
 
 interface Invoice {
@@ -20,6 +20,13 @@ interface Invoice {
   urgency: 'overdue' | 'urgent' | 'normal' | 'paid';
   company: string;
   contact: string;
+}
+
+interface Receipt {
+  invoiceNumber: string;
+  confirmedBy?: { name: string };
+  confirmedAt: string;
+  notes?: string;
 }
 
 const paymentStateLabels: Record<string, string> = {
@@ -39,6 +46,7 @@ const urgencyConfig = {
 
 const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
 const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+const fmtDateTime = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 export function CobranzaClient() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -49,14 +57,27 @@ export function CobranzaClient() {
   const [sortField, setSortField] = useState<'dueDate' | 'amountPending'>('dueDate');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
+  // Receipt tracking
+  const [receipts, setReceipts] = useState<Record<string, Receipt>>({});
+  const [receiptLoading, setReceiptLoading] = useState<Record<string, boolean>>({});
+
   const load = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/odoo/invoices');
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setInvoices(data.invoices || []);
+      const [invRes, recRes] = await Promise.all([
+        fetch('/api/odoo/invoices'),
+        fetch('/api/cobranza/receipts'),
+      ]);
+      const invData = await invRes.json();
+      const recData = await recRes.json();
+      if (invData.error) throw new Error(invData.error);
+      setInvoices(invData.invoices || []);
+
+      // Index receipts by invoice number
+      const recMap: Record<string, Receipt> = {};
+      (recData.receipts || []).forEach((r: Receipt) => { recMap[r.invoiceNumber] = r; });
+      setReceipts(recMap);
     } catch (e: any) {
       setError(e.message || 'Error al cargar facturas');
     }
@@ -64,6 +85,34 @@ export function CobranzaClient() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const toggleReceipt = async (inv: Invoice) => {
+    const key = inv.number;
+    setReceiptLoading((p) => ({ ...p, [key]: true }));
+    try {
+      if (receipts[key]) {
+        // Undo receipt
+        await fetch('/api/cobranza/receipts', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoiceNumber: key }),
+        });
+        setReceipts((p) => { const n = { ...p }; delete n[key]; return n; });
+      } else {
+        // Mark receipt
+        const res = await fetch('/api/cobranza/receipts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invoiceNumber: key, folio: inv.folio, po: inv.po }),
+        });
+        const data = await res.json();
+        if (data.receipt) setReceipts((p) => ({ ...p, [key]: data.receipt }));
+      }
+    } catch {
+      // silent fail
+    }
+    setReceiptLoading((p) => ({ ...p, [key]: false }));
+  };
 
   // Stats
   const stats = useMemo(() => {
@@ -76,6 +125,10 @@ export function CobranzaClient() {
     const totalPending = pending.reduce((s, i) => s + i.amountPending, 0);
     const totalOverdue = overdue.reduce((s, i) => s + i.amountPending, 0);
 
+    // Count receipts confirmed
+    const withReceipt = pending.filter((i) => receipts[i.number]);
+    const withoutReceipt = pending.filter((i) => !receipts[i.number]);
+
     // By contact
     const byContact: Record<string, { count: number; amount: number }> = {};
     pending.forEach((i) => {
@@ -85,13 +138,15 @@ export function CobranzaClient() {
       byContact[key].amount += i.amountPending;
     });
 
-    return { pending, overdue, urgent, normal, paid, totalPending, totalOverdue, byContact };
-  }, [invoices]);
+    return { pending, overdue, urgent, normal, paid, totalPending, totalOverdue, byContact, withReceipt, withoutReceipt };
+  }, [invoices, receipts]);
 
   // Filtered + sorted
   const filtered = useMemo(() => {
     let list = invoices;
     if (filterUrgency === 'pending') list = list.filter((i) => i.urgency !== 'paid');
+    else if (filterUrgency === 'receipt') list = list.filter((i) => !!receipts[i.number]);
+    else if (filterUrgency === 'no_receipt') list = list.filter((i) => i.urgency !== 'paid' && !receipts[i.number]);
     else if (filterUrgency !== 'all') list = list.filter((i) => i.urgency === filterUrgency);
 
     if (search) {
@@ -115,7 +170,7 @@ export function CobranzaClient() {
     });
 
     return list;
-  }, [invoices, filterUrgency, search, sortField, sortDir]);
+  }, [invoices, filterUrgency, search, sortField, sortDir, receipts]);
 
   const toggleSort = (field: 'dueDate' | 'amountPending') => {
     if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
@@ -150,7 +205,7 @@ export function CobranzaClient() {
 
       {/* KPI Cards */}
       {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="card p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-2 rounded-lg bg-indigo-50"><DollarSign size={18} className="text-indigo-600" /></div>
@@ -176,6 +231,15 @@ export function CobranzaClient() {
             </div>
             <p className="text-xl font-bold text-amber-600">{stats.urgent.length}</p>
             <p className="text-[10px] text-slate-400 mt-0.5">menos de 7 días</p>
+          </div>
+
+          <div className="card p-4 border-2 border-violet-200">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 rounded-lg bg-violet-50"><Check size={18} className="text-violet-600" /></div>
+              <span className="text-xs text-slate-500 font-medium">Con Recibo</span>
+            </div>
+            <p className="text-xl font-bold text-violet-600">{stats.withReceipt.length}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">confirmado manualmente</p>
           </div>
 
           <div className="card p-4">
@@ -226,8 +290,9 @@ export function CobranzaClient() {
         </div>
         {[
           { key: 'pending', label: 'Pendientes', count: stats.pending.length },
+          { key: 'no_receipt', label: 'Sin Recibo', count: stats.withoutReceipt.length },
+          { key: 'receipt', label: 'Con Recibo', count: stats.withReceipt.length },
           { key: 'overdue', label: 'Vencidas', count: stats.overdue.length },
-          { key: 'urgent', label: 'Urgentes', count: stats.urgent.length },
           { key: 'paid', label: 'Pagadas', count: stats.paid.length },
           { key: 'all', label: 'Todas', count: invoices.length },
         ].map((f) => (
@@ -266,19 +331,20 @@ export function CobranzaClient() {
                   </button>
                 </th>
                 <th>Estado</th>
+                <th className="text-center">Recibo</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-16">
+                  <td colSpan={8} className="text-center py-16">
                     <RefreshCw size={32} className="mx-auto animate-spin text-indigo-400 mb-3" />
                     <p className="text-slate-400 font-medium">Consultando Odoo...</p>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={8} className="text-center py-12">
                     <FileText size={32} className="mx-auto text-slate-300 mb-3" />
                     <p className="text-slate-400 font-medium">No hay facturas</p>
                   </td>
@@ -286,8 +352,10 @@ export function CobranzaClient() {
               ) : (
                 filtered.map((inv) => {
                   const uc = urgencyConfig[inv.urgency];
+                  const receipt = receipts[inv.number];
+                  const isLoadingReceipt = receiptLoading[inv.number];
                   return (
-                    <tr key={inv.id} className={inv.urgency === 'overdue' ? 'bg-red-50/50' : ''}>
+                    <tr key={inv.id} className={receipt ? 'bg-violet-50/40' : inv.urgency === 'overdue' ? 'bg-red-50/50' : ''}>
                       <td className="text-xs font-mono font-medium text-slate-700">{inv.number}</td>
                       <td>
                         {inv.folio ? (
@@ -304,9 +372,7 @@ export function CobranzaClient() {
                         )}
                       </td>
                       <td className="hidden md:table-cell">
-                        <div>
-                          <p className="text-xs text-slate-700 truncate max-w-[150px]" title={inv.contact}>{inv.contact || '—'}</p>
-                        </div>
+                        <p className="text-xs text-slate-700 truncate max-w-[150px]" title={inv.contact}>{inv.contact || '—'}</p>
                       </td>
                       <td className="text-right">
                         <p className="text-sm font-bold text-slate-800">{fmt(inv.amountPending)}</p>
@@ -333,6 +399,35 @@ export function CobranzaClient() {
                           <span className={`w-1.5 h-1.5 rounded-full ${uc.dot}`} />
                           {inv.urgency === 'paid' ? paymentStateLabels[inv.paymentState] || uc.label : uc.label}
                         </span>
+                      </td>
+                      <td className="text-center">
+                        {inv.urgency === 'paid' ? (
+                          <span className="text-[10px] text-slate-400">—</span>
+                        ) : isLoadingReceipt ? (
+                          <Loader2 size={16} className="mx-auto animate-spin text-violet-500" />
+                        ) : receipt ? (
+                          <button
+                            onClick={() => toggleReceipt(inv)}
+                            className="group relative"
+                            title={`Confirmado por ${receipt.confirmedBy?.name || '?'} — ${fmtDateTime(receipt.confirmedAt)}\nClick para desmarcar`}
+                          >
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-violet-100 text-violet-700 border border-violet-200 group-hover:bg-red-50 group-hover:text-red-600 group-hover:border-red-200 transition-colors">
+                              <Check size={12} className="group-hover:hidden" />
+                              <X size={12} className="hidden group-hover:block" />
+                              <span className="group-hover:hidden">Recibido</span>
+                              <span className="hidden group-hover:inline">Desmarcar</span>
+                            </span>
+                            <span className="block text-[9px] text-violet-400 mt-0.5">{receipt.confirmedBy?.name}</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => toggleReceipt(inv)}
+                            className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg bg-slate-100 text-slate-500 border border-slate-200 hover:bg-violet-50 hover:text-violet-600 hover:border-violet-300 transition-colors"
+                          >
+                            <Check size={12} />
+                            Marcar Recibo
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

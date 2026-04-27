@@ -37,6 +37,7 @@ model User {
   opportunities Opportunity[]
   dailyReports  DailyReport[]
   userSafetyAssignments WeekendUserSafetyAssignment[]
+  invoiceReceipts InvoiceReceipt[]
 }
 
 model Client {
@@ -272,4 +273,18 @@ model WeekendUserSafetyAssignment {
   weekendOf  String
 
   @@unique([activityId, userId, weekendOf])
+}
+
+// ─── COBRANZA ───────────────────────────────────────────────────
+
+model InvoiceReceipt {
+  id             String   @id @default(cuid())
+  invoiceNumber  String   @unique   // Odoo invoice number (e.g. INV/2026/00149)
+  folio          String?             // Odoo folio (e.g. S06254)
+  po             String?             // P.O. number
+  confirmedById  String
+  confirmedBy    User     @relation(fields: [confirmedById], references: [id])
+  confirmedAt    DateTime @default(now())
+  notes          String?
+  createdAt      DateTime @default(now())
 }
