@@ -185,8 +185,8 @@ export function CobranzaClient() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Cobranza</h1>
-          <p className="text-slate-500 text-sm">Seguimiento de facturas y pendientes de recibo</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Recibos</h1>
+          <p className="text-slate-500 text-sm">Seguimiento de facturas y confirmación de recibos</p>
         </div>
         <button onClick={load} disabled={loading} className="btn-secondary text-sm self-start">
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -217,8 +217,8 @@ export function CobranzaClient() {
               <div className="p-2 rounded-lg bg-amber-50"><FileText size={18} className="text-amber-600" /></div>
               <span className="text-xs text-slate-500 font-medium">Sin Recibo</span>
             </div>
-            <p className="text-xl font-bold text-amber-600">{stats.withoutReceipt.length}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">pendientes de confirmar</p>
+            <p className="text-xl font-bold text-amber-600">{fmt(stats.withoutReceipt.reduce((s: number, i: Invoice) => s + i.amountPending, 0))}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{stats.withoutReceipt.length} facturas</p>
           </div>
 
           <div className="card p-4 border-2 border-violet-200">
@@ -226,8 +226,8 @@ export function CobranzaClient() {
               <div className="p-2 rounded-lg bg-violet-50"><Check size={18} className="text-violet-600" /></div>
               <span className="text-xs text-slate-500 font-medium">Con Recibo</span>
             </div>
-            <p className="text-xl font-bold text-violet-600">{stats.withReceipt.length}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">confirmado manualmente</p>
+            <p className="text-xl font-bold text-violet-600">{fmt(stats.withReceipt.reduce((s: number, i: Invoice) => s + i.amountPending, 0))}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{stats.withReceipt.length} facturas</p>
           </div>
 
           <div className="card p-4">

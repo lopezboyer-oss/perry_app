@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { CobranzaClient } from './CobranzaClient';
 
 export const metadata = {
-  title: 'Cobranza | Perry App',
+  title: 'Recibos | Perry App',
   description: 'Dashboard de seguimiento de facturas y pendientes de recibo',
 };
 
