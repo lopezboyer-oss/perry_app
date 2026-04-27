@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import {
-  DollarSign, AlertTriangle, Clock, CheckCircle, Search, RefreshCw,
-  FileText, Calendar, Users, ChevronDown, ChevronUp, Check, X, Loader2,
+  DollarSign, CheckCircle, Search, RefreshCw,
+  FileText, Users, ChevronDown, ChevronUp, Check, X, Loader2,
 } from 'lucide-react';
 
 interface Invoice {
@@ -15,12 +15,10 @@ interface Invoice {
   amountTotal: number;
   amountPending: number;
   invoiceDate: string;
-  dueDate: string | null;
-  daysUntilDue: number | null;
-  urgency: 'overdue' | 'urgent' | 'normal' | 'paid';
   company: string;
   contact: string;
   engineer: string | null;
+  isPaid: boolean;
 }
 
 interface Receipt {
@@ -38,13 +36,6 @@ const paymentStateLabels: Record<string, string> = {
   reversed: 'Revertida',
 };
 
-const urgencyConfig = {
-  overdue: { label: 'Vencida', color: 'text-red-700 bg-red-50 border-red-200', dot: 'bg-red-500' },
-  urgent: { label: '< 7 días', color: 'text-amber-700 bg-amber-50 border-amber-200', dot: 'bg-amber-500' },
-  normal: { label: 'Dentro de plazo', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', dot: 'bg-emerald-500' },
-  paid: { label: 'Pagada', color: 'text-slate-500 bg-slate-50 border-slate-200', dot: 'bg-slate-400' },
-};
-
 const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
 const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtDateTime = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -55,8 +46,8 @@ export function CobranzaClient() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filterUrgency, setFilterUrgency] = useState<string>('pending');
-  const [sortField, setSortField] = useState<'dueDate' | 'amountPending'>('dueDate');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState<'invoiceDate' | 'amountPending'>('amountPending');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   // Receipt tracking
   const [receipts, setReceipts] = useState<Record<string, Receipt>>({});
@@ -117,14 +108,10 @@ export function CobranzaClient() {
 
   // Stats
   const stats = useMemo(() => {
-    const pending = invoices.filter((i) => i.urgency !== 'paid');
-    const overdue = pending.filter((i) => i.urgency === 'overdue');
-    const urgent = pending.filter((i) => i.urgency === 'urgent');
-    const normal = pending.filter((i) => i.urgency === 'normal');
-    const paid = invoices.filter((i) => i.urgency === 'paid');
+    const pending = invoices.filter((i) => !i.isPaid);
+    const paid = invoices.filter((i) => i.isPaid);
 
     const totalPending = pending.reduce((s, i) => s + i.amountPending, 0);
-    const totalOverdue = overdue.reduce((s, i) => s + i.amountPending, 0);
 
     // Count receipts confirmed
     const withReceipt = pending.filter((i) => receipts[i.number]);
@@ -148,16 +135,16 @@ export function CobranzaClient() {
       byEngineer[key].amount += i.amountPending;
     });
 
-    return { pending, overdue, urgent, normal, paid, totalPending, totalOverdue, byContact, byEngineer, withReceipt, withoutReceipt };
+    return { pending, paid, totalPending, byContact, byEngineer, withReceipt, withoutReceipt };
   }, [invoices, receipts]);
 
   // Filtered + sorted
   const filtered = useMemo(() => {
     let list = invoices;
-    if (filterUrgency === 'pending') list = list.filter((i) => i.urgency !== 'paid');
+    if (filterUrgency === 'pending') list = list.filter((i) => !i.isPaid);
     else if (filterUrgency === 'receipt') list = list.filter((i) => !!receipts[i.number]);
-    else if (filterUrgency === 'no_receipt') list = list.filter((i) => i.urgency !== 'paid' && !receipts[i.number]);
-    else if (filterUrgency !== 'all') list = list.filter((i) => i.urgency === filterUrgency);
+    else if (filterUrgency === 'no_receipt') list = list.filter((i) => !i.isPaid && !receipts[i.number]);
+    else if (filterUrgency === 'paid') list = list.filter((i) => i.isPaid);
 
     if (search) {
       const q = search.toUpperCase();
@@ -172,7 +159,7 @@ export function CobranzaClient() {
 
     list.sort((a, b) => {
       let va: any, vb: any;
-      if (sortField === 'dueDate') { va = a.dueDate || ''; vb = b.dueDate || ''; }
+      if (sortField === 'invoiceDate') { va = a.invoiceDate || ''; vb = b.invoiceDate || ''; }
       else { va = a.amountPending; vb = b.amountPending; }
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
       if (va > vb) return sortDir === 'asc' ? 1 : -1;
@@ -182,9 +169,9 @@ export function CobranzaClient() {
     return list;
   }, [invoices, filterUrgency, search, sortField, sortDir, receipts]);
 
-  const toggleSort = (field: 'dueDate' | 'amountPending') => {
+  const toggleSort = (field: 'invoiceDate' | 'amountPending') => {
     if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
-    else { setSortField(field); setSortDir('asc'); }
+    else { setSortField(field); setSortDir('desc'); }
   };
 
   const SortIcon = ({ field }: { field: string }) => (
@@ -215,7 +202,7 @@ export function CobranzaClient() {
 
       {/* KPI Cards */}
       {!loading && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="card p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-2 rounded-lg bg-indigo-50"><DollarSign size={18} className="text-indigo-600" /></div>
@@ -227,20 +214,11 @@ export function CobranzaClient() {
 
           <div className="card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 rounded-lg bg-red-50"><AlertTriangle size={18} className="text-red-600" /></div>
-              <span className="text-xs text-slate-500 font-medium">Vencidas</span>
+              <div className="p-2 rounded-lg bg-amber-50"><FileText size={18} className="text-amber-600" /></div>
+              <span className="text-xs text-slate-500 font-medium">Sin Recibo</span>
             </div>
-            <p className="text-xl font-bold text-red-600">{fmt(stats.totalOverdue)}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">{stats.overdue.length} facturas</p>
-          </div>
-
-          <div className="card p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 rounded-lg bg-amber-50"><Clock size={18} className="text-amber-600" /></div>
-              <span className="text-xs text-slate-500 font-medium">Próximas a Vencer</span>
-            </div>
-            <p className="text-xl font-bold text-amber-600">{stats.urgent.length}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">menos de 7 días</p>
+            <p className="text-xl font-bold text-amber-600">{stats.withoutReceipt.length}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">pendientes de confirmar</p>
           </div>
 
           <div className="card p-4 border-2 border-violet-200">
@@ -301,7 +279,6 @@ export function CobranzaClient() {
           { key: 'pending', label: 'Pendientes', count: stats.pending.length },
           { key: 'no_receipt', label: 'Sin Recibo', count: stats.withoutReceipt.length },
           { key: 'receipt', label: 'Con Recibo', count: stats.withReceipt.length },
-          { key: 'overdue', label: 'Vencidas', count: stats.overdue.length },
           { key: 'paid', label: 'Pagadas', count: stats.paid.length },
           { key: 'all', label: 'Todas', count: invoices.length },
         ].map((f) => (
@@ -335,8 +312,8 @@ export function CobranzaClient() {
                   </button>
                 </th>
                 <th>
-                  <button onClick={() => toggleSort('dueDate')} className="flex items-center gap-0.5 hover:text-indigo-600">
-                    Vencimiento <SortIcon field="dueDate" />
+                  <button onClick={() => toggleSort('invoiceDate')} className="flex items-center gap-0.5 hover:text-indigo-600">
+                    Fecha <SortIcon field="invoiceDate" />
                   </button>
                 </th>
                 <th>Estado</th>
@@ -360,11 +337,10 @@ export function CobranzaClient() {
                 </tr>
               ) : (
                 filtered.map((inv) => {
-                  const uc = urgencyConfig[inv.urgency];
                   const receipt = receipts[inv.number];
                   const isLoadingReceipt = receiptLoading[inv.number];
                   return (
-                    <tr key={inv.id} className={receipt ? 'bg-violet-50/40' : inv.urgency === 'overdue' ? 'bg-red-50/50' : ''}>
+                    <tr key={inv.id} className={receipt ? 'bg-violet-50/40' : ''}>
                       <td className="text-xs font-mono font-medium text-slate-700">{inv.number}</td>
                       <td>
                         {inv.folio ? (
@@ -390,27 +366,18 @@ export function CobranzaClient() {
                         )}
                       </td>
                       <td>
-                        {inv.dueDate ? (
-                          <div>
-                            <p className="text-xs text-slate-700">{fmtDate(inv.dueDate)}</p>
-                            {inv.daysUntilDue !== null && inv.urgency !== 'paid' && (
-                              <p className={`text-[10px] font-bold ${
-                                inv.daysUntilDue < 0 ? 'text-red-600' : inv.daysUntilDue <= 7 ? 'text-amber-600' : 'text-slate-400'
-                              }`}>
-                                {inv.daysUntilDue < 0 ? `${Math.abs(inv.daysUntilDue)}d vencida` : inv.daysUntilDue === 0 ? 'Vence hoy' : `${inv.daysUntilDue}d restantes`}
-                              </p>
-                            )}
-                          </div>
+                        {inv.invoiceDate ? (
+                          <p className="text-xs text-slate-700">{fmtDate(inv.invoiceDate)}</p>
                         ) : <span className="text-[10px] text-slate-400">—</span>}
                       </td>
                       <td>
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${uc.color}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${uc.dot}`} />
-                          {inv.urgency === 'paid' ? paymentStateLabels[inv.paymentState] || uc.label : uc.label}
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${inv.isPaid ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${inv.isPaid ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                          {paymentStateLabels[inv.paymentState] || inv.paymentState}
                         </span>
                       </td>
                       <td className="text-center">
-                        {inv.urgency === 'paid' ? (
+                        {inv.isPaid ? (
                           <span className="text-[10px] text-slate-400">—</span>
                         ) : isLoadingReceipt ? (
                           <Loader2 size={16} className="mx-auto animate-spin text-violet-500" />

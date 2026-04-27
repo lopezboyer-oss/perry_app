@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         fields: [
           'name', 'state', 'payment_state',
           'amount_total', 'amount_residual',
-          'invoice_date', 'invoice_date_due',
+          'invoice_date',
           'ref', 'partner_id', 'invoice_origin',
         ],
         order: 'invoice_date_due asc',
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         fields: [
           'name', 'state', 'payment_state',
           'amount_total', 'amount_residual',
-          'invoice_date', 'invoice_date_due',
+          'invoice_date',
           'ref', 'partner_id', 'invoice_origin',
         ],
         order: 'invoice_date desc',
@@ -55,9 +55,6 @@ export async function GET(req: NextRequest) {
     ]);
 
     const invoices = [...(unpaidInvoices || []), ...(paidInvoices || [])];
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     // Cross-reference folios with Perry activities to find the engineer
     const folios = [...new Set(invoices.map((inv: any) => inv.invoice_origin).filter(Boolean))];
@@ -79,17 +76,7 @@ export async function GET(req: NextRequest) {
     }
 
     const mapped = (invoices || []).map((inv: any) => {
-      const dueDate = inv.invoice_date_due ? new Date(inv.invoice_date_due) : null;
-      let daysUntilDue: number | null = null;
-      let urgency: 'overdue' | 'urgent' | 'normal' | 'paid' = 'normal';
-
-      if (inv.payment_state === 'paid' || inv.payment_state === 'in_payment') {
-        urgency = 'paid';
-      } else if (dueDate) {
-        daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysUntilDue < 0) urgency = 'overdue';
-        else if (daysUntilDue <= 7) urgency = 'urgent';
-      }
+      const isPaid = inv.payment_state === 'paid' || inv.payment_state === 'in_payment';
 
       // Split partner into company + contact
       const partnerFull = inv.partner_id ? inv.partner_id[1] : '';
@@ -106,9 +93,7 @@ export async function GET(req: NextRequest) {
         amountTotal: inv.amount_total,
         amountPending: inv.amount_residual,
         invoiceDate: inv.invoice_date,
-        dueDate: inv.invoice_date_due,
-        daysUntilDue,
-        urgency,
+        isPaid,
         company,
         contact,
         engineer: inv.invoice_origin ? (engineerMap[inv.invoice_origin] || null) : null,
