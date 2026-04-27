@@ -56,21 +56,21 @@ export async function GET(req: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Cross-reference folios with Perry activities to find supervisors
+    // Cross-reference folios with Perry activities to find the engineer
     const folios = [...new Set(invoices.map((inv: any) => inv.invoice_origin).filter(Boolean))];
-    const supervisorMap: Record<string, string> = {};
+    const engineerMap: Record<string, string> = {};
 
     if (folios.length > 0) {
       const activities = await prisma.activity.findMany({
         where: { workOrderFolio: { in: folios } },
         select: {
           workOrderFolio: true,
-          user: { select: { name: true, supervisor: { select: { name: true } } } },
+          user: { select: { name: true } },
         },
       });
       activities.forEach((a) => {
-        if (a.workOrderFolio && a.user?.supervisor?.name) {
-          supervisorMap[a.workOrderFolio] = a.user.supervisor.name;
+        if (a.workOrderFolio && a.user?.name) {
+          engineerMap[a.workOrderFolio] = a.user.name;
         }
       });
     }
@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
         urgency,
         company,
         contact,
-        supervisor: inv.invoice_origin ? (supervisorMap[inv.invoice_origin] || null) : null,
+        engineer: inv.invoice_origin ? (engineerMap[inv.invoice_origin] || null) : null,
       };
     });
 

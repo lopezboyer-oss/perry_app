@@ -20,7 +20,7 @@ interface Invoice {
   urgency: 'overdue' | 'urgent' | 'normal' | 'paid';
   company: string;
   contact: string;
-  supervisor: string | null;
+  engineer: string | null;
 }
 
 interface Receipt {
@@ -139,16 +139,16 @@ export function CobranzaClient() {
       byContact[key].amount += i.amountPending;
     });
 
-    // By supervisor
-    const bySupervisor: Record<string, { count: number; amount: number }> = {};
+    // By engineer
+    const byEngineer: Record<string, { count: number; amount: number }> = {};
     pending.forEach((i) => {
-      const key = i.supervisor || 'Sin Asignar';
-      if (!bySupervisor[key]) bySupervisor[key] = { count: 0, amount: 0 };
-      bySupervisor[key].count++;
-      bySupervisor[key].amount += i.amountPending;
+      const key = i.engineer || 'Sin Asignar';
+      if (!byEngineer[key]) byEngineer[key] = { count: 0, amount: 0 };
+      byEngineer[key].count++;
+      byEngineer[key].amount += i.amountPending;
     });
 
-    return { pending, overdue, urgent, normal, paid, totalPending, totalOverdue, byContact, bySupervisor, withReceipt, withoutReceipt };
+    return { pending, overdue, urgent, normal, paid, totalPending, totalOverdue, byContact, byEngineer, withReceipt, withoutReceipt };
   }, [invoices, receipts]);
 
   // Filtered + sorted
@@ -286,20 +286,20 @@ export function CobranzaClient() {
         </div>
       )}
 
-      {/* Supervisor breakdown */}
-      {!loading && Object.keys(stats.bySupervisor).length > 0 && (
+      {/* Engineer breakdown */}
+      {!loading && Object.keys(stats.byEngineer).length > 0 && (
         <div className="card p-4">
           <div className="flex items-center gap-1.5 mb-3">
             <Users size={14} className="text-violet-500" />
-            <h3 className="text-sm font-semibold text-slate-700">Pendiente por Supervisor</h3>
+            <h3 className="text-sm font-semibold text-slate-700">Pendiente por Ingeniero</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {Object.entries(stats.bySupervisor)
+            {Object.entries(stats.byEngineer)
               .sort((a, b) => b[1].amount - a[1].amount)
-              .map(([supervisor, data]) => (
-                <div key={supervisor} className="flex items-center justify-between bg-violet-50/50 rounded-lg px-3 py-2">
+              .map(([engineer, data]) => (
+                <div key={engineer} className="flex items-center justify-between bg-violet-50/50 rounded-lg px-3 py-2">
                   <div>
-                    <p className="text-xs font-medium text-slate-700">{supervisor}</p>
+                    <p className="text-xs font-medium text-slate-700">{engineer}</p>
                     <p className="text-[10px] text-slate-400">{data.count} factura{data.count > 1 ? 's' : ''}</p>
                   </div>
                   <p className="text-sm font-bold text-slate-800">{fmt(data.amount)}</p>
