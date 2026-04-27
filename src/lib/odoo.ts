@@ -10,14 +10,22 @@ export interface OdooConfig {
 }
 
 export function getOdooConfig(): OdooConfig {
+  // Try base64 encoded ODOO_CONFIG first
   const encoded = process.env.ODOO_CONFIG;
-  if (!encoded) throw new Error('ODOO_CONFIG env var is not set');
-  try {
-    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-    return JSON.parse(decoded);
-  } catch {
-    throw new Error('Failed to decode ODOO_CONFIG');
+  if (encoded) {
+    try {
+      const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+      return JSON.parse(decoded);
+    } catch {
+      throw new Error('Failed to decode ODOO_CONFIG');
+    }
   }
+  // Fallback to individual env vars
+  const url = process.env.ODOO_URL;
+  const user = process.env.ODOO_USER;
+  const key = process.env.ODOO_API_KEY;
+  if (url && user && key) return { url, user, key };
+  throw new Error('ODOO_CONFIG or ODOO_URL/ODOO_USER/ODOO_API_KEY env vars are not set');
 }
 
 export function getOdooDb(url: string): string {
