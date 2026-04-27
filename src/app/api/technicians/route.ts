@@ -10,6 +10,7 @@ export async function GET() {
     const technicians = await prisma.technician.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
+      include: { contractor: { select: { id: true, name: true } } },
     });
 
     return NextResponse.json(technicians);
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Solo administradores' }, { status: 403 });
     }
 
-    const { name, type, isCruzVerde } = await req.json();
+    const { name, type, isCruzVerde, contractorId } = await req.json();
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 });
     }
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
         name: name.trim(),
         type: type || 'PROPIO',
         isCruzVerde: isCruzVerde || false,
+        contractorId: type === 'EXTERNO' ? (contractorId || null) : null,
       },
     });
 

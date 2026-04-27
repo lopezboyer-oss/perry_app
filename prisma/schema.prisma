@@ -153,15 +153,27 @@ model Opportunity {
 // ─── PERSONAL OPERATIVO (FINDE) ─────────────────────────────────
 
 model Technician {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   @default("PROPIO") // PROPIO | EXTERNO
-  isCruzVerde Boolean  @default(false)    // Acreditación Safety Designado
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String      @id @default(cuid())
+  name          String
+  type          String      @default("PROPIO") // PROPIO | EXTERNO
+  isCruzVerde   Boolean     @default(false)    // Acreditación Safety Designado
+  isActive      Boolean     @default(true)
+  contractorId  String?
+  contractor    Contractor? @relation(fields: [contractorId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   weekendAssignments WeekendTechAssignment[]
+}
+
+model Contractor {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  technicians Technician[]
 }
 
 model SafetyDedicado {

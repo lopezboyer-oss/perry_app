@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Shield, User, HardHat, CheckSquare, Truck, ChevronsUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, Shield, User, HardHat, CheckSquare, Truck, ChevronsUp, Building2 } from 'lucide-react';
 import { UserFormDialog, UserFormData } from './components/UserFormDialog';
 import { useRouter } from 'next/navigation';
 import { roleLabels, roleColors } from '@/lib/utils';
@@ -13,8 +13,9 @@ interface SafetyData { id: string; name: string; isActive: boolean; }
 interface VehicleData { id: string; name: string; isAvailable: boolean; isActive: boolean; }
 interface DriverData { id: string; name: string; isActive: boolean; }
 interface EquipData { id: string; name: string; ownership: string; isActive: boolean; }
+interface ContractorData { id: string; name: string; isActive: boolean; _count?: { technicians: number }; }
 
-type TabKey = 'users' | 'techs' | 'safety' | 'vehicles' | 'drivers' | 'equips';
+type TabKey = 'users' | 'techs' | 'safety' | 'vehicles' | 'drivers' | 'equips' | 'contractors';
 
 export default function UsuariosPage() {
   const [tab, setTab] = useState<TabKey>('users');
@@ -33,7 +34,7 @@ export default function UsuariosPage() {
 
   // ── Form states ──
   const [techFormOpen, setTechFormOpen] = useState(false);
-  const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false });
+  const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '' });
   const [safetyFormOpen, setSafetyFormOpen] = useState(false);
   const [safetyFormData, setSafetyFormData] = useState({ id: '', name: '' });
   const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
@@ -42,14 +43,17 @@ export default function UsuariosPage() {
   const [driverFormData, setDriverFormData] = useState({ id: '', name: '' });
   const [equipFormOpen, setEquipFormOpen] = useState(false);
   const [equipFormData, setEquipFormData] = useState({ id: '', name: '', ownership: 'PROPIO' });
+  const [contractorList, setContractorList] = useState<ContractorData[]>([]);
+  const [contractorFormOpen, setContractorFormOpen] = useState(false);
+  const [contractorFormData, setContractorFormData] = useState({ id: '', name: '' });
 
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     try {
-      const [usersRes, techRes, safetyRes, vehicleRes, driverRes, equipRes] = await Promise.all([
+      const [usersRes, techRes, safetyRes, vehicleRes, driverRes, equipRes, contractorRes] = await Promise.all([
         fetch('/api/users'), fetch('/api/technicians'), fetch('/api/safety-dedicado'),
-        fetch('/api/vehicles'), fetch('/api/drivers'), fetch('/api/elevation-equip'),
+        fetch('/api/vehicles'), fetch('/api/drivers'), fetch('/api/elevation-equip'), fetch('/api/contractors'),
       ]);
       if (usersRes.status === 403) { router.push('/dashboard'); return; }
 
@@ -61,6 +65,7 @@ export default function UsuariosPage() {
       setVehicleList(await vehicleRes.json());
       setDriverList(await driverRes.json());
       setEquipList(await equipRes.json());
+      setContractorList(await contractorRes.json());
 
       const sessionRes = await fetch('/api/auth/session');
       if (sessionRes.ok) { const sess = await sessionRes.json(); setUserRole(sess?.user?.role || ''); }
@@ -83,7 +88,7 @@ export default function UsuariosPage() {
     const url = techFormData.id ? `/api/technicians/${techFormData.id}` : '/api/technicians';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(techFormData) });
     if (!res.ok) { alert('Error al guardar técnico'); return; }
-    setTechFormOpen(false); setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false }); await fetchAll();
+    setTechFormOpen(false); setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '' }); await fetchAll();
   };
   const handleDeleteTech = async (id: string, name: string) => { if (!window.confirm(`¿Desactivar a ${name}?`)) return; await fetch(`/api/technicians/${id}`, { method: 'DELETE' }); await fetchAll(); };
 
@@ -144,6 +149,7 @@ export default function UsuariosPage() {
     { key: 'vehicles', label: 'Vehículos', icon: Truck, visible: true },
     { key: 'drivers', label: 'Choferes', icon: User, visible: canManageDrivers },
     { key: 'equips', label: 'Eq. Elevación', icon: ChevronsUp, visible: true },
+    { key: 'contractors', label: 'Contratistas', icon: Building2, visible: isAdmin },
   ];
   const visibleTabs = allTabs.filter((t) => t.visible);
 
@@ -225,24 +231,33 @@ export default function UsuariosPage() {
         <>
           {canManageTechs && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false }); setTechFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
+              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '' }); setTechFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
             </div>
           )}
           {techFormOpen && (
             <div className="card p-6 mb-4 border-l-4 border-l-indigo-500">
               <h3 className="font-semibold text-slate-800 mb-4">{techFormData.id ? 'Editar' : 'Nuevo'} Técnico</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Nombre *</label>
                   <input type="text" value={techFormData.name} onChange={(e) => setTechFormData({ ...techFormData, name: e.target.value })} className="w-full" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
-                  <select value={techFormData.type} onChange={(e) => setTechFormData({ ...techFormData, type: e.target.value })} className="w-full">
+                  <select value={techFormData.type} onChange={(e) => setTechFormData({ ...techFormData, type: e.target.value, contractorId: e.target.value === 'PROPIO' ? '' : techFormData.contractorId })} className="w-full">
                     <option value="PROPIO">Propio</option>
                     <option value="EXTERNO">Externo</option>
                   </select>
                 </div>
+                {techFormData.type === 'EXTERNO' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Empresa Contratista</label>
+                    <select value={techFormData.contractorId} onChange={(e) => setTechFormData({ ...techFormData, contractorId: e.target.value })} className="w-full">
+                      <option value="">— Seleccionar —</option>
+                      {contractorList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={techFormData.isCruzVerde} onChange={(e) => setTechFormData({ ...techFormData, isCruzVerde: e.target.checked })} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
@@ -260,23 +275,24 @@ export default function UsuariosPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
-                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Cruz Verde</th>{canManageTechs && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
+                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Empresa</th><th className="px-6 py-4">Cruz Verde</th>{canManageTechs && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {techs.map((t) => (
                     <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-800">{t.name}</td>
                       <td className="px-6 py-4"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${t.type === 'PROPIO' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{t.type === 'PROPIO' ? 'Propio' : 'Externo'}</span></td>
+                      <td className="px-6 py-4">{(t as any).contractor ? <span className="text-xs font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{(t as any).contractor.name}</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       <td className="px-6 py-4">{t.isCruzVerde ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700"><CheckSquare size={12} /> Acreditado</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       {canManageTechs && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde }); setTechFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '' }); setTechFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteTech(t.id, t.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
                     </tr>
                   ))}
-                  {techs.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">No hay técnicos registrados.</td></tr>}
+                  {techs.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No hay técnicos registrados.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -483,6 +499,63 @@ export default function UsuariosPage() {
                     </tr>
                   ))}
                   {equipList.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No hay equipos de elevación registrados.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── TAB: CONTRATISTAS ── */}
+      {tab === 'contractors' && isAdmin && (
+        <>
+          <div className="flex justify-end mb-4">
+            <button onClick={() => { setContractorFormData({ id: '', name: '' }); setContractorFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Contratista</button>
+          </div>
+          {contractorFormOpen && (
+            <div className="card p-6 mb-4 border-l-4 border-l-orange-500">
+              <h3 className="font-semibold text-slate-800 mb-4">{contractorFormData.id ? 'Editar' : 'Nuevo'} Contratista</h3>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre de la Empresa *</label>
+                <input type="text" value={contractorFormData.name} onChange={(e) => setContractorFormData({ ...contractorFormData, name: e.target.value })} className="w-full max-w-md" placeholder="Ej: MANTENIMIENTO INDUSTRIAL DEL NORTE" />
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button onClick={async () => {
+                  const method = contractorFormData.id ? 'PUT' : 'POST';
+                  const url = contractorFormData.id ? `/api/contractors/${contractorFormData.id}` : '/api/contractors';
+                  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: contractorFormData.name }) });
+                  if (!res.ok) { const err = await res.json(); alert(err.error || 'Error'); return; }
+                  setContractorFormOpen(false); setContractorFormData({ id: '', name: '' }); await fetchAll();
+                }} className="btn-primary text-sm">Guardar</button>
+                <button onClick={() => setContractorFormOpen(false)} className="btn-secondary text-sm">Cancelar</button>
+              </div>
+            </div>
+          )}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
+                  <tr><th className="px-6 py-4">Empresa</th><th className="px-6 py-4">Técnicos Asignados</th><th className="px-6 py-4 text-right">Acciones</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {contractorList.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-slate-800">
+                        <div className="flex items-center gap-2">
+                          <Building2 size={16} className="text-orange-500" />
+                          {c.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{c._count?.technicians || 0}</span>
+                      </td>
+                      <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
+                        <button onClick={() => { setContractorFormData({ id: c.id, name: c.name }); setContractorFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                        <button onClick={async () => { if (!window.confirm(`¿Desactivar ${c.name}?`)) return; await fetch(`/api/contractors/${c.id}`, { method: 'DELETE' }); await fetchAll(); }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                      </div></td>
+                    </tr>
+                  ))}
+                  {contractorList.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No hay contratistas registrados. Añade uno para asignar a técnicos externos.</td></tr>}
                 </tbody>
               </table>
             </div>
