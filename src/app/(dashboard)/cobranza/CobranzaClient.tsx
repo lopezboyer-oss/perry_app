@@ -117,9 +117,9 @@ export function CobranzaClient() {
     const withReceipt = pending.filter((i) => receipts[i.number]);
     const withoutReceipt = pending.filter((i) => !receipts[i.number]);
 
-    // By contact
+    // By contact (only invoices without receipt)
     const byContact: Record<string, { count: number; amount: number }> = {};
-    pending.forEach((i) => {
+    withoutReceipt.forEach((i) => {
       const key = i.contact || 'Sin Contacto';
       if (!byContact[key]) byContact[key] = { count: 0, amount: 0 };
       byContact[key].count++;
@@ -244,7 +244,7 @@ export function CobranzaClient() {
       {/* Contacts breakdown */}
       {!loading && Object.keys(stats.byContact).length > 0 && (
         <BreakdownCard
-          title="Pendiente por Contacto (Requisitor)"
+          title="Pendientes por Requisitor"
           icon={<Users size={14} className="text-indigo-500" />}
           data={stats.byContact}
           palette={PALETTE_INDIGO}
