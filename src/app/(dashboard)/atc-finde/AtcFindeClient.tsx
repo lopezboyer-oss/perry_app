@@ -328,6 +328,38 @@ export function AtcFindeClient({
     catch (err) { console.error('Error updating', err); }
   };
 
+  // Compress image using Canvas API — scales down + JPEG compression
+  const compressImage = (file: File, maxDimension = 1200, targetSizeKB = 500): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        // Scale down if needed
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Try progressively lower quality until under target size
+        let quality = 0.8;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        while (dataUrl.length > targetSizeKB * 1024 * 1.37 && quality > 0.2) {
+          quality -= 0.1;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('No se pudo leer la imagen'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   // Safety audit image handlers
   const handleAuditImageUpload = (actId: string) => {
     const input = document.createElement('input');
@@ -336,23 +368,18 @@ export function AtcFindeClient({
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
-      if (file.size > 2 * 1024 * 1024) { alert('Imagen demasiado grande (máx. 2MB)'); return; }
       setAuditImageLoading((p) => ({ ...p, [actId]: true }));
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUrl = reader.result as string;
-        try {
-          const res = await fetch(`/api/activities/${actId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ safetyAuditImage: dataUrl }),
-          });
-          if (res.ok) setAuditImages((p) => ({ ...p, [actId]: dataUrl }));
-          else { const d = await res.json(); alert(d.error || 'Error al subir'); }
-        } catch { alert('Error de conexión'); }
-        setAuditImageLoading((p) => ({ ...p, [actId]: false }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        const dataUrl = await compressImage(file);
+        const res = await fetch(`/api/activities/${actId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ safetyAuditImage: dataUrl }),
+        });
+        if (res.ok) setAuditImages((p) => ({ ...p, [actId]: dataUrl }));
+        else { const d = await res.json(); alert(d.error || 'Error al subir'); }
+      } catch (err: any) { alert(err.message || 'Error de conexión'); }
+      setAuditImageLoading((p) => ({ ...p, [actId]: false }));
     };
     input.click();
   };
