@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { CalendarDays, Clock } from 'lucide-react';
+import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface Activity {
@@ -11,6 +11,7 @@ interface Activity {
   actualStartTime: string | null; actualEndTime: string | null;
   workOrderFolio: string | null; purchaseOrder: string | null;
   loto: boolean; weekendNotes: string | null; auditNotes: string | null;
+  safetyAuditImage: string | null;
   user: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
 }
@@ -25,13 +26,14 @@ interface Props {
   driverAssignments: any[];
   equipAssignments: any[];
   userRole: string;
+  userId: string;
 }
 
 export function PlanesPasadosClient({
   weekendDates, selectedWeekend, activities,
   techAssignments, safetyAssignments,
   vehicleAssignments, driverAssignments, equipAssignments,
-  userRole,
+  userRole, userId,
 }: Props) {
   const router = useRouter();
   const canEdit = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -46,8 +48,87 @@ export function PlanesPasadosClient({
     Object.fromEntries(activities.map((a) => [a.id, a.auditNotes || '']))
   );
 
+  // TERA image state
+  const [auditImages, setAuditImages] = useState<Record<string, string | null>>(
+    Object.fromEntries(activities.map((a) => [a.id, a.safetyAuditImage || null]))
+  );
+  const [auditImageLoading, setAuditImageLoading] = useState<Record<string, boolean>>({});
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const canEditAuditImage = (act: Activity) => {
+    if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
+    if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
+    return false;
+  };
+
   const updateField = async (actId: string, field: string, value: any) => {
     await fetch(`/api/activities/${actId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [field]: value }) });
+  };
+
+  // Compress image using Canvas API
+  const compressImage = (file: File, maxDimension = 1200, targetSizeKB = 500): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+        let quality = 0.8;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        while (dataUrl.length > targetSizeKB * 1024 * 1.37 && quality > 0.2) {
+          quality -= 0.1;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('No se pudo leer la imagen'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleAuditImageUpload = (actId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setAuditImageLoading((p) => ({ ...p, [actId]: true }));
+      try {
+        const dataUrl = await compressImage(file);
+        const res = await fetch(`/api/activities/${actId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ safetyAuditImage: dataUrl }),
+        });
+        if (res.ok) setAuditImages((p) => ({ ...p, [actId]: dataUrl }));
+        else { const d = await res.json(); alert(d.error || 'Error al subir'); }
+      } catch (err: any) { alert(err.message || 'Error de conexión'); }
+      setAuditImageLoading((p) => ({ ...p, [actId]: false }));
+    };
+    input.click();
+  };
+
+  const handleAuditImageDelete = async (actId: string) => {
+    if (!confirm('¿Eliminar imagen TERA?')) return;
+    setAuditImageLoading((p) => ({ ...p, [actId]: true }));
+    try {
+      const res = await fetch(`/api/activities/${actId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ safetyAuditImage: null }),
+      });
+      if (res.ok) setAuditImages((p) => ({ ...p, [actId]: null }));
+    } catch { alert('Error de conexión'); }
+    setAuditImageLoading((p) => ({ ...p, [actId]: false }));
   };
 
   const updateActualTime = async (actId: string, field: 'actualStartTime' | 'actualEndTime', value: string) => {
@@ -119,11 +200,12 @@ export function PlanesPasadosClient({
                   <th className="font-semibold min-w-[100px]">Eq.Elev.</th>
                   <th className="font-semibold min-w-[110px]">Notas</th>
                   {canViewAudit && <th className="font-semibold min-w-[180px]">Notas Auditoría</th>}
+                  <th className="font-semibold w-[90px] text-center">TERA</th>
                 </tr>
               </thead>
               <tbody>
                 {activities.length === 0 ? (
-                  <tr><td colSpan={canViewAudit ? 19 : 18} className="text-center py-16">
+                  <tr><td colSpan={canViewAudit ? 20 : 19} className="text-center py-16">
                     <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-600" />
                     <p className="font-medium text-lg text-slate-400">Sin actividades para este fin de semana</p>
                   </td></tr>
@@ -215,11 +297,49 @@ export function PlanesPasadosClient({
                           )}
                         </td>
                       )}
+
+                      {/* TERA IMAGE */}
+                      <td className="text-center">
+                        {auditImageLoading[act.id] ? (
+                          <Loader2 size={16} className="mx-auto animate-spin text-indigo-500" />
+                        ) : (
+                          <div className="flex items-center justify-center gap-1">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${auditImages[act.id] ? 'bg-emerald-500' : 'bg-slate-300'}`} title={auditImages[act.id] ? 'Imagen cargada' : 'Sin imagen'} />
+                            {canEditAuditImage(act) && (
+                              <button onClick={() => handleAuditImageUpload(act.id)} className="p-1 rounded hover:bg-indigo-50 text-indigo-500 hover:text-indigo-700 transition-colors" title="Subir imagen TERA">
+                                <ImagePlus size={14} />
+                              </button>
+                            )}
+                            {auditImages[act.id] && (
+                              <button onClick={() => setPreviewImage(auditImages[act.id])} className="p-1 rounded hover:bg-violet-50 text-violet-500 hover:text-violet-700 transition-colors" title="Ver imagen">
+                                <Eye size={14} />
+                              </button>
+                            )}
+                            {auditImages[act.id] && canEditAuditImage(act) && (
+                              <button onClick={() => handleAuditImageDelete(act.id)} className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" title="Eliminar imagen">
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 animate-fade-in" onClick={() => setPreviewImage(null)}>
+          <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setPreviewImage(null)} className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors">
+              <X size={18} />
+            </button>
+            <img src={previewImage} alt="TERA" className="max-w-full max-h-[85vh] object-contain" />
           </div>
         </div>
       )}

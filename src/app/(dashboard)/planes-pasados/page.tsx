@@ -65,6 +65,7 @@ export default async function PlanesPasadosPage({
       driverAssignments={driverAssignments}
       equipAssignments={equipAssignments}
       userRole={role}
+      userId={session.user.id}
     />
   );
 }
