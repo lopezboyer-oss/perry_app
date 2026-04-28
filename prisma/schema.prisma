@@ -113,6 +113,7 @@ model Activity {
   notes           String?
   weekendNotes    String?
   auditNotes      String?
+  safetyAuditImage String?            // Base64 data URL of safety audit screenshot
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -294,6 +295,7 @@ model InvoiceReceipt {
   invoiceNumber  String   @unique   // Odoo invoice number (e.g. INV/2026/00149)
   folio          String?             // Odoo folio (e.g. S06254)
   po             String?             // P.O. number
+  engineerName   String?             // Responsible engineer name (from Perry activity)
   confirmedById  String
   confirmedBy    User     @relation(fields: [confirmedById], references: [id])
   confirmedAt    DateTime @default(now())

@@ -25,6 +25,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     allowedFields.auditNotes = body.auditNotes || null;
   }
 
+  // Safety audit image: ADMIN, SUPERVISOR_SAFETY_LP, or the activity's own engineer
+  if (body.safetyAuditImage !== undefined) {
+    const role = session.user.role;
+    if (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP' || role === 'SUPERVISOR') {
+      // Admin/Sup can always edit
+    } else {
+      // Engineer can only edit their own activity
+      const activity = await prisma.activity.findUnique({ where: { id: params.id }, select: { userId: true } });
+      if (!activity || activity.userId !== session.user.id) {
+        return NextResponse.json({ error: 'Solo puedes subir auditoría a tus propias actividades' }, { status: 403 });
+      }
+    }
+    // Validate size (2MB max for base64 string ~2.7MB)
+    if (body.safetyAuditImage && body.safetyAuditImage.length > 2_800_000) {
+      return NextResponse.json({ error: 'Imagen demasiado grande (máx. 2MB)' }, { status: 400 });
+    }
+    allowedFields.safetyAuditImage = body.safetyAuditImage || null;
+  }
+
   if (Object.keys(allowedFields).length === 0) {
     return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 });
   }

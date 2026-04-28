@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2 } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
@@ -20,6 +20,7 @@ interface Activity {
   loto: boolean;
   weekendNotes: string | null;
   auditNotes: string | null;
+  safetyAuditImage: string | null;
   user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
@@ -191,11 +192,22 @@ export function AtcFindeClient({
   const [poState, setPoState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.purchaseOrder || ''])));
   const [folioState, setFolioState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.workOrderFolio || ''])));
 
+  // Safety audit image state
+  const [auditImages, setAuditImages] = useState<Record<string, string | null>>(Object.fromEntries(activities.map((a) => [a.id, a.safetyAuditImage || null])));
+  const [auditImageLoading, setAuditImageLoading] = useState<Record<string, boolean>>({});
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditFields = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canViewAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+
+  const canEditAuditImage = (act: Activity) => {
+    if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
+    if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
+    return false;
+  };
 
   // Odoo lookup state
   const [odooLoading, setOdooLoading] = useState<Record<string, boolean>>({});
@@ -316,9 +328,52 @@ export function AtcFindeClient({
     catch (err) { console.error('Error updating', err); }
   };
 
+  // Safety audit image handlers
+  const handleAuditImageUpload = (actId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { alert('Imagen demasiado grande (máx. 2MB)'); return; }
+      setAuditImageLoading((p) => ({ ...p, [actId]: true }));
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result as string;
+        try {
+          const res = await fetch(`/api/activities/${actId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ safetyAuditImage: dataUrl }),
+          });
+          if (res.ok) setAuditImages((p) => ({ ...p, [actId]: dataUrl }));
+          else { const d = await res.json(); alert(d.error || 'Error al subir'); }
+        } catch { alert('Error de conexión'); }
+        setAuditImageLoading((p) => ({ ...p, [actId]: false }));
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const handleAuditImageDelete = async (actId: string) => {
+    if (!confirm('¿Eliminar imagen TERA?')) return;
+    setAuditImageLoading((p) => ({ ...p, [actId]: true }));
+    try {
+      const res = await fetch(`/api/activities/${actId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ safetyAuditImage: null }),
+      });
+      if (res.ok) setAuditImages((p) => ({ ...p, [actId]: null }));
+    } catch { alert('Error de conexión'); }
+    setAuditImageLoading((p) => ({ ...p, [actId]: false }));
+  };
+
   // ── CSV EXPORT ──
   const exportCSV = () => {
-    const h = ['#','Día','Inicio','Fin','Resp.','Contacto','Actividad','Folio','P.O.','LOTO','Técnicos','S.Designado','S.Dedicado','Vehículo','Chofer','Eq.Elev.','Notas','N.Auditoría'];
+    const h = ['#','Día','Inicio','Fin','Resp.','Contacto','Actividad','Folio','P.O.','LOTO','Técnicos','S.Designado','S.Dedicado','Vehículo','Chofer','Eq.Elev.','Notas','N.Auditoría','TERA'];
     const rows = activities.map((a, i) => {
       const t = techAssignments.filter((x) => x.activityId === a.id && x.role === 'TECNICO').map((x) => x.technician.name).join(';');
       const sd = techAssignments.filter((x) => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map((x) => x.technician.name).join(';');
@@ -326,7 +381,7 @@ export function AtcFindeClient({
       const v = vehicleAssignments.filter((x) => x.activityId === a.id).map((x) => x.vehicle.name).join(';');
       const dr = driverAssignments.filter((x) => x.activityId === a.id).map((x) => x.driver.name).join(';');
       const eq = equipAssignments.filter((x) => x.activityId === a.id).map((x) => x.equip.name).join(';');
-      return [i+1,formatDate(a.date),a.startTime||'-',a.endTime||'-',a.user?.name||'-',a.contact?.name||'-',`"${a.title.replace(/"/g,'""')}"`,folioState[a.id]||'-',poState[a.id]||'PEND.',lotoState[a.id]?'SI':'NO',t||'-',sd||'-',dd||'-',v||'-',dr||'-',eq||'-',`"${(a.weekendNotes||'').replace(/"/g,'""')}"`,canViewAudit?`"${(a.auditNotes||'').replace(/"/g,'""')}"`:'-'];
+      return [i+1,formatDate(a.date),a.startTime||'-',a.endTime||'-',a.user?.name||'-',a.contact?.name||'-',`"${a.title.replace(/"/g,'""')}"`,folioState[a.id]||'-',poState[a.id]||'PEND.',lotoState[a.id]?'SI':'NO',t||'-',sd||'-',dd||'-',v||'-',dr||'-',eq||'-',`"${(a.weekendNotes||'').replace(/"/g,'""')}"`,canViewAudit?`"${(a.auditNotes||'').replace(/"/g,'""')}"`:'-',auditImages[a.id]?'SI':'NO'];
     });
     const csv = '\uFEFF' + [h.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -423,11 +478,12 @@ export function AtcFindeClient({
                 <th className="font-semibold min-w-[140px]">Eq. Elevación</th>
                 <th className="font-semibold min-w-[120px]">Notas</th>
                 {canViewAudit && <th className="font-semibold min-w-[120px]">Auditoría</th>}
+                <th className="font-semibold w-[90px] text-center">TERA</th>
               </tr>
             </thead>
             <tbody>
               {activities.length === 0 ? (
-                <tr><td colSpan={canViewAudit ? 17 : 16} className="text-center py-16">
+                <tr><td colSpan={canViewAudit ? 18 : 17} className="text-center py-16">
                   <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-600" />
                   <p className="font-medium text-lg text-slate-400">Fin de Semana Despejado</p>
                   <p className="text-sm mt-1 text-slate-400">No hay actividades para este fin de semana.</p>
@@ -553,6 +609,48 @@ export function AtcFindeClient({
                         <NoteCell value={act.auditNotes || ''} onChange={(v) => updateField(act.id, 'auditNotes', v)} disabled={!canEditAudit} placeholder="Nota auditoría..." color="text-red-600" />
                       </td>
                     )}
+
+                    {/* SAFETY AUDIT IMAGE */}
+                    <td className="text-center">
+                      {auditImageLoading[act.id] ? (
+                        <Loader2 size={16} className="mx-auto animate-spin text-indigo-500" />
+                      ) : (
+                        <div className="flex items-center justify-center gap-1">
+                          {/* Visual indicator: green dot if image exists */}
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${auditImages[act.id] ? 'bg-emerald-500' : 'bg-slate-300'}`} title={auditImages[act.id] ? 'Imagen cargada' : 'Sin imagen'} />
+                          {/* + Upload */}
+                          {canEditAuditImage(act) && (
+                            <button
+                              onClick={() => handleAuditImageUpload(act.id)}
+                              className="p-1 rounded hover:bg-indigo-50 text-indigo-500 hover:text-indigo-700 transition-colors"
+                              title="Subir imagen TERA"
+                            >
+                              <ImagePlus size={14} />
+                            </button>
+                          )}
+                          {/* 👁 View */}
+                          {auditImages[act.id] && (
+                            <button
+                              onClick={() => setPreviewImage(auditImages[act.id])}
+                              className="p-1 rounded hover:bg-violet-50 text-violet-500 hover:text-violet-700 transition-colors"
+                              title="Ver imagen"
+                            >
+                              <Eye size={14} />
+                            </button>
+                          )}
+                          {/* - Delete */}
+                          {auditImages[act.id] && canEditAuditImage(act) && (
+                            <button
+                              onClick={() => handleAuditImageDelete(act.id)}
+                              className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+                              title="Eliminar imagen"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -560,6 +658,24 @@ export function AtcFindeClient({
           </table>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-3 right-3 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <img src={previewImage} alt="TERA" className="max-w-full max-h-[85vh] object-contain" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

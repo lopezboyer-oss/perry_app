@@ -78,6 +78,38 @@ export function CobranzaClient() {
 
   useEffect(() => { load(); }, []);
 
+  // Cash register "ka-ching" sound via Web Audio API
+  const playCashRegister = () => {
+    try {
+      const ctx = new AudioContext();
+      // First "ka" tone
+      const o1 = ctx.createOscillator();
+      const g1 = ctx.createGain();
+      o1.type = 'square';
+      o1.frequency.setValueAtTime(1200, ctx.currentTime);
+      g1.gain.setValueAtTime(0.15, ctx.currentTime);
+      g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      o1.connect(g1).connect(ctx.destination);
+      o1.start(ctx.currentTime);
+      o1.stop(ctx.currentTime + 0.08);
+      // Second "ching" tone (higher, longer)
+      const o2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      o2.type = 'sine';
+      o2.frequency.setValueAtTime(2400, ctx.currentTime + 0.08);
+      o2.frequency.exponentialRampToValueAtTime(3200, ctx.currentTime + 0.15);
+      g2.gain.setValueAtTime(0.2, ctx.currentTime + 0.08);
+      g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      o2.connect(g2).connect(ctx.destination);
+      o2.start(ctx.currentTime + 0.08);
+      o2.stop(ctx.currentTime + 0.35);
+      // Cleanup
+      setTimeout(() => ctx.close(), 500);
+    } catch {
+      // Audio not supported — silent fail
+    }
+  };
+
   const toggleReceipt = async (inv: Invoice) => {
     const key = inv.number;
     setReceiptLoading((p) => ({ ...p, [key]: true }));
@@ -95,10 +127,13 @@ export function CobranzaClient() {
         const res = await fetch('/api/cobranza/receipts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ invoiceNumber: key, folio: inv.folio, po: inv.po }),
+          body: JSON.stringify({ invoiceNumber: key, folio: inv.folio, po: inv.po, engineerName: inv.engineer }),
         });
         const data = await res.json();
-        if (data.receipt) setReceipts((p) => ({ ...p, [key]: data.receipt }));
+        if (data.receipt) {
+          setReceipts((p) => ({ ...p, [key]: data.receipt }));
+          playCashRegister(); // 🔔 Ka-ching!
+        }
       }
     } catch {
       // silent fail
@@ -126,9 +161,9 @@ export function CobranzaClient() {
       byContact[key].amount += i.amountPending;
     });
 
-    // By engineer
+    // By engineer (only invoices without receipt)
     const byEngineer: Record<string, { count: number; amount: number }> = {};
-    pending.forEach((i) => {
+    withoutReceipt.forEach((i) => {
       const key = i.engineer || 'Sin Asignar';
       if (!byEngineer[key]) byEngineer[key] = { count: 0, amount: 0 };
       byEngineer[key].count++;
