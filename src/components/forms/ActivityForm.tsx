@@ -60,26 +60,18 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         if (data.project && !form.title) updates.title = data.project;
         if (data.purchaseOrder) updates.purchaseOrder = data.purchaseOrder;
 
-        // Auto-match client by company name
-        if (data.companyName && !form.clientId) {
-          const odooCompany = data.companyName.toUpperCase();
-          const matched = clients.find((c) =>
-            odooCompany.includes(c.name.toUpperCase()) || c.name.toUpperCase().includes(odooCompany)
-          );
-          if (matched) {
-            updates.clientId = matched.id;
-            // Auto-match contact within that client
-            if (data.contactName) {
-              const odooContact = data.contactName.toUpperCase();
-              const matchedContact = matched.contacts.find((ct) =>
-                odooContact.includes(ct.name.toUpperCase()) || ct.name.toUpperCase().includes(odooContact)
-              );
-              if (matchedContact) updates.contactId = matchedContact.id;
-            }
-          }
-        }
+        // Use server-resolved client & contact IDs (auto-created if missing)
+        if (data.clientId && !form.clientId) updates.clientId = data.clientId;
+        if (data.contactId) updates.contactId = data.contactId;
 
         if (Object.keys(updates).length) setForm((f) => ({ ...f, ...updates }));
+
+        // If a new client/contact was created, refresh the page to get updated lists
+        if (data.clientId || data.contactId) {
+          // Soft-refresh: reload client list via router
+          setTimeout(() => router.refresh(), 500);
+        }
+
         const parts = [];
         if (data.companyName) parts.push(data.companyName);
         if (data.contactName) parts.push(data.contactName);
@@ -98,7 +90,6 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
   useEffect(() => {
     if (prefillFolio && prefillFolio.length >= 4 && !isEdit) {
       setForm((f) => ({ ...f, workOrderFolio: prefillFolio }));
-      // Delay to let state settle, then trigger lookup
       setTimeout(() => {
         const doLookup = async () => {
           setOdooLoading(true);
@@ -109,18 +100,12 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
               const updates: any = { workOrderFolio: prefillFolio };
               if (data.project) updates.title = data.project;
               if (data.purchaseOrder) updates.purchaseOrder = data.purchaseOrder;
-              if (data.companyName) {
-                const odooCompany = data.companyName.toUpperCase();
-                const matched = clients.find((c) => odooCompany.includes(c.name.toUpperCase()) || c.name.toUpperCase().includes(odooCompany));
-                if (matched) {
-                  updates.clientId = matched.id;
-                  if (data.contactName) {
-                    const ct = matched.contacts.find((ct) => data.contactName.toUpperCase().includes(ct.name.toUpperCase()) || ct.name.toUpperCase().includes(data.contactName.toUpperCase()));
-                    if (ct) updates.contactId = ct.id;
-                  }
-                }
-              }
+              if (data.clientId) updates.clientId = data.clientId;
+              if (data.contactId) updates.contactId = data.contactId;
               setForm((f) => ({ ...f, ...updates }));
+              if (data.clientId || data.contactId) {
+                setTimeout(() => router.refresh(), 500);
+              }
               const parts = [data.companyName, data.contactName, data.stateLabel].filter(Boolean);
               setOdooMsg({ type: 'ok', text: `✓ ${parts.join(' · ')}` });
             } else {
