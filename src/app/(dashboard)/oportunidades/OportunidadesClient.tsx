@@ -151,7 +151,7 @@ export function OportunidadesClient({ opportunities, users, filters, userRole }:
                         <span className="font-mono font-bold text-indigo-600 text-xs">{opp.folio}</span>
                       ) : (
                         <Link
-                          href={`/actividades/${opp.firstActivityId}/editar`}
+                          href={`/actividades/${opp.firstActivityId}?editar=true`}
                           onClick={(e) => e.stopPropagation()}
                           className="group inline-flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded hover:bg-red-100 hover:border-red-400 hover:text-red-700 transition-all animate-pulse hover:animate-none"
                           title="Haz clic para agregar el folio Odoo"
