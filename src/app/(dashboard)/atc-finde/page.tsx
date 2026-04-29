@@ -56,7 +56,6 @@ export default async function AtcFindePage() {
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true } },
-        opportunity: { select: { id: true, folio: true } },
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     }),

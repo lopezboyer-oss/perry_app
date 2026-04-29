@@ -133,11 +133,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       orderBy: { _count: { id: 'desc' } },
       take: 1,
     }),
-    // Top Receipts: engineer with most confirmed receipts in period
+    // Top Receipts: user who confirmed the most receipts (all time, not period-filtered)
     prisma.invoiceReceipt.groupBy({
-      by: ['engineerName'],
+      by: ['confirmedById'],
       _count: { id: true },
-      where: { confirmedAt: { gte: dateFrom, lte: dateTo }, engineerName: { not: null } },
       orderBy: { _count: { id: 'desc' } },
       take: 1,
     }),
@@ -204,7 +203,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     : null;
 
   const topReceipts = topReceiptsRaw.length > 0
-    ? { userName: topReceiptsRaw[0].engineerName || 'Desconocido', count: topReceiptsRaw[0]._count.id }
+    ? { userName: userMap[topReceiptsRaw[0].confirmedById] || 'Desconocido', count: topReceiptsRaw[0]._count.id }
     : null;
 
   // Resolve hours by user

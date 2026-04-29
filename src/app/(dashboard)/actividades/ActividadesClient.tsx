@@ -22,7 +22,6 @@ interface Activity {
   purchaseOrder: string | null;
   user: { id: string; name: string };
   client: { id: string; name: string } | null;
-  opportunity: { id: string; folio: string } | null;
 }
 
 interface Props {
@@ -110,7 +109,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
       a.client?.name || '',
       a.purchaseOrder || (a.workOrderFolio ? 'Sin P.O.' : 'Sin Cotización'),
       formatDuration(a.durationMinutes),
-      a.opportunity?.folio || '',
+      a.workOrderFolio || '',
     ]);
 
     const csv = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -358,8 +357,8 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
                       <p className="font-medium text-slate-800 text-sm">
                         {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
                       </p>
-                      {act.opportunity && (
-                        <p className="text-xs text-indigo-500">{act.opportunity.folio}</p>
+                      {act.workOrderFolio && (
+                        <p className="text-xs text-indigo-500 font-mono">{act.workOrderFolio}</p>
                       )}
                     </td>
                     <td>

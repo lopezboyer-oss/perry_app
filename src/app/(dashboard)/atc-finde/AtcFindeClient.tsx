@@ -24,7 +24,6 @@ interface Activity {
   user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
-  opportunity: { id: string; folio: string } | null;
 }
 
 interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; }
