@@ -150,7 +150,15 @@ export function OportunidadesClient({ opportunities, users, filters, userRole }:
                       {opp.folio ? (
                         <span className="font-mono font-bold text-indigo-600 text-xs">{opp.folio}</span>
                       ) : (
-                        <span className="text-[10px] font-bold text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">SIN FOLIO ODOO</span>
+                        <Link
+                          href={`/actividades/${opp.firstActivityId}/editar`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="group inline-flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded hover:bg-red-100 hover:border-red-400 hover:text-red-700 transition-all animate-pulse hover:animate-none"
+                          title="Haz clic para agregar el folio Odoo"
+                        >
+                          SIN FOLIO ODOO
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60 group-hover:opacity-100"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                        </Link>
                       )}
                     </td>
                     <td>

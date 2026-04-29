@@ -5,6 +5,7 @@ import { OportunidadesClient } from './OportunidadesClient';
 
 export interface DerivedOpportunity {
   folio: string | null;
+  firstActivityId: string; // ID of the first/source activity
   title: string;
   responsable: string;
   responsableId: string | null;
@@ -113,6 +114,7 @@ export default async function OportunidadesPage({
 
     opportunities.push({
       folio,
+      firstActivityId: first.id,
       title: first.title,
       responsable: first.user?.name || 'Sin asignar',
       responsableId: first.userId,
@@ -131,6 +133,7 @@ export default async function OportunidadesPage({
   for (const c of noFolioList) {
     opportunities.push({
       folio: null,
+      firstActivityId: c.id,
       title: c.title,
       responsable: c.user?.name || 'Sin asignar',
       responsableId: c.userId,
