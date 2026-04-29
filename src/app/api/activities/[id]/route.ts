@@ -44,6 +44,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     allowedFields.safetyAuditImage = body.safetyAuditImage || null;
   }
 
+  // TERA folio: same permissions as safetyAuditImage
+  if (body.teraFolio !== undefined) {
+    if (body.teraFolio) {
+      const folio = String(body.teraFolio).trim().toUpperCase();
+      if (!/^BC-\d{3,4}$/.test(folio)) {
+        return NextResponse.json({ error: 'Folio TERA inválido. Formato: BC-XXX o BC-XXXX' }, { status: 400 });
+      }
+      allowedFields.teraFolio = folio;
+    } else {
+      allowedFields.teraFolio = null;
+    }
+  }
+
   if (Object.keys(allowedFields).length === 0) {
     return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 });
   }

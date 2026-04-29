@@ -12,6 +12,7 @@ interface Activity {
   workOrderFolio: string | null; purchaseOrder: string | null;
   loto: boolean; weekendNotes: string | null; auditNotes: string | null;
   safetyAuditImage: string | null;
+  teraFolio: string | null;
   user: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
 }
@@ -54,6 +55,8 @@ export function PlanesPasadosClient({
   );
   const [auditImageLoading, setAuditImageLoading] = useState<Record<string, boolean>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [teraFolios, setTeraFolios] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.teraFolio || ''])));
+  const [teraFolioSaving, setTeraFolioSaving] = useState<Record<string, boolean>>({});
 
   const canEditAuditImage = (act: Activity) => {
     if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
@@ -129,6 +132,27 @@ export function PlanesPasadosClient({
       if (res.ok) setAuditImages((p) => ({ ...p, [actId]: null }));
     } catch { alert('Error de conexión'); }
     setAuditImageLoading((p) => ({ ...p, [actId]: false }));
+  };
+
+  const saveTeraFolio = async (actId: string) => {
+    const folio = teraFolios[actId]?.trim().toUpperCase() || '';
+    if (folio && !/^BC-\d{3,4}$/.test(folio)) {
+      alert('Formato inválido. Use BC- seguido de 3 o 4 dígitos (ej: BC-123 o BC-1234)');
+      return;
+    }
+    setTeraFolioSaving((p) => ({ ...p, [actId]: true }));
+    try {
+      const res = await fetch(`/api/activities/${actId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teraFolio: folio || null }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        alert(d.error || 'Error al guardar folio');
+      }
+    } catch { alert('Error de conexión'); }
+    setTeraFolioSaving((p) => ({ ...p, [actId]: false }));
   };
 
   const updateActualTime = async (actId: string, field: 'actualStartTime' | 'actualEndTime', value: string) => {
@@ -298,27 +322,58 @@ export function PlanesPasadosClient({
                         </td>
                       )}
 
-                      {/* TERA IMAGE */}
+                      {/* TERA IMAGE + FOLIO */}
                       <td className="text-center">
                         {auditImageLoading[act.id] ? (
                           <Loader2 size={16} className="mx-auto animate-spin text-indigo-500" />
                         ) : (
-                          <div className="flex items-center justify-center gap-1">
-                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${auditImages[act.id] ? 'bg-emerald-500' : 'bg-slate-300'}`} title={auditImages[act.id] ? 'Imagen cargada' : 'Sin imagen'} />
-                            {canEditAuditImage(act) && (
-                              <button onClick={() => handleAuditImageUpload(act.id)} className="p-1 rounded hover:bg-indigo-50 text-indigo-500 hover:text-indigo-700 transition-colors" title="Subir imagen TERA">
-                                <ImagePlus size={14} />
-                              </button>
-                            )}
-                            {auditImages[act.id] && (
-                              <button onClick={() => setPreviewImage(auditImages[act.id])} className="p-1 rounded hover:bg-violet-50 text-violet-500 hover:text-violet-700 transition-colors" title="Ver imagen">
-                                <Eye size={14} />
-                              </button>
-                            )}
-                            {auditImages[act.id] && canEditAuditImage(act) && (
-                              <button onClick={() => handleAuditImageDelete(act.id)} className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" title="Eliminar imagen">
-                                <Trash2 size={13} />
-                              </button>
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="flex items-center justify-center gap-1">
+                              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${auditImages[act.id] ? 'bg-emerald-500' : 'bg-slate-300'}`} title={auditImages[act.id] ? 'Imagen cargada' : 'Sin imagen'} />
+                              {canEditAuditImage(act) && (
+                                <button onClick={() => handleAuditImageUpload(act.id)} className="p-1 rounded hover:bg-indigo-50 text-indigo-500 hover:text-indigo-700 transition-colors" title="Subir imagen TERA">
+                                  <ImagePlus size={14} />
+                                </button>
+                              )}
+                              {auditImages[act.id] && (
+                                <button onClick={() => setPreviewImage(auditImages[act.id])} className="p-1 rounded hover:bg-violet-50 text-violet-500 hover:text-violet-700 transition-colors" title="Ver imagen">
+                                  <Eye size={14} />
+                                </button>
+                              )}
+                              {auditImages[act.id] && canEditAuditImage(act) && (
+                                <button onClick={() => handleAuditImageDelete(act.id)} className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors" title="Eliminar imagen">
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                            {/* TERA Folio */}
+                            {canEditAuditImage(act) ? (
+                              <div className="flex items-center gap-0.5">
+                                <input
+                                  type="text"
+                                  maxLength={8}
+                                  placeholder="BC-000"
+                                  value={teraFolios[act.id] || ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value.toUpperCase();
+                                    setTeraFolios((p) => ({ ...p, [act.id]: v }));
+                                  }}
+                                  onBlur={() => saveTeraFolio(act.id)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveTeraFolio(act.id); }}
+                                  className={`w-[70px] text-[10px] font-mono px-1 py-0.5 rounded border text-center ${
+                                    teraFolios[act.id] && /^BC-\d{3,4}$/.test(teraFolios[act.id])
+                                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 font-bold'
+                                      : 'border-slate-200 text-slate-500'
+                                  }`}
+                                />
+                                {teraFolioSaving[act.id] && <Loader2 size={10} className="animate-spin text-indigo-400" />}
+                              </div>
+                            ) : (
+                              teraFolios[act.id] && (
+                                <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                  {teraFolios[act.id]}
+                                </span>
+                              )
                             )}
                           </div>
                         )}
