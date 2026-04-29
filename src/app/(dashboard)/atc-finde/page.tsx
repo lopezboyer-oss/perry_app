@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AtcFindeClient } from './AtcFindeClient';
 import { getTijuanaToday, parseLocalDate } from '@/lib/timezone';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
 function getImmediateWeekendDates(): { saturday: string; sunday: string } {
   const todayStr = getTijuanaToday();
@@ -38,10 +39,11 @@ export default async function AtcFindePage() {
   const satDate = parseLocalDate(saturday);
   const sunDate = parseLocalDate(sunday);
 
-  // ALL users see ALL activities in ATC Finde (no user/team filter)
+  // ALL users see ALL activities in ATC Finde (no user/team filter) — but scoped to company
+  const companyFilter = getCompanyFilterFromCookies(role);
   const satStart = new Date(satDate); satStart.setHours(0, 0, 0, 0);
   const sunEnd = new Date(sunDate); sunEnd.setHours(23, 59, 59, 999);
-  const where = { date: { gte: satStart, lte: sunEnd } };
+  const where = { date: { gte: satStart, lte: sunEnd }, ...companyFilter };
 
   const [
     activities, technicians, safetyDedicados,

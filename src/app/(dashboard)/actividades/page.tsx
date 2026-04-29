@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { ActividadesClient } from './ActividadesClient';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
 export default async function ActividadesPage({
   searchParams,
@@ -25,7 +26,8 @@ export default async function ActividadesPage({
   const folioOdoo = searchParams.folioOdoo || '';
 
   // Build where clause
-  const where: any = {};
+  const companyFilter = getCompanyFilterFromCookies(role);
+  const where: any = { ...companyFilter };
 
   // Role-based filter
   if (role === 'INGENIERO') {

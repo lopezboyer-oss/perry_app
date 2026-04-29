@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { PlanesPasadosClient } from './PlanesPasadosClient';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
 export default async function PlanesPasadosPage({
   searchParams,
@@ -13,6 +14,7 @@ export default async function PlanesPasadosPage({
 
   const role = session.user.role;
   const selectedWeekend = searchParams.weekend || '';
+  const companyFilter = getCompanyFilterFromCookies(role);
 
   // Get all distinct weekendOf values from assignments (past plans)
   const weekends = await prisma.weekendTechAssignment.findMany({
@@ -39,7 +41,7 @@ export default async function PlanesPasadosPage({
 
     [activities, techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments] = await Promise.all([
       prisma.activity.findMany({
-        where: { date: { gte: satDate, lte: sunEnd } },
+        where: { date: { gte: satDate, lte: sunEnd }, ...companyFilter },
         include: {
           user: { select: { id: true, name: true } },
           contact: { select: { id: true, name: true } },

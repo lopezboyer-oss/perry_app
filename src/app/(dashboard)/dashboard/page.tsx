@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { DashboardClient } from './DashboardClient';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
 function getDateRange(period: string): { dateFrom: Date; dateTo: Date } {
   const now = new Date();
@@ -42,18 +43,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const { dateFrom, dateTo } = getDateRange(period);
 
   // ── Company Filter ──
-  const { cookies } = await import('next/headers');
-  const activeCompanyCookie = cookies().get('perry_active_company')?.value;
-  let companyFilter: any = {};
-  if (activeCompanyCookie === 'ALL' && role === 'ADMIN') {
-    companyFilter = {}; // consolidated
-  } else if (activeCompanyCookie && activeCompanyCookie !== 'ALL') {
-    companyFilter = { companyId: activeCompanyCookie };
-  } else {
-    // Default to user's baseCompanyId
-    const baseCompanyId = (session.user as any).baseCompanyId;
-    if (baseCompanyId) companyFilter = { companyId: baseCompanyId };
-  }
+  const companyFilter = getCompanyFilterFromCookies(role);
 
   // Recopilar usuarios disponibles para el dropdown
   let availableUsers: { id: string; name: string }[] = [];

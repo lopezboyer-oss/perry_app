@@ -39,13 +39,31 @@ export async function getActiveCompanyId(
 
 /**
  * Get the Prisma where filter for company-scoped queries.
- * Returns null for ADMIN consolidated view (no filter needed).
+ * Returns {} for ADMIN consolidated view (no filter needed).
  */
 export function getCompanyWhereFilter(
   activeCompanyId: string | null,
 ): { companyId: string } | {} {
   if (!activeCompanyId) return {}; // ADMIN "ALL" — no filter
   return { companyId: activeCompanyId };
+}
+
+/**
+ * Convenience: get company filter from cookies + role in one call.
+ * Use this in server pages/API routes.
+ */
+export function getCompanyFilterFromCookies(role: string): { companyId: string } | {} {
+  const cookieStore = cookies();
+  const cookieVal = cookieStore.get(COOKIE_NAME)?.value;
+
+  // ADMIN with "ALL" = no filter
+  if (cookieVal === 'ALL' && role === 'ADMIN') return {};
+
+  // If a specific company is selected
+  if (cookieVal && cookieVal !== 'ALL') return { companyId: cookieVal };
+
+  // No cookie set — return empty (will show all for ADMIN, or need baseCompanyId)
+  return {};
 }
 
 /**

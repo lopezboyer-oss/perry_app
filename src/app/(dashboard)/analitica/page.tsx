@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AnaliticaClient } from './AnaliticaClient';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
 export default async function AnaliticaPage() {
   const session = await auth();
@@ -21,17 +22,21 @@ export default async function AnaliticaPage() {
     userFilter = { userId: { in: [userId, ...team.map((u) => u.id)] } };
   }
 
+  // Company filter
+  const companyFilter = getCompanyFilterFromCookies(role);
+  const baseFilter = { ...userFilter, ...companyFilter };
+
   // Activities by type with hours
   const byType = await prisma.activity.groupBy({
     by: ['type'],
     _count: { id: true },
     _sum: { durationMinutes: true },
-    where: userFilter,
+    where: baseFilter,
   });
 
   // Activities by month
   const allActivities = await prisma.activity.findMany({
-    where: userFilter,
+    where: baseFilter,
     select: { date: true, type: true, durationMinutes: true },
     orderBy: { date: 'asc' },
   });
@@ -48,7 +53,7 @@ export default async function AnaliticaPage() {
     by: ['userId'],
     _count: { id: true },
     _sum: { durationMinutes: true },
-    where: userFilter,
+    where: baseFilter,
   });
 
   const allUsers = await prisma.user.findMany({ select: { id: true, name: true } });
@@ -56,7 +61,7 @@ export default async function AnaliticaPage() {
 
   // Opportunity metrics — derived from COTIZACION activities grouped by folio
   const cotizaciones = await prisma.activity.findMany({
-    where: { ...userFilter, type: 'COTIZACION' },
+    where: { ...baseFilter, type: 'COTIZACION' },
     select: { workOrderFolio: true, status: true, date: true },
     orderBy: { date: 'asc' },
   });

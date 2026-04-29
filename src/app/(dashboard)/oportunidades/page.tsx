@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { OportunidadesClient } from './OportunidadesClient';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
 export interface DerivedOpportunity {
   folio: string | null;
@@ -30,9 +31,12 @@ export default async function OportunidadesPage({
   const role = session.user.role;
   const userId = session.user.id;
 
+  // Get company filter
+  const companyFilter = getCompanyFilterFromCookies(role);
+
   // Get all COTIZACION activities to derive opportunities
   const cotizaciones = await prisma.activity.findMany({
-    where: { type: 'COTIZACION' },
+    where: { type: 'COTIZACION', ...companyFilter },
     select: {
       id: true,
       workOrderFolio: true,
@@ -55,6 +59,7 @@ export default async function OportunidadesPage({
   
   const allLinkedActivities = await prisma.activity.findMany({
     where: {
+      ...companyFilter,
       OR: [
         { type: 'COTIZACION' },
         { workOrderFolio: { in: cotizacionFolios as string[] } },
