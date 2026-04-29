@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 async function searchOrder(folio: string) {
   return odooExecute('sale.order', 'search_read', [
     [[[  'name', '=', folio]]],
-    { fields: ['name', 'x_studio_po_cliente_1', 'x_studio_proyecto', 'x_studio_empresa_relacionada', 'partner_id', 'state'], limit: 1 },
+    { fields: ['name', 'x_studio_po_cliente_1', 'x_studio_proyecto', 'x_studio_empresa_relacionada', 'partner_id', 'state', 'company_id'], limit: 1 },
   ]);
 }
 
@@ -95,6 +95,14 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Detect Perry company from Odoo company_id
+    const odooCompanyId = order.company_id ? order.company_id[0] : null;
+    let perryCompanyId: string | null = null;
+    if (odooCompanyId) {
+      const perryCompany = await prisma.company.findUnique({ where: { odooId: odooCompanyId } });
+      if (perryCompany) perryCompanyId = perryCompany.id;
+    }
+
     return NextResponse.json({
       found: true,
       folio: order.name,
@@ -105,6 +113,8 @@ export async function GET(req: NextRequest) {
       contactName,
       clientId,
       contactId,
+      companyId: perryCompanyId,
+      odooCompanyId,
       state: order.state,
       stateLabel: ({ draft: 'Borrador', sent: 'Enviada', sale: 'Confirmada', cancel: 'Cancelada' } as Record<string, string>)[order.state] || order.state,
     });

@@ -57,8 +57,12 @@ export function CobranzaClient() {
     setLoading(true);
     setError('');
     try {
+      // Read active company from cookie for the API call
+      const cookie = document.cookie.split('; ').find(c => c.startsWith('perry_active_company='));
+      const activeCompany = cookie?.split('=')[1] || '';
+      const companyParam = activeCompany ? `?companyId=${encodeURIComponent(activeCompany)}` : '';
       const [invRes, recRes] = await Promise.all([
-        fetch('/api/odoo/invoices'),
+        fetch(`/api/odoo/invoices${companyParam}`),
         fetch('/api/cobranza/receipts'),
       ]);
       const invData = await invRes.json();

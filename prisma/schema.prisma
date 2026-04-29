@@ -10,8 +10,8 @@ datasource db {
 
 // ─── ENUMS (using String fields) ────────────────────────────────
 
-// Role: ADMIN, SUPERVISOR, SUPERVISOR_SAFETY_LP, INGENIERO
-// ActivityType: VISITA_CAMPO, COTIZACION, EJECUCION, PLANEACION, DISENO
+// Role: ADMIN, ADMINISTRACION, SUPERVISOR, SUPERVISOR_SAFETY_LP, INGENIERO
+// ActivityType: VISITA_CAMPO, COTIZACION, EJECUCION, PLANEACION, DISENO, CONSORCIO
 // ActivityStatus: PENDIENTE, EN_PROGRESO, COMPLETADA, CANCELADA
 // OpportunityStatus: EN_PROGRESO, COMPLETADA (derived from Activities, not stored)
 // ReportSource: MANUAL, WHATSAPP_IMPORT
@@ -30,9 +30,12 @@ model User {
   supervisorId      String?
   supervisor        User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
   team              User[]    @relation("SupervisorTeam")
+  baseCompanyId     String?
+  baseCompany       Company?  @relation("UserBaseCompany", fields: [baseCompanyId], references: [id])
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  companies     UserCompany[]
   activities    Activity[]
   dailyReports  DailyReport[]
   userSafetyAssignments WeekendUserSafetyAssignment[]
@@ -111,6 +114,8 @@ model Activity {
   safetyAuditImage String?            // Base64 data URL of safety audit screenshot
   teraFolio        String?            // TERA folio number (e.g. BC-1234)
   consortiumCompany String?            // Target company when type=CONSORCIO (e.g. DROBOTS)
+  companyId       String?
+  company         Company?     @relation(fields: [companyId], references: [id])
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -132,6 +137,8 @@ model Technician {
   isActive      Boolean     @default(true)
   contractorId  String?
   contractor    Contractor? @relation(fields: [contractorId], references: [id])
+  baseCompanyId String?
+  baseCompany   Company?    @relation(fields: [baseCompanyId], references: [id])
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -149,32 +156,38 @@ model Contractor {
 }
 
 model SafetyDedicado {
-  id        String   @id @default(cuid())
-  name      String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  isActive      Boolean  @default(true)
+  baseCompanyId String?
+  baseCompany   Company? @relation(fields: [baseCompanyId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   weekendAssignments WeekendSafetyAssignment[]
 }
 
 model Vehicle {
-  id          String   @id @default(cuid())
-  name        String
-  isAvailable Boolean  @default(true)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  isAvailable   Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  baseCompanyId String?
+  baseCompany   Company? @relation(fields: [baseCompanyId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   weekendAssignments WeekendVehicleAssignment[]
 }
 
 model Driver {
-  id        String   @id @default(cuid())
-  name      String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  isActive      Boolean  @default(true)
+  baseCompanyId String?
+  baseCompany   Company? @relation(fields: [baseCompanyId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   weekendAssignments WeekendDriverAssignment[]
 }
@@ -272,4 +285,38 @@ model InvoiceReceipt {
   confirmedAt    DateTime @default(now())
   notes          String?
   createdAt      DateTime @default(now())
+}
+
+// ─── MULTIEMPRESA ───────────────────────────────────────────────
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String   @unique              // "GRUPO CASEME"
+  shortName   String?                       // "GC", "DR", "VF", "SP", "OI"
+  odooId      Int      @unique              // 1, 2, 3, 4, 5
+  folioPrefix String                        // "S", "V", "SA", "OS"
+  folioFormat String                        // "S#####", "V###", etc.
+  color       String?                       // Color hex for UI badges
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  userAccess      UserCompany[]
+  baseUsers       User[]           @relation("UserBaseCompany")
+  baseTechnicians Technician[]
+  baseSafety      SafetyDedicado[]
+  baseVehicles    Vehicle[]
+  baseDrivers     Driver[]
+  activities      Activity[]
+}
+
+model UserCompany {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  isDefault Boolean  @default(false)   // empresa que se carga al login
+
+  @@unique([userId, companyId])
 }

@@ -10,8 +10,18 @@ export async function GET(req: NextRequest) {
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
     const role = session.user.role;
-    if (role !== 'ADMIN' && role !== 'SUPERVISOR' && role !== 'SUPERVISOR_SAFETY_LP') {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
+
+    // Determine which Odoo company_id(s) to query
+    const companyParam = req.nextUrl.searchParams.get('companyId');
+    let odooCompanyFilter: any = ['company_id', '=', 1]; // default GC
+    
+    if (companyParam === 'ALL' && role === 'ADMIN') {
+      // ADMIN consolidated view — all companies except test (6)
+      odooCompanyFilter = ['company_id', 'in', [1, 2, 3, 4, 5]];
+    } else if (companyParam) {
+      // Specific company — look up its odooId
+      const company = await prisma.company.findUnique({ where: { id: companyParam } });
+      if (company) odooCompanyFilter = ['company_id', '=', company.odooId];
     }
 
     // Fetch UNPAID invoices (the ones we need to track) — no limit
@@ -21,7 +31,7 @@ export async function GET(req: NextRequest) {
         ['move_type', '=', 'out_invoice'],
         ['state', '=', 'posted'],
         ['payment_state', 'in', ['not_paid', 'partial']],
-        ['company_id', '=', 1],
+        odooCompanyFilter,
       ]],
       {
         fields: [
@@ -40,7 +50,7 @@ export async function GET(req: NextRequest) {
         ['move_type', '=', 'out_invoice'],
         ['state', '=', 'posted'],
         ['payment_state', 'in', ['paid', 'in_payment']],
-        ['company_id', '=', 1],
+        odooCompanyFilter,
       ]],
       {
         fields: [

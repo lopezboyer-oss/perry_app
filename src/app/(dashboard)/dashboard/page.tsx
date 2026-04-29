@@ -41,6 +41,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const period = searchParams?.period || 'today';
   const { dateFrom, dateTo } = getDateRange(period);
 
+  // ── Company Filter ──
+  const { cookies } = await import('next/headers');
+  const activeCompanyCookie = cookies().get('perry_active_company')?.value;
+  let companyFilter: any = {};
+  if (activeCompanyCookie === 'ALL' && role === 'ADMIN') {
+    companyFilter = {}; // consolidated
+  } else if (activeCompanyCookie && activeCompanyCookie !== 'ALL') {
+    companyFilter = { companyId: activeCompanyCookie };
+  } else {
+    // Default to user's baseCompanyId
+    const baseCompanyId = (session.user as any).baseCompanyId;
+    if (baseCompanyId) companyFilter = { companyId: baseCompanyId };
+  }
+
   // Recopilar usuarios disponibles para el dropdown
   let availableUsers: { id: string; name: string }[] = [];
   let teamIds: string[] = [];
@@ -49,7 +63,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     teamIds = await getTeamUserIds(userId);
   }
 
-  if (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP') {
+  if (['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role)) {
     availableUsers = await prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } });
   } else if (role === 'SUPERVISOR') {
     availableUsers = await prisma.user.findMany({ 
@@ -64,7 +78,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   // Validar si el target solicitado es visible para el usuario actual
   let isAuthorized = false;
   if (targetUserId) {
-    if (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP') isAuthorized = true;
+    if (['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role)) isAuthorized = true;
     else if (role === 'SUPERVISOR') isAuthorized = teamIds.includes(targetUserId);
   }
 
@@ -73,15 +87,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   if (targetUserId && isAuthorized) {
     userFilter = { userId: targetUserId };
   } else {
-    userFilter = (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP') ? {} 
+    userFilter = (['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role)) ? {} 
       : role === 'SUPERVISOR' 
         ? { userId: { in: teamIds } }
         : { userId };
   }
 
-  // Date filter for activities
+  // Date filter for activities — include company filter
   const dateFilter = { date: { gte: dateFrom, lte: dateTo } };
-  const activityFilter = { ...userFilter, ...dateFilter };
+  const activityFilter = { ...userFilter, ...dateFilter, ...companyFilter };
 
   // Fetch all data in parallel
   const [

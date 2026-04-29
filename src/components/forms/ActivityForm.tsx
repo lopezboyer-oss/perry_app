@@ -41,7 +41,20 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     location: initialData?.location || '',
     notes: initialData?.notes || '',
     consortiumCompany: initialData?.consortiumCompany || '',
+    companyId: initialData?.companyId || '',
   });
+
+  // On mount, read active company from cookie if no companyId set
+  useEffect(() => {
+    if (!form.companyId) {
+      const cookie = document.cookie.split('; ').find(c => c.startsWith('perry_active_company='));
+      const val = cookie?.split('=')[1];
+      if (val && val !== 'ALL') {
+        setForm(f => ({ ...f, companyId: val }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Odoo lookup
   const [odooLoading, setOdooLoading] = useState(false);
@@ -63,6 +76,8 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         // Use server-resolved client & contact IDs (auto-created if missing)
         if (data.clientId && !form.clientId) updates.clientId = data.clientId;
         if (data.contactId) updates.contactId = data.contactId;
+        // Company from Odoo
+        if (data.companyId) updates.companyId = data.companyId;
 
         if (Object.keys(updates).length) setForm((f) => ({ ...f, ...updates }));
 
@@ -102,6 +117,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
               if (data.purchaseOrder) updates.purchaseOrder = data.purchaseOrder;
               if (data.clientId) updates.clientId = data.clientId;
               if (data.contactId) updates.contactId = data.contactId;
+              if (data.companyId) updates.companyId = data.companyId;
               setForm((f) => ({ ...f, ...updates }));
               if (data.clientId || data.contactId) {
                 setTimeout(() => router.refresh(), 500);

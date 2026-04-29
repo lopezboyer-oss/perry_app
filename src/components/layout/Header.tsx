@@ -2,10 +2,11 @@
 
 import { logoutAction } from '@/app/actions/auth';
 import { LogOut, User, Menu, X, CalendarDays, LayoutDashboard, ClipboardList, FileText, Target, BarChart3, ClipboardPlus, HelpCircle, Clock } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { CompanySwitcher } from './CompanySwitcher';
 
 
 const navItems = [
@@ -21,7 +22,8 @@ const navItems = [
 ];
 
 const roleLabels: Record<string, string> = {
-  ADMIN: 'Administrador',
+  ADMIN: 'Admin Maestro',
+  ADMINISTRACION: 'Administración',
   SUPERVISOR: 'Supervisor',
   SUPERVISOR_SAFETY_LP: 'Sup. Safety & L.P.',
   INGENIERO: 'Ingeniero',
@@ -33,7 +35,29 @@ interface HeaderProps {
 
 export function Header({ user }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    fetch('/api/company/mine').then(r => r.json()).then(data => {
+      if (data.companies) {
+        setCompanies(data.companies);
+        // Read cookie to determine active company
+        const cookie = document.cookie.split('; ').find(c => c.startsWith('perry_active_company='));
+        const cookieVal = cookie?.split('=')[1] || null;
+        if (cookieVal === 'ALL') {
+          setActiveCompanyId(null);
+        } else if (cookieVal && data.companies.some((c: any) => c.id === cookieVal)) {
+          setActiveCompanyId(cookieVal);
+        } else {
+          // Default company
+          const def = data.companies.find((c: any) => c.isDefault);
+          setActiveCompanyId(def?.id || data.companies[0]?.id || null);
+        }
+      }
+    }).catch(() => {});
+  }, []);
 
   return (
     <>
@@ -49,8 +73,13 @@ export function Header({ user }: HeaderProps) {
         {/* Page context */}
         <div className="hidden md:block" />
 
-        {/* User info */}
+        {/* Company Switcher + User info */}
         <div className="flex items-center gap-3">
+          <CompanySwitcher
+            companies={companies}
+            activeCompanyId={activeCompanyId}
+            isAdminMaestro={user.role === 'ADMIN'}
+          />
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-slate-800">{user.name}</p>
             <p className="text-xs text-slate-500">{roleLabels[user.role] || user.role}</p>

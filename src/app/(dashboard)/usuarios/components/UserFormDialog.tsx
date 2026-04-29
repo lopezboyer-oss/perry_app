@@ -1,10 +1,10 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Eye, EyeOff } from 'lucide-react';
+import { X, Eye, EyeOff, Building2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-type Role = 'ADMIN' | 'SUPERVISOR' | 'SUPERVISOR_SAFETY_LP' | 'INGENIERO';
+type Role = 'ADMIN' | 'ADMINISTRACION' | 'SUPERVISOR' | 'SUPERVISOR_SAFETY_LP' | 'INGENIERO';
 
 export interface UserFormData {
   name: string;
@@ -13,6 +13,16 @@ export interface UserFormData {
   role: Role;
   supervisorId?: string | null;
   isSafetyDesignado?: boolean;
+  baseCompanyId?: string | null;
+  companyIds?: string[];          // empresas a las que tiene acceso
+  defaultCompanyId?: string | null; // empresa por defecto al login
+}
+
+interface CompanyRef {
+  id: string;
+  name: string;
+  shortName: string | null;
+  color: string | null;
 }
 
 interface UserFormDialogProps {
@@ -21,9 +31,10 @@ interface UserFormDialogProps {
   onSubmit: (data: UserFormData) => Promise<void>;
   initialData?: Partial<UserFormData> & { id?: string };
   supervisors: { id: string; name: string }[];
+  companies?: CompanyRef[];
 }
 
-export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supervisors }: UserFormDialogProps) {
+export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supervisors, companies = [] }: UserFormDialogProps) {
   const isEditing = !!initialData?.id;
 
   const [formData, setFormData] = useState<UserFormData>({
@@ -33,6 +44,9 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
     role: 'INGENIERO',
     supervisorId: null,
     isSafetyDesignado: false,
+    baseCompanyId: null,
+    companyIds: [],
+    defaultCompanyId: null,
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -48,9 +62,18 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
           role: initialData.role || 'INGENIERO',
           supervisorId: initialData.supervisorId || null,
           isSafetyDesignado: initialData.isSafetyDesignado || false,
+          baseCompanyId: initialData.baseCompanyId || null,
+          companyIds: initialData.companyIds || [],
+          defaultCompanyId: initialData.defaultCompanyId || null,
         });
       } else {
-        setFormData({ name: '', email: '', password: '', role: 'INGENIERO', supervisorId: null, isSafetyDesignado: false });
+        setFormData({
+          name: '', email: '', password: '', role: 'INGENIERO',
+          supervisorId: null, isSafetyDesignado: false,
+          baseCompanyId: companies[0]?.id || null,
+          companyIds: companies[0] ? [companies[0].id] : [],
+          defaultCompanyId: companies[0]?.id || null,
+        });
       }
     }
   }, [open, initialData]);
@@ -141,7 +164,8 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
                 <option value="INGENIERO">👨‍🔧 Ingeniero de Campo</option>
                 <option value="SUPERVISOR">👨‍💼 Supervisor</option>
                 <option value="SUPERVISOR_SAFETY_LP">🛡️ Supervisor Safety & L.P.</option>
-                <option value="ADMIN">👑 Administrador</option>
+                <option value="ADMINISTRACION">🏢 Administración</option>
+                <option value="ADMIN">👑 Admin Maestro</option>
               </select>
             </div>
 
@@ -172,6 +196,79 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
                 <span className="text-sm font-medium text-slate-700">🟢 Acreditado como Safety Designado</span>
               </label>
             </div>
+
+            {/* ── EMPRESAS ── */}
+            {companies.length > 0 && (
+              <div className="border-t border-slate-100 pt-4">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
+                  <Building2 size={16} className="text-indigo-500" />
+                  Empresas del Consorcio
+                </label>
+
+                {/* Checkboxes de acceso */}
+                <div className="space-y-2 mb-3">
+                  {companies.map(c => (
+                    <label key={c.id} className="flex items-center gap-2.5 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={formData.companyIds?.includes(c.id) || false}
+                        onChange={(e) => {
+                          const ids = formData.companyIds || [];
+                          const newIds = e.target.checked
+                            ? [...ids, c.id]
+                            : ids.filter(id => id !== c.id);
+                          // If removing, also clear base/default if needed
+                          const updates: Partial<UserFormData> = { companyIds: newIds };
+                          if (!e.target.checked) {
+                            if (formData.baseCompanyId === c.id) updates.baseCompanyId = newIds[0] || null;
+                            if (formData.defaultCompanyId === c.id) updates.defaultCompanyId = newIds[0] || null;
+                          }
+                          setFormData({ ...formData, ...updates });
+                        }}
+                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: c.color || '#94A3B8' }}
+                      />
+                      <span className="text-sm text-slate-700 group-hover:text-slate-900">{c.name}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Empresa Base */}
+                {(formData.companyIds?.length || 0) > 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">🏠 Empresa Base</label>
+                      <select
+                        value={formData.baseCompanyId || ''}
+                        onChange={(e) => setFormData({ ...formData, baseCompanyId: e.target.value || null })}
+                        className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      >
+                        <option value="">-- Seleccionar --</option>
+                        {companies.filter(c => formData.companyIds?.includes(c.id)).map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">🔑 Login por defecto</label>
+                      <select
+                        value={formData.defaultCompanyId || ''}
+                        onChange={(e) => setFormData({ ...formData, defaultCompanyId: e.target.value || null })}
+                        className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      >
+                        <option value="">-- Seleccionar --</option>
+                        {companies.filter(c => formData.companyIds?.includes(c.id)).map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
               <button

@@ -144,7 +144,8 @@ export const CONSORTIUM_COMPANIES = [
  * Etiquetas para roles de usuario
  */
 export const roleLabels: Record<string, string> = {
-  ADMIN: 'Administrador',
+  ADMIN: 'Admin Maestro',
+  ADMINISTRACION: 'Administración',
   SUPERVISOR: 'Supervisor',
   SUPERVISOR_SAFETY_LP: 'Supervisor Safety & L.P.',
   INGENIERO: 'Ingeniero',
@@ -152,6 +153,7 @@ export const roleLabels: Record<string, string> = {
 
 export const roleColors: Record<string, string> = {
   ADMIN: 'bg-purple-100 text-purple-700',
+  ADMINISTRACION: 'bg-rose-100 text-rose-700',
   SUPERVISOR: 'bg-amber-100 text-amber-700',
   SUPERVISOR_SAFETY_LP: 'bg-teal-100 text-teal-700',
   INGENIERO: 'bg-emerald-100 text-emerald-700',

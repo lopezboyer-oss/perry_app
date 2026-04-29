@@ -18,14 +18,24 @@ export const authConfig = {
           const { prisma } = await import('./prisma');
           const freshUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { role: true, name: true },
+            select: {
+              role: true, name: true, baseCompanyId: true,
+              companies: {
+                select: { companyId: true, isDefault: true },
+                include: { company: { select: { name: true, shortName: true, odooId: true, color: true } } },
+              },
+            },
           });
           if (freshUser) {
             token.role = freshUser.role;
             token.name = freshUser.name;
+            token.baseCompanyId = freshUser.baseCompanyId;
+            token.companyIds = freshUser.companies.map(c => c.companyId);
+            token.defaultCompanyId = freshUser.companies.find(c => c.isDefault)?.companyId
+                                     || freshUser.baseCompanyId;
           }
         } catch {
-          // If DB is unreachable, keep the cached role
+          // If DB is unreachable, keep the cached values
         }
       }
 

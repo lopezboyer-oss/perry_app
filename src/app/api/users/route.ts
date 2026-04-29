@@ -6,12 +6,12 @@ import { auth } from '@/lib/auth';
 export async function GET() {
   try {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session || !['ADMIN', 'ADMINISTRACION'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const users = await prisma.user.findMany({
-      where: { isActive: true }, // Filter soft-deleted
+      where: { isActive: true },
       select: {
         id: true,
         name: true,
@@ -19,8 +19,14 @@ export async function GET() {
         role: true,
         isSafetyDesignado: true,
         supervisorId: true,
-        supervisor: {
-          select: { name: true },
+        baseCompanyId: true,
+        supervisor: { select: { name: true } },
+        companies: {
+          select: {
+            companyId: true,
+            isDefault: true,
+            company: { select: { id: true, name: true, shortName: true, color: true } },
+          },
         },
         isActive: true,
       },
@@ -36,12 +42,12 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session || !['ADMIN', 'ADMINISTRACION'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const body = await req.json();
-    const { name, email, password, role, supervisorId, isSafetyDesignado } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado, baseCompanyId, companyIds, defaultCompanyId } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -66,6 +72,7 @@ export async function POST(req: Request) {
         role: role || 'INGENIERO',
         supervisorId: role === 'INGENIERO' ? supervisorId : null,
         isSafetyDesignado: isSafetyDesignado || false,
+        baseCompanyId: baseCompanyId || null,
       },
       select: {
         id: true,
@@ -74,6 +81,18 @@ export async function POST(req: Request) {
         role: true,
       },
     });
+
+    // Create UserCompany access entries
+    if (companyIds && companyIds.length > 0) {
+      await prisma.userCompany.createMany({
+        data: companyIds.map((cId: string) => ({
+          userId: newUser.id,
+          companyId: cId,
+          isDefault: cId === defaultCompanyId,
+        })),
+        skipDuplicates: true,
+      });
+    }
 
     return NextResponse.json(newUser, { status: 201 });
   } catch (error) {

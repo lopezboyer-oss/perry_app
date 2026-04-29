@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { roleLabels, roleColors } from '@/lib/utils';
 
 interface SupervisorRef { id: string; name: string; }
-interface UserData { id: string; name: string; email: string; role: string; isSafetyDesignado: boolean; supervisorId: string | null; supervisor: { name: string } | null; isActive: boolean; }
+interface UserData { id: string; name: string; email: string; role: string; isSafetyDesignado: boolean; supervisorId: string | null; supervisor: { name: string } | null; isActive: boolean; baseCompanyId: string | null; companies: { companyId: string; isDefault: boolean; company: { id: string; name: string; shortName: string | null; color: string | null } }[]; }
 interface TechnicianData { id: string; name: string; type: string; isCruzVerde: boolean; isActive: boolean; }
 interface SafetyData { id: string; name: string; isActive: boolean; }
 interface VehicleData { id: string; name: string; isAvailable: boolean; isActive: boolean; }
@@ -46,26 +46,31 @@ export default function UsuariosPage() {
   const [contractorList, setContractorList] = useState<ContractorData[]>([]);
   const [contractorFormOpen, setContractorFormOpen] = useState(false);
   const [contractorFormData, setContractorFormData] = useState({ id: '', name: '' });
+  const [companyList, setCompanyList] = useState<{ id: string; name: string; shortName: string | null; color: string | null }[]>([]);
 
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
     try {
-      const [usersRes, techRes, safetyRes, vehicleRes, driverRes, equipRes, contractorRes] = await Promise.all([
+      const [usersRes, techRes, safetyRes, vehicleRes, driverRes, equipRes, contractorRes, companyRes] = await Promise.all([
         fetch('/api/users'), fetch('/api/technicians'), fetch('/api/safety-dedicado'),
         fetch('/api/vehicles'), fetch('/api/drivers'), fetch('/api/elevation-equip'), fetch('/api/contractors'),
+        fetch('/api/company/mine'),
       ]);
       if (usersRes.status === 403) { router.push('/dashboard'); return; }
 
       const usersData: UserData[] = await usersRes.json();
       setUsers(usersData);
-      setSupervisors(usersData.filter(u => ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(u.role)).map(u => ({ id: u.id, name: u.name })));
+      setSupervisors(usersData.filter(u => ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(u.role)).map(u => ({ id: u.id, name: u.name })));
       setTechs(await techRes.json());
       setSafetyList(await safetyRes.json());
       setVehicleList(await vehicleRes.json());
       setDriverList(await driverRes.json());
       setEquipList(await equipRes.json());
       setContractorList(await contractorRes.json());
+
+      const companyData = await companyRes.json();
+      if (companyData.companies) setCompanyList(companyData.companies);
 
       const sessionRes = await fetch('/api/auth/session');
       if (sessionRes.ok) { const sess = await sessionRes.json(); setUserRole(sess?.user?.role || ''); }
@@ -74,7 +79,17 @@ export default function UsuariosPage() {
 
   // ── User CRUD ──
   const handleOpenNew = () => { setEditingUser(undefined); setFormOpen(true); };
-  const handleOpenEdit = (user: UserData) => { setEditingUser({ id: user.id, name: user.name, email: user.email, role: user.role, supervisorId: user.supervisorId, isSafetyDesignado: user.isSafetyDesignado }); setFormOpen(true); };
+  const handleOpenEdit = (user: UserData) => {
+    const defaultUC = user.companies?.find(c => c.isDefault);
+    setEditingUser({
+      id: user.id, name: user.name, email: user.email, role: user.role,
+      supervisorId: user.supervisorId, isSafetyDesignado: user.isSafetyDesignado,
+      baseCompanyId: user.baseCompanyId,
+      companyIds: user.companies?.map(c => c.companyId) || [],
+      defaultCompanyId: defaultUC?.companyId || null,
+    });
+    setFormOpen(true);
+  };
   const handleDelete = async (user: UserData) => { if (!window.confirm(`¿Eliminar a ${user.name}?`)) return; await fetch(`/api/users/${user.id}`, { method: 'DELETE' }); await fetchAll(); };
   const handleFormSubmit = async (data: UserFormData) => {
     if (editingUser?.id) { const res = await fetch(`/api/users/${editingUser.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (!res.ok) throw new Error(await res.text()); }
@@ -134,7 +149,7 @@ export default function UsuariosPage() {
 
   if (loading) return <div className="p-8 text-center text-slate-500">Cargando personal...</div>;
 
-  const isAdmin = userRole === 'ADMIN';
+  const isAdmin = userRole === 'ADMIN' || userRole === 'ADMINISTRACION';
   const canManageTechs = isAdmin;
   const canManageSafety = isAdmin || userRole === 'SUPERVISOR_SAFETY_LP';
   const canManageDrivers = isAdmin || userRole === 'SUPERVISOR_SAFETY_LP';
@@ -222,7 +237,7 @@ export default function UsuariosPage() {
               </table>
             </div>
           </div>
-          <UserFormDialog open={formOpen} onOpenChange={setFormOpen} initialData={editingUser} supervisors={supervisors} onSubmit={handleFormSubmit} />
+          <UserFormDialog open={formOpen} onOpenChange={setFormOpen} initialData={editingUser} supervisors={supervisors} onSubmit={handleFormSubmit} companies={companyList} />
         </>
       )}
 

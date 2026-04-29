@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         location: data.location || null,
         notes: data.notes || null,
         consortiumCompany: data.consortiumCompany || null,
+        companyId: data.companyId || null,
       },
     });
 

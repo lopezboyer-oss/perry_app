@@ -89,7 +89,7 @@ export function Sidebar({ user }: SidebarProps) {
             );
           })}
           
-          {user.role === 'ADMIN' && (
+          {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION') && (
             <Link
               href="/usuarios"
               className={cn(
@@ -121,7 +121,7 @@ export function Sidebar({ user }: SidebarProps) {
             </Link>
           )}
 
-          {['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(user.role) && (
+          {['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(user.role) && (
             <Link
               href="/directorio"
               className={cn(
