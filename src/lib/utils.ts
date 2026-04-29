@@ -91,6 +91,7 @@ export const activityTypeLabels: Record<string, string> = {
   EJECUCION: 'Ejecución',
   PLANEACION: 'Planeación',
   DISENO: 'Diseño',
+  CONSORCIO: 'Consorcio',
 };
 
 /**
@@ -125,7 +126,19 @@ export const activityTypeColors: Record<string, string> = {
   EJECUCION: 'bg-green-100 text-green-800 border-green-200',
   PLANEACION: 'bg-purple-100 text-purple-800 border-purple-200',
   DISENO: 'bg-rose-100 text-rose-800 border-rose-200',
+  CONSORCIO: 'bg-cyan-100 text-cyan-800 border-cyan-200',
 };
+
+/**
+ * Empresas del consorcio
+ */
+export const CONSORTIUM_COMPANIES = [
+  'GRUPO CASEME',
+  'DROBOTS',
+  'OPUS INGENIUM',
+  'VULCAN FORGE',
+  'SAINPRO',
+] as const;
 
 /**
  * Etiquetas para roles de usuario

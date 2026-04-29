@@ -109,6 +109,7 @@ model Activity {
   weekendNotes    String?
   auditNotes      String?
   safetyAuditImage String?            // Base64 data URL of safety audit screenshot
+  consortiumCompany String?            // Target company when type=CONSORCIO (e.g. DROBOTS)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 

@@ -77,6 +77,7 @@ export async function PUT(
         durationMinutes: data.durationMinutes || null,
         location: data.location || null,
         notes: data.notes || null,
+        consortiumCompany: data.consortiumCompany || null,
       },
     });
 

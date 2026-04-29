@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft, Search, Loader2 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { activityTypeLabels, activityStatusLabels, calculateDuration, getLocalToday } from '@/lib/utils';
+import { activityTypeLabels, activityStatusLabels, calculateDuration, getLocalToday, CONSORTIUM_COMPANIES } from '@/lib/utils';
 
 interface Props {
   users: { id: string; name: string }[];
@@ -40,6 +40,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     durationMinutes: initialData?.durationMinutes || '',
     location: initialData?.location || '',
     notes: initialData?.notes || '',
+    consortiumCompany: initialData?.consortiumCompany || '',
   });
 
   // Odoo lookup
@@ -167,6 +168,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         contactId: form.contactId || null,
         workOrderFolio: form.workOrderFolio || null,
         purchaseOrder: form.purchaseOrder || null,
+        consortiumCompany: form.type === 'CONSORCIO' ? (form.consortiumCompany || null) : null,
         projectArea: form.projectArea || null,
         result: form.result || null,
         nextStep: form.nextStep || null,
@@ -243,6 +245,24 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
               ))}
             </select>
           </div>
+          {form.type === 'CONSORCIO' && (
+            <div className="animate-fade-in">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                🏢 Empresa destino del soporte *
+              </label>
+              <select
+                value={form.consortiumCompany}
+                onChange={(e) => setForm({ ...form, consortiumCompany: e.target.value })}
+                className="w-full border-cyan-300 focus:ring-cyan-500 focus:border-cyan-500"
+                required
+              >
+                <option value="">Seleccionar empresa...</option>
+                {CONSORTIUM_COMPANIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Estatus *</label>
             <select

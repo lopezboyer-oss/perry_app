@@ -54,6 +54,11 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
             <span className={`badge ${activityStatusColors[activity.status] || ''}`}>
               {activityStatusLabels[activity.status]}
             </span>
+            {activity.type === 'CONSORCIO' && activity.consortiumCompany && (
+              <span className="badge bg-cyan-100 text-cyan-800 border-cyan-200">
+                🏢 Soporte a: {activity.consortiumCompany}
+              </span>
+            )}
           </div>
         </div>
         {canEdit && (
