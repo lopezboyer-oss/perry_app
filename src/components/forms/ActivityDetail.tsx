@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Edit, Trash2, Clock, MapPin, Calendar, User, Building, Target } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Clock, MapPin, Calendar, User, Building } from 'lucide-react';
 import {
   activityTypeLabels, activityStatusLabels, activityTypeColors,
   activityStatusColors, formatDate, formatDuration,
@@ -84,19 +84,12 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
             <DetailItem icon={User} label="Responsable" value={activity.user?.name || '-'} />
             <DetailItem icon={Building} label="Cliente" value={activity.client?.name || '-'} />
             <DetailItem icon={User} label="Contacto" value={activity.contact?.name || '-'} />
-            {activity.opportunity && (
-              <DetailItem
-                icon={Target}
-                label="Oportunidad"
-                value={
-                  <Link href={`/oportunidades/${activity.opportunity.id}`} className="text-indigo-600 hover:text-indigo-700">
-                    {activity.opportunity.folio} - {activity.opportunity.title}
-                  </Link>
-                }
-              />
-            )}
             {activity.workOrderFolio && (
-              <DetailItem label="Folio ODOO" value={<span className="font-mono">{activity.workOrderFolio}</span>} />
+              <DetailItem label="Folio ODOO" value={
+                <Link href={`/oportunidades/${activity.workOrderFolio}`} className="font-mono text-indigo-600 hover:text-indigo-700">
+                  {activity.workOrderFolio}
+                </Link>
+              } />
             )}
             {activity.purchaseOrder ? (
               <DetailItem label="P.O. Cliente" value={<span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">{activity.purchaseOrder}</span>} />

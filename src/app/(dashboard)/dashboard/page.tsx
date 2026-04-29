@@ -83,15 +83,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const dateFilter = { date: { gte: dateFrom, lte: dateTo } };
   const activityFilter = { ...userFilter, ...dateFilter };
 
-  const oppFilter = userFilter;
-
   // Fetch all data in parallel
   const [
     totalActivities,
     activitiesByType,
     activitiesByStatus,
-    totalOpportunities,
-    oppsByStatus,
     recentActivities,
     users,
     // Top performers
@@ -113,12 +109,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       by: ['status'],
       _count: { id: true },
       where: activityFilter,
-    }),
-    prisma.opportunity.count({ where: oppFilter }),
-    prisma.opportunity.groupBy({
-      by: ['status'],
-      _count: { id: true },
-      where: oppFilter,
     }),
     prisma.activity.findMany({
       where: activityFilter,
@@ -165,43 +155,39 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     }),
   ]);
 
-  // Opportunities pending quotation
-  const pendingQuotation = await prisma.opportunity.count({
-    where: {
-      ...oppFilter,
-      status: { in: ['VISITADA', 'EN_ESPERA_INFORMACION', 'COTIZACION_EN_PROCESO'] },
-    },
+  // Derived opportunity stats from COTIZACION activities (new model)
+  const cotizacionActs = await prisma.activity.findMany({
+    where: { ...userFilter, type: 'COTIZACION' },
+    select: { workOrderFolio: true, status: true, date: true },
+    orderBy: { date: 'asc' },
   });
 
-  // Overdue opportunities
-  const overdue = await prisma.opportunity.count({
-    where: {
-      ...oppFilter,
-      quotationDueDate: { lt: new Date() },
-      quotationSentDate: null,
-      status: { notIn: ['COTIZACION_ENVIADA', 'GANADA', 'PERDIDA'] },
-    },
-  });
+  // Group by folio to derive opportunities
+  const folioMap = new Map<string, typeof cotizacionActs>();
+  for (const a of cotizacionActs) {
+    const key = a.workOrderFolio || `_no_folio_${a.date.toISOString()}`;
+    if (!folioMap.has(key)) folioMap.set(key, []);
+    folioMap.get(key)!.push(a);
+  }
 
-  // Average lead time (visit to quotation)
-  const oppsWithLeadTime = await prisma.opportunity.findMany({
-    where: {
-      ...oppFilter,
-      actualVisitDate: { not: null },
-      quotationSentDate: { not: null },
-    },
-    select: { actualVisitDate: true, quotationSentDate: true },
-  });
-
+  let totalOpportunities = folioMap.size;
+  let pendingQuotation = 0; // EN_PROGRESO opportunities
   let avgLeadTime = 0;
-  if (oppsWithLeadTime.length > 0) {
-    const totalDays = oppsWithLeadTime.reduce((sum, opp) => {
-      const days = Math.ceil(
-        (opp.quotationSentDate!.getTime() - opp.actualVisitDate!.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      return sum + days;
-    }, 0);
-    avgLeadTime = Math.round(totalDays / oppsWithLeadTime.length);
+  const leadTimes: number[] = [];
+
+  for (const acts of folioMap.values()) {
+    const hasEnProgreso = acts.some(a => a.status === 'EN_PROGRESO');
+    const completada = acts.find(a => a.status === 'COMPLETADA');
+    const enProgreso = acts.find(a => a.status === 'EN_PROGRESO');
+    if (hasEnProgreso && !completada) pendingQuotation++;
+    if (enProgreso && completada) {
+      const days = Math.ceil((completada.date.getTime() - enProgreso.date.getTime()) / (1000 * 60 * 60 * 24));
+      if (days >= 0) leadTimes.push(days);
+    }
+  }
+
+  if (leadTimes.length > 0) {
+    avgLeadTime = Math.round(leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length);
   }
 
   // Map user names
@@ -242,12 +228,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       count: g._count.id,
     })),
     totalOpportunities,
-    oppsByStatus: oppsByStatus.map((g) => ({
-      status: g.status,
-      count: g._count.id,
-    })),
+    oppsByStatus: [],
     pendingQuotation,
-    overdue,
     avgLeadTime,
     topActive,
     topQuotations,

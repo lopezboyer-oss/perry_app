@@ -21,7 +21,6 @@ export default async function ActividadDetailPage({
       user: { select: { id: true, name: true } },
       client: { select: { id: true, name: true } },
       contact: { select: { id: true, name: true } },
-      opportunity: { select: { id: true, folio: true, title: true } },
       dailyReport: { select: { id: true, reportDate: true, source: true } },
     },
   });
@@ -36,15 +35,11 @@ export default async function ActividadDetailPage({
   const isEditing = searchParams.editar === 'true';
 
   if (isEditing) {
-    const [users, clients, opportunities] = await Promise.all([
+    const [users, clients] = await Promise.all([
       prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
       prisma.client.findMany({
         select: { id: true, name: true, contacts: { select: { id: true, name: true } } },
         orderBy: { name: 'asc' },
-      }),
-      prisma.opportunity.findMany({
-        select: { id: true, folio: true, title: true },
-        orderBy: { folio: 'desc' },
       }),
     ]);
 
@@ -54,7 +49,6 @@ export default async function ActividadDetailPage({
         <ActivityForm
           users={users}
           clients={clients}
-          opportunities={opportunities}
           currentUserId={session.user.id}
           userRole={session.user.role}
           initialData={{

@@ -9,14 +9,13 @@ import { activityTypeLabels, activityStatusLabels, calculateDuration, getLocalTo
 interface Props {
   users: { id: string; name: string }[];
   clients: { id: string; name: string; contacts: { id: string; name: string }[] }[];
-  opportunities: { id: string; folio: string; title: string }[];
   currentUserId: string;
   userRole: string;
   initialData?: any;
   prefillFolio?: string;
 }
 
-export function ActivityForm({ users, clients, opportunities, currentUserId, userRole, initialData, prefillFolio }: Props) {
+export function ActivityForm({ users, clients, currentUserId, userRole, initialData, prefillFolio }: Props) {
   const router = useRouter();
   const isEdit = !!initialData;
   const [loading, setLoading] = useState(false);
@@ -30,7 +29,6 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
     title: initialData?.title || '',
     clientId: initialData?.clientId || '',
     contactId: initialData?.contactId || '',
-    opportunityId: initialData?.opportunityId || '',
     workOrderFolio: initialData?.workOrderFolio || '',
     purchaseOrder: initialData?.purchaseOrder || '',
     projectArea: initialData?.projectArea || '',
@@ -167,7 +165,6 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
         ...form,
         clientId: form.clientId || null,
         contactId: form.contactId || null,
-        opportunityId: form.opportunityId || null,
         workOrderFolio: form.workOrderFolio || null,
         purchaseOrder: form.purchaseOrder || null,
         projectArea: form.projectArea || null,
@@ -299,19 +296,6 @@ export function ActivityForm({ users, clients, opportunities, currentUserId, use
               placeholder="Buscar contacto..."
               disabled={!form.clientId}
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Oportunidad (OPP)</label>
-            <select
-              value={form.opportunityId}
-              onChange={(e) => setForm({ ...form, opportunityId: e.target.value })}
-              className="w-full"
-            >
-              <option value="">Sin oportunidad</option>
-              {opportunities.map((o) => (
-                <option key={o.id} value={o.id}>{o.folio} - {o.title}</option>
-              ))}
-            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Folio ODOO</label>

@@ -158,7 +158,7 @@ export function CobranzaClient() {
       const key = i.contact || 'Sin Contacto';
       if (!byContact[key]) byContact[key] = { count: 0, amount: 0 };
       byContact[key].count++;
-      byContact[key].amount += i.amountPending;
+      byContact[key].amount += i.amountTotal;
     });
 
     // By engineer (only invoices without receipt)
@@ -167,7 +167,7 @@ export function CobranzaClient() {
       const key = i.engineer || 'Sin Asignar';
       if (!byEngineer[key]) byEngineer[key] = { count: 0, amount: 0 };
       byEngineer[key].count++;
-      byEngineer[key].amount += i.amountPending;
+      byEngineer[key].amount += i.amountTotal;
     });
 
     return { pending, paid, totalPending, byContact, byEngineer, withReceipt, withoutReceipt };

@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
         title: data.title,
         clientId: data.clientId || null,
         contactId: data.contactId || null,
-        opportunityId: data.opportunityId || null,
         workOrderFolio: data.workOrderFolio || null,
         purchaseOrder: data.purchaseOrder || null,
         projectArea: data.projectArea || null,

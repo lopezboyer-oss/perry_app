@@ -54,53 +54,41 @@ export default async function AnaliticaPage() {
   const allUsers = await prisma.user.findMany({ select: { id: true, name: true } });
   const userMap = Object.fromEntries(allUsers.map((u) => [u.id, u.name]));
 
-  // Opportunity metrics
-  const oppsWithLeadTime = await prisma.opportunity.findMany({
-    where: {
-      ...userFilter,
-      actualVisitDate: { not: null },
-      quotationSentDate: { not: null },
-    },
-    select: { actualVisitDate: true, quotationSentDate: true, status: true },
+  // Opportunity metrics — derived from COTIZACION activities grouped by folio
+  const cotizaciones = await prisma.activity.findMany({
+    where: { ...userFilter, type: 'COTIZACION' },
+    select: { workOrderFolio: true, status: true, date: true },
+    orderBy: { date: 'asc' },
   });
 
-  const oppsWithVisitDelay = await prisma.opportunity.findMany({
-    where: {
-      ...userFilter,
-      scheduledVisitDate: { not: null },
-      actualVisitDate: { not: null },
-    },
-    select: { scheduledVisitDate: true, actualVisitDate: true },
-  });
-
-  const totalVisits = await prisma.opportunity.count({
-    where: { ...userFilter, actualVisitDate: { not: null } },
-  });
-
-  const totalQuotations = await prisma.opportunity.count({
-    where: { ...userFilter, quotationSentDate: { not: null } },
-  });
-
-  const wonOpps = await prisma.opportunity.count({
-    where: { ...userFilter, status: 'GANADA' },
-  });
-
-  // Calculate averages
-  let avgLeadTime = 0;
-  if (oppsWithLeadTime.length > 0) {
-    const total = oppsWithLeadTime.reduce((sum, o) => {
-      return sum + Math.ceil((o.quotationSentDate!.getTime() - o.actualVisitDate!.getTime()) / (1000 * 60 * 60 * 24));
-    }, 0);
-    avgLeadTime = Math.round(total / oppsWithLeadTime.length);
+  // Group by folio
+  const folioMap = new Map<string, typeof cotizaciones>();
+  for (const a of cotizaciones) {
+    const key = a.workOrderFolio || `_nf_${a.date.toISOString()}`;
+    if (!folioMap.has(key)) folioMap.set(key, []);
+    folioMap.get(key)!.push(a);
   }
 
-  let avgVisitDelay = 0;
-  if (oppsWithVisitDelay.length > 0) {
-    const total = oppsWithVisitDelay.reduce((sum, o) => {
-      return sum + Math.ceil((o.actualVisitDate!.getTime() - o.scheduledVisitDate!.getTime()) / (1000 * 60 * 60 * 24));
-    }, 0);
-    avgVisitDelay = Math.round(total / oppsWithVisitDelay.length);
+  const leadTimes: number[] = [];
+  let totalCotizaciones = 0;
+  let completadas = 0;
+  let enProgreso = 0;
+
+  for (const acts of folioMap.values()) {
+    totalCotizaciones++;
+    const start = acts.find(a => a.status === 'EN_PROGRESO');
+    const end = acts.find(a => a.status === 'COMPLETADA');
+    if (end) completadas++;
+    if (acts.some(a => a.status === 'EN_PROGRESO') && !end) enProgreso++;
+    if (start && end) {
+      const days = Math.ceil((end.date.getTime() - start.date.getTime()) / (1000 * 60 * 60 * 24));
+      if (days >= 0) leadTimes.push(days);
+    }
   }
+
+  const avgLeadTime = leadTimes.length > 0
+    ? Math.round(leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length)
+    : 0;
 
   const data = {
     byType: byType.map((g) => ({
@@ -118,12 +106,12 @@ export default async function AnaliticaPage() {
       hours: Math.round((g._sum.durationMinutes || 0) / 60),
     })),
     avgLeadTime,
-    avgVisitDelay,
-    conversionRate: totalVisits > 0 ? Math.round((totalQuotations / totalVisits) * 100) : 0,
-    winRate: totalQuotations > 0 ? Math.round((wonOpps / totalQuotations) * 100) : 0,
-    totalVisits,
-    totalQuotations,
-    wonOpps,
+    avgVisitDelay: 0,
+    conversionRate: totalCotizaciones > 0 ? Math.round((completadas / totalCotizaciones) * 100) : 0,
+    winRate: 0,
+    totalVisits: enProgreso,
+    totalQuotations: completadas,
+    wonOpps: 0,
   };
 
   return <AnaliticaClient data={data} />;

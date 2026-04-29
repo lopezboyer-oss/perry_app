@@ -43,7 +43,6 @@ interface DashboardData {
   totalOpportunities: number;
   oppsByStatus: { status: string; count: number }[];
   pendingQuotation: number;
-  overdue: number;
   avgLeadTime: number;
   topActive: TopPerformer | null;
   topQuotations: TopPerformer | null;
@@ -211,14 +210,14 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             </div>
           </div>
         </div>
-        <div className="card p-4 border-l-4 border-l-red-500">
+        <div className="card p-4 border-l-4 border-l-violet-500">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-50 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
+            <div className="p-2 bg-violet-50 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-violet-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Oportunidades Atrasadas</p>
-              <p className="text-2xl font-bold text-slate-800">{data.overdue}</p>
+              <p className="text-sm text-slate-500">Lead Time Promedio</p>
+              <p className="text-2xl font-bold text-slate-800">{data.avgLeadTime > 0 ? `${data.avgLeadTime}d` : '—'}</p>
             </div>
           </div>
         </div>

@@ -13,7 +13,7 @@ datasource db {
 // Role: ADMIN, SUPERVISOR, SUPERVISOR_SAFETY_LP, INGENIERO
 // ActivityType: VISITA_CAMPO, COTIZACION, EJECUCION, PLANEACION, DISENO
 // ActivityStatus: PENDIENTE, EN_PROGRESO, COMPLETADA, CANCELADA
-// OpportunityStatus: PROGRAMADA, VISITADA, EN_ESPERA_INFORMACION, COTIZACION_EN_PROCESO, COTIZACION_ENVIADA, GANADA, PERDIDA
+// OpportunityStatus: EN_PROGRESO, COMPLETADA (derived from Activities, not stored)
 // ReportSource: MANUAL, WHATSAPP_IMPORT
 // TechnicianType: PROPIO, EXTERNO
 
@@ -34,7 +34,6 @@ model User {
   updatedAt         DateTime  @updatedAt
 
   activities    Activity[]
-  opportunities Opportunity[]
   dailyReports  DailyReport[]
   userSafetyAssignments WeekendUserSafetyAssignment[]
   invoiceReceipts InvoiceReceipt[]
@@ -51,7 +50,6 @@ model Client {
 
   contacts      Contact[]
   activities    Activity[]
-  opportunities Opportunity[]
 }
 
 model Contact {
@@ -65,7 +63,6 @@ model Contact {
   notes     String?
 
   activities    Activity[]
-  opportunities Opportunity[]
 }
 
 model DailyReport {
@@ -91,8 +88,6 @@ model Activity {
   client          Client?      @relation(fields: [clientId], references: [id])
   contactId       String?
   contact         Contact?     @relation(fields: [contactId], references: [id])
-  opportunityId   String?
-  opportunity     Opportunity? @relation(fields: [opportunityId], references: [id])
   workOrderFolio  String?
   purchaseOrder   String?
   loto            Boolean      @default(false)
@@ -123,32 +118,6 @@ model Activity {
   weekendDriverAssignments  WeekendDriverAssignment[]
   weekendEquipAssignments   WeekendEquipAssignment[]
   weekendUserSafetyAssignments WeekendUserSafetyAssignment[]
-}
-
-model Opportunity {
-  id                 String    @id @default(cuid())
-  folio              String    @unique
-  clientId           String
-  client             Client    @relation(fields: [clientId], references: [id])
-  contactId          String?
-  contact            Contact?  @relation(fields: [contactId], references: [id])
-  userId             String?
-  user               User?     @relation(fields: [userId], references: [id])
-  title              String
-  description        String?
-  requestDate        DateTime?
-  scheduledVisitDate DateTime?
-  actualVisitDate    DateTime?
-  infoCompleteDate   DateTime?
-  quotationDueDate   DateTime?
-  quotationSentDate  DateTime?
-  status             String    @default("PROGRAMADA")
-  delayReason        String?
-  notes              String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  activities Activity[]
 }
 
 // ─── PERSONAL OPERATIVO (FINDE) ─────────────────────────────────

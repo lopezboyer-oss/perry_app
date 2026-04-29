@@ -58,16 +58,6 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       data: { isActive: false },
     });
 
-    // Desasignar (pasar a "POR ASIGNAR") todas las oportunidades no cerradas.
-    // 'status' de Oportunidad que están activas generalmente no son GANADA ni PERDIDA
-    await prisma.opportunity.updateMany({
-      where: {
-        userId: id,
-        status: { notIn: ['GANADA', 'PERDIDA'] },
-      },
-      data: { userId: null },
-    });
-
     // Desasignar (pasar a "POR ASIGNAR") todas las actividades no cerradas
     await prisma.activity.updateMany({
       where: {

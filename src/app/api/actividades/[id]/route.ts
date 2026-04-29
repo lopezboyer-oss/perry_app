@@ -20,7 +20,6 @@ export async function GET(
         user: true,
         client: true,
         contact: true,
-        opportunity: true,
         dailyReport: true,
       },
     });
@@ -67,7 +66,6 @@ export async function PUT(
         title: data.title,
         clientId: data.clientId || null,
         contactId: data.contactId || null,
-        opportunityId: data.opportunityId || null,
         workOrderFolio: data.workOrderFolio || null,
         purchaseOrder: data.purchaseOrder || null,
         projectArea: data.projectArea || null,
