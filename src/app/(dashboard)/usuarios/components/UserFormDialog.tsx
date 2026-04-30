@@ -95,7 +95,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 animate-fade-in" />
-        <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-white p-6 shadow-2xl animate-slide-in">
+        <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-white p-6 shadow-2xl animate-slide-in max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-5">
             <Dialog.Title className="text-xl font-bold text-slate-800">
               {isEditing ? 'Editar Personal' : 'Nuevo Miembro del Equipo'}

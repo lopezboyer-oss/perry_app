@@ -87,6 +87,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const dateFilter = { date: { gte: dateFrom, lte: dateTo } };
   const activityFilter = { ...userFilter, ...dateFilter, ...companyFilter };
 
+  // Pre-compute company-scoped folios for receipt filtering
+  let companyFolios: string[] | null = null;
+  if ((companyFilter as any).companyId) {
+    const folioActs = await prisma.activity.findMany({
+      where: { companyId: (companyFilter as any).companyId, workOrderFolio: { not: null } },
+      select: { workOrderFolio: true },
+      distinct: ['workOrderFolio'],
+    });
+    companyFolios = folioActs.map(a => a.workOrderFolio!);
+  }
+
   // Fetch all data in parallel
   const [
     totalActivities,
@@ -120,7 +131,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       orderBy: { date: 'desc' },
       take: 10,
     }),
-    (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP') ? prisma.user.findMany({ select: { id: true, name: true, role: true } }) : [],
+    (['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role)) ? prisma.user.findMany({ select: { id: true, name: true, role: true } }) : [],
     // Top Active: user with most activities in period
     prisma.activity.groupBy({
       by: ['userId'],
@@ -137,11 +148,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       orderBy: { _count: { id: 'desc' } },
       take: 1,
     }),
-    // Top Receipts: engineer with most invoices marked as received (all time)
+    // Top Receipts: filter by company folios if a company is selected
     prisma.invoiceReceipt.groupBy({
       by: ['engineerName'],
       _count: { id: true },
-      where: { engineerName: { not: null } },
+      where: {
+        engineerName: { not: null },
+        ...(companyFolios !== null ? { folio: { in: companyFolios } } : {}),
+      },
       orderBy: { _count: { id: 'desc' } },
       take: 1,
     }),
@@ -161,7 +175,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
   // Derived opportunity stats from COTIZACION activities (new model)
   const cotizacionActs = await prisma.activity.findMany({
-    where: { ...userFilter, type: 'COTIZACION' },
+    where: { ...userFilter, ...companyFilter, type: 'COTIZACION' },
     select: { workOrderFolio: true, status: true, date: true },
     orderBy: { date: 'asc' },
   });
