@@ -21,13 +21,7 @@ export function CompanySwitcher({ companies, activeCompanyId, isAdminMaestro }: 
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Don't show if user has only 1 company and is not ADMIN
-  if (companies.length <= 1 && !isAdminMaestro) return null;
-
-  const activeCompany = companies.find(c => c.id === activeCompanyId);
-  const label = activeCompany ? (activeCompany.shortName || activeCompany.name) : 'TODAS';
-  const dotColor = activeCompany?.color || '#6366F1';
-
+  // Close dropdown on outside click — must be before any conditional return (Rules of Hooks)
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -35,6 +29,13 @@ export function CompanySwitcher({ companies, activeCompanyId, isAdminMaestro }: 
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Don't show if user has only 1 company and is not ADMIN
+  if (companies.length <= 1 && !isAdminMaestro) return null;
+
+  const activeCompany = companies.find(c => c.id === activeCompanyId);
+  const label = activeCompany ? (activeCompany.shortName || activeCompany.name) : 'TODAS';
+  const dotColor = activeCompany?.color || '#6366F1';
 
   const switchCompany = async (companyId: string | null) => {
     // Set cookie via API
