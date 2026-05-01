@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { activitySchema } from '@/lib/validators';
 import { parseLocalDate } from '@/lib/timezone';
+import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,6 +23,18 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data;
+
+    // Resolve companyId: explicit > active company cookie > user's baseCompany
+    let companyId = data.companyId || null;
+    if (!companyId) {
+      const cookieVal = cookies().get('perry_active_company')?.value;
+      if (cookieVal && cookieVal !== 'ALL') {
+        companyId = cookieVal;
+      } else {
+        const user = await prisma.user.findUnique({ where: { id: data.userId }, select: { baseCompanyId: true } });
+        companyId = user?.baseCompanyId || null;
+      }
+    }
 
     const activity = await prisma.activity.create({
       data: {
@@ -44,7 +57,7 @@ export async function POST(req: NextRequest) {
         location: data.location || null,
         notes: data.notes || null,
         consortiumCompany: data.consortiumCompany || null,
-        companyId: data.companyId || null,
+        companyId,
       },
     });
 
