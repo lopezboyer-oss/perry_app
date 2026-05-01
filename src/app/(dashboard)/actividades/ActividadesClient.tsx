@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Plus, Search, Download, Filter, X, ChevronDown, FileText, Clock, Calendar, Users, BarChart3, AlertTriangle, Loader2
 } from 'lucide-react';
@@ -53,6 +53,15 @@ export function ActividadesClient({ activities: initialActivities, users, client
   const [activities, setActivities] = useState(initialActivities);
   const [loading, setLoading] = useState(false);
   const hasMore = activities.length < totalCount;
+
+  // Sync state when server data changes (filters, navigation)
+  useEffect(() => {
+    setActivities(initialActivities);
+  }, [initialActivities]);
+
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
 
   const handleQuickNew = () => {
     const folio = quickFolio.trim().toUpperCase();
