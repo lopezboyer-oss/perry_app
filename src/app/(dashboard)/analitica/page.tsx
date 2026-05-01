@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { AnaliticaClient } from './AnaliticaClient';
 import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AnaliticaPage() {
   const session = await auth();
   if (!session) redirect('/login');

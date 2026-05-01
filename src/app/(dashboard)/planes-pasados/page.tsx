@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { PlanesPasadosClient } from './PlanesPasadosClient';
 import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
+export const dynamic = 'force-dynamic';
+
 export default async function PlanesPasadosPage({
   searchParams,
 }: {

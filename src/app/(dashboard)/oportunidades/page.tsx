@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { OportunidadesClient } from './OportunidadesClient';
 import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
+export const dynamic = 'force-dynamic';
+
 export interface DerivedOpportunity {
   folio: string | null;
   firstActivityId: string; // ID of the first/source activity

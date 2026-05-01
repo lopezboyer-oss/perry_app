@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { DashboardClient } from './DashboardClient';
 import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
+export const dynamic = 'force-dynamic';
+
 function getDateRange(period: string): { dateFrom: Date; dateTo: Date } {
   const now = new Date();
 

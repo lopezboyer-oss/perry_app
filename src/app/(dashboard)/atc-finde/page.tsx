@@ -5,6 +5,8 @@ import { AtcFindeClient } from './AtcFindeClient';
 import { getTijuanaToday, parseLocalDate } from '@/lib/timezone';
 import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
+export const dynamic = 'force-dynamic';
+
 function getImmediateWeekendDates(): { saturday: string; sunday: string } {
   const todayStr = getTijuanaToday();
   const today = new Date(`${todayStr}T12:00:00`);
