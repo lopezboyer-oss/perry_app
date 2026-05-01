@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import {
-  Plus, Search, Download, Filter, X, ChevronDown, FileText, Clock, Calendar, Users, BarChart3, AlertTriangle
+  Plus, Search, Download, Filter, X, ChevronDown, FileText, Clock, Calendar, Users, BarChart3, AlertTriangle, Loader2
 } from 'lucide-react';
 import {
   activityTypeLabels, activityStatusLabels, activityTypeColors,
@@ -39,13 +39,20 @@ interface Props {
     folioOdoo: string;
   };
   userRole: string;
+  totalCount: number;
+  pageSize: number;
 }
 
-export function ActividadesClient({ activities, users, clients, filters, userRole }: Props) {
+export function ActividadesClient({ activities: initialActivities, users, clients, filters, userRole, totalCount, pageSize }: Props) {
   const router = useRouter();
   const [showFilters, setShowFilters] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters);
   const [quickFolio, setQuickFolio] = useState('');
+
+  // Pagination state
+  const [activities, setActivities] = useState(initialActivities);
+  const [loading, setLoading] = useState(false);
+  const hasMore = activities.length < totalCount;
 
   const handleQuickNew = () => {
     const folio = quickFolio.trim().toUpperCase();
@@ -128,7 +135,7 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Actividades</h1>
-          <p className="text-slate-500 text-sm">{activities.length} actividades encontradas</p>
+          <p className="text-slate-500 text-sm">{activities.length} de {totalCount} actividades</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportCSV} className="btn-secondary text-sm">
@@ -390,6 +397,44 @@ export function ActividadesClient({ activities, users, clients, filters, userRol
           </table>
         </div>
       </div>
+
+      {/* Load More */}
+      {hasMore && (
+        <div className="flex justify-center py-4">
+          <button
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const params = new URLSearchParams();
+                params.set('skip', String(activities.length));
+                params.set('take', String(pageSize));
+                Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v); });
+                const res = await fetch(`/api/actividades/list?${params.toString()}`);
+                const data = await res.json();
+                if (data.activities) {
+                  setActivities(prev => [...prev, ...data.activities]);
+                }
+              } catch { /* silent */ }
+              setLoading(false);
+            }}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm disabled:opacity-50"
+          >
+            {loading ? (
+              <><Loader2 size={16} className="animate-spin" /> Cargando...</>
+            ) : (
+              <>Cargar más ({totalCount - activities.length} restantes)</>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Show total when all loaded */}
+      {!hasMore && activities.length > 0 && (
+        <p className="text-center text-xs text-slate-400 py-2">
+          Mostrando todas las {activities.length} actividades
+        </p>
+      )}
     </div>
   );
 }

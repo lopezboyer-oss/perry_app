@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { ActividadesClient } from './ActividadesClient';
 import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
+const PAGE_SIZE = 20;
+
 export default async function ActividadesPage({
   searchParams,
 }: {
@@ -55,7 +57,7 @@ export default async function ActividadesPage({
   }
   if (folioOdoo) where.workOrderFolio = { contains: folioOdoo.toUpperCase() };
 
-  const [activities, users, clients] = await Promise.all([
+  const [activities, totalCount, users, clients] = await Promise.all([
     prisma.activity.findMany({
       where,
       include: {
@@ -63,8 +65,9 @@ export default async function ActividadesPage({
         client: { select: { id: true, name: true } },
       },
       orderBy: { date: 'desc' },
-      take: 100,
+      take: PAGE_SIZE,
     }),
+    prisma.activity.count({ where }),
     prisma.user.findMany({ select: { id: true, name: true, role: true }, orderBy: { name: 'asc' } }),
     prisma.client.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
@@ -84,6 +87,8 @@ export default async function ActividadesPage({
       clients={clients}
       filters={{ tipo, estatus, responsable, cliente, fechaDesde, fechaHasta, buscar, folioOdoo }}
       userRole={role}
+      totalCount={totalCount}
+      pageSize={PAGE_SIZE}
     />
   );
 }
