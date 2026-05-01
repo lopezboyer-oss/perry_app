@@ -18,7 +18,7 @@ interface ContractorData { id: string; name: string; isActive: boolean; _count?:
 type TabKey = 'users' | 'techs' | 'safety' | 'vehicles' | 'drivers' | 'equips' | 'contractors';
 
 export default function UsuariosPage() {
-  const [tab, setTab] = useState<TabKey>('users');
+  const [tab, setTab] = useState<TabKey>('techs');
   const [users, setUsers] = useState<UserData[]>([]);
   const [supervisors, setSupervisors] = useState<SupervisorRef[]>([]);
   const [techs, setTechs] = useState<TechnicianData[]>([]);
@@ -72,8 +72,8 @@ export default function UsuariosPage() {
       const companyData = await companyRes.json();
       if (companyData.companies) setCompanyList(companyData.companies);
 
-      const meRes = await fetch('/api/auth/me');
-      if (meRes.ok) { const me = await meRes.json(); setUserRole(me.role || ''); }
+      const sessionRes = await fetch('/api/auth/session');
+      if (sessionRes.ok) { const sess = await sessionRes.json(); setUserRole(sess?.user?.role || ''); }
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 

@@ -18,7 +18,7 @@ interface GuiaClientProps {
 const steps = [
   {
     id: 'bienvenida',
-    title: 'Guía del Sistema PERRY',
+    title: 'Guía del Ingeniero PERRY',
     perryMood: 'teaching',
     content: (
       <>
@@ -237,6 +237,48 @@ const steps = [
     ),
   },
   {
+    id: 'oportunidades',
+    title: 'Oportunidades (Seguimiento de Cotizaciones)',
+    perryMood: 'teaching',
+    content: (
+      <>
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-5 flex gap-3">
+          <Lightbulb className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-indigo-800">
+            <strong>Las oportunidades se generan automáticamente</strong> al registrar actividades tipo <strong>Cotización</strong> con un folio Odoo asignado. No necesitas crear oportunidades manualmente.
+          </p>
+        </div>
+
+        <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
+          Registra una Cotización con Folio Odoo
+        </h4>
+        <p className="text-slate-600 mb-5 ml-8">
+          Al crear una actividad tipo <strong>Cotización</strong>, llena el campo <strong>&quot;Folio Odoo&quot;</strong> (ej: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-indigo-700 font-mono text-xs">S00123</code>). Esto vincula la actividad a una oportunidad rastreable.
+        </p>
+
+        <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">2</span>
+          El sistema agrupa por folio
+        </h4>
+        <p className="text-slate-600 mb-5 ml-8">
+          Todas las actividades con el mismo folio se agrupan en una <strong>oportunidad</strong>. El sistema calcula automáticamente: actividades totales, tiempo invertido, lead time y estado.
+        </p>
+
+        <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">3</span>
+          Consulta en la página Oportunidades
+        </h4>
+        <p className="text-slate-600 mb-3 ml-8">
+          Ve a <strong>&quot;Oportunidades&quot;</strong> en el menú lateral para ver el tablero con KPIs y el listado completo. Puedes filtrar por estado, responsable o buscar por folio.
+        </p>
+        <div className="ml-8 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+          ⚠️ Si una actividad aparece con <strong>&quot;SIN FOLIO ODOO&quot;</strong> en rojo, haz clic en ella para editar y agregar el folio correspondiente.
+        </div>
+      </>
+    ),
+  },
+  {
     id: 'listo',
     title: 'Configuración Terminada',
     perryMood: 'teaching',
@@ -297,7 +339,7 @@ export function GuiaClient({ userName, userRole }: GuiaClientProps) {
               activeTab === 'sistema' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
             )}
           >
-            <BookOpen size={16} /> Guía del Sistema
+            <BookOpen size={16} /> Guía Ingenieros
           </button>
           <button
             onClick={() => setActiveTab('perfiles')}
@@ -361,8 +403,9 @@ export function GuiaClient({ userName, userRole }: GuiaClientProps) {
               {currentStep === 1 && `Este es el método idóneo para incorporar registros únicos con alta densidad de especificaciones técnicas.`}
               {currentStep === 2 && `El módulo de "Importación de Texto" procesa en lote la captura del día. Recomendamos utilizarlo para volúmenes altos.`}
               {currentStep === 3 && `La taxonomía de actividades es mandatoria para los indicadores clave de rendimiento (KPIs) del Área de Ingeniería.`}
-              {currentStep === 4 && `El cumplimiento de los protocolos de información es integral para lograr los estándares de calidad ISO y operativos de la compañía.`}
-              {currentStep === 5 && `Usted se encuentra facultado para utilizar la plataforma PERRY. Cualquier duda técnica dirígela al Área Administrativa.`}
+              {currentStep === 4 && `Las oportunidades brindan trazabilidad de cada cotización. El folio Odoo es el identificador clave para el seguimiento.`}
+              {currentStep === 5 && `El cumplimiento de los protocolos de información es integral para lograr los estándares de calidad ISO y operativos de la compañía.`}
+              {currentStep === 6 && `Usted se encuentra facultado para utilizar la plataforma PERRY. Cualquier duda técnica dirígela al Área Administrativa.`}
             </p>
           </div>
         </div>
