@@ -40,15 +40,20 @@ export default function UsuariosPage() {
   const techFormRef = useRef<HTMLDivElement>(null);
   const [safetyFormOpen, setSafetyFormOpen] = useState(false);
   const [safetyFormData, setSafetyFormData] = useState({ id: '', name: '' });
+  const safetyFormRef = useRef<HTMLDivElement>(null);
   const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
   const [vehicleFormData, setVehicleFormData] = useState({ id: '', name: '', isAvailable: true });
+  const vehicleFormRef = useRef<HTMLDivElement>(null);
   const [driverFormOpen, setDriverFormOpen] = useState(false);
   const [driverFormData, setDriverFormData] = useState({ id: '', name: '' });
+  const driverFormRef = useRef<HTMLDivElement>(null);
   const [equipFormOpen, setEquipFormOpen] = useState(false);
   const [equipFormData, setEquipFormData] = useState({ id: '', name: '', ownership: 'PROPIO' });
+  const equipFormRef = useRef<HTMLDivElement>(null);
   const [contractorList, setContractorList] = useState<ContractorData[]>([]);
   const [contractorFormOpen, setContractorFormOpen] = useState(false);
   const [contractorFormData, setContractorFormData] = useState({ id: '', name: '' });
+  const contractorFormRef = useRef<HTMLDivElement>(null);
   const [companyList, setCompanyList] = useState<{ id: string; name: string; shortName: string | null; color: string | null }[]>([]);
 
   useEffect(() => { fetchAll(); }, []);
@@ -386,11 +391,11 @@ export default function UsuariosPage() {
         <>
           {canManageSafety && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setSafetyFormData({ id: '', name: '' }); setSafetyFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Safety Dedicado</button>
+              <button onClick={() => { setSafetyFormData({ id: '', name: '' }); setSafetyFormOpen(true); setTimeout(() => safetyFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Safety Dedicado</button>
             </div>
           )}
           {safetyFormOpen && (
-            <div className="card p-6 mb-4 border-l-4 border-l-amber-500">
+            <div ref={safetyFormRef} className="card p-6 mb-4 border-l-4 border-l-amber-500">
               <h3 className="font-semibold text-slate-800 mb-4">{safetyFormData.id ? 'Editar' : 'Nuevo'} Safety Dedicado</h3>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
@@ -415,7 +420,7 @@ export default function UsuariosPage() {
                       <td className="px-6 py-4"><span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700"><Shield size={12} /> Dedicado</span></td>
                       {canManageSafety && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setSafetyFormData({ id: s.id, name: s.name }); setSafetyFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setSafetyFormData({ id: s.id, name: s.name }); setSafetyFormOpen(true); setTimeout(() => safetyFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteSafety(s.id, s.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
@@ -434,11 +439,11 @@ export default function UsuariosPage() {
         <>
           {canManageVehicles && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setVehicleFormData({ id: '', name: '', isAvailable: true }); setVehicleFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Vehículo</button>
+              <button onClick={() => { setVehicleFormData({ id: '', name: '', isAvailable: true }); setVehicleFormOpen(true); setTimeout(() => vehicleFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Vehículo</button>
             </div>
           )}
           {vehicleFormOpen && (
-            <div className="card p-6 mb-4 border-l-4 border-l-violet-500">
+            <div ref={vehicleFormRef} className="card p-6 mb-4 border-l-4 border-l-violet-500">
               <h3 className="font-semibold text-slate-800 mb-4">{vehicleFormData.id ? 'Editar' : 'Nuevo'} Vehículo</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -473,7 +478,7 @@ export default function UsuariosPage() {
                       </td>
                       {canManageVehicles && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setVehicleFormData({ id: v.id, name: v.name, isAvailable: v.isAvailable }); setVehicleFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setVehicleFormData({ id: v.id, name: v.name, isAvailable: v.isAvailable }); setVehicleFormOpen(true); setTimeout(() => vehicleFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteVehicle(v.id, v.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
@@ -491,10 +496,10 @@ export default function UsuariosPage() {
       {tab === 'drivers' && canManageDrivers && (
         <>
           <div className="flex justify-end mb-4">
-            <button onClick={() => { setDriverFormData({ id: '', name: '' }); setDriverFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Chofer</button>
+            <button onClick={() => { setDriverFormData({ id: '', name: '' }); setDriverFormOpen(true); setTimeout(() => driverFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Chofer</button>
           </div>
           {driverFormOpen && (
-            <div className="card p-6 mb-4 border-l-4 border-l-cyan-500">
+            <div ref={driverFormRef} className="card p-6 mb-4 border-l-4 border-l-cyan-500">
               <h3 className="font-semibold text-slate-800 mb-4">{driverFormData.id ? 'Editar' : 'Nuevo'} Chofer</h3>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
@@ -517,7 +522,7 @@ export default function UsuariosPage() {
                     <tr key={d.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-800">{d.name}</td>
                       <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                        <button onClick={() => { setDriverFormData({ id: d.id, name: d.name }); setDriverFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                        <button onClick={() => { setDriverFormData({ id: d.id, name: d.name }); setDriverFormOpen(true); setTimeout(() => driverFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                         <button onClick={() => handleDeleteDriver(d.id, d.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                       </div></td>
                     </tr>
@@ -535,11 +540,11 @@ export default function UsuariosPage() {
         <>
           {canManageEquips && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setEquipFormData({ id: '', name: '', ownership: 'PROPIO' }); setEquipFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Equipo</button>
+              <button onClick={() => { setEquipFormData({ id: '', name: '', ownership: 'PROPIO' }); setEquipFormOpen(true); setTimeout(() => equipFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Equipo</button>
             </div>
           )}
           {equipFormOpen && (
-            <div className="card p-6 mb-4 border-l-4 border-l-orange-500">
+            <div ref={equipFormRef} className="card p-6 mb-4 border-l-4 border-l-orange-500">
               <h3 className="font-semibold text-slate-800 mb-4">{equipFormData.id ? 'Editar' : 'Nuevo'} Equipo de Elevación</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -573,7 +578,7 @@ export default function UsuariosPage() {
                       <td className="px-6 py-4"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${eq.ownership === 'PROPIO' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{eq.ownership === 'PROPIO' ? 'Propio' : 'Rentado'}</span></td>
                       {canManageEquips && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setEquipFormData({ id: eq.id, name: eq.name, ownership: eq.ownership }); setEquipFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setEquipFormData({ id: eq.id, name: eq.name, ownership: eq.ownership }); setEquipFormOpen(true); setTimeout(() => equipFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteEquip(eq.id, eq.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
@@ -591,10 +596,10 @@ export default function UsuariosPage() {
       {tab === 'contractors' && isAdmin && (
         <>
           <div className="flex justify-end mb-4">
-            <button onClick={() => { setContractorFormData({ id: '', name: '' }); setContractorFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Contratista</button>
+            <button onClick={() => { setContractorFormData({ id: '', name: '' }); setContractorFormOpen(true); setTimeout(() => contractorFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Contratista</button>
           </div>
           {contractorFormOpen && (
-            <div className="card p-6 mb-4 border-l-4 border-l-orange-500">
+            <div ref={contractorFormRef} className="card p-6 mb-4 border-l-4 border-l-orange-500">
               <h3 className="font-semibold text-slate-800 mb-4">{contractorFormData.id ? 'Editar' : 'Nuevo'} Contratista</h3>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Nombre de la Empresa *</label>
@@ -631,7 +636,7 @@ export default function UsuariosPage() {
                         <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{c._count?.technicians || 0}</span>
                       </td>
                       <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                        <button onClick={() => { setContractorFormData({ id: c.id, name: c.name }); setContractorFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                        <button onClick={() => { setContractorFormData({ id: c.id, name: c.name }); setContractorFormOpen(true); setTimeout(() => contractorFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                         <button onClick={async () => { if (!window.confirm(`¿Desactivar ${c.name}?`)) return; await fetch(`/api/contractors/${c.id}`, { method: 'DELETE' }); await fetchAll(); }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                       </div></td>
                     </tr>
