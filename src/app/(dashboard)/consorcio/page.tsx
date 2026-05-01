@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { ConsorcioClient } from './ConsorcioClient';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
+
+export const dynamic = 'force-dynamic';
 
 export default async function ConsorcioPage() {
   const session = await auth();
@@ -12,8 +15,10 @@ export default async function ConsorcioPage() {
     redirect('/dashboard');
   }
 
+  const companyFilter = getCompanyFilterFromCookies(session.user.role);
+
   const activities = await prisma.activity.findMany({
-    where: { type: 'CONSORCIO' },
+    where: { type: 'CONSORCIO', ...companyFilter },
     include: {
       user: { select: { id: true, name: true } },
       client: { select: { id: true, name: true } },
