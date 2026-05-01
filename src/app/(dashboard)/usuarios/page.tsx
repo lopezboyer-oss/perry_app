@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Shield, User, HardHat, CheckSquare, Truck, ChevronsUp, Building2 } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Plus, Edit2, Trash2, Shield, User, HardHat, CheckSquare, Truck, ChevronsUp, Building2, Filter } from 'lucide-react';
 import { UserFormDialog, UserFormData } from './components/UserFormDialog';
 import { useRouter } from 'next/navigation';
 import { roleLabels, roleColors } from '@/lib/utils';
@@ -35,6 +35,9 @@ export default function UsuariosPage() {
   // ── Form states ──
   const [techFormOpen, setTechFormOpen] = useState(false);
   const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '' });
+  const [techFilterType, setTechFilterType] = useState('');
+  const [techFilterEmpresa, setTechFilterEmpresa] = useState('');
+  const techFormRef = useRef<HTMLDivElement>(null);
   const [safetyFormOpen, setSafetyFormOpen] = useState(false);
   const [safetyFormData, setSafetyFormData] = useState({ id: '', name: '' });
   const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
@@ -242,15 +245,51 @@ export default function UsuariosPage() {
       )}
 
       {/* ── TAB: TÉCNICOS ── */}
-      {tab === 'techs' && (
+      {tab === 'techs' && (() => {
+        // Build unique empresa options from techs
+        const empresaOptions: { value: string; label: string }[] = [];
+        const seen = new Set<string>();
+        techs.forEach((t) => {
+          const tAny = t as any;
+          if (t.type === 'EXTERNO' && tAny.contractor) {
+            const k = `c-${tAny.contractor.id}`;
+            if (!seen.has(k)) { seen.add(k); empresaOptions.push({ value: k, label: tAny.contractor.name }); }
+          } else if (tAny.baseCompany) {
+            const k = `b-${tAny.baseCompany.id}`;
+            if (!seen.has(k)) { seen.add(k); empresaOptions.push({ value: k, label: tAny.baseCompany.shortName || tAny.baseCompany.name }); }
+          }
+        });
+        empresaOptions.sort((a, b) => a.label.localeCompare(b.label));
+
+        // Filter techs
+        const filteredTechs = techs.filter((t) => {
+          const tAny = t as any;
+          if (techFilterType && t.type !== techFilterType) return false;
+          if (techFilterEmpresa) {
+            if (t.type === 'EXTERNO' && tAny.contractor) {
+              if (techFilterEmpresa !== `c-${tAny.contractor.id}`) return false;
+            } else if (tAny.baseCompany) {
+              if (techFilterEmpresa !== `b-${tAny.baseCompany.id}`) return false;
+            } else {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        const scrollToForm = () => {
+          setTimeout(() => techFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+        };
+
+        return (
         <>
           {canManageTechs && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: companyList[0]?.id || '' }); setTechFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
+              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: companyList[0]?.id || '' }); setTechFormOpen(true); setTimeout(() => techFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
             </div>
           )}
           {techFormOpen && (
-            <div className="card p-6 mb-4 border-l-4 border-l-indigo-500">
+            <div ref={techFormRef} className="card p-6 mb-4 border-l-4 border-l-indigo-500">
               <h3 className="font-semibold text-slate-800 mb-4">{techFormData.id ? 'Editar' : 'Nuevo'} Técnico</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -293,6 +332,25 @@ export default function UsuariosPage() {
               </div>
             </div>
           )}
+          {/* Filter bar */}
+          <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+            <Filter size={16} className="text-slate-400" />
+            <select value={techFilterType} onChange={(e) => setTechFilterType(e.target.value)} className="text-sm rounded-lg py-1.5 px-3 border-slate-200">
+              <option value="">Todos los tipos</option>
+              <option value="PROPIO">Propio</option>
+              <option value="EXTERNO">Externo</option>
+            </select>
+            <select value={techFilterEmpresa} onChange={(e) => setTechFilterEmpresa(e.target.value)} className="text-sm rounded-lg py-1.5 px-3 border-slate-200">
+              <option value="">Todas las empresas</option>
+              {empresaOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {(techFilterType || techFilterEmpresa) && (
+              <button onClick={() => { setTechFilterType(''); setTechFilterEmpresa(''); }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium ml-auto">
+                Limpiar filtros
+              </button>
+            )}
+            <span className="text-xs text-slate-400 ml-auto">{filteredTechs.length} de {techs.length}</span>
+          </div>
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
@@ -300,7 +358,7 @@ export default function UsuariosPage() {
                   <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Empresa</th><th className="px-6 py-4">Cruz Verde</th>{canManageTechs && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {techs.map((t) => (
+                  {filteredTechs.map((t) => (
                     <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-800">{t.name}</td>
                       <td className="px-6 py-4"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${t.type === 'PROPIO' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{t.type === 'PROPIO' ? 'Propio' : 'Externo'}</span></td>
@@ -308,19 +366,20 @@ export default function UsuariosPage() {
                       <td className="px-6 py-4">{t.isCruzVerde ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700"><CheckSquare size={12} /> Acreditado</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       {canManageTechs && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '', baseCompanyId: (t as any).baseCompanyId || '' }); setTechFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '', baseCompanyId: (t as any).baseCompanyId || '' }); setTechFormOpen(true); scrollToForm(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteTech(t.id, t.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
                     </tr>
                   ))}
-                  {techs.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No hay técnicos registrados.</td></tr>}
+                  {filteredTechs.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">{techs.length > 0 ? 'No hay técnicos con estos filtros.' : 'No hay técnicos registrados.'}</td></tr>}
                 </tbody>
               </table>
             </div>
           </div>
         </>
-      )}
+        );
+      })()}
 
       {/* ── TAB: SAFETY DEDICADO ── */}
       {tab === 'safety' && (
