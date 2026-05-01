@@ -30,6 +30,8 @@ export default function UsuariosPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Partial<UserFormData> & { id?: string } | undefined>(undefined);
   const [userRole, setUserRole] = useState('');
+  const [userFilterRole, setUserFilterRole] = useState('');
+  const [userFilterEmpresa, setUserFilterEmpresa] = useState('');
   const router = useRouter();
 
   // ── Form states ──
@@ -201,10 +203,47 @@ export default function UsuariosPage() {
       </div>
 
       {/* ── TAB: USERS ── */}
-      {tab === 'users' && isAdmin && (
+      {tab === 'users' && isAdmin && (() => {
+        const roleOptions = [...new Set(users.map(u => u.role))].sort();
+        const empresaUserOptions: { value: string; label: string }[] = [];
+        const seenE = new Set<string>();
+        users.forEach(u => {
+          const def = u.companies.find(c => c.isDefault) || u.companies[0];
+          if (def && !seenE.has(def.company.id)) { seenE.add(def.company.id); empresaUserOptions.push({ value: def.company.id, label: def.company.shortName || def.company.name }); }
+        });
+        empresaUserOptions.sort((a, b) => a.label.localeCompare(b.label));
+
+        const filteredUsers = users.filter(u => {
+          if (userFilterRole && u.role !== userFilterRole) return false;
+          if (userFilterEmpresa) {
+            const def = u.companies.find(c => c.isDefault) || u.companies[0];
+            if (!def || def.company.id !== userFilterEmpresa) return false;
+          }
+          return true;
+        });
+
+        return (
         <>
           <div className="flex justify-end mb-4">
             <button onClick={handleOpenNew} className="btn-primary"><Plus size={18} /> Añadir Miembro</button>
+          </div>
+          {/* Filter bar */}
+          <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+            <Filter size={16} className="text-slate-400" />
+            <select value={userFilterRole} onChange={(e) => setUserFilterRole(e.target.value)} className="text-sm rounded-lg py-1.5 px-3 border-slate-200">
+              <option value="">Todos los roles</option>
+              {roleOptions.map(r => <option key={r} value={r}>{roleLabels[r] || r}</option>)}
+            </select>
+            <select value={userFilterEmpresa} onChange={(e) => setUserFilterEmpresa(e.target.value)} className="text-sm rounded-lg py-1.5 px-3 border-slate-200">
+              <option value="">Todas las empresas</option>
+              {empresaUserOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {(userFilterRole || userFilterEmpresa) && (
+              <button onClick={() => { setUserFilterRole(''); setUserFilterEmpresa(''); }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                Limpiar filtros
+              </button>
+            )}
+            <span className="text-xs text-slate-400 ml-auto">{filteredUsers.length} de {users.length}</span>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
@@ -213,12 +252,15 @@ export default function UsuariosPage() {
                   <tr>
                     <th className="px-6 py-4">Miembro del Equipo</th>
                     <th className="px-6 py-4">Rol & Permisos</th>
+                    <th className="px-6 py-4">Empresa Base</th>
                     <th className="px-6 py-4">Reporta A</th>
                     <th className="px-6 py-4 text-right">Ajustes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => {
+                    const defCompany = user.companies.find(c => c.isDefault) || user.companies[0];
+                    return (
                     <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -232,6 +274,9 @@ export default function UsuariosPage() {
                       <td className="px-6 py-4">
                         <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${roleColors[user.role] || 'bg-gray-100 text-gray-700'}`}>{roleLabels[user.role] || user.role}</div>
                       </td>
+                      <td className="px-6 py-4">
+                        {defCompany ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded" style={{ backgroundColor: defCompany.company.color || '#6366f1' }}>{defCompany.company.shortName || defCompany.company.name}</span> : <span className="text-slate-400 text-xs">—</span>}
+                      </td>
                       <td className="px-6 py-4 text-slate-600">{user.supervisor?.name || <span className="text-slate-400 italic">-- Directivo --</span>}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
@@ -240,14 +285,17 @@ export default function UsuariosPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
+                  {filteredUsers.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">{users.length > 0 ? 'No hay usuarios con estos filtros.' : 'No hay usuarios registrados.'}</td></tr>}
                 </tbody>
               </table>
             </div>
           </div>
           <UserFormDialog open={formOpen} onOpenChange={setFormOpen} initialData={editingUser} supervisors={supervisors} onSubmit={handleFormSubmit} companies={companyList} />
         </>
-      )}
+        );
+      })()}
 
       {/* ── TAB: TÉCNICOS ── */}
       {tab === 'techs' && (() => {
