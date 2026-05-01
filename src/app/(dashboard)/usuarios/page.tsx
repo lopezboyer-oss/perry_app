@@ -34,7 +34,7 @@ export default function UsuariosPage() {
 
   // ── Form states ──
   const [techFormOpen, setTechFormOpen] = useState(false);
-  const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '' });
+  const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '' });
   const [safetyFormOpen, setSafetyFormOpen] = useState(false);
   const [safetyFormData, setSafetyFormData] = useState({ id: '', name: '' });
   const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
@@ -103,7 +103,7 @@ export default function UsuariosPage() {
     const url = techFormData.id ? `/api/technicians/${techFormData.id}` : '/api/technicians';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(techFormData) });
     if (!res.ok) { alert('Error al guardar técnico'); return; }
-    setTechFormOpen(false); setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '' }); await fetchAll();
+    setTechFormOpen(false); setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '' }); await fetchAll();
   };
   const handleDeleteTech = async (id: string, name: string) => { if (!window.confirm(`¿Desactivar a ${name}?`)) return; await fetch(`/api/technicians/${id}`, { method: 'DELETE' }); await fetchAll(); };
 
@@ -246,7 +246,7 @@ export default function UsuariosPage() {
         <>
           {canManageTechs && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '' }); setTechFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
+              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: companyList[0]?.id || '' }); setTechFormOpen(true); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
             </div>
           )}
           {techFormOpen && (
@@ -279,6 +279,13 @@ export default function UsuariosPage() {
                     <span className="text-sm font-medium text-slate-700">🟢 Cruz Verde (Safety Designado)</span>
                   </label>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Empresa Base</label>
+                  <select value={techFormData.baseCompanyId} onChange={(e) => setTechFormData({ ...techFormData, baseCompanyId: e.target.value })} className="w-full">
+                    <option value="">— Sin asignar —</option>
+                    {companyList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveTech} className="btn-primary text-sm">Guardar</button>
@@ -297,11 +304,11 @@ export default function UsuariosPage() {
                     <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-800">{t.name}</td>
                       <td className="px-6 py-4"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${t.type === 'PROPIO' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{t.type === 'PROPIO' ? 'Propio' : 'Externo'}</span></td>
-                      <td className="px-6 py-4">{(t as any).contractor ? <span className="text-xs font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{(t as any).contractor.name}</span> : <span className="text-slate-400 text-xs">—</span>}</td>
+                      <td className="px-6 py-4">{(t as any).baseCompany ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded" style={{ backgroundColor: (t as any).baseCompany.color || '#6366f1' }}>{(t as any).baseCompany.shortName || (t as any).baseCompany.name}</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       <td className="px-6 py-4">{t.isCruzVerde ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700"><CheckSquare size={12} /> Acreditado</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       {canManageTechs && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '' }); setTechFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '', baseCompanyId: (t as any).baseCompanyId || '' }); setTechFormOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteTech(t.id, t.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}

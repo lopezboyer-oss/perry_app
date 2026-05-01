@@ -72,7 +72,21 @@ export default async function AtcFindePage() {
   ] = await Promise.all([
     prisma.activity.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        date: true,
+        startTime: true,
+        endTime: true,
+        workOrderFolio: true,
+        purchaseOrder: true,
+        loto: true,
+        weekendNotes: true,
+        auditNotes: true,
+        safetyAuditImage: true,
+        teraFolio: true,
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true } },
