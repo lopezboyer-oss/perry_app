@@ -72,8 +72,8 @@ export default function UsuariosPage() {
       const companyData = await companyRes.json();
       if (companyData.companies) setCompanyList(companyData.companies);
 
-      const sessionRes = await fetch('/api/auth/session');
-      if (sessionRes.ok) { const sess = await sessionRes.json(); setUserRole(sess?.user?.role || ''); }
+      const meRes = await fetch('/api/auth/me');
+      if (meRes.ok) { const me = await meRes.json(); setUserRole(me.role || ''); }
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 

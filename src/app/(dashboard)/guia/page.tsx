@@ -6,5 +6,10 @@ export default async function GuiaPage() {
   const session = await auth();
   if (!session) redirect('/login');
 
-  return <GuiaClient userName={session.user.name || 'Ingeniero'} />;
+  return (
+    <GuiaClient
+      userName={session.user.name || 'Ingeniero'}
+      userRole={(session.user as any).role || 'INGENIERO'}
+    />
+  );
 }

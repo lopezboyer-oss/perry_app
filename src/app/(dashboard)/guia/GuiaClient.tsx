@@ -4,11 +4,14 @@ import { useState } from 'react';
 import {
   ChevronLeft, ChevronRight, MessageCircle, ClipboardPlus,
   FileText, CheckCircle2, Lightbulb, ArrowRight, Sparkles,
+  BookOpen, Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PerfilesGuide } from './PerfilesGuide';
 
 interface GuiaClientProps {
   userName: string;
+  userRole: string;
 }
 
 /* ─── Step Data ────────────────────────────────────────── */
@@ -272,16 +275,46 @@ const steps = [
 ];
 
 /* ─── Component ───────────────────────────────────────── */
-export function GuiaClient({ userName }: GuiaClientProps) {
+export function GuiaClient({ userName, userRole }: GuiaClientProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [activeTab, setActiveTab] = useState<'sistema' | 'perfiles'>('sistema');
   const step = steps[currentStep];
   const isFirst = currentStep === 0;
   const isLast = currentStep === steps.length - 1;
+  const isAdmin = ['ADMIN', 'ADMINISTRACION'].includes(userRole);
 
   const firstName = userName.split(' ')[0];
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
+      {/* Tab selector */}
+      {isAdmin && (
+        <div className="flex gap-2 bg-slate-100 rounded-xl p-1 mb-8">
+          <button
+            onClick={() => setActiveTab('sistema')}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 justify-center',
+              activeTab === 'sistema' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+            )}
+          >
+            <BookOpen size={16} /> Guía del Sistema
+          </button>
+          <button
+            onClick={() => setActiveTab('perfiles')}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 justify-center',
+              activeTab === 'perfiles' ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+            )}
+          >
+            <Shield size={16} /> Perfiles y Permisos
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'perfiles' && isAdmin ? (
+        <PerfilesGuide />
+      ) : (
+      <>
       {/* Progress bar */}
       <div className="flex items-center gap-1.5 mb-8">
         {steps.map((s, i) => (
@@ -394,6 +427,8 @@ export function GuiaClient({ userName }: GuiaClientProps) {
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+      </>
+      )}
     </div>
   );
 }
