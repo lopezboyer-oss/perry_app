@@ -19,10 +19,14 @@ export const authConfig = {
           const freshUser = await prisma.user.findUnique({
             where: { id: token.id as string },
             select: {
-              role: true, name: true, baseCompanyId: true,
+              role: true,
+              name: true,
+              baseCompanyId: true,
               companies: {
-                select: { companyId: true, isDefault: true },
-                include: { company: { select: { name: true, shortName: true, odooId: true, color: true } } },
+                select: {
+                  companyId: true,
+                  isDefault: true,
+                },
               },
             },
           });
@@ -34,8 +38,9 @@ export const authConfig = {
             token.defaultCompanyId = freshUser.companies.find(c => c.isDefault)?.companyId
                                      || freshUser.baseCompanyId;
           }
-        } catch {
+        } catch (e) {
           // If DB is unreachable, keep the cached values
+          console.error('JWT refresh error:', e);
         }
       }
 
@@ -44,7 +49,10 @@ export const authConfig = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        (session.user as any).role = token.role as string;
+        (session.user as any).role = token.role as string || 'INGENIERO';
+        (session.user as any).baseCompanyId = token.baseCompanyId || null;
+        (session.user as any).companyIds = token.companyIds || [];
+        (session.user as any).defaultCompanyId = token.defaultCompanyId || null;
       }
       return session;
     },
