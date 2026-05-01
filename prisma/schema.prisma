@@ -223,9 +223,10 @@ model WeekendSafetyAssignment {
   activity         Activity       @relation(fields: [activityId], references: [id], onDelete: Cascade)
   safetyDedicadoId String
   safetyDedicado   SafetyDedicado @relation(fields: [safetyDedicadoId], references: [id], onDelete: Cascade)
+  role             String         @default("DEDICADO") // DEDICADO or DESIGNADO
   weekendOf        String
 
-  @@unique([activityId, safetyDedicadoId, weekendOf])
+  @@unique([activityId, safetyDedicadoId, weekendOf, role])
 }
 
 model WeekendVehicleAssignment {

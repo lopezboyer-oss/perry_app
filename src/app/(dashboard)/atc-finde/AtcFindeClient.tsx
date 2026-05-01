@@ -35,7 +35,7 @@ interface Driver { id: string; name: string; }
 interface ElevationEquip { id: string; name: string; ownership: string; }
 
 interface TechAssignment { id: string; activityId: string; technicianId: string; role: string; technician: Technician; }
-interface SafetyAssignment { id: string; activityId: string; safetyDedicadoId: string; safetyDedicado: SafetyDedicado; }
+interface SafetyAssignment { id: string; activityId: string; safetyDedicadoId: string; role: string; safetyDedicado: SafetyDedicado; }
 interface VehicleAssignment { id: string; activityId: string; vehicleId: string; vehicle: Vehicle; }
 interface DriverAssignment { id: string; activityId: string; driverId: string; driver: Driver; }
 interface EquipAssignment { id: string; activityId: string; equipId: string; equip: ElevationEquip; }
@@ -300,6 +300,17 @@ export function AtcFindeClient({
         const data = await res.json();
         if (!res.ok) { alert(data.error || 'Error al asignar'); return; }
         setUserSafetyAssignments((prev) => [...prev, data.assignment]);
+        return;
+      }
+
+      // Detect sd- prefix for Safety Dedicado assigned as Designado
+      if (type === 'SAFETY_DESIGNADO' && personId.startsWith('sd-')) {
+        const realSdId = personId.replace('sd-', '');
+        const body = { type: 'SAFETY_DEDICADO_AS_DESIGNADO', activityId, weekendOf, safetyDedicadoId: realSdId };
+        const res = await fetch('/api/weekend-assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Error al asignar'); return; }
+        setSafetyAssignments((prev) => [...prev, data.assignment]);
         return;
       }
 
@@ -670,15 +681,18 @@ export function AtcFindeClient({
                 const aT = getTechs(act.id, 'TECNICO');
                 const aD = getTechs(act.id, 'SAFETY_DESIGNADO');
                 const aUserSafety = userSafetyAssignments.filter((x) => x.activityId === act.id);
-                const aS = getSafety(act.id);
+                const allSafetyForAct = safetyAssignments.filter((x) => x.activityId === act.id);
+                const aS = allSafetyForAct.filter((x) => x.role !== 'DESIGNADO'); // Only DEDICADO
+                const aSDesignado = allSafetyForAct.filter((x) => x.role === 'DESIGNADO'); // Safety Dedicado as Designado
                 const aV = getVehicles(act.id);
                 const aDr = getDrivers(act.id);
                 const aE = getEquips(act.id);
 
-                // Merge tech-based and user-based Safety Designado assignments for display
+                // Merge tech-based, user-based, and safety-dedicado-as-designado for display
                 const allDesignados = [
                   ...aD.map((x) => ({ assignmentId: x.id, id: x.technicianId, name: x.technician.name, removeType: 'TECH' as const })),
                   ...aUserSafety.map((x) => ({ assignmentId: x.id, id: `usr-${x.userId}`, name: x.user.name, removeType: 'USER_SAFETY_DESIGNADO' as const })),
+                  ...aSDesignado.map((x) => ({ assignmentId: x.id, id: `sd-${x.safetyDedicadoId}`, name: x.safetyDedicado.name, removeType: 'SAFETY_DEDICADO' as const })),
                 ];
 
                 return (

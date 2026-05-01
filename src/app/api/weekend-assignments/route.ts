@@ -122,7 +122,19 @@ export async function POST(req: NextRequest) {
       }
 
       const assignment = await prisma.weekendSafetyAssignment.create({
-        data: { activityId, safetyDedicadoId, weekendOf },
+        data: { activityId, safetyDedicadoId, weekendOf, role: 'DEDICADO' },
+        include: { safetyDedicado: true },
+      });
+
+      return NextResponse.json({ assignment, conflicts: [] }, { status: 201 });
+
+    // ── SAFETY DEDICADO assigned as DESIGNADO ──
+    } else if (type === 'SAFETY_DEDICADO_AS_DESIGNADO') {
+      const { safetyDedicadoId } = body;
+      if (!safetyDedicadoId) return NextResponse.json({ error: 'safetyDedicadoId requerido' }, { status: 400 });
+
+      const assignment = await prisma.weekendSafetyAssignment.create({
+        data: { activityId, safetyDedicadoId, weekendOf, role: 'DESIGNADO' },
         include: { safetyDedicado: true },
       });
 
