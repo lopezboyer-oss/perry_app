@@ -33,15 +33,33 @@ export default async function PlanesPasadosPage({
   let equipAssignments: any[] = [];
 
   if (selectedWeekend) {
+    // Get extra days for this plan
+    const extraDays = await prisma.extraPlanDay.findMany({
+      where: { weekendOf: selectedWeekend },
+      orderBy: { date: 'asc' },
+    });
+
+    // Build all dates: Saturday, Sunday + extra days
     const satDate = new Date(`${selectedWeekend}T00:00:00Z`);
-    const sunDate = new Date(satDate);
-    sunDate.setDate(sunDate.getDate() + 1);
-    const sunEnd = new Date(sunDate);
-    sunEnd.setHours(23, 59, 59, 999);
+    const sunDateStr = (() => {
+      const d = new Date(satDate);
+      d.setDate(d.getDate() + 1);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    })();
+    const allDates = [...new Set([selectedWeekend, sunDateStr, ...extraDays.map(d => d.date)])];
+    allDates.sort();
+
+    // Build date ranges for query
+    const dateRanges = allDates.map(dateStr => {
+      const d = new Date(`${dateStr}T00:00:00Z`);
+      const start = new Date(d); start.setHours(0, 0, 0, 0);
+      const end = new Date(d); end.setHours(23, 59, 59, 999);
+      return { date: { gte: start, lte: end } };
+    });
 
     [activities, techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments] = await Promise.all([
       prisma.activity.findMany({
-        where: { date: { gte: satDate, lte: sunEnd }, ...companyFilter },
+        where: { OR: dateRanges, ...companyFilter },
         include: {
           user: { select: { id: true, name: true } },
           contact: { select: { id: true, name: true } },

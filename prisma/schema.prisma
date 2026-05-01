@@ -272,6 +272,17 @@ model WeekendUserSafetyAssignment {
   @@unique([activityId, userId, weekendOf])
 }
 
+// ─── DÍAS EXTRA (Plan ATC Finde) ────────────────────────────────
+
+model ExtraPlanDay {
+  id        String   @id @default(cuid())
+  date      String   @unique   // "YYYY-MM-DD" del día extra
+  weekendOf String              // "YYYY-MM-DD" del sábado asociado
+  label     String?             // Etiqueta (ej: "Lunes Festivo")
+  createdBy String?             // userId de quien lo creó
+  createdAt DateTime @default(now())
+}
+
 // ─── COBRANZA ───────────────────────────────────────────────────
 
 model InvoiceReceipt {

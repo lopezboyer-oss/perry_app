@@ -36,14 +36,30 @@ export default async function AtcFindePage() {
   const role = session.user.role;
   const userId = session.user.id;
   const { saturday, sunday } = getImmediateWeekendDates();
-  const satDate = parseLocalDate(saturday);
-  const sunDate = parseLocalDate(sunday);
 
-  // ALL users see ALL activities in ATC Finde (no user/team filter) — but scoped to company
+  // Get extra days for this weekend's plan
+  const extraDays = await prisma.extraPlanDay.findMany({
+    where: { weekendOf: saturday },
+    orderBy: { date: 'asc' },
+  });
+
+  // Build all plan dates: Saturday, Sunday, + extra days
+  const allDates = [...new Set([saturday, sunday, ...extraDays.map(d => d.date)])];
+  allDates.sort();
+
+  // Build date ranges for the query — union of all day ranges
+  const dateRanges = allDates.map(dateStr => {
+    const d = parseLocalDate(dateStr);
+    const start = new Date(d); start.setHours(0, 0, 0, 0);
+    const end = new Date(d); end.setHours(23, 59, 59, 999);
+    return { date: { gte: start, lte: end } };
+  });
+
   const companyFilter = getCompanyFilterFromCookies(role);
-  const satStart = new Date(satDate); satStart.setHours(0, 0, 0, 0);
-  const sunEnd = new Date(sunDate); sunEnd.setHours(23, 59, 59, 999);
-  const where = { date: { gte: satStart, lte: sunEnd }, ...companyFilter };
+  const where = {
+    OR: dateRanges,
+    ...companyFilter,
+  };
 
   const [
     activities, technicians, safetyDedicados,
@@ -75,6 +91,26 @@ export default async function AtcFindePage() {
     prisma.weekendUserSafetyAssignment.findMany({ where: { weekendOf: saturday }, include: { user: { select: { id: true, name: true } } } }),
   ]);
 
+  // Build plan days info for client
+  const planDays = allDates.map(dateStr => {
+    const isExtra = extraDays.some(d => d.date === dateStr);
+    const extraInfo = extraDays.find(d => d.date === dateStr);
+    const dayActivities = activities.filter(a => a.date.toISOString().startsWith(dateStr));
+    return {
+      date: dateStr,
+      isExtra,
+      extraId: extraInfo?.id || null,
+      label: extraInfo?.label || null,
+      hasActivities: dayActivities.length > 0,
+    };
+  });
+
+  // Build weekend label from visible days
+  const visibleDays = planDays.filter(d => d.hasActivities || d.isExtra);
+  const weekendLabel = visibleDays.length > 0
+    ? visibleDays.map(d => d.date).join(' — ')
+    : `${saturday} — ${sunday}`;
+
   return (
     <AtcFindeClient
       activities={activities.map((a) => ({
@@ -96,7 +132,8 @@ export default async function AtcFindePage() {
       userRole={role}
       userId={userId}
       weekendOf={saturday}
-      weekendLabel={`${saturday} — ${sunday}`}
+      weekendLabel={weekendLabel}
+      planDays={planDays}
     />
   );
 }

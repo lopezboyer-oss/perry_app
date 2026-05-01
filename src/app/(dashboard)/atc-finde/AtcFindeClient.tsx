@@ -41,6 +41,14 @@ interface DriverAssignment { id: string; activityId: string; driverId: string; d
 interface EquipAssignment { id: string; activityId: string; equipId: string; equip: ElevationEquip; }
 interface UserSafetyAssignment { id: string; activityId: string; userId: string; user: { id: string; name: string }; }
 
+interface PlanDay {
+  date: string;
+  isExtra: boolean;
+  extraId: string | null;
+  label: string | null;
+  hasActivities: boolean;
+}
+
 interface Props {
   activities: Activity[];
   technicians: Technician[];
@@ -59,6 +67,7 @@ interface Props {
   userId: string;
   weekendOf: string;
   weekendLabel: string;
+  planDays: PlanDay[];
 }
 
 // ─── MULTI-SELECT DROPDOWN ──────────────────────────────────────
@@ -177,7 +186,7 @@ export function AtcFindeClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
-  userRole, userId, weekendOf, weekendLabel,
+  userRole, userId, weekendOf, weekendLabel, planDays,
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -199,11 +208,18 @@ export function AtcFindeClient({
   const [teraFolios, setTeraFolios] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.teraFolio || ''])));
   const [teraFolioSaving, setTeraFolioSaving] = useState<Record<string, boolean>>({});
 
+  // Extra day dialog state
+  const [showExtraDayDialog, setShowExtraDayDialog] = useState(false);
+  const [extraDayDate, setExtraDayDate] = useState('');
+  const [extraDayLabel, setExtraDayLabel] = useState('');
+  const [extraDaySaving, setExtraDaySaving] = useState(false);
+
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditFields = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canViewAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canManageExtraDays = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
 
   const canEditAuditImage = (act: Activity) => {
     if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
@@ -447,13 +463,59 @@ export function AtcFindeClient({
   const getEquips = (id: string) => equipAssignments.filter((x) => x.activityId === id);
 
   // ── STATS ──
-  const satActs = activities.filter((a) => new Date(a.date).getUTCDay() === 6);
-  const sunActs = activities.filter((a) => new Date(a.date).getUTCDay() === 0);
+  const dayNames = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+  // Visible plan days: only those with activities OR extra days
+  const visiblePlanDays = planDays.filter(d => d.hasActivities || d.isExtra);
+
+  // Build per-day stats
+  const dayStats = visiblePlanDays.map(d => {
+    const dayActs = activities.filter(a => a.date.startsWith(d.date));
+    const dayTechIds = new Set(techAssignments.filter(x => dayActs.some(a => a.id === x.activityId)).map(x => x.technicianId));
+    const dt = new Date(`${d.date}T12:00:00`);
+    const dayLabel = d.isExtra
+      ? (d.label || dayNames[dt.getDay()] + ' ' + dt.getDate())
+      : dayNames[dt.getDay()];
+    return { ...d, dayLabel, actCount: dayActs.length, techCount: dayTechIds.size };
+  });
+
   const engMap = new Map<string, number>();
   activities.forEach((a) => { const n = a.user?.name || 'Sin asignar'; engMap.set(n, (engMap.get(n) || 0) + 1); });
   const allTechIds = new Set(techAssignments.map((x) => x.technicianId));
-  const satTechIds = new Set(techAssignments.filter((x) => { const a = activities.find((a) => a.id === x.activityId); return a && new Date(a.date).getUTCDay() === 6; }).map((x) => x.technicianId));
-  const sunTechIds = new Set(techAssignments.filter((x) => { const a = activities.find((a) => a.id === x.activityId); return a && new Date(a.date).getUTCDay() === 0; }).map((x) => x.technicianId));
+
+  // Extra day handlers
+  const addExtraDay = async () => {
+    if (!extraDayDate) return;
+    setExtraDaySaving(true);
+    try {
+      const res = await fetch('/api/extra-plan-days', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: extraDayDate, weekendOf, label: extraDayLabel || null }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        alert(d.error || 'Error');
+      } else {
+        setShowExtraDayDialog(false);
+        setExtraDayDate('');
+        setExtraDayLabel('');
+        router.refresh();
+      }
+    } catch { alert('Error de conexión'); }
+    setExtraDaySaving(false);
+  };
+
+  const removeExtraDay = async (id: string) => {
+    if (!confirm('¿Eliminar este día extra del plan?')) return;
+    try {
+      const res = await fetch('/api/extra-plan-days', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) router.refresh();
+    } catch { /* silent */ }
+  };
 
   return (
     <div className="space-y-5 pb-20 md:pb-0 animate-fade-in">
@@ -463,10 +525,70 @@ export function AtcFindeClient({
           <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-3">
             <CalendarDays className="w-8 h-8 text-indigo-600" /> Plan ATC FINDE
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Fin de semana: <span className="font-semibold text-indigo-600">{weekendLabel}</span></p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <p className="text-slate-500 text-sm">Plan: <span className="font-semibold text-indigo-600">{weekendLabel}</span></p>
+            {/* Extra day badges */}
+            {planDays.filter(d => d.isExtra).map(d => (
+              <span key={d.date} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                🟡 {d.label || d.date}
+                {canManageExtraDays && d.extraId && (
+                  <button onClick={() => removeExtraDay(d.extraId!)} className="hover:text-red-600 ml-0.5"><X size={10} /></button>
+                )}
+              </span>
+            ))}
+          </div>
         </div>
-        <button onClick={exportCSV} className="btn-secondary text-sm shrink-0"><Download size={16} /> Exportar Plan</button>
+        <div className="flex items-center gap-2">
+          {canManageExtraDays && (
+            <button onClick={() => setShowExtraDayDialog(true)} className="btn-secondary text-sm shrink-0 !bg-amber-50 !text-amber-700 !border-amber-300 hover:!bg-amber-100">
+              <Plus size={16} /> Día Extra
+            </button>
+          )}
+          <button onClick={exportCSV} className="btn-secondary text-sm shrink-0"><Download size={16} /> Exportar Plan</button>
+        </div>
       </div>
+
+      {/* Extra Day Dialog */}
+      {showExtraDayDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowExtraDayDialog(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 animate-slide-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <CalendarDays size={20} className="text-amber-600" /> Agregar Día Extra
+              </h3>
+              <button onClick={() => setShowExtraDayDialog(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Fecha</label>
+                <input
+                  type="date"
+                  value={extraDayDate}
+                  onChange={e => setExtraDayDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Etiqueta <span className="text-slate-400">(opcional)</span></label>
+                <input
+                  type="text"
+                  value={extraDayLabel}
+                  onChange={e => setExtraDayLabel(e.target.value)}
+                  placeholder="Ej: Lunes Festivo, Día del Trabajo"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <button
+                onClick={addExtraDay}
+                disabled={!extraDayDate || extraDaySaving}
+                className="w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50"
+              >
+                {extraDaySaving ? 'Guardando...' : 'Agregar al Plan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mini Dashboard */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -476,9 +598,12 @@ export function AtcFindeClient({
             <span className="text-2xl font-bold text-slate-800">{activities.length}</span>
             <span className="text-xs text-slate-400">total</span>
           </div>
-          <div className="flex gap-3 mt-2 text-xs">
-            <span className="text-indigo-600 font-semibold">SÁB {satActs.length}</span>
-            <span className="text-purple-600 font-semibold">DOM {sunActs.length}</span>
+          <div className="flex gap-2 mt-2 text-xs flex-wrap">
+            {dayStats.map(d => (
+              <span key={d.date} className={`font-semibold ${d.isExtra ? 'text-amber-600' : 'text-indigo-600'}`}>
+                {d.dayLabel} {d.actCount}
+              </span>
+            ))}
           </div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
@@ -487,9 +612,12 @@ export function AtcFindeClient({
             <span className="text-2xl font-bold text-sky-700">{allTechIds.size}</span>
             <span className="text-xs text-slate-400">total</span>
           </div>
-          <div className="flex gap-3 mt-2 text-xs">
-            <span className="text-indigo-600 font-semibold">SÁB {satTechIds.size}</span>
-            <span className="text-purple-600 font-semibold">DOM {sunTechIds.size}</span>
+          <div className="flex gap-2 mt-2 text-xs flex-wrap">
+            {dayStats.map(d => (
+              <span key={d.date} className={`font-semibold ${d.isExtra ? 'text-amber-600' : 'text-indigo-600'}`}>
+                {d.dayLabel} {d.techCount}
+              </span>
+            ))}
           </div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm col-span-2">
@@ -561,7 +689,15 @@ export function AtcFindeClient({
                     <td className="whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="font-medium text-slate-800 text-xs">{formatDate(act.date)}</span>
-                        <span className="text-[10px] text-indigo-500 uppercase tracking-widest font-bold">{['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'][new Date(act.date).getUTCDay()]}</span>
+                        {(() => {
+                          const actDate = act.date.substring(0, 10);
+                          const pd = planDays.find(d => d.date === actDate);
+                          const dow = dayNames[new Date(act.date).getUTCDay()];
+                          if (pd?.isExtra) {
+                            return <span className="text-[10px] text-amber-600 uppercase tracking-widest font-bold">🟡 {pd.label || dow}</span>;
+                          }
+                          return <span className="text-[10px] text-indigo-500 uppercase tracking-widest font-bold">{dow}</span>;
+                        })()}
                       </div>
                     </td>
                     <td className="whitespace-nowrap">
