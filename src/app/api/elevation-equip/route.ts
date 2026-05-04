@@ -6,7 +6,7 @@ import { canManageResources } from '@/lib/permissions';
 export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
-  const equips = await prisma.elevationEquip.findMany({ orderBy: { name: 'asc' } });
+  const equips = await prisma.elevationEquip.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } });
   return NextResponse.json(equips);
 }
 

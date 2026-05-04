@@ -7,7 +7,7 @@ const ALLOWED = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'];
 export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
-  const drivers = await prisma.driver.findMany({ orderBy: { name: 'asc' } });
+  const drivers = await prisma.driver.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } });
   return NextResponse.json(drivers);
 }
 
