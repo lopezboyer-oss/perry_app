@@ -6,7 +6,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   try {
     const session = await auth();
     const role = session?.user?.role;
-    if (role !== 'ADMIN' && role !== 'SUPERVISOR_SAFETY_LP') {
+    if (role !== 'ADMIN' && role !== 'ADMINISTRACION' && role !== 'SUPERVISOR_SAFETY_LP') {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
 
@@ -30,7 +30,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   try {
     const session = await auth();
     const role = session?.user?.role;
-    if (role !== 'ADMIN' && role !== 'SUPERVISOR_SAFETY_LP') {
+    if (role !== 'ADMIN' && role !== 'ADMINISTRACION' && role !== 'SUPERVISOR_SAFETY_LP') {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
 

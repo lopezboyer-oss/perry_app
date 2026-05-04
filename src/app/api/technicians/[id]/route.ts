@@ -1,11 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { canManageResources } from '@/lib/permissions';
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session?.user?.role || !canManageResources(session.user.role)) {
       return NextResponse.json({ error: 'Solo administradores' }, { status: 403 });
     }
 
@@ -32,7 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
+    if (!session?.user?.role || !canManageResources(session.user.role)) {
       return NextResponse.json({ error: 'Solo administradores' }, { status: 403 });
     }
 

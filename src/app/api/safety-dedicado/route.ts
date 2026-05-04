@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { canManageResources } from '@/lib/permissions';
 
 export async function GET() {
   try {
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     const role = session?.user?.role;
-    if (role !== 'ADMIN' && role !== 'SUPERVISOR_SAFETY_LP') {
+    if (role !== 'ADMIN' && role !== 'ADMINISTRACION' && role !== 'SUPERVISOR_SAFETY_LP') {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
 

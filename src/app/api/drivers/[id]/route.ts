@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
-const ALLOWED = ['ADMIN', 'SUPERVISOR_SAFETY_LP'];
+const ALLOWED = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'];
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
