@@ -136,8 +136,8 @@ export function PlanesPasadosClient({
 
   const saveTeraFolio = async (actId: string) => {
     const folio = teraFolios[actId]?.trim().toUpperCase() || '';
-    if (folio && !/^BC-\d{3,4}$/.test(folio)) {
-      alert('Formato inválido. Use BC- seguido de 3 o 4 dígitos (ej: BC-123 o BC-1234)');
+    if (folio && !/^BC-\d{3,5}$/.test(folio)) {
+      alert('Formato inválido. Use BC- seguido de 3 a 5 dígitos (ej: BC-123, BC-1234 o BC-12345)');
       return;
     }
     setTeraFolioSaving((p) => ({ ...p, [actId]: true }));
@@ -361,7 +361,7 @@ export function PlanesPasadosClient({
                                   onBlur={() => saveTeraFolio(act.id)}
                                   onKeyDown={(e) => { if (e.key === 'Enter') saveTeraFolio(act.id); }}
                                   className={`w-[70px] text-[10px] font-mono px-1 py-0.5 rounded border text-center ${
-                                    teraFolios[act.id] && /^BC-\d{3,4}$/.test(teraFolios[act.id])
+                                    teraFolios[act.id] && /^BC-\d{3,5}$/.test(teraFolios[act.id])
                                       ? 'border-emerald-300 bg-emerald-50 text-emerald-700 font-bold'
                                       : 'border-slate-200 text-slate-500'
                                   }`}

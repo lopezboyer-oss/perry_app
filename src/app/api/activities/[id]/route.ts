@@ -28,7 +28,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Safety audit image: ADMIN, SUPERVISOR_SAFETY_LP, or the activity's own engineer
   if (body.safetyAuditImage !== undefined) {
     const role = session.user.role;
-    if (role === 'ADMIN' || role === 'SUPERVISOR_SAFETY_LP' || role === 'SUPERVISOR') {
+    if (role === 'ADMIN' || role === 'ADMINISTRACION' || role === 'SUPERVISOR_SAFETY_LP' || role === 'SUPERVISOR') {
       // Admin/Sup can always edit
     } else {
       // Engineer can only edit their own activity
@@ -48,8 +48,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body.teraFolio !== undefined) {
     if (body.teraFolio) {
       const folio = String(body.teraFolio).trim().toUpperCase();
-      if (!/^BC-\d{3,4}$/.test(folio)) {
-        return NextResponse.json({ error: 'Folio TERA inválido. Formato: BC-XXX o BC-XXXX' }, { status: 400 });
+      if (!/^BC-\d{3,5}$/.test(folio)) {
+        return NextResponse.json({ error: 'Folio TERA inválido. Formato: BC- seguido de 3 a 5 dígitos (ej: BC-123, BC-1234, BC-12345)' }, { status: 400 });
       }
       allowedFields.teraFolio = folio;
     } else {
