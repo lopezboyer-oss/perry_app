@@ -59,6 +59,13 @@ export default async function ActividadesPage({
   }
   if (folioOdoo) where.workOrderFolio = { contains: folioOdoo.toUpperCase() };
 
+  // Build company-scoped user filter for dropdowns
+  const activeCompanyId = (companyFilter as any).companyId || null;
+  const usersWhere: any = { isActive: true };
+  if (activeCompanyId) {
+    usersWhere.companies = { some: { companyId: activeCompanyId } };
+  }
+
   const [activities, totalCount, users, clients] = await Promise.all([
     prisma.activity.findMany({
       where,
@@ -70,7 +77,11 @@ export default async function ActividadesPage({
       take: PAGE_SIZE,
     }),
     prisma.activity.count({ where }),
-    prisma.user.findMany({ select: { id: true, name: true, role: true }, orderBy: { name: 'asc' } }),
+    prisma.user.findMany({
+      where: usersWhere,
+      select: { id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
+    }),
     prisma.client.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
   ]);
 

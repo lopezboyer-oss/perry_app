@@ -46,8 +46,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
   // ── Company Filter ──
   const companyFilter = await getCompanyFilterFromCookies(role, userId);
+  const activeCompanyId = (companyFilter as any).companyId || null;
 
-  // Recopilar usuarios disponibles para el dropdown
+  // Recopilar usuarios disponibles para el dropdown (scoped by company)
   let availableUsers: { id: string; name: string }[] = [];
   let teamIds: string[] = [];
 
@@ -55,8 +56,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     teamIds = await getTeamUserIds(userId);
   }
 
+  const companyUserWhere: any = activeCompanyId
+    ? { isActive: true, companies: { some: { companyId: activeCompanyId } } }
+    : { isActive: true };
+
   if (['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role)) {
-    availableUsers = await prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } });
+    availableUsers = await prisma.user.findMany({ where: companyUserWhere, select: { id: true, name: true }, orderBy: { name: 'asc' } });
   } else if (role === 'SUPERVISOR') {
     availableUsers = await prisma.user.findMany({ 
       where: { id: { in: teamIds } }, 
@@ -133,7 +138,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       orderBy: { date: 'desc' },
       take: 10,
     }),
-    (['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role)) ? prisma.user.findMany({ select: { id: true, name: true, role: true } }) : [],
+    (['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role)) ? prisma.user.findMany({ where: companyUserWhere, select: { id: true, name: true, role: true } }) : [],
     // Top Active: user with most activities in period
     prisma.activity.groupBy({
       by: ['userId'],

@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { ActivityForm } from '@/components/forms/ActivityForm';
 import { ActivityDetail } from '@/components/forms/ActivityDetail';
 import { toInputDate } from '@/lib/utils';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
 export default async function ActividadDetailPage({
   params,
@@ -35,8 +36,16 @@ export default async function ActividadDetailPage({
   const isEditing = searchParams.editar === 'true';
 
   if (isEditing) {
+    // Company-scoped user filter
+    const companyFilter = await getCompanyFilterFromCookies(session.user.role, session.user.id);
+    const activeCompanyId = (companyFilter as any).companyId || null;
+    const usersWhere: any = { isActive: true };
+    if (activeCompanyId) {
+      usersWhere.companies = { some: { companyId: activeCompanyId } };
+    }
+
     const [users, clients] = await Promise.all([
-      prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+      prisma.user.findMany({ where: usersWhere, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
       prisma.client.findMany({
         select: { id: true, name: true, contacts: { select: { id: true, name: true } } },
         orderBy: { name: 'asc' },

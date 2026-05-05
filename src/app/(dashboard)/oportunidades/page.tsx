@@ -174,8 +174,13 @@ export default async function OportunidadesPage({
     return new Date(b.fechaInicio).getTime() - new Date(a.fechaInicio).getTime();
   });
 
-  // Get unique responsables for filter
-  const users = await prisma.user.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } });
+  // Get unique responsables for filter (scoped by company)
+  const activeCompanyId = (companyFilter as any).companyId || null;
+  const usersWhere: any = { isActive: true };
+  if (activeCompanyId) {
+    usersWhere.companies = { some: { companyId: activeCompanyId } };
+  }
+  const users = await prisma.user.findMany({ where: usersWhere, select: { id: true, name: true }, orderBy: { name: 'asc' } });
 
   return (
     <OportunidadesClient
