@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     // Determine which Odoo company_id(s) to query
     const companyParam = req.nextUrl.searchParams.get('companyId');
-    let odooCompanyFilter: any = ['company_id', '=', 1]; // default GC
+    let odooCompanyFilter: any = ['company_id', '=', 1]; // fallback GC
     
     if (companyParam === 'ALL' && role === 'ADMIN') {
       // ADMIN consolidated view — all companies except test (6)
@@ -22,6 +22,23 @@ export async function GET(req: NextRequest) {
       // Specific company — look up its odooId
       const company = await prisma.company.findUnique({ where: { id: companyParam } });
       if (company) odooCompanyFilter = ['company_id', '=', company.odooId];
+    } else {
+      // No cookie/param — resolve user's default company
+      const userDefault = await prisma.userCompany.findFirst({
+        where: { userId: session.user.id, isDefault: true },
+        include: { company: { select: { odooId: true } } },
+      });
+      if (userDefault) {
+        odooCompanyFilter = ['company_id', '=', userDefault.company.odooId];
+      } else {
+        // Fallback: any company the user has access to
+        const anyUC = await prisma.userCompany.findFirst({
+          where: { userId: session.user.id },
+          include: { company: { select: { odooId: true } } },
+          orderBy: { company: { sortOrder: 'asc' } },
+        });
+        if (anyUC) odooCompanyFilter = ['company_id', '=', anyUC.company.odooId];
+      }
     }
 
     // Fetch UNPAID invoices (the ones we need to track) — no limit
