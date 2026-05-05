@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
             title: act.title,
             clientId: act.clientId || null,
             contactId: act.contactId || null,
-            opportunityId: act.opportunityId || null,
             workOrderFolio: act.workOrderFolio || null,
             projectArea: act.projectArea || null,
             result: act.result || null,
