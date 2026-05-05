@@ -42,7 +42,6 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch UNPAID invoices (the ones we need to track) — no limit
-    // Filter by GRUPO CASEME (company_id=1) — future: make configurable for multi-company
     const unpaidInvoices = await odooExecute('account.move', 'search_read', [
       [[
         ['move_type', '=', 'out_invoice'],
@@ -56,6 +55,7 @@ export async function GET(req: NextRequest) {
           'amount_total', 'amount_residual',
           'invoice_date',
           'ref', 'partner_id', 'invoice_origin',
+          'invoice_user_id',
         ],
         order: 'invoice_date_due asc',
       },
@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
           'amount_total', 'amount_residual',
           'invoice_date',
           'ref', 'partner_id', 'invoice_origin',
+          'invoice_user_id',
         ],
         order: 'invoice_date desc',
         limit: 30,
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
 
     const invoices = [...(unpaidInvoices || []), ...(paidInvoices || [])];
 
-    // Cross-reference folios with Perry activities to find the engineer
+    // Secondary source: cross-reference folios with Perry activities to find the engineer
     const folios = [...new Set(invoices.map((inv: any) => inv.invoice_origin).filter(Boolean))];
     const engineerMap: Record<string, string> = {};
 
@@ -111,6 +112,10 @@ export async function GET(req: NextRequest) {
       const company = parts[0]?.trim() || '';
       const contact = parts.slice(1).join(',').trim() || '';
 
+      // Engineer: primary from Odoo salesperson, fallback to Perry activity match
+      const odooEngineer = inv.invoice_user_id ? inv.invoice_user_id[1] : null;
+      const perryEngineer = inv.invoice_origin ? (engineerMap[inv.invoice_origin] || null) : null;
+
       return {
         id: inv.id,
         number: inv.name,
@@ -123,7 +128,7 @@ export async function GET(req: NextRequest) {
         isPaid,
         company,
         contact,
-        engineer: inv.invoice_origin ? (engineerMap[inv.invoice_origin] || null) : null,
+        engineer: odooEngineer || perryEngineer || null,
       };
     });
 
