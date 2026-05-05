@@ -25,7 +25,7 @@ export default async function AnaliticaPage() {
   }
 
   // Company filter
-  const companyFilter = getCompanyFilterFromCookies(role);
+  const companyFilter = await getCompanyFilterFromCookies(role, userId);
   const baseFilter = { ...userFilter, ...companyFilter };
 
   // Activities by type with hours

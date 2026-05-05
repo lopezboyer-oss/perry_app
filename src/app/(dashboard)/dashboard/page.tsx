@@ -45,7 +45,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const { dateFrom, dateTo } = getDateRange(period);
 
   // ── Company Filter ──
-  const companyFilter = getCompanyFilterFromCookies(role);
+  const companyFilter = await getCompanyFilterFromCookies(role, userId);
 
   // Recopilar usuarios disponibles para el dropdown
   let availableUsers: { id: string; name: string }[] = [];

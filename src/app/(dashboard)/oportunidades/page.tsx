@@ -34,7 +34,7 @@ export default async function OportunidadesPage({
   const userId = session.user.id;
 
   // Get company filter
-  const companyFilter = getCompanyFilterFromCookies(role);
+  const companyFilter = await getCompanyFilterFromCookies(role, userId);
 
   // Get all COTIZACION activities to derive opportunities
   const cotizaciones = await prisma.activity.findMany({

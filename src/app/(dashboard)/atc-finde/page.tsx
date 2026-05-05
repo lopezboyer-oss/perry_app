@@ -57,7 +57,7 @@ export default async function AtcFindePage() {
     return { date: { gte: start, lte: end } };
   });
 
-  const companyFilter = getCompanyFilterFromCookies(role);
+  const companyFilter = await getCompanyFilterFromCookies(role, userId);
   const where = {
     OR: dateRanges,
     ...companyFilter,

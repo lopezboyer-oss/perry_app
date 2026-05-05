@@ -16,7 +16,7 @@ export default async function PlanesPasadosPage({
 
   const role = session.user.role;
   const selectedWeekend = searchParams.weekend || '';
-  const companyFilter = getCompanyFilterFromCookies(role);
+  const companyFilter = await getCompanyFilterFromCookies(role, session.user.id);
 
   // Get all distinct weekendOf values from assignments (past plans)
   const weekends = await prisma.weekendTechAssignment.findMany({

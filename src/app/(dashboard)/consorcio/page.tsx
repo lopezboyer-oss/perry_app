@@ -15,7 +15,7 @@ export default async function ConsorcioPage() {
     redirect('/dashboard');
   }
 
-  const companyFilter = getCompanyFilterFromCookies(session.user.role);
+  const companyFilter = await getCompanyFilterFromCookies(session.user.role, session.user.id);
 
   const activities = await prisma.activity.findMany({
     where: { type: 'CONSORCIO', ...companyFilter },

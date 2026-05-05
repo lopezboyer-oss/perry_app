@@ -136,7 +136,7 @@ export function Header({ user }: HeaderProps) {
               })}
               
               {/* Only ADMIN sees User Management */}
-              {user.role === 'ADMIN' && (
+              {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION') && (
                 <Link
                   href="/usuarios"
                   onClick={() => setMobileMenuOpen(false)}
@@ -151,7 +151,7 @@ export function Header({ user }: HeaderProps) {
               )}
 
               {/* ADMIN and SUPERVISOR see Directory */}
-              {(user.role === 'ADMIN' || user.role === 'SUPERVISOR') && (
+              {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION' || user.role === 'SUPERVISOR') && (
                 <Link
                   href="/directorio"
                   onClick={() => setMobileMenuOpen(false)}

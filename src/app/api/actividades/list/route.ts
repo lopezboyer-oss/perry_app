@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const userId = session.user.id;
   const role = session.user.role;
 
-  const companyFilter = getCompanyFilterFromCookies(role);
+  const companyFilter = await getCompanyFilterFromCookies(role, userId);
   const where: any = { ...companyFilter };
 
   if (role === 'INGENIERO') {

@@ -49,20 +49,56 @@ export function getCompanyWhereFilter(
 }
 
 /**
- * Convenience: get company filter from cookies + role in one call.
+ * Convenience: get company filter from cookies + role + userId in one call.
  * Use this in server pages/API routes.
+ * 
+ * For ADMIN with "ALL" cookie → {} (no filter, sees everything)
+ * For any role with a specific cookie → { companyId: cookieVal }
+ * For non-ADMIN with no cookie → resolves user's default/base company
  */
-export function getCompanyFilterFromCookies(role: string): { companyId: string } | {} {
+export async function getCompanyFilterFromCookies(
+  role: string,
+  userId?: string,
+): Promise<{ companyId: string } | {}> {
   const cookieStore = cookies();
   const cookieVal = cookieStore.get(COOKIE_NAME)?.value;
 
-  // ADMIN with "ALL" = no filter
+  // ADMIN with "ALL" = no filter (consolidated view)
   if (cookieVal === 'ALL' && role === 'ADMIN') return {};
 
-  // If a specific company is selected
+  // If a specific company is selected via cookie
   if (cookieVal && cookieVal !== 'ALL') return { companyId: cookieVal };
 
-  // No cookie set — return empty (will show all for ADMIN, or need baseCompanyId)
+  // No cookie set:
+  // - ADMIN sees everything (consolidated view)
+  if (role === 'ADMIN') return {};
+
+  // - Non-ADMIN: resolve their default company from DB
+  if (userId) {
+    // First try: user's default company from UserCompany
+    const defaultUC = await prisma.userCompany.findFirst({
+      where: { userId, isDefault: true },
+      select: { companyId: true },
+    });
+    if (defaultUC) return { companyId: defaultUC.companyId };
+
+    // Second try: any company the user has access to
+    const anyUC = await prisma.userCompany.findFirst({
+      where: { userId },
+      select: { companyId: true },
+      orderBy: { company: { sortOrder: 'asc' } },
+    });
+    if (anyUC) return { companyId: anyUC.companyId };
+
+    // Third try: user's base company
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { baseCompanyId: true },
+    });
+    if (user?.baseCompanyId) return { companyId: user.baseCompanyId };
+  }
+
+  // Final fallback: no filter (shouldn't happen for properly configured users)
   return {};
 }
 

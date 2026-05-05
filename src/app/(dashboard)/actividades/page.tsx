@@ -30,7 +30,7 @@ export default async function ActividadesPage({
   const folioOdoo = searchParams.folioOdoo || '';
 
   // Build where clause
-  const companyFilter = getCompanyFilterFromCookies(role);
+  const companyFilter = await getCompanyFilterFromCookies(role, userId);
   const where: any = { ...companyFilter };
 
   // Role-based filter
