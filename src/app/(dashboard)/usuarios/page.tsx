@@ -10,7 +10,7 @@ interface SupervisorRef { id: string; name: string; }
 interface UserData { id: string; name: string; email: string; role: string; isSafetyDesignado: boolean; supervisorId: string | null; supervisor: { name: string } | null; isActive: boolean; baseCompanyId: string | null; companies: { companyId: string; isDefault: boolean; company: { id: string; name: string; shortName: string | null; color: string | null } }[]; }
 interface TechnicianData { id: string; name: string; type: string; isCruzVerde: boolean; isActive: boolean; }
 interface SafetyData { id: string; name: string; isActive: boolean; }
-interface VehicleData { id: string; name: string; isAvailable: boolean; isActive: boolean; }
+interface VehicleData { id: string; name: string; isAvailable: boolean; isActive: boolean; baseCompanyId: string | null; baseCompany?: { id: string; name: string; shortName: string | null; color: string | null } | null; }
 interface DriverData { id: string; name: string; isActive: boolean; }
 interface EquipData { id: string; name: string; ownership: string; isActive: boolean; }
 interface ContractorData { id: string; name: string; isActive: boolean; _count?: { technicians: number }; }
@@ -44,7 +44,7 @@ export default function UsuariosPage() {
   const [safetyFormData, setSafetyFormData] = useState({ id: '', name: '' });
   const safetyFormRef = useRef<HTMLDivElement>(null);
   const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
-  const [vehicleFormData, setVehicleFormData] = useState({ id: '', name: '', isAvailable: true });
+  const [vehicleFormData, setVehicleFormData] = useState({ id: '', name: '', isAvailable: true, baseCompanyId: '' });
   const vehicleFormRef = useRef<HTMLDivElement>(null);
   const [driverFormOpen, setDriverFormOpen] = useState(false);
   const [driverFormData, setDriverFormData] = useState({ id: '', name: '' });
@@ -133,7 +133,7 @@ export default function UsuariosPage() {
     const url = vehicleFormData.id ? `/api/vehicles/${vehicleFormData.id}` : '/api/vehicles';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(vehicleFormData) });
     if (!res.ok) { alert('Error al guardar vehículo'); return; }
-    setVehicleFormOpen(false); setVehicleFormData({ id: '', name: '', isAvailable: true }); await fetchAll();
+    setVehicleFormOpen(false); setVehicleFormData({ id: '', name: '', isAvailable: true, baseCompanyId: '' }); await fetchAll();
   };
   const handleDeleteVehicle = async (id: string, name: string) => { if (!window.confirm(`¿Desactivar ${name}?`)) return; await fetch(`/api/vehicles/${id}`, { method: 'DELETE' }); await fetchAll(); };
 
@@ -487,16 +487,23 @@ export default function UsuariosPage() {
         <>
           {canManageVehicles && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setVehicleFormData({ id: '', name: '', isAvailable: true }); setVehicleFormOpen(true); setTimeout(() => vehicleFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Vehículo</button>
+              <button onClick={() => { setVehicleFormData({ id: '', name: '', isAvailable: true, baseCompanyId: companyList[0]?.id || '' }); setVehicleFormOpen(true); setTimeout(() => vehicleFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Vehículo</button>
             </div>
           )}
           {vehicleFormOpen && (
             <div ref={vehicleFormRef} className="card p-6 mb-4 border-l-4 border-l-violet-500">
               <h3 className="font-semibold text-slate-800 mb-4">{vehicleFormData.id ? 'Editar' : 'Nuevo'} Vehículo</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Nombre / Identificador *</label>
                   <input type="text" value={vehicleFormData.name} onChange={(e) => setVehicleFormData({ ...vehicleFormData, name: e.target.value })} className="w-full" placeholder="Ej: Camioneta 01, Van Perry-03" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Empresa Base</label>
+                  <select value={vehicleFormData.baseCompanyId} onChange={(e) => setVehicleFormData({ ...vehicleFormData, baseCompanyId: e.target.value })} className="w-full">
+                    <option value="">— Sin asignar —</option>
+                    {companyList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -515,24 +522,25 @@ export default function UsuariosPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
-                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Disponible</th>{canManageVehicles && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
+                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Empresa Base</th><th className="px-6 py-4">Disponible</th>{canManageVehicles && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {vehicleList.map((v) => (
                     <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-800">{v.name}</td>
+                      <td className="px-6 py-4">{(v as any).baseCompany ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded" style={{ backgroundColor: (v as any).baseCompany.color || '#6366f1' }}>{(v as any).baseCompany.shortName || (v as any).baseCompany.name}</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       <td className="px-6 py-4">
                         {v.isAvailable ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">✅ Disponible</span> : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">❌ No disponible</span>}
                       </td>
                       {canManageVehicles && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setVehicleFormData({ id: v.id, name: v.name, isAvailable: v.isAvailable }); setVehicleFormOpen(true); setTimeout(() => vehicleFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setVehicleFormData({ id: v.id, name: v.name, isAvailable: v.isAvailable, baseCompanyId: (v as any).baseCompanyId || '' }); setVehicleFormOpen(true); setTimeout(() => vehicleFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteVehicle(v.id, v.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
                     </tr>
                   ))}
-                  {vehicleList.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No hay vehículos registrados.</td></tr>}
+                  {vehicleList.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">No hay vehículos registrados.</td></tr>}
                 </tbody>
               </table>
             </div>

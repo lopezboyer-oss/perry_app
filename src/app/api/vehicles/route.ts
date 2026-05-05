@@ -6,7 +6,13 @@ import { canManageResources } from '@/lib/permissions';
 export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
-  const vehicles = await prisma.vehicle.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } });
+  const vehicles = await prisma.vehicle.findMany({
+    where: { isActive: true },
+    orderBy: { name: 'asc' },
+    include: {
+      baseCompany: { select: { id: true, name: true, shortName: true, color: true } },
+    },
+  });
   return NextResponse.json(vehicles);
 }
 
@@ -14,8 +20,10 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session || !canManageResources(session.user.role))
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
-  const { name, isAvailable } = await req.json();
+  const { name, isAvailable, baseCompanyId } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 });
-  const vehicle = await prisma.vehicle.create({ data: { name: name.trim(), isAvailable: isAvailable ?? true } });
+  const vehicle = await prisma.vehicle.create({
+    data: { name: name.trim(), isAvailable: isAvailable ?? true, baseCompanyId: baseCompanyId || null },
+  });
   return NextResponse.json(vehicle, { status: 201 });
 }
