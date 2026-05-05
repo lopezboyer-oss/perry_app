@@ -14,6 +14,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const body = await req.json();
     const { name, email, password, role, supervisorId, isSafetyDesignado, baseCompanyId, companyIds, defaultCompanyId } = body;
 
+    // Only ADMIN MAESTRO can assign/keep the ADMIN role
+    if (role === 'ADMIN' && session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Solo un Admin Maestro puede asignar el rol Admin Maestro' }, { status: 403 });
+    }
+
     const dataToUpdate: any = {
       name,
       email,

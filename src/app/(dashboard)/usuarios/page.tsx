@@ -292,7 +292,7 @@ export default function UsuariosPage() {
               </table>
             </div>
           </div>
-          <UserFormDialog open={formOpen} onOpenChange={setFormOpen} initialData={editingUser} supervisors={supervisors} onSubmit={handleFormSubmit} companies={companyList} />
+          <UserFormDialog open={formOpen} onOpenChange={setFormOpen} initialData={editingUser} supervisors={supervisors} onSubmit={handleFormSubmit} companies={companyList} currentUserRole={userRole} />
         </>
         );
       })()}

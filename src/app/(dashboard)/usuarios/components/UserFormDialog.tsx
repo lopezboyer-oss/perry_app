@@ -32,9 +32,10 @@ interface UserFormDialogProps {
   initialData?: Partial<UserFormData> & { id?: string };
   supervisors: { id: string; name: string }[];
   companies?: CompanyRef[];
+  currentUserRole?: string;
 }
 
-export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supervisors, companies = [] }: UserFormDialogProps) {
+export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supervisors, companies = [], currentUserRole = '' }: UserFormDialogProps) {
   const isEditing = !!initialData?.id;
 
   const [formData, setFormData] = useState<UserFormData>({
@@ -165,7 +166,9 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
                 <option value="SUPERVISOR">👨‍💼 Supervisor</option>
                 <option value="SUPERVISOR_SAFETY_LP">🛡️ Supervisor Safety & L.P.</option>
                 <option value="ADMINISTRACION">🏢 Administración</option>
-                <option value="ADMIN">👑 Admin Maestro</option>
+                {currentUserRole === 'ADMIN' && (
+                  <option value="ADMIN">👑 Admin Maestro</option>
+                )}
               </select>
             </div>
 

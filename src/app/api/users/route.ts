@@ -53,6 +53,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Only ADMIN MAESTRO can create another ADMIN MAESTRO
+    if (role === 'ADMIN' && session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Solo un Admin Maestro puede crear otro Admin Maestro' }, { status: 403 });
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
