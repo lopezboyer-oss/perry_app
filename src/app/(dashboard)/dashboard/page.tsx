@@ -3,35 +3,43 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { DashboardClient } from './DashboardClient';
 import { getCompanyFilterFromCookies } from '@/lib/company-context';
+import { getTijuanaToday } from '@/lib/timezone';
 
 export const dynamic = 'force-dynamic';
 
 function getDateRange(period: string): { dateFrom: Date; dateTo: Date } {
-  const now = new Date();
+  // Use Tijuana timezone to determine "today" — the server may run in UTC
+  const todayStr = getTijuanaToday(); // "YYYY-MM-DD" in America/Tijuana
+  const [y, m, d] = todayStr.split('-').map(Number);
 
   if (period === 'yesterday') {
-    const yesterday = new Date(now);
+    const yesterday = new Date(y, m - 1, d);
     yesterday.setDate(yesterday.getDate() - 1);
-    const dateFrom = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 0, 0, 0);
-    const dateTo = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+    const dateStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    // Activities are stored as noon of the calendar date, so range from start-of-day to end-of-day covers them
+    const dateFrom = new Date(`${dateStr}T00:00:00`);
+    const dateTo = new Date(`${dateStr}T23:59:59.999`);
     return { dateFrom, dateTo };
   }
 
   if (period === 'week') {
-    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ...
+    const today = new Date(y, m - 1, d);
+    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ...
     const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const monday = new Date(now);
+    const monday = new Date(today);
     monday.setDate(monday.getDate() - diffToMonday);
     const sunday = new Date(monday);
     sunday.setDate(sunday.getDate() + 6);
-    const dateFrom = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate(), 0, 0, 0);
-    const dateTo = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), 23, 59, 59, 999);
+    const monStr = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+    const sunStr = `${sunday.getFullYear()}-${String(sunday.getMonth() + 1).padStart(2, '0')}-${String(sunday.getDate()).padStart(2, '0')}`;
+    const dateFrom = new Date(`${monStr}T00:00:00`);
+    const dateTo = new Date(`${sunStr}T23:59:59.999`);
     return { dateFrom, dateTo };
   }
 
   // Default: today
-  const dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-  const dateTo = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const dateFrom = new Date(`${todayStr}T00:00:00`);
+  const dateTo = new Date(`${todayStr}T23:59:59.999`);
   return { dateFrom, dateTo };
 }
 
