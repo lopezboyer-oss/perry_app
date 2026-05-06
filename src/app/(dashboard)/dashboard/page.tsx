@@ -102,15 +102,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const dateFilter = { date: { gte: dateFrom, lte: dateTo } };
   const activityFilter = { ...userFilter, ...dateFilter, ...companyFilter };
 
-  // Pre-compute company-scoped folios for receipt filtering
-  let companyFolios: string[] | null = null;
+  // Pre-compute folio prefix for company-scoped receipt filtering
+  let receiptFolioPrefix: string | null = null;
   if ((companyFilter as any).companyId) {
-    const folioActs = await prisma.activity.findMany({
-      where: { companyId: (companyFilter as any).companyId, workOrderFolio: { not: null } },
-      select: { workOrderFolio: true },
-      distinct: ['workOrderFolio'],
+    const company = await prisma.company.findUnique({
+      where: { id: (companyFilter as any).companyId },
+      select: { folioPrefix: true },
     });
-    companyFolios = folioActs.map(a => a.workOrderFolio!);
+    receiptFolioPrefix = company?.folioPrefix || null;
   }
 
   // Fetch all data in parallel
@@ -163,13 +162,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       orderBy: { _count: { id: 'desc' } },
       take: 1,
     }),
-    // Top Receipts: filter by company folios if a company is selected
+    // Top Receipts: filter by folio prefix if a company is selected
     prisma.invoiceReceipt.groupBy({
       by: ['engineerName'],
       _count: { id: true },
       where: {
         engineerName: { not: null },
-        ...(companyFolios !== null ? { folio: { in: companyFolios } } : {}),
+        ...(receiptFolioPrefix ? { folio: { startsWith: receiptFolioPrefix } } : {}),
       },
       orderBy: { _count: { id: 'desc' } },
       take: 1,
