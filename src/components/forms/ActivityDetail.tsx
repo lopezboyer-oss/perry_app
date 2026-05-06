@@ -92,50 +92,48 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Información General</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DetailItem icon={Calendar} label="Fecha" value={formatDate(activity.date)} />
-            <DetailItem icon={User} label="Responsable" value={activity.user?.name || '-'} />
-            <DetailItem icon={Building} label="Cliente" value={activity.client?.name || '-'} />
-            <DetailItem icon={User} label="Contacto" value={activity.contact?.name || '-'} />
-            {activity.workOrderFolio && (
-              <DetailItem label="Folio ODOO" value={
+            <DetailItem icon={User} label="Responsable" value={activity.user?.name || '—'} />
+            <DetailItem icon={Building} label="Cliente" value={activity.client?.name || '—'} />
+            <DetailItem icon={User} label="Contacto" value={activity.contact?.name || '—'} />
+            <DetailItem label="Folio ODOO" value={
+              activity.workOrderFolio ? (
                 <Link href={`/oportunidades/${activity.workOrderFolio}`} className="font-mono text-indigo-600 hover:text-indigo-700">
                   {activity.workOrderFolio}
                 </Link>
-              } />
-            )}
-            {activity.purchaseOrder ? (
-              <DetailItem label="P.O. Cliente" value={<span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">{activity.purchaseOrder}</span>} />
-            ) : activity.workOrderFolio ? (
-              <DetailItem label="P.O. Cliente" value={<span className="text-amber-600 font-bold text-xs">Sin P.O.</span>} />
-            ) : null}
-            {activity.projectArea && (
-              <DetailItem label="Proyecto / Área" value={activity.projectArea} />
-            )}
-            {activity.location && (
-              <DetailItem icon={MapPin} label="Ubicación" value={activity.location} />
-            )}
+              ) : '—'
+            } />
+            <DetailItem label="P.O. Cliente" value={
+              activity.purchaseOrder ? (
+                <span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">{activity.purchaseOrder}</span>
+              ) : activity.workOrderFolio ? (
+                <span className="text-amber-600 font-bold text-xs">Sin P.O.</span>
+              ) : '—'
+            } />
+            <DetailItem label="Proyecto / Área" value={activity.projectArea || '—'} />
+            <DetailItem icon={MapPin} label="Ubicación" value={activity.location || '—'} />
           </div>
         </div>
 
-        {(activity.startTime || activity.endTime || activity.durationMinutes) && (
-          <div className="card p-6">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">Horario</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <DetailItem icon={Clock} label="Inicio" value={activity.startTime || '-'} />
-              <DetailItem icon={Clock} label="Fin" value={activity.endTime || '-'} />
-              <DetailItem icon={Clock} label="Duración" value={formatDuration(activity.durationMinutes)} />
-            </div>
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">Horario</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <DetailItem icon={Clock} label="Inicio" value={activity.startTime || '—'} />
+            <DetailItem icon={Clock} label="Fin" value={activity.endTime || '—'} />
+            <DetailItem icon={Clock} label="Duración" value={formatDuration(activity.durationMinutes)} />
           </div>
-        )}
+        </div>
 
         <div className="card p-6">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Resultado y Seguimiento</h2>
-          <div className="space-y-3">
-            {activity.result && <DetailItem label="Resultado" value={activity.result} />}
-            {activity.nextStep && <DetailItem label="Siguiente Paso" value={activity.nextStep} />}
-            {activity.commitmentDate && (
-              <DetailItem label="Fecha Compromiso" value={formatDate(activity.commitmentDate)} />
-            )}
-            {activity.notes && <DetailItem label="Observaciones" value={activity.notes} />}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <DetailItem label="Resultado" value={activity.result || '—'} />
+            </div>
+            <DetailItem label="Siguiente Paso" value={activity.nextStep || '—'} />
+            <DetailItem label="Fecha Compromiso" value={activity.commitmentDate ? formatDate(activity.commitmentDate) : '—'} />
+            <div className="sm:col-span-2">
+              <DetailItem label="Observaciones" value={activity.notes || '—'} />
+            </div>
           </div>
         </div>
 
