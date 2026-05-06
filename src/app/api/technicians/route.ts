@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { canManageResources } from '@/lib/permissions';
+import { toTitleCase } from '@/lib/utils';
 
 export async function GET() {
   try {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     const technician = await prisma.technician.create({
       data: {
-        name: name.trim(),
+        name: toTitleCase(name),
         type: type || 'PROPIO',
         isCruzVerde: isCruzVerde || false,
         contractorId: type === 'EXTERNO' ? (contractorId || null) : null,

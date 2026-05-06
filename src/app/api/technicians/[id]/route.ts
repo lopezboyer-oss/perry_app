@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { canManageResources } from '@/lib/permissions';
+import { toTitleCase } from '@/lib/utils';
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -15,7 +16,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const technician = await prisma.technician.update({
       where: { id: params.id },
       data: {
-        ...(name !== undefined && { name: name.trim() }),
+        ...(name !== undefined && { name: toTitleCase(name) }),
         ...(type !== undefined && { type }),
         ...(isCruzVerde !== undefined && { isCruzVerde }),
         ...(isActive !== undefined && { isActive }),
