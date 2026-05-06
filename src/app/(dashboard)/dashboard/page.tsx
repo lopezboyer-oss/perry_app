@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { DashboardClient } from './DashboardClient';
 import { getCompanyFilterFromCookies } from '@/lib/company-context';
 import { getTijuanaToday } from '@/lib/timezone';
+import { odooExecute } from '@/lib/odoo';
 
 export const dynamic = 'force-dynamic';
 
@@ -155,17 +156,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       orderBy: { _count: { id: 'desc' } },
       take: 1,
     }),
-    // Top Receipts: filter by company if a company is selected
-    prisma.invoiceReceipt.groupBy({
-      by: ['engineerName'],
-      _count: { id: true },
-      where: {
-        engineerName: { not: null },
-        ...(receiptCompanyId ? { companyId: receiptCompanyId } : {}),
-      },
-      orderBy: { _count: { id: 'desc' } },
-      take: 1,
-    }),
+    // Top Receipts: computed separately after Odoo call
+    Promise.resolve([]) as Promise<any[]>,
     // Hours by user in period
     prisma.activity.groupBy({
       by: ['userId'],
@@ -228,9 +220,57 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     ? { userName: userMap[topQuotationsRaw[0].userId!] || 'Desconocido', count: topQuotationsRaw[0]._count.id }
     : null;
 
-  const topReceipts = topReceiptsRaw.length > 0
-    ? { userName: topReceiptsRaw[0].engineerName || 'Desconocido', count: topReceiptsRaw[0]._count.id }
-    : null;
+  // ── Top Receipts: Odoo-based (source of truth for company) ──
+  let topReceipts: { userName: string; count: number } | null = null;
+  try {
+    // Get the Odoo company_id for the active company
+    let odooCompanyFilter: any = null;
+    if (receiptCompanyId) {
+      const company = await prisma.company.findUnique({ where: { id: receiptCompanyId }, select: { odooId: true } });
+      if (company) odooCompanyFilter = ['company_id', '=', company.odooId];
+    }
+
+    if (odooCompanyFilter || !receiptCompanyId) {
+      // Fetch invoices from Odoo for this company
+      const odooInvoices = await odooExecute('account.move', 'search_read', [
+        [[
+          ['move_type', '=', 'out_invoice'],
+          ['state', '=', 'posted'],
+          ['payment_state', 'in', ['not_paid', 'partial']],
+          ...(odooCompanyFilter ? [odooCompanyFilter] : []),
+        ]],
+        { fields: ['name', 'invoice_user_id'], limit: 500 },
+      ]);
+
+      // Get all invoice numbers from Odoo
+      const odooInvNumbers = (odooInvoices || []).map((inv: any) => inv.name);
+
+      // Cross-reference with confirmed receipts
+      const confirmedReceipts = await prisma.invoiceReceipt.findMany({
+        where: { invoiceNumber: { in: odooInvNumbers } },
+        select: { invoiceNumber: true },
+      });
+      const confirmedSet = new Set(confirmedReceipts.map(r => r.invoiceNumber));
+
+      // Count receipts per engineer (from Odoo's invoice_user_id)
+      const engineerCounts: Record<string, number> = {};
+      for (const inv of (odooInvoices || [])) {
+        if (confirmedSet.has(inv.name) && inv.invoice_user_id) {
+          const name = inv.invoice_user_id[1];
+          engineerCounts[name] = (engineerCounts[name] || 0) + 1;
+        }
+      }
+
+      // Find top
+      const sorted = Object.entries(engineerCounts).sort((a, b) => b[1] - a[1]);
+      if (sorted.length > 0) {
+        topReceipts = { userName: sorted[0][0], count: sorted[0][1] };
+      }
+    }
+  } catch (e) {
+    // Odoo may be unreachable — fail silently for this card
+    console.error('Top receipts Odoo error:', e);
+  }
 
   // Resolve hours by user
   const hoursByUser = hoursByUserRaw
