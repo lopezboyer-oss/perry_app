@@ -102,15 +102,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const dateFilter = { date: { gte: dateFrom, lte: dateTo } };
   const activityFilter = { ...userFilter, ...dateFilter, ...companyFilter };
 
-  // Pre-compute folio prefix for company-scoped receipt filtering
-  let receiptFolioPrefix: string | null = null;
-  if ((companyFilter as any).companyId) {
-    const company = await prisma.company.findUnique({
-      where: { id: (companyFilter as any).companyId },
-      select: { folioPrefix: true },
-    });
-    receiptFolioPrefix = company?.folioPrefix || null;
-  }
+  // Company ID for receipt filtering
+  const receiptCompanyId = (companyFilter as any).companyId || null;
 
   // Fetch all data in parallel
   const [
@@ -162,13 +155,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       orderBy: { _count: { id: 'desc' } },
       take: 1,
     }),
-    // Top Receipts: filter by folio prefix if a company is selected
+    // Top Receipts: filter by company if a company is selected
     prisma.invoiceReceipt.groupBy({
       by: ['engineerName'],
       _count: { id: true },
       where: {
         engineerName: { not: null },
-        ...(receiptFolioPrefix ? { folio: { startsWith: receiptFolioPrefix } } : {}),
+        ...(receiptCompanyId ? { companyId: receiptCompanyId } : {}),
       },
       orderBy: { _count: { id: 'desc' } },
       take: 1,

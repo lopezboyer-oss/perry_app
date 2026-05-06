@@ -292,6 +292,7 @@ model InvoiceReceipt {
   folio          String?             // Odoo folio (e.g. S06254)
   po             String?             // P.O. number
   engineerName   String?             // Responsible engineer name (from Perry activity)
+  companyId      String?             // Company this receipt belongs to
   confirmedById  String
   confirmedBy    User     @relation(fields: [confirmedById], references: [id])
   confirmedAt    DateTime @default(now())

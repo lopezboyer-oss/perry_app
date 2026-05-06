@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-    const { invoiceNumber, folio, po, notes, engineerName } = await req.json();
+    const { invoiceNumber, folio, po, notes, engineerName, companyId } = await req.json();
     if (!invoiceNumber) return NextResponse.json({ error: 'invoiceNumber requerido' }, { status: 400 });
 
     // Upsert — allows re-confirming
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
         folio: folio || null,
         po: po || null,
         engineerName: engineerName || null,
+        companyId: companyId || null,
         confirmedById: session.user.id,
         notes: notes || null,
       },
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
         confirmedById: session.user.id,
         confirmedAt: new Date(),
         engineerName: engineerName || undefined,
+        companyId: companyId || undefined,
         notes: notes || null,
       },
       include: { confirmedBy: { select: { name: true } } },

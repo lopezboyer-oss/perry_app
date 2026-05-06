@@ -128,10 +128,12 @@ export function CobranzaClient() {
         setReceipts((p) => { const n = { ...p }; delete n[key]; return n; });
       } else {
         // Mark receipt
+        const cookie = document.cookie.split('; ').find(c => c.startsWith('perry_active_company='));
+        const activeCompanyId = cookie?.split('=')[1] || '';
         const res = await fetch('/api/cobranza/receipts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ invoiceNumber: key, folio: inv.folio, po: inv.po, engineerName: inv.engineer }),
+          body: JSON.stringify({ invoiceNumber: key, folio: inv.folio, po: inv.po, engineerName: inv.engineer, companyId: activeCompanyId && activeCompanyId !== 'ALL' ? activeCompanyId : null }),
         });
         const data = await res.json();
         if (data.receipt) {
