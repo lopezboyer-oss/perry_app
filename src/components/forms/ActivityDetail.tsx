@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Edit, Trash2, Clock, MapPin, Calendar, User, Building } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Clock, MapPin, Calendar, User, Building, Copy } from 'lucide-react';
 import {
   activityTypeLabels, activityStatusLabels, activityTypeColors,
   activityStatusColors, formatDate, formatDuration,
@@ -63,6 +63,12 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
         </div>
         {canEdit && (
           <div className="flex gap-2">
+            <Link
+              href={`/actividades/nueva?continuar=${activity.id}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+            >
+              <Copy size={14} /> Continuar
+            </Link>
             <Link
               href={`/actividades/${activity.id}?editar=true`}
               className="btn-secondary text-sm"
