@@ -17,7 +17,7 @@ interface Props {
 
 export function ActivityForm({ users, clients, currentUserId, userRole, initialData, prefillFolio }: Props) {
   const router = useRouter();
-  const isEdit = !!initialData;
+  const isEdit = !!initialData?.id;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
