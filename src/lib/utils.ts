@@ -6,6 +6,25 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Normaliza un nombre a Title Case: "JUAN PEREZ" → "Juan Perez"
+ * Preposiciones comunes se mantienen en minúscula (excepto si es la primera palabra).
+ */
+const LOWERCASE_WORDS = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e']);
+
+export function toTitleCase(text: string): string {
+  if (!text) return text;
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((word, i) => {
+      const lower = word.toLowerCase();
+      if (i > 0 && LOWERCASE_WORDS.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(' ');
+}
+
+/**
  * Devuelve la fecha de HOY en zona horaria de Tijuana como "YYYY-MM-DD".
  * Seguro para uso en cliente (navegador) y servidor.
  */

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { auth } from '@/lib/auth';
+import { toTitleCase } from '@/lib/utils';
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -20,7 +21,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     const dataToUpdate: any = {
-      name,
+      name: toTitleCase(name),
       email,
       role,
       supervisorId: role === 'INGENIERO' ? supervisorId : null,
