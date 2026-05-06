@@ -24,15 +24,33 @@ export async function POST(req: NextRequest) {
 
     const data = parsed.data;
 
-    // Resolve companyId: explicit > active company cookie > user's baseCompany
+    // Resolve companyId: explicit > active company cookie > user's default company > baseCompany
     let companyId = data.companyId || null;
     if (!companyId) {
       const cookieVal = cookies().get('perry_active_company')?.value;
       if (cookieVal && cookieVal !== 'ALL') {
         companyId = cookieVal;
       } else {
-        const user = await prisma.user.findUnique({ where: { id: data.userId }, select: { baseCompanyId: true } });
-        companyId = user?.baseCompanyId || null;
+        // Try user's default company from UserCompany
+        const defaultUC = await prisma.userCompany.findFirst({
+          where: { userId: data.userId, isDefault: true },
+          select: { companyId: true },
+        });
+        if (defaultUC) {
+          companyId = defaultUC.companyId;
+        } else {
+          // Fallback: any company the user has, or baseCompanyId
+          const anyUC = await prisma.userCompany.findFirst({
+            where: { userId: data.userId },
+            select: { companyId: true },
+          });
+          if (anyUC) {
+            companyId = anyUC.companyId;
+          } else {
+            const user = await prisma.user.findUnique({ where: { id: data.userId }, select: { baseCompanyId: true } });
+            companyId = user?.baseCompanyId || null;
+          }
+        }
       }
     }
 
