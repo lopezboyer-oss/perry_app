@@ -151,7 +151,7 @@ export function Header({ user }: HeaderProps) {
               )}
 
               {/* ADMIN and SUPERVISOR see Directory */}
-              {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION' || user.role === 'SUPERVISOR') && (
+              {['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(user.role) && (
                 <Link
                   href="/directorio"
                   onClick={() => setMobileMenuOpen(false)}

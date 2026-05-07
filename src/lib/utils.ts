@@ -105,7 +105,7 @@ export function toInputDate(date: Date | string | null): string {
  * Etiquetas para tipos de actividad
  */
 export const activityTypeLabels: Record<string, string> = {
-  VISITA_CAMPO: 'Visita de Campo',
+  VISITA_CAMPO: 'Rastrillo',
   COTIZACION: 'Cotización',
   EJECUCION: 'Ejecución',
   PLANEACION: 'Planeación',

@@ -88,7 +88,7 @@ const steps = [
               <tbody className="divide-y divide-slate-100">
                 <tr><td className="px-4 py-2.5 font-medium">📅 Fecha</td><td className="px-4 py-2.5 text-slate-600">Día en que realizaste la actividad</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">📝 Título</td><td className="px-4 py-2.5 text-slate-600">Descripción breve. Ej: <em>"Instalación de guarda para botonera"</em></td></tr>
-                <tr><td className="px-4 py-2.5 font-medium">🏷️ Tipo</td><td className="px-4 py-2.5 text-slate-600">Visita de Campo, Cotización, Ejecución, Planeación o Diseño</td></tr>
+                <tr><td className="px-4 py-2.5 font-medium">🏷️ Tipo</td><td className="px-4 py-2.5 text-slate-600">Rastrillo, Cotización, Ejecución, Planeación o Diseño</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">🏢 Cliente</td><td className="px-4 py-2.5 text-slate-600">Selecciona el cliente asociado</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">⏰ Hora inicio / fin</td><td className="px-4 py-2.5 text-slate-600">La duración se calcula automáticamente</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">✅ Resultado</td><td className="px-4 py-2.5 text-slate-600">Qué lograste. Ej: <em>"Cotización enviada $45,000"</em></td></tr>
@@ -146,7 +146,7 @@ const steps = [
         <div className="ml-8 mb-5 grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
             <span className="w-2 h-2 rounded-full bg-blue-500" />
-            <span>"reunión", "visita" → <strong>Visita de Campo</strong></span>
+            <span>"reunión", "visita" → <strong>Rastrillo</strong></span>
           </div>
           <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-3 py-2">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -187,7 +187,7 @@ const steps = [
         </p>
         <div className="space-y-3">
           {[
-            { type: 'Visita de Campo', color: 'bg-blue-500', bg: 'bg-blue-50 border-blue-100', desc: 'Reuniones con clientes, levantamientos, recorridos en planta, inspecciones.' , examples: '"Reunión con Ing. Campos", "Visita a planta Ternium", "Levantamiento de grúas"' },
+            { type: 'Rastrillo', color: 'bg-blue-500', bg: 'bg-blue-50 border-blue-100', desc: 'Reuniones con clientes, levantamientos, recorridos en planta, inspecciones.' , examples: '"Reunión con Ing. Campos", "Visita a planta Ternium", "Levantamiento de grúas"' },
             { type: 'Cotización', color: 'bg-amber-500', bg: 'bg-amber-50 border-amber-100', desc: 'Elaboración, envío o seguimiento de cotizaciones y propuestas comerciales.', examples: '"Envío cotización barandales $185K", "Elaboración presupuesto sistema contra incendio"' },
             { type: 'Ejecución', color: 'bg-green-500', bg: 'bg-green-50 border-green-100', desc: 'Trabajos físicos: instalaciones, reparaciones, mantenimientos, pruebas.', examples: '"Instalación lámparas LED", "Reemplazo cableado nave 3", "Pruebas sistema neumático"' },
             { type: 'Planeación', color: 'bg-purple-500', bg: 'bg-purple-50 border-purple-100', desc: 'Coordinación, permisos, solicitudes de material, documentación, revisiones.', examples: '"Solicitud de materiales", "Permisos de fin de semana", "Coordinación con equipo"' },

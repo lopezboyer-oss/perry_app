@@ -43,7 +43,7 @@ export function AnaliticaClient({ data }: { data: AnalyticsData }) {
 
   const monthlyChartData = data.monthlyData.map((m) => ({
     month: m.month,
-    Visitas: m.VISITA_CAMPO || 0,
+    Rastrillo: m.VISITA_CAMPO || 0,
     Cotizaciones: m.COTIZACION || 0,
     Ejecuciones: m.EJECUCION || 0,
     Planeación: m.PLANEACION || 0,
@@ -157,7 +157,7 @@ export function AnaliticaClient({ data }: { data: AnalyticsData }) {
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip contentStyle={{ borderRadius: '8px' }} />
               <Legend />
-              <Area type="monotone" dataKey="Visitas" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
+              <Area type="monotone" dataKey="Rastrillo" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
               <Area type="monotone" dataKey="Cotizaciones" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.3} />
               <Area type="monotone" dataKey="Ejecuciones" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
               <Area type="monotone" dataKey="Planeación" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
