@@ -475,7 +475,8 @@ export function AtcFindeClient({
   const [showTechPlansModal, setShowTechPlansModal] = useState(false);
   const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
 
-  const assignedTechIds = [...new Set(techAssignments.filter(x => x.role === 'TECNICO').map(x => x.technicianId))];
+  const companyActivityIds = new Set(activities.map(a => a.id));
+  const assignedTechIds = [...new Set(techAssignments.filter(x => x.role === 'TECNICO' && companyActivityIds.has(x.activityId)).map(x => x.technicianId))];
   const assignedTechs = technicians.filter(t => assignedTechIds.includes(t.id));
 
   const generateTechPlan = (techId: string): string => {

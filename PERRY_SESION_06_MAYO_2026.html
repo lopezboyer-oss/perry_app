@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Reporte Sesión 6 Mayo 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    :root{--primary:#4f46e5;--primary-light:#e0e7ff;--emerald:#059669;--emerald-light:#d1fae5;--amber:#d97706;--amber-light:#fef3c7;--red:#dc2626;--red-light:#fee2e2;--blue:#2563eb;--blue-light:#dbeafe;--purple:#7c3aed;--purple-light:#f3e8ff;--sky:#0284c7;--sky-light:#e0f2fe;--orange:#ea580c;--orange-light:#ffedd5;--slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;--slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;--slate-800:#1e293b;--slate-900:#0f172a}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',-apple-system,sans-serif;background:white;color:var(--slate-800);line-height:1.6;font-size:11pt}
+    @page{size:letter;margin:1.5cm 2cm}
+    @media print{body{background:white}.page-break{page-break-before:always}.no-print{display:none!important}.container{box-shadow:none!important;padding:0!important;max-width:100%!important}}
+    .container{max-width:820px;margin:0 auto;padding:40px}
+    .header{display:flex;align-items:center;gap:20px;padding-bottom:20px;border-bottom:3px solid var(--primary);margin-bottom:24px}
+    .header img{width:80px;height:80px;border-radius:16px;object-fit:cover;box-shadow:0 4px 12px rgba(79,70,229,0.2)}
+    .header-text h1{font-size:22pt;font-weight:800;color:var(--slate-900);letter-spacing:-0.5px}
+    .header-text .subtitle{font-size:11pt;color:var(--slate-500);font-weight:400}
+    .header-text .date-badge{display:inline-block;margin-top:6px;background:var(--primary-light);color:var(--primary);font-weight:600;font-size:9pt;padding:3px 12px;border-radius:20px}
+    .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+    .stat-card{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:12px;padding:14px 16px;text-align:center}
+    .stat-card .stat-value{font-size:22pt;font-weight:800;color:var(--primary)}
+    .stat-card .stat-label{font-size:8pt;font-weight:600;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.5px}
+    .stat-card.emerald .stat-value{color:var(--emerald)}.stat-card.amber .stat-value{color:var(--amber)}.stat-card.blue .stat-value{color:var(--blue)}.stat-card.purple .stat-value{color:var(--purple)}
+    .perry-quote{background:linear-gradient(135deg,#eef2ff,#f5f3ff);border:1px solid #c7d2fe;border-radius:16px;padding:20px;margin-bottom:28px;display:flex;gap:16px;align-items:flex-start}
+    .perry-quote img{width:52px;height:52px;border-radius:12px;border:2px solid #a5b4fc;flex-shrink:0}
+    .perry-quote .quote-text{font-size:10pt;color:var(--slate-700);line-height:1.6}
+    .perry-quote .quote-text strong{color:var(--primary)}
+    .perry-quote .perry-name{font-size:7.5pt;color:var(--slate-500);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+    h2{font-size:13pt;font-weight:700;color:var(--slate-800);margin-top:28px;margin-bottom:12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--slate-200);padding-bottom:8px}
+    h2 .icon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;font-size:13px}
+    h2 .icon.conflict{background:var(--red-light)}h2 .icon.plan{background:var(--sky-light)}h2 .icon.equip{background:var(--orange-light)}h2 .icon.ux{background:var(--emerald-light)}h2 .icon.bugfix{background:var(--amber-light)}h2 .icon.doc{background:var(--purple-light)}
+    table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:9.5pt}
+    thead th{background:var(--slate-800);color:white;font-weight:600;padding:8px 10px;text-align:left;font-size:8.5pt;text-transform:uppercase;letter-spacing:0.3px}
+    thead th:first-child{border-radius:8px 0 0 0}thead th:last-child{border-radius:0 8px 0 0}
+    tbody td{padding:7px 10px;border-bottom:1px solid var(--slate-100);vertical-align:top}
+    tbody tr:nth-child(even){background:var(--slate-50)}
+    .commit-hash{font-family:'SF Mono','Fira Code',monospace;font-size:8.5pt;color:var(--primary);background:var(--primary-light);padding:2px 6px;border-radius:4px;font-weight:500}
+    .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:7.5pt;font-weight:600;text-transform:uppercase;letter-spacing:0.3px}
+    .badge.conflict{background:var(--red-light);color:var(--red)}.badge.plan{background:var(--sky-light);color:var(--sky)}.badge.equip{background:var(--orange-light);color:var(--orange)}.badge.ux{background:var(--emerald-light);color:var(--emerald)}.badge.bugfix{background:var(--amber-light);color:var(--amber)}.badge.doc{background:var(--purple-light);color:var(--purple)}.badge.data{background:#fce7f3;color:#be185d}
+    .highlight-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+    .highlight-card{border:1px solid var(--slate-200);border-radius:12px;padding:16px;background:white}
+    .highlight-card h3{font-size:10pt;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .highlight-card ul{list-style:none;font-size:8.5pt;color:var(--slate-600)}
+    .highlight-card li{padding:3px 0;padding-left:16px;position:relative}
+    .highlight-card li::before{content:'✓';position:absolute;left:0;color:var(--emerald);font-weight:700}
+    .impact-box{background:linear-gradient(135deg,var(--slate-50),#f0fdf4);border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin-bottom:24px}
+    .impact-box h3{font-size:10pt;font-weight:700;color:var(--emerald);margin-bottom:8px}
+    .impact-box .impact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .impact-item{text-align:center;padding:10px;background:white;border-radius:8px;border:1px solid #d1fae5}
+    .impact-item .val{font-size:16pt;font-weight:800;color:var(--emerald)}
+    .impact-item .lbl{font-size:7.5pt;color:var(--slate-500);font-weight:600;text-transform:uppercase}
+    .files-changed{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+    .file-tag{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:6px;padding:3px 10px;font-size:8pt;font-family:'SF Mono','Fira Code',monospace;color:var(--slate-600)}
+    .footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--slate-200);display:flex;justify-content:space-between;align-items:center;font-size:8pt;color:var(--slate-500)}
+    .footer img{width:28px;height:28px;border-radius:7px;margin-right:8px;vertical-align:middle}
+    .print-btn{position:fixed;bottom:30px;right:30px;background:linear-gradient(135deg,var(--primary),var(--purple));color:white;border:none;padding:14px 28px;border-radius:12px;font-size:11pt;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(79,70,229,0.4);transition:all 0.2s;font-family:'Inter',sans-serif}
+    .print-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(79,70,229,0.5)}
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Perry App</h1>
+        <div class="subtitle">Reporte de Cambios — Sesión Desarrollo</div>
+        <span class="date-badge">📅 6 de Mayo, 2026 — Sesión Nocturna</span>
+      </div>
+    </div>
+
+    <!-- Perry Quote -->
+    <div class="perry-quote">
+      <img src="public/perry-logo.jpg" alt="Perry" onerror="this.style.display='none'">
+      <div>
+        <div class="perry-name">🦆 Perry — Asistente Ejecutivo</div>
+        <div class="quote-text">
+          Sesión enfocada en <strong>comunicación operativa con técnicos</strong> y <strong>reporteo de equipos de elevación</strong>. Se implementaron 2 funcionalidades nuevas de alto impacto, se corrigieron 4 bugs críticos en conteo y fechas, y se actualizó la documentación de perfiles con las nuevas capacidades del sistema. <strong>14 archivos modificados, 1,272 líneas añadidas.</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Features</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Bug Fixes</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-value">14</div>
+        <div class="stat-label">Archivos</div>
+      </div>
+    </div>
+
+    <!-- Commit Table -->
+    <h2><span class="icon ux">📋</span> Detalle de Cambios</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px">#</th>
+          <th style="width:72px">Commit</th>
+          <th>Descripción</th>
+          <th style="width:95px">Categoría</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="commit-hash">601359f</span></td>
+          <td>Detección de conflictos cross-company por día (filtro sameDay), badges empresa en choferes, paridad en Planes Pasados</td>
+          <td><span class="badge conflict">Conflictos</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><span class="commit-hash">fdd4b1f</span></td>
+          <td>Tarjetas resumen Plan ATC Finde: Total LOTO, LOTO por Ingeniero, Safety Dedicado, Vehículos/Choferes/Equipos por día</td>
+          <td><span class="badge plan">Plan Finde</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><span class="commit-hash">fdeb0f5</span></td>
+          <td>Tarjeta LOTO por Ingeniero muestra desglose SÁB/DOM debajo del nombre</td>
+          <td><span class="badge plan">Plan Finde</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><span class="commit-hash">1c1912f</span></td>
+          <td>📋 Modal Planes Técnicos personales + 🏗️ Modal Reporte Equipos de Elevación (texto + CSV). Campos phone/email en Technician</td>
+          <td><span class="badge equip">Feature</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">a10eabf</span></td>
+          <td>Fix: parseo de fechas ISO en planes técnicos — substring(0,10) para agrupar por YYYY-MM-DD correctamente</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">167154b</span></td>
+          <td>Fix: tarjeta Técnicos excluye SAFETY_DESIGNADO del conteo — total ahora coincide con suma por día</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">5dbb385</span></td>
+          <td>Perfiles y Permisos: visible para Supervisor y Safety. Contenido actualizado con conflictos, tarjetas y nuevas funciones</td>
+          <td><span class="badge doc">Documentación</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><span class="commit-hash">de0e4ff</span></td>
+          <td>Fix: plan técnico muestra LOTO y Eq. Elevación explícitamente (✅/❌) en cada actividad. Fallback a.loto para datos undefined</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Highlights -->
+    <h2><span class="icon plan">⭐</span> Funcionalidades Destacadas</h2>
+    <div class="highlight-grid">
+      <div class="highlight-card" style="border-left:3px solid var(--sky)">
+        <h3>📋 Planes Técnicos Personales</h3>
+        <ul>
+          <li>Modal con lista de técnicos asignados</li>
+          <li>Badge de # actividades + indicador de celular</li>
+          <li>Texto formateado por día con fecha completa</li>
+          <li>LOTO ✅/❌ y Eq. Elevación ✅/❌ explícitos</li>
+          <li>Detalle de cada equipo (nombre + tipo)</li>
+          <li>Botón "Copiar texto" para WhatsApp</li>
+        </ul>
+      </div>
+      <div class="highlight-card" style="border-left:3px solid var(--orange)">
+        <h3>🏗️ Reporte Equipos de Elevación</h3>
+        <ul>
+          <li>Consolidado de todos los equipos del plan</li>
+          <li>Agrupado por equipo con tipo (PROPIO/RENTADO)</li>
+          <li>Desglose: día, horario, actividad, ingeniero</li>
+          <li>Exportar CSV para compartir con equipo</li>
+          <li>Copiar texto al portapapeles</li>
+        </ul>
+      </div>
+      <div class="highlight-card" style="border-left:3px solid var(--red)">
+        <h3>⚠️ Conflictos Cross-Company</h3>
+        <ul>
+          <li>Filtro por mismo día (sameDay) — sin falsos positivos</li>
+          <li>6 tipos: Técnicos, Equipos, Vehículos, Choferes, Safety Designado, Safety Dedicado</li>
+          <li>Safety Dedicado BLOQUEA la asignación (409)</li>
+          <li>Mensajes con empresa + día visibles</li>
+        </ul>
+      </div>
+      <div class="highlight-card" style="border-left:3px solid var(--purple)">
+        <h3>📊 Tarjetas Resumen ATC Finde</h3>
+        <ul>
+          <li>Total LOTO con desglose diario</li>
+          <li>LOTO por Ingeniero (SÁB/DOM)</li>
+          <li>Safety Dedicado con nombres</li>
+          <li>Vehículos, Choferes y Equipos por día</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Impact -->
+    <h2><span class="icon ux">📈</span> Impacto de la Sesión</h2>
+    <div class="impact-box">
+      <h3>🎯 Métricas de Desarrollo</h3>
+      <div class="impact-grid">
+        <div class="impact-item">
+          <div class="val">1,272</div>
+          <div class="lbl">Líneas añadidas</div>
+        </div>
+        <div class="impact-item">
+          <div class="val">75</div>
+          <div class="lbl">Líneas eliminadas</div>
+        </div>
+        <div class="impact-item">
+          <div class="val">14</div>
+          <div class="lbl">Archivos tocados</div>
+        </div>
+        <div class="impact-item">
+          <div class="val">2</div>
+          <div class="lbl">Modales nuevos</div>
+        </div>
+        <div class="impact-item">
+          <div class="val">9</div>
+          <div class="lbl">Tarjetas resumen</div>
+        </div>
+        <div class="impact-item">
+          <div class="val">2</div>
+          <div class="lbl">Campos DB nuevos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schema Changes -->
+    <h2><span class="icon doc">🗄️</span> Cambios en Modelo de Datos</h2>
+    <table>
+      <thead><tr><th>Modelo</th><th>Campo</th><th>Tipo</th><th>Propósito</th></tr></thead>
+      <tbody>
+        <tr><td>Technician</td><td><code>phone</code></td><td>String?</td><td>Celular para envío futuro de planes por WhatsApp</td></tr>
+        <tr><td>Technician</td><td><code>email</code></td><td>String?</td><td>Email para notificaciones futuras</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Files Changed -->
+    <h2><span class="icon bugfix">📁</span> Archivos Modificados</h2>
+    <div class="files-changed">
+      <span class="file-tag">schema.prisma</span>
+      <span class="file-tag">AtcFindeClient.tsx</span>
+      <span class="file-tag">atc-finde/page.tsx</span>
+      <span class="file-tag">GuiaClient.tsx</span>
+      <span class="file-tag">PerfilesGuide.tsx</span>
+      <span class="file-tag">PlanesPasadosClient.tsx</span>
+      <span class="file-tag">planes-pasados/page.tsx</span>
+      <span class="file-tag">usuarios/page.tsx</span>
+      <span class="file-tag">drivers/route.ts</span>
+      <span class="file-tag">drivers/[id]/route.ts</span>
+      <span class="file-tag">technicians/route.ts</span>
+      <span class="file-tag">technicians/[id]/route.ts</span>
+      <span class="file-tag">weekend-assignments/route.ts</span>
+    </div>
+
+    <!-- Next Steps -->
+    <h2><span class="icon plan">🔮</span> Próximos Pasos</h2>
+    <div class="highlight-grid">
+      <div class="highlight-card">
+        <h3>📱 Comunicación Automatizada</h3>
+        <ul>
+          <li>Envío de plan por WhatsApp (API)</li>
+          <li>Envío por email (Resend)</li>
+          <li>Alertar si técnico no tiene celular</li>
+        </ul>
+      </div>
+      <div class="highlight-card">
+        <h3>🚀 Optimización</h3>
+        <ul>
+          <li>Paginación en tablas grandes</li>
+          <li>Lazy loading de recursos</li>
+          <li>Cargar más empresas al consorcio</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span><img src="public/perry-logo.jpg" alt="" onerror="this.style.display='none'">Perry App v2.x — Desarrollado por Antigravity</span>
+      <span>Generado: 6 de Mayo, 2026 · 20:59 hrs (Tijuana, BC)</span>
+    </div>
+
+  </div>
+
+  <button class="print-btn no-print" onclick="window.print()">📄 Guardar como PDF</button>
+</body>
+</html>
