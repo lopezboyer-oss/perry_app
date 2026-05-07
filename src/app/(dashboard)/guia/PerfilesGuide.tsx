@@ -1,12 +1,12 @@
 'use client';
 
-import { Shield, Users, Eye, Check, X } from 'lucide-react';
+import { Shield, Users, Eye, Zap, Wrench } from 'lucide-react';
 
 const roles = [
-  { name: 'Admin Maestro', tag: 'ADMIN', emoji: '🟣', color: '#7c3aed', bg: 'bg-purple-50 border-purple-100', desc: 'Control total. Configura empresas, usuarios, recursos y ve toda la información consolidada.' },
+  { name: 'Admin Maestro', tag: 'ADMIN', emoji: '🟣', color: '#7c3aed', bg: 'bg-purple-50 border-purple-100', desc: 'Control total. Configura empresas, usuarios, recursos y ve toda la información consolidada. Acceso a Consorcio.' },
   { name: 'Administración', tag: 'ADMINISTRACION', emoji: '🔴', color: '#e11d48', bg: 'bg-rose-50 border-rose-100', desc: 'Acceso administrativo. Gestiona recursos y usuarios. Similar al Admin pero sin acceso a Consorcio.' },
-  { name: 'Supervisor', tag: 'SUPERVISOR', emoji: '🟡', color: '#f59e0b', bg: 'bg-amber-50 border-amber-100', desc: 'Lidera equipos de ingenieros. Ve las actividades de su equipo, puede asignar recursos y editar notas.' },
-  { name: 'Safety & L.P.', tag: 'SUPERVISOR_SAFETY_LP', emoji: '🟢', color: '#0d9488', bg: 'bg-teal-50 border-teal-100', desc: 'Supervisa seguridad. Gestiona Safety Dedicados, choferes, auditorías y notas de seguridad.' },
+  { name: 'Supervisor', tag: 'SUPERVISOR', emoji: '🟡', color: '#f59e0b', bg: 'bg-amber-50 border-amber-100', desc: 'Lidera equipos de ingenieros. Ve las actividades de su equipo, puede asignar recursos en ATC Finde y crear días extra.' },
+  { name: 'Safety & L.P.', tag: 'SUPERVISOR_SAFETY_LP', emoji: '🟢', color: '#0d9488', bg: 'bg-teal-50 border-teal-100', desc: 'Supervisa seguridad. Gestiona Safety Dedicados, choferes, auditorías y notas de seguridad. Ve todas las actividades.' },
   { name: 'Ingeniero', tag: 'INGENIERO', emoji: '🔵', color: '#10b981', bg: 'bg-emerald-50 border-emerald-100', desc: 'Operativo. Registra sus propias actividades, consulta planes y exporta información.' },
 ];
 
@@ -50,7 +50,7 @@ export function PerfilesGuide() {
             {[
               ['Dashboard',1,1,1,1,1],['Actividades',1,1,1,1,1],['ATC Finde',1,1,1,1,1],['Planes Pasados',1,1,1,1,1],
               ['Recibos',1,1,1,1,1],['Importar Reporte',1,1,1,1,1],['Oportunidades',1,1,1,1,1],['Analítica',1,1,1,1,1],
-              ['Guía Perry',1,1,1,1,1],['Gestión de Clientes',1,1,1,1,0],['Gestión de Recursos',1,1,0,0,0],['Consorcio',1,0,0,0,0],
+              ['Guía Perry (Sistema)',1,1,1,1,1],['Guía Perry (Perfiles)',1,1,1,1,0],['Gestión de Clientes',1,1,1,1,0],['Gestión de Recursos',1,1,0,0,0],['Consorcio',1,0,0,0,0],
             ].map(([page,...vals]) => (
               <tr key={page as string} className="hover:bg-slate-50/80">
                 <td className={tdl}>{page as string}</td>
@@ -81,19 +81,73 @@ export function PerfilesGuide() {
 
       {/* Gestión de Recursos */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4"><Shield size={20} className="text-indigo-500" /> Permisos — Gestión de Recursos</h2>
+        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4"><Wrench size={20} className="text-indigo-500" /> Permisos — Gestión de Recursos</h2>
         <div className="overflow-x-auto">
           <table className="w-full"><thead><tr>
             <th className={th}>Recurso</th><th className={th}>🟣 Admin</th><th className={th}>🔴 Admón</th><th className={th}>🟡 Super</th><th className={th}>🟢 Safety</th><th className={th}>🔵 Ing.</th>
           </tr></thead><tbody>
             <tr><td className={tdl}>Usuarios</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Técnicos</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Técnicos (nombre, celular, email, tipo, empresa, contratista)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td></tr>
             <tr><td className={tdl}>Safety Dedicado</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><C /></td><td className={td}><Ey /> Ver</td></tr>
             <tr><td className={tdl}>Vehículos</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Choferes</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Choferes (nombre, tipo, empresa, contratista)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
             <tr><td className={tdl}>Eq. Elevación</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td></tr>
             <tr><td className={tdl}>Contratistas</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><Xx /></td></tr>
           </tbody></table>
+        </div>
+      </div>
+
+      {/* ATC Finde — Permisos Especiales */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4"><Zap size={20} className="text-indigo-500" /> ATC Finde — Permisos y Funcionalidades</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full"><thead><tr>
+            <th className={th}>Acción / Función</th><th className={th}>🟣 Admin</th><th className={th}>🔴 Admón</th><th className={th}>🟡 Super</th><th className={th}>🟢 Safety</th><th className={th}>🔵 Ing.</th>
+          </tr></thead><tbody>
+            <tr><td className={tdl}>Asignar técnicos</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Asignar Safety Dedicado</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Asignar Safety Designado (Ingenieros)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Asignar vehículos / choferes / equipos</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Editar notas de fin de semana</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Editar notas propias (Ingeniero)</td><td className={td}>—</td><td className={td}>—</td><td className={td}>—</td><td className={td}>—</td><td className={td}><C /></td></tr>
+            <tr><td className={tdl}>Editar auditoría Safety</td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Crear Día Extra</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Editar horarios / LOTO / TERA</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Sl /> Propias</td></tr>
+            <tr><td className={tdl}>📋 Planes Técnicos (generar/copiar)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
+            <tr><td className={tdl}>🏗️ Reporte Equipos (texto/CSV)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
+            <tr><td className={tdl}>Exportar Plan CSV</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
+          </tbody></table>
+        </div>
+
+        {/* Tarjetas ATC Finde */}
+        <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+          <h3 className="text-sm font-bold text-indigo-800 mb-2">📊 Tarjetas Resumen del Plan Finde (visibles para todos)</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+            <div className="bg-white rounded-lg px-3 py-2 border border-indigo-100">📋 Total Actividades (por día)</div>
+            <div className="bg-white rounded-lg px-3 py-2 border border-indigo-100">👷 Técnicos Asignados (por día)</div>
+            <div className="bg-white rounded-lg px-3 py-2 border border-indigo-100">👨‍💼 Actividades por Ingeniero</div>
+            <div className="bg-white rounded-lg px-3 py-2 border border-red-100 text-red-700">🔒 Total LOTO (por día)</div>
+            <div className="bg-white rounded-lg px-3 py-2 border border-red-100 text-red-700">🔒 LOTO por Ingeniero (SÁB/DOM)</div>
+            <div className="bg-white rounded-lg px-3 py-2 border border-amber-100 text-amber-700">🛡️ Con Safety Dedicado</div>
+            <div className="bg-white rounded-lg px-3 py-2 border border-violet-100 text-violet-700">🚗 Vehículos por Día</div>
+            <div className="bg-white rounded-lg px-3 py-2 border border-cyan-100 text-cyan-700">👤 Choferes por Día</div>
+            <div className="bg-white rounded-lg px-3 py-2 border border-orange-100 text-orange-700">🏗️ Eq. Elevación por Día</div>
+          </div>
+        </div>
+
+        {/* Detección de Conflictos */}
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+          <h3 className="text-sm font-bold text-red-800 mb-2">⚠️ Detección de Conflictos Cross-Company</h3>
+          <p className="text-xs text-red-700 mb-2">El sistema detecta automáticamente cuando un recurso compartido ya está asignado en otra actividad del <strong>mismo día y horario</strong> (no se comparan días diferentes). Aplica a:</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 text-xs">
+            {['Técnicos', 'Equipos de Elevación', 'Vehículos', 'Choferes', 'Safety Designado (User)', 'Safety Dedicado (bloquea)'].map(r => (
+              <div key={r} className="flex items-center gap-1.5 bg-white rounded px-2 py-1 border border-red-100">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                <span>{r}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-red-600 mt-2">💡 Los mensajes de alerta incluyen día, horario y empresa. Safety Dedicado <strong>bloquea</strong> la asignación; los demás solo alertan.</p>
         </div>
       </div>
 
@@ -111,11 +165,14 @@ export function PerfilesGuide() {
 │  │  │  │  • Mis actividades                 │  │  │  │
 │  │  │  │  • Registrar / Editar propias      │  │  │  │
 │  │  │  │  • ATC Finde (ver + editar mías)   │  │  │  │
+│  │  │  │  • Planes Técnicos / Rpt. Equipos  │  │  │  │
 │  │  │  │  • Exportar CSV                    │  │  │  │
 │  │  │  └────────────────────────────────────┘  │  │  │
 │  │  │  + Actividades del equipo                │  │  │
 │  │  │  + Asignar recursos en ATC Finde         │  │  │
+│  │  │  + Crear Día Extra                       │  │  │
 │  │  │  + Directorio de Clientes                │  │  │
+│  │  │  + Perfiles y Permisos (esta guía)       │  │  │
 │  │  └──────────────────────────────────────────┘  │  │
 │  │  + Gestión de Recursos (usuarios, técnicos..)  │  │
 │  └────────────────────────────────────────────────┘  │
@@ -128,12 +185,12 @@ export function PerfilesGuide() {
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-lg font-bold text-slate-800 mb-4">🚀 Guía Rápida por Rol</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="bg-purple-50 rounded-xl p-4 border border-purple-100"><h3 className="font-bold text-purple-800 text-sm mb-1">🟣 Admin Maestro</h3><p className="text-xs text-purple-700">Acceso total. Todas las páginas, todos los datos. Consorcio y auditoría Safety completa.</p></div>
-          <div className="bg-rose-50 rounded-xl p-4 border border-rose-100"><h3 className="font-bold text-rose-800 text-sm mb-1">🔴 Administración</h3><p className="text-xs text-rose-700">Como Admin pero sin Consorcio. Gestiona usuarios y recursos operativos.</p></div>
-          <div className="bg-amber-50 rounded-xl p-4 border border-amber-100"><h3 className="font-bold text-amber-800 text-sm mb-1">🟡 Supervisor</h3><p className="text-xs text-amber-700">Ve su equipo. Asigna técnicos, vehículos y equipos. No puede gestionar usuarios ni Safety.</p></div>
-          <div className="bg-teal-50 rounded-xl p-4 border border-teal-100"><h3 className="font-bold text-teal-800 text-sm mb-1">🟢 Safety & L.P.</h3><p className="text-xs text-teal-700">Ve todas las actividades. Gestiona Safety Dedicados y choferes. No puede gestionar usuarios.</p></div>
+          <div className="bg-purple-50 rounded-xl p-4 border border-purple-100"><h3 className="font-bold text-purple-800 text-sm mb-1">🟣 Admin Maestro</h3><p className="text-xs text-purple-700">Acceso total. Todas las páginas, todos los datos. Consorcio y auditoría Safety completa. Selector de empresa (incluido &quot;TODAS&quot;).</p></div>
+          <div className="bg-rose-50 rounded-xl p-4 border border-rose-100"><h3 className="font-bold text-rose-800 text-sm mb-1">🔴 Administración</h3><p className="text-xs text-rose-700">Como Admin pero sin Consorcio. Gestiona usuarios, técnicos (con celular/email) y recursos operativos.</p></div>
+          <div className="bg-amber-50 rounded-xl p-4 border border-amber-100"><h3 className="font-bold text-amber-800 text-sm mb-1">🟡 Supervisor</h3><p className="text-xs text-amber-700">Ve su equipo. Asigna técnicos, vehículos y equipos en ATC Finde. Crea días extra. Genera Planes Técnicos y Reporte de Equipos. Acceso a Perfiles y Clientes.</p></div>
+          <div className="bg-teal-50 rounded-xl p-4 border border-teal-100"><h3 className="font-bold text-teal-800 text-sm mb-1">🟢 Safety & L.P.</h3><p className="text-xs text-teal-700">Ve todas las actividades. Gestiona Safety Dedicados y choferes. Edita auditorías Safety. Detecta conflictos cross-company.</p></div>
         </div>
-        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100 mt-3"><h3 className="font-bold text-emerald-800 text-sm mb-1">🔵 Ingeniero</h3><p className="text-xs text-emerald-700">Ve solo sus actividades. Registra y edita las propias. No puede asignar recursos ni ver actividades de otros.</p></div>
+        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100 mt-3"><h3 className="font-bold text-emerald-800 text-sm mb-1">🔵 Ingeniero</h3><p className="text-xs text-emerald-700">Ve solo sus actividades. Registra y edita las propias. En ATC Finde puede editar horarios/notas/LOTO de sus actividades. Puede ver Planes Técnicos y Reporte Equipos.</p></div>
       </div>
 
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800">

@@ -323,14 +323,14 @@ export function GuiaClient({ userName, userRole }: GuiaClientProps) {
   const step = steps[currentStep];
   const isFirst = currentStep === 0;
   const isLast = currentStep === steps.length - 1;
-  const isAdmin = ['ADMIN', 'ADMINISTRACION'].includes(userRole);
+  const canViewPerfiles = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
 
   const firstName = userName.split(' ')[0];
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
       {/* Tab selector */}
-      {isAdmin && (
+      {canViewPerfiles && (
         <div className="flex gap-2 bg-slate-100 rounded-xl p-1 mb-8">
           <button
             onClick={() => setActiveTab('sistema')}
@@ -353,7 +353,7 @@ export function GuiaClient({ userName, userRole }: GuiaClientProps) {
         </div>
       )}
 
-      {activeTab === 'perfiles' && isAdmin ? (
+      {activeTab === 'perfiles' && canViewPerfiles ? (
         <PerfilesGuide />
       ) : (
       <>
