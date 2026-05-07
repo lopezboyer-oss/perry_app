@@ -498,6 +498,43 @@ export function AtcFindeClient({
   activities.forEach((a) => { const n = a.user?.name || 'Sin asignar'; engMap.set(n, (engMap.get(n) || 0) + 1); });
   const allTechIds = new Set(techAssignments.map((x) => x.technicianId));
 
+  // ── NEW: Stats for summary cards ──
+  const lotoActivities = activities.filter(a => a.loto);
+  const lotoByEngineer = new Map<string, number>();
+  lotoActivities.forEach(a => { const n = a.user?.name || 'Sin asignar'; lotoByEngineer.set(n, (lotoByEngineer.get(n) || 0) + 1); });
+
+  const activitiesWithDedicado = activities.filter(a =>
+    safetyAssignments.some(s => s.activityId === a.id && s.role === 'DEDICADO')
+  );
+
+  // Per-day resource stats
+  const resourceDayStats = visiblePlanDays.map(d => {
+    const dayActs = activities.filter(a => a.date.startsWith(d.date));
+    const dayActIds = new Set(dayActs.map(a => a.id));
+
+    const dayVehicles = vehicleAssignments
+      .filter(x => dayActIds.has(x.activityId))
+      .map(x => x.vehicle.name);
+    const uniqueVehicles = [...new Set(dayVehicles)];
+
+    const dayDrivers = driverAssignments
+      .filter(x => dayActIds.has(x.activityId))
+      .map(x => x.driver.name);
+    const uniqueDrivers = [...new Set(dayDrivers)];
+
+    const dayEquips = equipAssignments
+      .filter(x => dayActIds.has(x.activityId))
+      .map(x => x.equip.name);
+    const uniqueEquips = [...new Set(dayEquips)];
+
+    const dt = new Date(`${d.date}T12:00:00`);
+    const dayLabel = d.isExtra
+      ? (d.label || dayNames[dt.getDay()] + ' ' + dt.getDate())
+      : dayNames[dt.getDay()];
+
+    return { date: d.date, dayLabel, isExtra: d.isExtra, vehicles: uniqueVehicles, drivers: uniqueDrivers, equips: uniqueEquips };
+  });
+
   // Extra day handlers
   const addExtraDay = async () => {
     if (!extraDayDate) return;
@@ -646,6 +683,145 @@ export function AtcFindeClient({
               </span>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* ── RESOURCE SUMMARY CARDS ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* LOTO Total */}
+        <div className="bg-white rounded-xl border border-red-200 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center text-red-600 text-sm">🔒</span>
+            <p className="text-xs font-semibold text-red-600 uppercase tracking-wider">Actividades con LOTO</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-red-700">{lotoActivities.length}</span>
+            <span className="text-xs text-slate-400">de {activities.length}</span>
+          </div>
+          {lotoActivities.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {dayStats.map(d => {
+                const dayLoto = lotoActivities.filter(a => a.date.startsWith(d.date)).length;
+                return dayLoto > 0 ? (
+                  <span key={d.date} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${d.isExtra ? 'bg-amber-100 text-amber-700' : 'bg-red-50 text-red-600'}`}>
+                    {d.dayLabel} {dayLoto}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* LOTO por Ingeniero */}
+        <div className="bg-white rounded-xl border border-red-200 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center text-red-600 text-sm"><HardHat size={14} /></span>
+            <p className="text-xs font-semibold text-red-600 uppercase tracking-wider">LOTO por Ingeniero</p>
+          </div>
+          {lotoByEngineer.size === 0 ? (
+            <p className="text-xs text-slate-400 mt-1">Sin actividades LOTO</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {Array.from(lotoByEngineer.entries()).sort((a, b) => b[1] - a[1]).map(([name, count]) => (
+                <span key={name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-red-50 text-xs">
+                  <span className="font-semibold text-red-800">{name}</span>
+                  <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{count}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Safety Dedicado */}
+        <div className="bg-white rounded-xl border border-amber-200 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600 text-sm"><Shield size={14} /></span>
+            <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Con Safety Dedicado</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-amber-700">{activitiesWithDedicado.length}</span>
+            <span className="text-xs text-slate-400">de {activities.length}</span>
+          </div>
+          {activitiesWithDedicado.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {(() => {
+                const dedicadoNames = new Set<string>();
+                safetyAssignments.filter(s => s.role === 'DEDICADO').forEach(s => dedicadoNames.add(s.safetyDedicado.name));
+                return Array.from(dedicadoNames).map(name => (
+                  <span key={name} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">{name}</span>
+                ));
+              })()}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Per-day resource cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Vehículos por Día */}
+        <div className="bg-white rounded-xl border border-violet-200 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600 text-sm">🚗</span>
+            <p className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Vehículos por Día</p>
+          </div>
+          {resourceDayStats.map(d => (
+            <div key={d.date} className="mb-2 last:mb-0">
+              <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-violet-500'}`}>{d.dayLabel}</span>
+              {d.vehicles.length === 0 ? (
+                <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
+              ) : (
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {d.vehicles.map(v => (
+                    <span key={v} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">{v}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Choferes por Día */}
+        <div className="bg-white rounded-xl border border-cyan-200 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-7 h-7 rounded-lg bg-cyan-100 flex items-center justify-center text-cyan-600 text-sm">👤</span>
+            <p className="text-xs font-semibold text-cyan-600 uppercase tracking-wider">Choferes por Día</p>
+          </div>
+          {resourceDayStats.map(d => (
+            <div key={d.date} className="mb-2 last:mb-0">
+              <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-cyan-500'}`}>{d.dayLabel}</span>
+              {d.drivers.length === 0 ? (
+                <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
+              ) : (
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {d.drivers.map(dr => (
+                    <span key={dr} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700 border border-cyan-200">{dr}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Equipos Elevación por Día */}
+        <div className="bg-white rounded-xl border border-orange-200 p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 text-sm">🏗️</span>
+            <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Eq. Elevación por Día</p>
+          </div>
+          {resourceDayStats.map(d => (
+            <div key={d.date} className="mb-2 last:mb-0">
+              <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-orange-500'}`}>{d.dayLabel}</span>
+              {d.equips.length === 0 ? (
+                <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
+              ) : (
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {d.equips.map(eq => (
+                    <span key={eq} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">{eq}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
