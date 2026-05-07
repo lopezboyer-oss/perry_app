@@ -721,12 +721,24 @@ export function AtcFindeClient({
           {lotoByEngineer.size === 0 ? (
             <p className="text-xs text-slate-400 mt-1">Sin actividades LOTO</p>
           ) : (
-            <div className="flex flex-wrap gap-1.5 mt-1">
+            <div className="flex flex-wrap gap-2 mt-1">
               {Array.from(lotoByEngineer.entries()).sort((a, b) => b[1] - a[1]).map(([name, count]) => (
-                <span key={name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-red-50 text-xs">
-                  <span className="font-semibold text-red-800">{name}</span>
-                  <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{count}</span>
-                </span>
+                <div key={name} className="px-2.5 py-1.5 rounded-lg bg-red-50 border border-red-100">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-red-800 text-xs">{name}</span>
+                    <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{count}</span>
+                  </div>
+                  <div className="flex gap-1 mt-1">
+                    {dayStats.map(d => {
+                      const dayCount = lotoActivities.filter(a => a.date.startsWith(d.date) && (a.user?.name || 'Sin asignar') === name).length;
+                      return dayCount > 0 ? (
+                        <span key={d.date} className={`text-[9px] font-bold px-1 py-0.5 rounded ${d.isExtra ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
+                          {d.dayLabel} {dayCount}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
           )}
