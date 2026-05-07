@@ -487,27 +487,28 @@ export function AtcFindeClient({
       .map(x => activities.find(a => a.id === x.activityId))
       .filter(Boolean) as Activity[];
 
-    // Group by date
+    // Group by date (extract YYYY-MM-DD portion only)
     const byDate = new Map<string, Activity[]>();
     techActs.forEach(a => {
-      const acts = byDate.get(a.date) || [];
+      const dateKey = a.date.substring(0, 10); // "2026-05-10"
+      const acts = byDate.get(dateKey) || [];
       acts.push(a);
-      byDate.set(a.date, acts);
+      byDate.set(dateKey, acts);
     });
 
-    const dayNames = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
     let text = `📋 PLAN DE TRABAJO — ${weekendLabel}\nTécnico: ${tech.name}\n`;
 
     const sortedDates = [...byDate.keys()].sort();
-    sortedDates.forEach(dateStr => {
-      const dt = new Date(`${dateStr}T12:00:00`);
+    sortedDates.forEach(dateKey => {
+      const dt = new Date(`${dateKey}T12:00:00`);
       const dayName = dayNames[dt.getDay()];
       const monthName = monthNames[dt.getMonth()];
-      text += `\n━━━━━━━━━━━━━━━━━━━━\n📅 ${dayName} ${dt.getDate()} ${monthName}\n━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `\n━━━━━━━━━━━━━━━━━━━━\n📅 ${dayName.toUpperCase()} ${dt.getDate()} de ${monthName} ${dt.getFullYear()}\n━━━━━━━━━━━━━━━━━━━━\n`;
 
-      const acts = byDate.get(dateStr)!.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+      const acts = byDate.get(dateKey)!.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
       acts.forEach((a, idx) => {
         const timeRange = a.startTime && a.endTime ? `${a.startTime} — ${a.endTime}` : 'Horario pendiente';
         text += `\n${idx + 1}️⃣ ${timeRange}\n`;
@@ -521,11 +522,21 @@ export function AtcFindeClient({
           text += `   🏗️ Equipo: ${actEquips.map(x => `${x.equip.name} (${x.equip.ownership})`).join(', ')}\n`;
         }
 
+        // Vehicle & driver for this activity
+        const actVehs = vehicleAssignments.filter(x => x.activityId === a.id);
+        if (actVehs.length > 0) {
+          text += `   🚗 Vehículo: ${actVehs.map(x => x.vehicle.name).join(', ')}\n`;
+        }
+
         if (a.weekendNotes) {
           text += `   📝 Nota: ${a.weekendNotes}\n`;
         }
       });
     });
+
+    if (sortedDates.length === 0) {
+      text += '\nSin actividades asignadas.\n';
+    }
 
     return text;
   };
@@ -544,7 +555,7 @@ export function AtcFindeClient({
       if (!act) return;
       const key = ea.equipId;
       if (!byEquip.has(key)) byEquip.set(key, { equip: ea.equip, assignments: [] });
-      byEquip.get(key)!.assignments.push({ activity: act, dateStr: act.date });
+      byEquip.get(key)!.assignments.push({ activity: act, dateStr: act.date.substring(0, 10) });
     });
 
     let text = `═══════════════════════════════════\n🏗️ REPORTE DE EQUIPOS DE ELEVACIÓN\n   Plan Finde: ${weekendLabel}\n═══════════════════════════════════\n`;
