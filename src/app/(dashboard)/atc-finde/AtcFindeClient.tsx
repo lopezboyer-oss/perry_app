@@ -663,20 +663,27 @@ export function AtcFindeClient({
   activities.forEach((a) => { const n = a.user?.name || 'Sin asignar'; engMap.set(n, (engMap.get(n) || 0) + 1); });
   const allTechIds = new Set(techAssignments.filter(x => x.role === 'TECNICO').map((x) => x.technicianId));
 
-  // ── Sup Operativo stats ──
-  const supOpAssignments = techAssignments.filter(x => x.role === 'SAFETY_DESIGNADO' && companyActivityIds.has(x.activityId));
+  // ── Sup Operativo stats (3 sources: tech, user, safetyDedicado-as-designado) ──
   const supOpMap = new Map<string, { total: number; byDate: Map<string, number> }>();
-  supOpAssignments.forEach(x => {
-    const act = activities.find(a => a.id === x.activityId);
+  const addSupOp = (name: string, activityId: string) => {
+    const act = activities.find(a => a.id === activityId);
     if (!act) return;
-    const name = x.technician.name;
     if (!supOpMap.has(name)) supOpMap.set(name, { total: 0, byDate: new Map() });
     const entry = supOpMap.get(name)!;
     entry.total++;
     const dateKey = act.date.substring(0, 10);
     entry.byDate.set(dateKey, (entry.byDate.get(dateKey) || 0) + 1);
-  });
-  const totalSupOp = supOpAssignments.length;
+  };
+  // Source 1: techAssignments with role SAFETY_DESIGNADO (Cruz Verde techs)
+  techAssignments.filter(x => x.role === 'SAFETY_DESIGNADO' && companyActivityIds.has(x.activityId))
+    .forEach(x => addSupOp(x.technician.name, x.activityId));
+  // Source 2: userSafetyAssignments (engineers with isSafetyDesignado)
+  userSafetyAssignments.filter(x => companyActivityIds.has(x.activityId))
+    .forEach(x => addSupOp(x.user.name, x.activityId));
+  // Source 3: safetyAssignments with role DESIGNADO (safety dedicados acting as designado)
+  safetyAssignments.filter(x => x.role === 'DESIGNADO' && companyActivityIds.has(x.activityId))
+    .forEach(x => addSupOp(x.safetyDedicado.name, x.activityId));
+  const totalSupOp = Array.from(supOpMap.values()).reduce((sum, e) => sum + e.total, 0);
 
   // ── NEW: Stats for summary cards ──
   const lotoActivities = activities.filter(a => a.loto);
@@ -883,10 +890,8 @@ export function AtcFindeClient({
           {totalSupOp > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {dayStats.map(d => {
-                const dayCount = supOpAssignments.filter(x => {
-                  const act = activities.find(a => a.id === x.activityId);
-                  return act && act.date.startsWith(d.date);
-                }).length;
+                let dayCount = 0;
+                supOpMap.forEach(entry => { dayCount += entry.byDate.get(d.date) || 0; });
                 return dayCount > 0 ? (
                   <span key={d.date} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${d.isExtra ? 'bg-amber-100 text-amber-700' : 'bg-teal-50 text-teal-600'}`}>
                     {d.dayLabel} {dayCount}
