@@ -480,49 +480,63 @@ export function AtcFindeClient({
 
   const generateTechPlan = (techId: string): string => {
     const tech = technicians.find(t => t.id === techId);
-    if (!tech) return '';
+    if (!tech) return 'Técnico no encontrado.';
 
-    const techActs = techAssignments
+    const techActIds = techAssignments
       .filter(x => x.technicianId === techId && x.role === 'TECNICO')
-      .map(x => activities.find(a => a.id === x.activityId))
-      .filter(Boolean) as Activity[];
+      .map(x => x.activityId);
+
+    const techActs = techActIds
+      .map(actId => activities.find(a => a.id === actId))
+      .filter((a): a is Activity => a !== undefined && a !== null);
+
+    if (techActs.length === 0) {
+      return `📋 PLAN DE TRABAJO — ${weekendLabel}\nTécnico: ${tech.name}\n\nSin actividades asignadas en esta empresa.\n`;
+    }
 
     // Group by date (extract YYYY-MM-DD portion only)
     const byDate = new Map<string, Activity[]>();
     techActs.forEach(a => {
-      const dateKey = a.date.substring(0, 10); // "2026-05-10"
-      const acts = byDate.get(dateKey) || [];
-      acts.push(a);
-      byDate.set(dateKey, acts);
+      const dateKey = a.date.substring(0, 10);
+      const existing = byDate.get(dateKey) || [];
+      existing.push(a);
+      byDate.set(dateKey, existing);
     });
 
-    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const dayNamesLong = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-    let text = `📋 PLAN DE TRABAJO — ${weekendLabel}\nTécnico: ${tech.name}\n`;
+    let text = `📋 PLAN DE TRABAJO — ${weekendLabel}\nTécnico: ${tech.name}\nTotal actividades: ${techActs.length}\n`;
 
     const sortedDates = [...byDate.keys()].sort();
     sortedDates.forEach(dateKey => {
       const dt = new Date(`${dateKey}T12:00:00`);
-      const dayName = dayNames[dt.getDay()];
+      const dayName = dayNamesLong[dt.getDay()];
       const monthName = monthNames[dt.getMonth()];
       text += `\n━━━━━━━━━━━━━━━━━━━━\n📅 ${dayName.toUpperCase()} ${dt.getDate()} de ${monthName} ${dt.getFullYear()}\n━━━━━━━━━━━━━━━━━━━━\n`;
 
       const acts = byDate.get(dateKey)!.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
       acts.forEach((a, idx) => {
         const timeRange = a.startTime && a.endTime ? `${a.startTime} — ${a.endTime}` : 'Horario pendiente';
+        const hasLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
+
         text += `\n${idx + 1}️⃣ ${timeRange}\n`;
         text += `   📌 ${a.title}\n`;
         text += `   👷 Resp: ${a.user?.name || 'Sin asignar'}\n`;
-        text += `   🔒 LOTO: ${lotoState[a.id] ? 'SÍ' : 'NO'}\n`;
+        text += `   🔒 LOTO: ${hasLoto ? '✅ SÍ — Requiere LOTO' : '❌ NO'}\n`;
 
-        // Equipment for this activity
+        // Equipment — always show status
         const actEquips = equipAssignments.filter(x => x.activityId === a.id);
         if (actEquips.length > 0) {
-          text += `   🏗️ Equipo: ${actEquips.map(x => `${x.equip.name} (${x.equip.ownership})`).join(', ')}\n`;
+          text += `   🏗️ Eq. Elevación: ✅ SÍ\n`;
+          actEquips.forEach(x => {
+            text += `      • ${x.equip.name} (${x.equip.ownership})\n`;
+          });
+        } else {
+          text += `   🏗️ Eq. Elevación: ❌ NO\n`;
         }
 
-        // Vehicle & driver for this activity
+        // Vehicle
         const actVehs = vehicleAssignments.filter(x => x.activityId === a.id);
         if (actVehs.length > 0) {
           text += `   🚗 Vehículo: ${actVehs.map(x => x.vehicle.name).join(', ')}\n`;
@@ -533,10 +547,6 @@ export function AtcFindeClient({
         }
       });
     });
-
-    if (sortedDates.length === 0) {
-      text += '\nSin actividades asignadas.\n';
-    }
 
     return text;
   };
