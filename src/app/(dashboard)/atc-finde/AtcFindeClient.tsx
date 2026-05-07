@@ -200,6 +200,8 @@ export function AtcFindeClient({
   const [lotoState, setLotoState] = useState<Record<string, boolean>>(Object.fromEntries(activities.map((a) => [a.id, a.loto])));
   const [poState, setPoState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.purchaseOrder || ''])));
   const [folioState, setFolioState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.workOrderFolio || ''])));
+  const [notesState, setNotesState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.weekendNotes || ''])));
+  const [auditNotesState, setAuditNotesState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.auditNotes || ''])));
 
   // Safety audit image state
   const [auditImages, setAuditImages] = useState<Record<string, string | null>>(Object.fromEntries(activities.map((a) => [a.id, a.safetyAuditImage || null])));
@@ -463,7 +465,7 @@ export function AtcFindeClient({
       const v = vehicleAssignments.filter((x) => x.activityId === a.id).map((x) => x.vehicle.name).join(';');
       const dr = driverAssignments.filter((x) => x.activityId === a.id).map((x) => x.driver.name).join(';');
       const eq = equipAssignments.filter((x) => x.activityId === a.id).map((x) => x.equip.name).join(';');
-      return [i+1,formatDate(a.date),a.startTime||'-',a.endTime||'-',a.user?.name||'-',a.contact?.name||'-',`"${a.title.replace(/"/g,'""')}"`,folioState[a.id]||'-',poState[a.id]||'PEND.',lotoState[a.id]?'SI':'NO',t||'-',sd||'-',dd||'-',v||'-',dr||'-',eq||'-',`"${(a.weekendNotes||'').replace(/"/g,'""')}"`,canViewAudit?`"${(a.auditNotes||'').replace(/"/g,'""')}"`:'-',auditImages[a.id]?'SI':'NO'];
+      return [i+1,formatDate(a.date),a.startTime||'-',a.endTime||'-',a.user?.name||'-',a.contact?.name||'-',`"${a.title.replace(/"/g,'""')}"`,folioState[a.id]||'-',poState[a.id]||'PEND.',lotoState[a.id]?'SI':'NO',t||'-',sd||'-',dd||'-',v||'-',dr||'-',eq||'-',`"${(notesState[a.id]||'').replace(/"/g,'""')}"`,canViewAudit?`"${(auditNotesState[a.id]||'').replace(/"/g,'""')}"`:'-',auditImages[a.id]?'SI':'NO'];
     });
     const csv = '\uFEFF' + [h.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -543,8 +545,9 @@ export function AtcFindeClient({
           text += `   🚗 Vehículo: ${actVehs.map(x => x.vehicle.name).join(', ')}\n`;
         }
 
-        if (a.weekendNotes) {
-          text += `   📝 Nota: ${a.weekendNotes}\n`;
+        const noteText = notesState[a.id] || a.weekendNotes || '';
+        if (noteText) {
+          text += `   📝 Nota: ${noteText}\n`;
         }
       });
     });
@@ -1157,13 +1160,13 @@ export function AtcFindeClient({
 
                     {/* NOTAS GENERALES */}
                     <td>
-                      <NoteCell value={act.weekendNotes || ''} onChange={(v) => updateField(act.id, 'weekendNotes', v)} disabled={!canEditNotes(act)} placeholder="Agregar nota..." color="text-slate-700" />
+                      <NoteCell value={notesState[act.id] || ''} onChange={(v) => { setNotesState(p => ({ ...p, [act.id]: v })); updateField(act.id, 'weekendNotes', v); }} disabled={!canEditNotes(act)} placeholder="Agregar nota..." color="text-slate-700" />
                     </td>
 
                     {/* NOTAS AUDITORÍA */}
                     {canViewAudit && (
                       <td>
-                        <NoteCell value={act.auditNotes || ''} onChange={(v) => updateField(act.id, 'auditNotes', v)} disabled={!canEditAudit} placeholder="Nota auditoría..." color="text-red-600" />
+                        <NoteCell value={auditNotesState[act.id] || ''} onChange={(v) => { setAuditNotesState(p => ({ ...p, [act.id]: v })); updateField(act.id, 'auditNotes', v); }} disabled={!canEditAudit} placeholder="Nota auditoría..." color="text-red-600" />
                       </td>
                     )}
 
