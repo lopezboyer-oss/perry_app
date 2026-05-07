@@ -27,7 +27,7 @@ interface Activity {
   contact: { id: string; name: string } | null;
 }
 
-interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; }
+interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; }
 interface SafetyDedicado { id: string; name: string; }
 interface SafetyDesignadoUser { id: string; name: string; }
 interface Vehicle { id: string; name: string; }
@@ -471,6 +471,145 @@ export function AtcFindeClient({
     const link = document.createElement('a'); link.href = url; link.download = `plan_finde_${weekendOf}.csv`; link.click(); URL.revokeObjectURL(url);
   };
 
+  // ── TECH PLANS MODAL ──
+  const [showTechPlansModal, setShowTechPlansModal] = useState(false);
+  const [selectedTechId, setSelectedTechId] = useState<string | null>(null);
+
+  const assignedTechIds = [...new Set(techAssignments.filter(x => x.role === 'TECNICO').map(x => x.technicianId))];
+  const assignedTechs = technicians.filter(t => assignedTechIds.includes(t.id));
+
+  const generateTechPlan = (techId: string): string => {
+    const tech = technicians.find(t => t.id === techId);
+    if (!tech) return '';
+
+    const techActs = techAssignments
+      .filter(x => x.technicianId === techId && x.role === 'TECNICO')
+      .map(x => activities.find(a => a.id === x.activityId))
+      .filter(Boolean) as Activity[];
+
+    // Group by date
+    const byDate = new Map<string, Activity[]>();
+    techActs.forEach(a => {
+      const acts = byDate.get(a.date) || [];
+      acts.push(a);
+      byDate.set(a.date, acts);
+    });
+
+    const dayNames = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+    let text = `📋 PLAN DE TRABAJO — ${weekendLabel}\nTécnico: ${tech.name}\n`;
+
+    const sortedDates = [...byDate.keys()].sort();
+    sortedDates.forEach(dateStr => {
+      const dt = new Date(`${dateStr}T12:00:00`);
+      const dayName = dayNames[dt.getDay()];
+      const monthName = monthNames[dt.getMonth()];
+      text += `\n━━━━━━━━━━━━━━━━━━━━\n📅 ${dayName} ${dt.getDate()} ${monthName}\n━━━━━━━━━━━━━━━━━━━━\n`;
+
+      const acts = byDate.get(dateStr)!.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+      acts.forEach((a, idx) => {
+        const timeRange = a.startTime && a.endTime ? `${a.startTime} — ${a.endTime}` : 'Horario pendiente';
+        text += `\n${idx + 1}️⃣ ${timeRange}\n`;
+        text += `   📌 ${a.title}\n`;
+        text += `   👷 Resp: ${a.user?.name || 'Sin asignar'}\n`;
+        text += `   🔒 LOTO: ${lotoState[a.id] ? 'SÍ' : 'NO'}\n`;
+
+        // Equipment for this activity
+        const actEquips = equipAssignments.filter(x => x.activityId === a.id);
+        if (actEquips.length > 0) {
+          text += `   🏗️ Equipo: ${actEquips.map(x => `${x.equip.name} (${x.equip.ownership})`).join(', ')}\n`;
+        }
+
+        if (a.weekendNotes) {
+          text += `   📝 Nota: ${a.weekendNotes}\n`;
+        }
+      });
+    });
+
+    return text;
+  };
+
+  // ── EQUIPMENT REPORT MODAL ──
+  const [showEquipReportModal, setShowEquipReportModal] = useState(false);
+
+  const generateEquipReport = (): { text: string; data: { equip: string; ownership: string; day: string; time: string; activity: string; engineer: string }[] } => {
+    const dayNames = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+    // Group by equip
+    const byEquip = new Map<string, { equip: ElevationEquip; assignments: { activity: Activity; dateStr: string }[] }>();
+    equipAssignments.forEach(ea => {
+      const act = activities.find(a => a.id === ea.activityId);
+      if (!act) return;
+      const key = ea.equipId;
+      if (!byEquip.has(key)) byEquip.set(key, { equip: ea.equip, assignments: [] });
+      byEquip.get(key)!.assignments.push({ activity: act, dateStr: act.date });
+    });
+
+    let text = `═══════════════════════════════════\n🏗️ REPORTE DE EQUIPOS DE ELEVACIÓN\n   Plan Finde: ${weekendLabel}\n═══════════════════════════════════\n`;
+    const csvData: { equip: string; ownership: string; day: string; time: string; activity: string; engineer: string }[] = [];
+    let totalUses = 0;
+
+    [...byEquip.entries()].sort((a, b) => a[1].equip.name.localeCompare(b[1].equip.name)).forEach(([, data]) => {
+      const { equip, assignments } = data;
+      text += `\n── ${equip.name} (${equip.ownership}) ──────────\n`;
+
+      // Group assignments by date
+      const byDate = new Map<string, typeof assignments>();
+      assignments.forEach(a => {
+        const arr = byDate.get(a.dateStr) || [];
+        arr.push(a);
+        byDate.set(a.dateStr, arr);
+      });
+
+      const sortedDates = [...byDate.keys()].sort();
+      // Show all plan days for completeness
+      visiblePlanDays.forEach(pd => {
+        const dt = new Date(`${pd.date}T12:00:00`);
+        const dayLabel = pd.isExtra
+          ? (pd.label || dayNames[dt.getDay()] + ' ' + dt.getDate())
+          : dayNames[dt.getDay()] + ' ' + dt.getDate();
+
+        const dateAssignments = byDate.get(pd.date);
+        if (!dateAssignments || dateAssignments.length === 0) {
+          text += `📅 ${dayLabel}: Sin asignaciones\n`;
+        } else {
+          text += `📅 ${dayLabel}:\n`;
+          dateAssignments.sort((a, b) => (a.activity.startTime || '').localeCompare(b.activity.startTime || '')).forEach(({ activity: a }) => {
+            const timeRange = a.startTime && a.endTime ? `${a.startTime}-${a.endTime}` : 'S/H';
+            text += `  • ${timeRange} | ${a.title} | ${a.user?.name || 'Sin asignar'}\n`;
+            totalUses++;
+            csvData.push({
+              equip: equip.name,
+              ownership: equip.ownership,
+              day: dayLabel,
+              time: timeRange,
+              activity: a.title,
+              engineer: a.user?.name || 'Sin asignar',
+            });
+          });
+        }
+      });
+    });
+
+    text += `\n══════════════════════════════════\nTotal equipos: ${byEquip.size} | Total usos: ${totalUses}\n══════════════════════════════════`;
+
+    return { text, data: csvData };
+  };
+
+  const exportEquipCSV = () => {
+    const { data } = generateEquipReport();
+    const h = ['Equipo','Tipo','Día','Horario','Actividad','Ingeniero Responsable'];
+    const rows = data.map(d => [
+      `"${d.equip}"`, d.ownership, d.day, d.time, `"${d.activity}"`, `"${d.engineer}"`,
+    ]);
+    const csv = '\uFEFF' + [h.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url; link.download = `equipos_elevacion_${weekendOf}.csv`; link.click(); URL.revokeObjectURL(url);
+  };
+
   // ── HELPERS ──
   const getTechs = (id: string, role: string) => techAssignments.filter((x) => x.activityId === id && x.role === role);
   const getSafety = (id: string) => safetyAssignments.filter((x) => x.activityId === id);
@@ -597,6 +736,8 @@ export function AtcFindeClient({
               <Plus size={16} /> Día Extra
             </button>
           )}
+          <button onClick={() => { setSelectedTechId(assignedTechs[0]?.id || null); setShowTechPlansModal(true); }} className="btn-secondary text-sm shrink-0 !bg-sky-50 !text-sky-700 !border-sky-300 hover:!bg-sky-100">📋 Planes Técnicos</button>
+          <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary text-sm shrink-0 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100">🏗️ Reporte Equipos</button>
           <button onClick={exportCSV} className="btn-secondary text-sm shrink-0"><Download size={16} /> Exportar Plan</button>
         </div>
       </div>
@@ -1097,6 +1238,77 @@ export function AtcFindeClient({
               <X size={18} />
             </button>
             <img src={previewImage} alt="TERA" className="max-w-full max-h-[85vh] object-contain" />
+          </div>
+        </div>
+      )}
+      {/* ── TECH PLANS MODAL ── */}
+      {showTechPlansModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowTechPlansModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col animate-slide-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">📋 Planes Técnicos — {weekendLabel}</h3>
+              <button onClick={() => setShowTechPlansModal(false)} className="p-2 hover:bg-slate-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="flex flex-1 overflow-hidden">
+              {/* Left: Tech list */}
+              <div className="w-64 border-r border-slate-200 overflow-y-auto bg-slate-50 p-3 shrink-0">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Técnicos asignados ({assignedTechs.length})</p>
+                {assignedTechs.map(t => {
+                  const actCount = techAssignments.filter(x => x.technicianId === t.id && x.role === 'TECNICO').length;
+                  return (
+                    <button key={t.id} onClick={() => setSelectedTechId(t.id)}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-colors text-sm ${selectedTechId === t.id ? 'bg-sky-100 text-sky-800 font-semibold ring-1 ring-sky-300' : 'hover:bg-white text-slate-700'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="truncate">{t.name}</span>
+                        <span className="bg-sky-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 shrink-0">{actCount}</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        {t.phone ? (
+                          <span className="text-[9px] text-emerald-600">📱 {t.phone}</span>
+                        ) : (
+                          <span className="text-[9px] text-red-400">⚠ Sin celular</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+                {assignedTechs.length === 0 && <p className="text-xs text-slate-400 text-center py-4">Sin técnicos asignados</p>}
+              </div>
+              {/* Right: Generated text */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {selectedTechId ? (
+                  <>
+                    <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                      <span className="text-xs text-slate-500">{technicians.find(t => t.id === selectedTechId)?.name}</span>
+                      <button onClick={() => { navigator.clipboard.writeText(generateTechPlan(selectedTechId)); alert('📋 Plan copiado al portapapeles'); }}
+                        className="btn-primary text-xs !py-1.5 !px-3">📋 Copiar texto</button>
+                    </div>
+                    <pre className="flex-1 overflow-y-auto p-4 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap font-mono bg-white">{generateTechPlan(selectedTechId)}</pre>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">Selecciona un técnico</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EQUIPMENT REPORT MODAL ── */}
+      {showEquipReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowEquipReportModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col animate-slide-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">🏗️ Reporte Equipos de Elevación — {weekendLabel}</h3>
+              <button onClick={() => setShowEquipReportModal(false)} className="p-2 hover:bg-slate-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="p-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50">
+              <button onClick={() => { navigator.clipboard.writeText(generateEquipReport().text); alert('📋 Reporte copiado al portapapeles'); }}
+                className="btn-primary text-xs !py-1.5 !px-3">📋 Copiar texto</button>
+              <button onClick={exportEquipCSV}
+                className="btn-secondary text-xs !py-1.5 !px-3"><Download size={14} /> Exportar CSV</button>
+            </div>
+            <pre className="flex-1 overflow-y-auto p-4 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap font-mono bg-white">{generateEquipReport().text}</pre>
           </div>
         </div>
       )}

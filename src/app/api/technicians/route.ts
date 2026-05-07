@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Solo administradores' }, { status: 403 });
     }
 
-    const { name, type, isCruzVerde, contractorId, baseCompanyId } = await req.json();
+    const { name, type, isCruzVerde, contractorId, baseCompanyId, phone, email } = await req.json();
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 });
     }
@@ -43,6 +43,8 @@ export async function POST(req: NextRequest) {
         isCruzVerde: isCruzVerde || false,
         contractorId: type === 'EXTERNO' ? (contractorId || null) : null,
         baseCompanyId: baseCompanyId || null,
+        phone: phone?.trim() || null,
+        email: email?.trim() || null,
       },
     });
 
