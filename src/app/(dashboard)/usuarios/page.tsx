@@ -47,7 +47,7 @@ export default function UsuariosPage() {
   const [vehicleFormData, setVehicleFormData] = useState({ id: '', name: '', isAvailable: true, baseCompanyId: '' });
   const vehicleFormRef = useRef<HTMLDivElement>(null);
   const [driverFormOpen, setDriverFormOpen] = useState(false);
-  const [driverFormData, setDriverFormData] = useState({ id: '', name: '' });
+  const [driverFormData, setDriverFormData] = useState({ id: '', name: '', type: 'PROPIO', contractorId: '', baseCompanyId: '' });
   const driverFormRef = useRef<HTMLDivElement>(null);
   const [equipFormOpen, setEquipFormOpen] = useState(false);
   const [equipFormData, setEquipFormData] = useState({ id: '', name: '', ownership: 'PROPIO' });
@@ -143,7 +143,7 @@ export default function UsuariosPage() {
     const url = driverFormData.id ? `/api/drivers/${driverFormData.id}` : '/api/drivers';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(driverFormData) });
     if (!res.ok) { alert('Error al guardar chofer'); return; }
-    setDriverFormOpen(false); setDriverFormData({ id: '', name: '' }); await fetchAll();
+    setDriverFormOpen(false); setDriverFormData({ id: '', name: '', type: 'PROPIO', contractorId: '', baseCompanyId: '' }); await fetchAll();
   };
   const handleDeleteDriver = async (id: string, name: string) => { if (!window.confirm(`¿Desactivar a ${name}?`)) return; await fetch(`/api/drivers/${id}`, { method: 'DELETE' }); await fetchAll(); };
 
@@ -552,14 +552,39 @@ export default function UsuariosPage() {
       {tab === 'drivers' && canManageDrivers && (
         <>
           <div className="flex justify-end mb-4">
-            <button onClick={() => { setDriverFormData({ id: '', name: '' }); setDriverFormOpen(true); setTimeout(() => driverFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Chofer</button>
+            <button onClick={() => { setDriverFormData({ id: '', name: '', type: 'PROPIO', contractorId: '', baseCompanyId: companyList[0]?.id || '' }); setDriverFormOpen(true); setTimeout(() => driverFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Chofer</button>
           </div>
           {driverFormOpen && (
             <div ref={driverFormRef} className="card p-6 mb-4 border-l-4 border-l-cyan-500">
               <h3 className="font-semibold text-slate-800 mb-4">{driverFormData.id ? 'Editar' : 'Nuevo'} Chofer</h3>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
-                <input type="text" value={driverFormData.name} onChange={(e) => setDriverFormData({ ...driverFormData, name: e.target.value })} className="w-full md:w-1/2" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
+                  <input type="text" value={driverFormData.name} onChange={(e) => setDriverFormData({ ...driverFormData, name: e.target.value })} className="w-full" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
+                  <select value={driverFormData.type} onChange={(e) => setDriverFormData({ ...driverFormData, type: e.target.value, contractorId: e.target.value === 'PROPIO' ? '' : driverFormData.contractorId })} className="w-full">
+                    <option value="PROPIO">Propio</option>
+                    <option value="EXTERNO">Externo (Contratista)</option>
+                  </select>
+                </div>
+                {driverFormData.type === 'EXTERNO' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Contratista</label>
+                    <select value={driverFormData.contractorId} onChange={(e) => setDriverFormData({ ...driverFormData, contractorId: e.target.value })} className="w-full">
+                      <option value="">— Seleccionar —</option>
+                      {contractorList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Empresa Base</label>
+                  <select value={driverFormData.baseCompanyId} onChange={(e) => setDriverFormData({ ...driverFormData, baseCompanyId: e.target.value })} className="w-full">
+                    <option value="">— Sin asignar —</option>
+                    {companyList.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveDriver} className="btn-primary text-sm">Guardar</button>
@@ -571,19 +596,21 @@ export default function UsuariosPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
-                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4 text-right">Acciones</th></tr>
+                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Empresa</th><th className="px-6 py-4 text-right">Acciones</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {driverList.map((d) => (
                     <tr key={d.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-800">{d.name}</td>
+                      <td className="px-6 py-4"><span className={`text-xs font-medium px-2 py-0.5 rounded ${(d as any).type === 'EXTERNO' ? 'bg-orange-100 text-orange-700' : 'bg-sky-100 text-sky-700'}`}>{(d as any).type || 'PROPIO'}</span></td>
+                      <td className="px-6 py-4">{(d as any).type === 'EXTERNO' && (d as any).contractor ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded bg-orange-500">{(d as any).contractor.name}</span> : (d as any).baseCompany ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded" style={{ backgroundColor: (d as any).baseCompany.color || '#6366f1' }}>{(d as any).baseCompany.shortName || (d as any).baseCompany.name}</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                        <button onClick={() => { setDriverFormData({ id: d.id, name: d.name }); setDriverFormOpen(true); setTimeout(() => driverFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                        <button onClick={() => { setDriverFormData({ id: d.id, name: d.name, type: (d as any).type || 'PROPIO', contractorId: (d as any).contractor?.id || '', baseCompanyId: (d as any).baseCompanyId || '' }); setDriverFormOpen(true); setTimeout(() => driverFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                         <button onClick={() => handleDeleteDriver(d.id, d.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                       </div></td>
                     </tr>
                   ))}
-                  {driverList.length === 0 && <tr><td colSpan={2} className="px-6 py-8 text-center text-slate-500">No hay choferes registrados.</td></tr>}
+                  {driverList.length === 0 && <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-500">No hay choferes registrados.</td></tr>}
                 </tbody>
               </table>
             </div>

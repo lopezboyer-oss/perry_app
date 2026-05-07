@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Reporte Sesión 5 Mayo 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --emerald: #059669;
+      --emerald-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: white;
+      color: var(--slate-800);
+      line-height: 1.6;
+      font-size: 11pt;
+    }
+
+    @page {
+      size: letter;
+      margin: 1.5cm 2cm;
+    }
+
+    @media print {
+      body { background: white; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none !important; }
+      .container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    .header-text h1 {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.5px;
+    }
+
+    .header-text .subtitle {
+      font-size: 11pt;
+      color: var(--slate-500);
+      font-weight: 400;
+    }
+
+    .header-text .date-badge {
+      display: inline-block;
+      margin-top: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-card .stat-label {
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card.emerald .stat-value { color: var(--emerald); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue .stat-value { color: var(--blue); }
+
+    /* Section titles */
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin-top: 28px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2 .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    h2 .icon.security { background: var(--red-light); }
+    h2 .icon.receipts { background: var(--blue-light); }
+    h2 .icon.ux { background: var(--emerald-light); }
+    h2 .icon.bugfix { background: var(--amber-light); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 9.5pt;
+    }
+
+    thead th {
+      background: var(--slate-800);
+      color: white;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+
+    tbody td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: var(--slate-50); }
+    tbody tr:hover { background: var(--primary-light); }
+
+    .commit-hash {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge.security { background: var(--red-light); color: var(--red); }
+    .badge.receipts { background: var(--blue-light); color: var(--blue); }
+    .badge.ux { background: var(--emerald-light); color: var(--emerald); }
+    .badge.bugfix { background: var(--amber-light); color: var(--amber); }
+    .badge.multiempresa { background: #f3e8ff; color: #7c3aed; }
+
+    /* Migration table */
+    .migration-table {
+      margin-top: 8px;
+    }
+
+    .migration-table td:last-child {
+      text-align: right;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .total-row td {
+      font-weight: 800 !important;
+      border-top: 2px solid var(--slate-300);
+      color: var(--slate-900) !important;
+      font-size: 10pt;
+    }
+
+    /* Category summary */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .category-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px;
+      background: white;
+    }
+
+    .category-card h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .category-card ul {
+      list-style: none;
+      font-size: 8.5pt;
+      color: var(--slate-600);
+    }
+
+    .category-card li {
+      padding: 2px 0;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .category-card li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--emerald);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: var(--slate-500);
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 11pt;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Perry App</h1>
+        <div class="subtitle">Reporte de Cambios — Sesión Desarrollo</div>
+        <span class="date-badge">📅 5 de Mayo, 2026</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">16</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Features</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">71</div>
+        <div class="stat-label">Registros Migrados</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-value">12</div>
+        <div class="stat-label">Archivos Modificados</div>
+      </div>
+    </div>
+
+    <!-- Full commit table -->
+    <h2>Detalle de Cambios</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:35px">#</th>
+          <th style="width:75px">Commit</th>
+          <th>Descripción</th>
+          <th style="width:90px">Categoría</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="commit-hash">2a1236b</span></td>
+          <td>Corregido error al guardar reporte importado (campo <code>opportunityId</code> inexistente)</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><span class="commit-hash">9c71bcb</span></td>
+          <td>Aislamiento de datos por empresa para ADMINISTRACION y no-ADMIN en todas las páginas</td>
+          <td><span class="badge security">Seguridad</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><span class="commit-hash">251f03b</span></td>
+          <td>Filtros de usuario en dropdowns scopeados por empresa activa en 6 módulos</td>
+          <td><span class="badge security">Seguridad</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><span class="commit-hash">d10c85f</span></td>
+          <td>Resolución dinámica de empresa del usuario para Recibos/Odoo</td>
+          <td><span class="badge multiempresa">Multi-empresa</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">b75b2bb</span></td>
+          <td>Ingeniero obtenido de <code>invoice_user_id</code> de Odoo (vendedor) como fuente primaria</td>
+          <td><span class="badge receipts">Recibos</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">a87f2b8</span></td>
+          <td>Solo ADMIN MAESTRO puede crear/asignar rol ADMIN MAESTRO (backend + frontend)</td>
+          <td><span class="badge security">Permisos</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">4c69820</span></td>
+          <td>Auto-normalización de nombres de usuarios a Title Case + migración de 11 existentes</td>
+          <td><span class="badge ux">UX</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><span class="commit-hash">95b68fd</span></td>
+          <td>Auto-normalización de nombres de técnicos a Title Case + migración de 16 existentes</td>
+          <td><span class="badge ux">UX</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><span class="commit-hash">c3447e5</span></td>
+          <td>Botón "Continuar" en detalle de actividad — crea seguimiento con datos pre-llenados</td>
+          <td><span class="badge ux">Feature</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><span class="commit-hash">e45a373</span></td>
+          <td>Fix: botón Continuar crea actividad (POST) en vez de intentar actualizar (PUT)</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td><span class="commit-hash">64a5942</span></td>
+          <td>Vista detalle de actividad muestra TODOS los campos — antes ocultaba los vacíos</td>
+          <td><span class="badge ux">UX</span></td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td><span class="commit-hash">a400c92</span></td>
+          <td>Dashboard muestra datos correctos por empresa + migración de 19 actividades sin companyId</td>
+          <td><span class="badge multiempresa">Multi-empresa</span></td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td><span class="commit-hash">70ba3ef</span></td>
+          <td>Dashboard usa zona horaria Tijuana (America/Tijuana) en vez de UTC</td>
+          <td><span class="badge bugfix">Timezone</span></td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td><span class="commit-hash">047a925</span></td>
+          <td>Top Recibos: filtro por prefijo de folio (reemplazado en #16)</td>
+          <td><span class="badge receipts">Recibos</span></td>
+        </tr>
+        <tr>
+          <td>15</td>
+          <td><span class="commit-hash">35f5c0a</span></td>
+          <td>Campo companyId agregado al modelo InvoiceReceipt + migración de 25 recibos</td>
+          <td><span class="badge multiempresa">Multi-empresa</span></td>
+        </tr>
+        <tr>
+          <td>16</td>
+          <td><span class="commit-hash">85c3a5f</span></td>
+          <td>Top Recibos usa Odoo como fuente de verdad: consulta facturas por empresa → cruza con recibos → agrupa por vendedor</td>
+          <td><span class="badge receipts">Recibos</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Category Summary -->
+    <h2>Resumen por Categoría</h2>
+    <div class="category-grid">
+      <div class="category-card">
+        <h3><span class="icon security" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">🔒</span> Multi-empresa / Seguridad</h3>
+        <ul>
+          <li>Aislamiento completo de datos en 6+ módulos</li>
+          <li>Dropdowns filtrados por empresa activa</li>
+          <li>Recibos vinculados directamente a empresa</li>
+          <li>Solo ADMIN puede crear ADMIN</li>
+        </ul>
+      </div>
+      <div class="category-card">
+        <h3><span class="icon receipts" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">📊</span> Recibos / Odoo</h3>
+        <ul>
+          <li>Ingeniero de Odoo invoice_user_id (fuente primaria)</li>
+          <li>Dashboard consulta Odoo directo por empresa</li>
+          <li>Empresa default resuelta automáticamente</li>
+        </ul>
+      </div>
+      <div class="category-card">
+        <h3><span class="icon ux" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">✨</span> UX / Features</h3>
+        <ul>
+          <li>Nombres normalizados a Title Case (27 registros)</li>
+          <li>Botón "Continuar" para seguimiento de actividades</li>
+          <li>Vista detalle muestra todos los campos siempre</li>
+        </ul>
+      </div>
+      <div class="category-card">
+        <h3><span class="icon bugfix" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">🐛</span> Bug Fixes</h3>
+        <ul>
+          <li>Error al importar reportes corregido</li>
+          <li>Timezone UTC → America/Tijuana en dashboard</li>
+          <li>Botón Continuar: POST en vez de PUT</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Data Migrations -->
+    <h2>Migraciones de Datos Ejecutadas</h2>
+    <table class="migration-table">
+      <thead>
+        <tr>
+          <th>Migración</th>
+          <th style="text-align:right;width:120px">Registros</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Nombres de usuarios → Title Case</td>
+          <td>11</td>
+        </tr>
+        <tr>
+          <td>Nombres de técnicos → Title Case</td>
+          <td>16</td>
+        </tr>
+        <tr>
+          <td>Actividades sin companyId → DROBOTS</td>
+          <td>19</td>
+        </tr>
+        <tr>
+          <td>Recibos sin companyId → empresa correcta</td>
+          <td>25</td>
+        </tr>
+        <tr class="total-row">
+          <td>Total registros corregidos</td>
+          <td>71</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Perry App v2.x — Desarrollado por Antigravity</span>
+      <span>Generado: 5 de Mayo, 2026 · 23:35 hrs (Tijuana, BC)</span>
+    </div>
+
+  </div>
+
+  <!-- Print button (hidden on print) -->
+  <button class="print-btn no-print" onclick="window.print()">
+    📄 Guardar como PDF
+  </button>
+</body>
+</html>

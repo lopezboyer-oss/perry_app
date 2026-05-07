@@ -14,6 +14,7 @@ interface Activity {
   safetyAuditImage: string | null;
   teraFolio: string | null;
   user: { id: string; name: string } | null;
+  client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
 }
 
@@ -26,6 +27,7 @@ interface Props {
   vehicleAssignments: any[];
   driverAssignments: any[];
   equipAssignments: any[];
+  userSafetyAssignments: any[];
   userRole: string;
   userId: string;
 }
@@ -34,6 +36,7 @@ export function PlanesPasadosClient({
   weekendDates, selectedWeekend, activities,
   techAssignments, safetyAssignments,
   vehicleAssignments, driverAssignments, equipAssignments,
+  userSafetyAssignments,
   userRole, userId,
 }: Props) {
   const router = useRouter();
@@ -235,7 +238,10 @@ export function PlanesPasadosClient({
                   </td></tr>
                 ) : activities.map((act, idx) => {
                   const techs = techAssignments.filter((x: any) => x.activityId === act.id && x.role === 'TECNICO').map((x: any) => x.technician.name);
-                  const designados = techAssignments.filter((x: any) => x.activityId === act.id && x.role === 'SAFETY_DESIGNADO').map((x: any) => x.technician.name);
+                  const designados = [
+                    ...techAssignments.filter((x: any) => x.activityId === act.id && x.role === 'SAFETY_DESIGNADO').map((x: any) => x.technician.name),
+                    ...(userSafetyAssignments || []).filter((x: any) => x.activityId === act.id).map((x: any) => x.user.name),
+                  ];
                   const dedicados = safetyAssignments.filter((x: any) => x.activityId === act.id).map((x: any) => x.safetyDedicado.name);
                   const vehs = vehicleAssignments.filter((x: any) => x.activityId === act.id).map((x: any) => x.vehicle.name);
                   const drvs = driverAssignments.filter((x: any) => x.activityId === act.id).map((x: any) => x.driver.name);

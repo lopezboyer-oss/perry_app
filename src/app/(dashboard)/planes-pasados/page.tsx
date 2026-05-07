@@ -33,6 +33,7 @@ export default async function PlanesPasadosPage({
   let vehicleAssignments: any[] = [];
   let driverAssignments: any[] = [];
   let equipAssignments: any[] = [];
+  let userSafetyAssignments: any[] = [];
 
   if (selectedWeekend) {
     // Get extra days for this plan
@@ -59,11 +60,12 @@ export default async function PlanesPasadosPage({
       return { date: { gte: start, lte: end } };
     });
 
-    [activities, techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments] = await Promise.all([
+    [activities, techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments, userSafetyAssignments] = await Promise.all([
       prisma.activity.findMany({
         where: { OR: dateRanges, ...companyFilter },
         include: {
           user: { select: { id: true, name: true } },
+          client: { select: { id: true, name: true } },
           contact: { select: { id: true, name: true } },
         },
         orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
@@ -73,6 +75,7 @@ export default async function PlanesPasadosPage({
       prisma.weekendVehicleAssignment.findMany({ where: { weekendOf: selectedWeekend }, include: { vehicle: true } }),
       prisma.weekendDriverAssignment.findMany({ where: { weekendOf: selectedWeekend }, include: { driver: true } }),
       prisma.weekendEquipAssignment.findMany({ where: { weekendOf: selectedWeekend }, include: { equip: true } }),
+      prisma.weekendUserSafetyAssignment.findMany({ where: { weekendOf: selectedWeekend }, include: { user: { select: { id: true, name: true } } } }),
     ]);
   }
 
@@ -86,6 +89,7 @@ export default async function PlanesPasadosPage({
       vehicleAssignments={vehicleAssignments}
       driverAssignments={driverAssignments}
       equipAssignments={equipAssignments}
+      userSafetyAssignments={userSafetyAssignments}
       userRole={role}
       userId={session.user.id}
     />

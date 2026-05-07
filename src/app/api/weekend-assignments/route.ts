@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     // Get activity time info for conflict detection
     const activity = await prisma.activity.findUnique({
       where: { id: activityId },
-      select: { startTime: true, endTime: true, title: true },
+      select: { startTime: true, endTime: true, title: true, date: true },
     });
 
     // ── TECH / SAFETY DESIGNADO ──
@@ -88,20 +88,14 @@ export async function POST(req: NextRequest) {
       const { safetyDedicadoId } = body;
       if (!safetyDedicadoId) return NextResponse.json({ error: 'safetyDedicadoId requerido' }, { status: 400 });
 
-      // Get the date of the current activity to check same-day conflicts only
-      const currentActivity = await prisma.activity.findUnique({
-        where: { id: activityId },
-        select: { date: true },
-      });
-
-      if (!currentActivity) {
+      if (!activity) {
         return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 });
       }
 
-      // Check: same safety dedicado assigned to another activity on the SAME DAY (not whole weekend)
-      const dayStart = new Date(currentActivity.date);
+      // Check: same safety dedicado assigned to another activity on the SAME DAY
+      const dayStart = new Date(activity.date);
       dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(currentActivity.date);
+      const dayEnd = new Date(activity.date);
       dayEnd.setHours(23, 59, 59, 999);
 
       const existing = await prisma.weekendSafetyAssignment.findMany({
@@ -111,12 +105,15 @@ export async function POST(req: NextRequest) {
           activityId: { not: activityId },
           activity: { date: { gte: dayStart, lte: dayEnd } },
         },
-        include: { activity: { select: { title: true, startTime: true, endTime: true } } },
+        include: conflictActivityInclude,
       });
 
       if (existing.length > 0) {
+        const ex = existing[0].activity;
+        const dayName = DAY_NAMES[ex.date.getUTCDay()] || '';
+        const companyTag = ex.company?.shortName ? ` [${ex.company.shortName}]` : '';
         return NextResponse.json({
-          error: `Este Safety Dedicado ya está asignado a: "${existing[0].activity.title}" el mismo día. Un Safety Dedicado solo puede cubrir una actividad por día.`,
+          error: `Este Safety Dedicado ya está asignado a: "${ex.title}" (${ex.startTime || '?'} - ${ex.endTime || '?'}) ${dayName}${companyTag}. Un Safety Dedicado solo puede cubrir una actividad por día.`,
           blocked: true,
         }, { status: 409 });
       }
@@ -145,24 +142,28 @@ export async function POST(req: NextRequest) {
       const { vehicleId } = body;
       if (!vehicleId) return NextResponse.json({ error: 'vehicleId requerido' }, { status: 400 });
 
+      const conflicts = await detectVehicleConflicts(vehicleId, activityId, weekendOf, activity);
+
       const assignment = await prisma.weekendVehicleAssignment.create({
         data: { activityId, vehicleId, weekendOf },
         include: { vehicle: true },
       });
 
-      return NextResponse.json({ assignment, conflicts: [] }, { status: 201 });
+      return NextResponse.json({ assignment, conflicts }, { status: 201 });
 
     // ── DRIVER ──
     } else if (type === 'DRIVER') {
       const { driverId } = body;
       if (!driverId) return NextResponse.json({ error: 'driverId requerido' }, { status: 400 });
 
+      const conflicts = await detectDriverConflicts(driverId, activityId, weekendOf, activity);
+
       const assignment = await prisma.weekendDriverAssignment.create({
         data: { activityId, driverId, weekendOf },
         include: { driver: true },
       });
 
-      return NextResponse.json({ assignment, conflicts: [] }, { status: 201 });
+      return NextResponse.json({ assignment, conflicts }, { status: 201 });
 
     // ── ELEVATION EQUIP ──
     } else if (type === 'EQUIP') {
@@ -184,12 +185,14 @@ export async function POST(req: NextRequest) {
       const { userId } = body;
       if (!userId) return NextResponse.json({ error: 'userId requerido' }, { status: 400 });
 
+      const conflicts = await detectUserSafetyConflicts(userId, activityId, weekendOf, activity);
+
       const assignment = await prisma.weekendUserSafetyAssignment.create({
         data: { activityId, userId, weekendOf },
         include: { user: { select: { id: true, name: true } } },
       });
 
-      return NextResponse.json({ assignment, conflicts: [] }, { status: 201 });
+      return NextResponse.json({ assignment, conflicts }, { status: 201 });
     }
 
     return NextResponse.json({ error: 'Tipo no válido' }, { status: 400 });
@@ -237,42 +240,124 @@ export async function DELETE(req: NextRequest) {
 
 // ─── CONFLICT DETECTION ─────────────────────────────────────────
 
+const DAY_NAMES = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+
 function timesOverlap(
   s1: string | null, e1: string | null,
   s2: string | null, e2: string | null
 ): boolean {
-  if (!s1 || !e1 || !s2 || !e2) return true;
+  if (!s1 || !e1 || !s2 || !e2) return true; // If times unknown, assume overlap
   return s1 < e2 && s2 < e1;
 }
+
+function sameDay(d1: Date | null | undefined, d2: Date | null | undefined): boolean {
+  if (!d1 || !d2) return false;
+  return d1.toISOString().split('T')[0] === d2.toISOString().split('T')[0];
+}
+
+function formatConflict(a: {
+  activity: { title: string; startTime: string | null; endTime: string | null; date: Date; company?: { shortName: string | null } | null };
+}) {
+  const dayName = DAY_NAMES[a.activity.date.getUTCDay()] || '';
+  const company = a.activity.company?.shortName ? `[${a.activity.company.shortName}]` : '';
+  return {
+    activityTitle: a.activity.title,
+    startTime: a.activity.startTime,
+    endTime: a.activity.endTime,
+    day: dayName,
+    company: company,
+  };
+}
+
+// Include for activity in conflict queries — shared across all resource types
+const conflictActivityInclude = {
+  activity: {
+    select: { title: true, startTime: true, endTime: true, date: true, company: { select: { shortName: true } } },
+  },
+};
 
 async function detectTechConflicts(
   technicianId: string,
   currentActivityId: string,
   weekendOf: string,
-  currentActivity: { startTime: string | null; endTime: string | null; title: string } | null
+  currentActivity: { startTime: string | null; endTime: string | null; title: string; date: Date | null } | null
 ) {
   const otherAssignments = await prisma.weekendTechAssignment.findMany({
     where: { technicianId, weekendOf, activityId: { not: currentActivityId } },
-    include: { activity: { select: { title: true, startTime: true, endTime: true, date: true } } },
+    include: conflictActivityInclude,
   });
 
   return otherAssignments
-    .filter((a) => timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
-    .map((a) => ({ activityTitle: a.activity.title, startTime: a.activity.startTime, endTime: a.activity.endTime }));
+    .filter((a) => sameDay(currentActivity?.date, a.activity.date) &&
+      timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
+    .map(formatConflict);
 }
 
 async function detectEquipConflicts(
   equipId: string,
   currentActivityId: string,
   weekendOf: string,
-  currentActivity: { startTime: string | null; endTime: string | null; title: string } | null
+  currentActivity: { startTime: string | null; endTime: string | null; title: string; date: Date | null } | null
 ) {
   const otherAssignments = await prisma.weekendEquipAssignment.findMany({
     where: { equipId, weekendOf, activityId: { not: currentActivityId } },
-    include: { activity: { select: { title: true, startTime: true, endTime: true } } },
+    include: conflictActivityInclude,
   });
 
   return otherAssignments
-    .filter((a) => timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
-    .map((a) => ({ activityTitle: a.activity.title, startTime: a.activity.startTime, endTime: a.activity.endTime }));
+    .filter((a) => sameDay(currentActivity?.date, a.activity.date) &&
+      timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
+    .map(formatConflict);
 }
+
+async function detectVehicleConflicts(
+  vehicleId: string,
+  currentActivityId: string,
+  weekendOf: string,
+  currentActivity: { startTime: string | null; endTime: string | null; title: string; date: Date | null } | null
+) {
+  const otherAssignments = await prisma.weekendVehicleAssignment.findMany({
+    where: { vehicleId, weekendOf, activityId: { not: currentActivityId } },
+    include: conflictActivityInclude,
+  });
+
+  return otherAssignments
+    .filter((a) => sameDay(currentActivity?.date, a.activity.date) &&
+      timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
+    .map(formatConflict);
+}
+
+async function detectDriverConflicts(
+  driverId: string,
+  currentActivityId: string,
+  weekendOf: string,
+  currentActivity: { startTime: string | null; endTime: string | null; title: string; date: Date | null } | null
+) {
+  const otherAssignments = await prisma.weekendDriverAssignment.findMany({
+    where: { driverId, weekendOf, activityId: { not: currentActivityId } },
+    include: conflictActivityInclude,
+  });
+
+  return otherAssignments
+    .filter((a) => sameDay(currentActivity?.date, a.activity.date) &&
+      timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
+    .map(formatConflict);
+}
+
+async function detectUserSafetyConflicts(
+  userId: string,
+  currentActivityId: string,
+  weekendOf: string,
+  currentActivity: { startTime: string | null; endTime: string | null; title: string; date: Date | null } | null
+) {
+  const otherAssignments = await prisma.weekendUserSafetyAssignment.findMany({
+    where: { userId, weekendOf, activityId: { not: currentActivityId } },
+    include: conflictActivityInclude,
+  });
+
+  return otherAssignments
+    .filter((a) => sameDay(currentActivity?.date, a.activity.date) &&
+      timesOverlap(currentActivity?.startTime || null, currentActivity?.endTime || null, a.activity.startTime, a.activity.endTime))
+    .map(formatConflict);
+}
+

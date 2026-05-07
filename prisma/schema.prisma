@@ -153,6 +153,7 @@ model Contractor {
   updatedAt DateTime     @updatedAt
 
   technicians Technician[]
+  drivers     Driver[]
 }
 
 model SafetyDedicado {
@@ -181,13 +182,16 @@ model Vehicle {
 }
 
 model Driver {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String
-  isActive      Boolean  @default(true)
+  type          String      @default("PROPIO") // PROPIO | EXTERNO
+  isActive      Boolean     @default(true)
+  contractorId  String?
+  contractor    Contractor? @relation(fields: [contractorId], references: [id])
   baseCompanyId String?
-  baseCompany   Company? @relation(fields: [baseCompanyId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  baseCompany   Company?    @relation(fields: [baseCompanyId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   weekendAssignments WeekendDriverAssignment[]
 }
