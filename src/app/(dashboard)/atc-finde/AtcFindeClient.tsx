@@ -457,7 +457,7 @@ export function AtcFindeClient({
 
   // ── CSV EXPORT ──
   const exportCSV = () => {
-    const h = ['#','Día','Inicio','Fin','Resp.','Contacto','Actividad','Folio','P.O.','LOTO','Técnicos','S.Designado','S.Dedicado','Vehículo','Chofer','Eq.Elev.','Notas','N.Auditoría','TERA'];
+    const h = ['#','Día','Inicio','Fin','Resp.','Contacto','Actividad','Folio','P.O.','LOTO','Técnicos','Sup.Operativo','S.Dedicado','Vehículo','Chofer','Eq.Elev.','Notas','N.Auditoría','TERA'];
     const rows = activities.map((a, i) => {
       const t = techAssignments.filter((x) => x.activityId === a.id && x.role === 'TECNICO').map((x) => x.technician.name).join(';');
       const sd = techAssignments.filter((x) => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map((x) => x.technician.name).join(';');
@@ -1020,7 +1020,7 @@ export function AtcFindeClient({
                 <th className="font-semibold w-[100px]">P.O.</th>
                 <th className="font-semibold w-[55px] text-center">LOTO</th>
                 <th className="font-semibold min-w-[180px]">Técnicos</th>
-                <th className="font-semibold min-w-[160px]">Safety Designado</th>
+                <th className="font-semibold min-w-[160px]">Sup Operativo</th>
                 <th className="font-semibold min-w-[140px]">Safety Dedicado</th>
                 <th className="font-semibold min-w-[130px]">Vehículo</th>
                 <th className="font-semibold min-w-[120px]">Chofer</th>
