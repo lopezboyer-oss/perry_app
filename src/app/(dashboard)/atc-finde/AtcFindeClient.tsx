@@ -636,7 +636,8 @@ export function AtcFindeClient({
   // Build per-day stats
   const dayStats = visiblePlanDays.map(d => {
     const dayActs = activities.filter(a => a.date.startsWith(d.date));
-    const dayTechIds = new Set(techAssignments.filter(x => dayActs.some(a => a.id === x.activityId)).map(x => x.technicianId));
+    const dayActIds = new Set(dayActs.map(a => a.id));
+    const dayTechIds = new Set(techAssignments.filter(x => dayActIds.has(x.activityId) && x.role === 'TECNICO').map(x => x.technicianId));
     const dt = new Date(`${d.date}T12:00:00`);
     const dayLabel = d.isExtra
       ? (d.label || dayNames[dt.getDay()] + ' ' + dt.getDate())
@@ -646,7 +647,7 @@ export function AtcFindeClient({
 
   const engMap = new Map<string, number>();
   activities.forEach((a) => { const n = a.user?.name || 'Sin asignar'; engMap.set(n, (engMap.get(n) || 0) + 1); });
-  const allTechIds = new Set(techAssignments.map((x) => x.technicianId));
+  const allTechIds = new Set(techAssignments.filter(x => x.role === 'TECNICO').map((x) => x.technicianId));
 
   // ── NEW: Stats for summary cards ──
   const lotoActivities = activities.filter(a => a.loto);
