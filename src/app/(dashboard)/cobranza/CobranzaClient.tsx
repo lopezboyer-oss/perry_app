@@ -346,6 +346,7 @@ export function CobranzaClient() {
                 <th>Factura</th>
                 <th>Folio</th>
                 <th>P.O.</th>
+                <th>Ingeniero</th>
                 <th className="hidden md:table-cell">Contacto</th>
                 <th>
                   <button onClick={() => toggleSort('amountPending')} className="flex items-center gap-0.5 hover:text-indigo-600">
@@ -364,14 +365,14 @@ export function CobranzaClient() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-16">
+                  <td colSpan={9} className="text-center py-16">
                     <RefreshCw size={32} className="mx-auto animate-spin text-indigo-400 mb-3" />
                     <p className="text-slate-400 font-medium">Consultando Odoo...</p>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={9} className="text-center py-12">
                     <FileText size={32} className="mx-auto text-slate-300 mb-3" />
                     <p className="text-slate-400 font-medium">No hay facturas</p>
                   </td>
@@ -393,6 +394,13 @@ export function CobranzaClient() {
                       <td>
                         {inv.po ? (
                           <span className="text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">{inv.po}</span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {inv.engineer ? (
+                          <span className="text-xs text-slate-700 font-medium bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">{inv.engineer}</span>
                         ) : (
                           <span className="text-[10px] text-slate-400">—</span>
                         )}
