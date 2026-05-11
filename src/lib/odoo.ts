@@ -46,8 +46,11 @@ export async function getUid(): Promise<number> {
       params: { service: 'common', method: 'authenticate', args: [db, config.user, config.key, {}] },
     }),
   });
+  if (!res.ok) throw new Error(`Odoo auth HTTP ${res.status}: ${res.statusText}`);
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) throw new Error(`Odoo devolvió ${ct || 'HTML'} en vez de JSON — verificar ODOO_URL (${config.url})`);
   const data = await res.json();
-  if (!data.result) throw new Error('Odoo authentication failed');
+  if (!data.result) throw new Error('Odoo authentication failed — verificar credenciales');
   cachedUid = data.result as number;
   return cachedUid;
 }
@@ -72,6 +75,9 @@ export async function odooExecute(model: string, method: string, args: any[], kw
       },
     }),
   });
+  if (!res.ok) throw new Error(`Odoo query HTTP ${res.status}: ${res.statusText}`);
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) throw new Error(`Odoo devolvió ${ct || 'HTML'} en vez de JSON — verificar ODOO_URL`);
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || 'Odoo query error');
   return data.result;
