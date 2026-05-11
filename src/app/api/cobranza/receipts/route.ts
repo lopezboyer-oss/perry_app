@@ -26,6 +26,11 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+    const role = session.user.role;
+    if (role !== 'ADMIN' && role !== 'ADMINISTRACION') {
+      return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 });
+    }
+
     const { invoiceNumber, folio, po, notes, engineerName, companyId } = await req.json();
     if (!invoiceNumber) return NextResponse.json({ error: 'invoiceNumber requerido' }, { status: 400 });
 
@@ -63,6 +68,11 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await auth();
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+    const role = session.user.role;
+    if (role !== 'ADMIN' && role !== 'ADMINISTRACION') {
+      return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 });
+    }
 
     const { invoiceNumber } = await req.json();
     if (!invoiceNumber) return NextResponse.json({ error: 'invoiceNumber requerido' }, { status: 400 });

@@ -14,5 +14,5 @@ export default async function CobranzaPage() {
   // All roles can now access Recibos (engineers see only their own activities' invoices)
   const role = session.user.role;
 
-  return <CobranzaClient />;
+  return <CobranzaClient userRole={role} />;
 }

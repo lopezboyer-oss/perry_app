@@ -40,7 +40,9 @@ const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', c
 const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtDateTime = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-export function CobranzaClient() {
+export function CobranzaClient({ userRole }: { userRole?: string }) {
+  const canManageReceipts = userRole === 'ADMIN' || userRole === 'ADMINISTRACION';
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -431,27 +433,43 @@ export function CobranzaClient() {
                         ) : isLoadingReceipt ? (
                           <Loader2 size={16} className="mx-auto animate-spin text-violet-500" />
                         ) : receipt ? (
-                          <button
-                            onClick={() => toggleReceipt(inv)}
-                            className="group relative"
-                            title={`Confirmado por ${receipt.confirmedBy?.name || '?'} — ${fmtDateTime(receipt.confirmedAt)}\nClick para desmarcar`}
-                          >
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-violet-100 text-violet-700 border border-violet-200 group-hover:bg-red-50 group-hover:text-red-600 group-hover:border-red-200 transition-colors">
-                              <Check size={12} className="group-hover:hidden" />
-                              <X size={12} className="hidden group-hover:block" />
-                              <span className="group-hover:hidden">Recibido</span>
-                              <span className="hidden group-hover:inline">Desmarcar</span>
-                            </span>
-                            <span className="block text-[9px] text-violet-400 mt-0.5">{receipt.confirmedBy?.name}</span>
-                          </button>
+                          canManageReceipts ? (
+                            <button
+                              onClick={() => toggleReceipt(inv)}
+                              className="group relative"
+                              title={`Confirmado por ${receipt.confirmedBy?.name || '?'} — ${fmtDateTime(receipt.confirmedAt)}\nClick para desmarcar`}
+                            >
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-violet-100 text-violet-700 border border-violet-200 group-hover:bg-red-50 group-hover:text-red-600 group-hover:border-red-200 transition-colors">
+                                <Check size={12} className="group-hover:hidden" />
+                                <X size={12} className="hidden group-hover:block" />
+                                <span className="group-hover:hidden">Recibido</span>
+                                <span className="hidden group-hover:inline">Desmarcar</span>
+                              </span>
+                              <span className="block text-[9px] text-violet-400 mt-0.5">{receipt.confirmedBy?.name}</span>
+                            </button>
+                          ) : (
+                            <div className="inline-block" title={`Confirmado por ${receipt.confirmedBy?.name || '?'} — ${fmtDateTime(receipt.confirmedAt)}`}>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-violet-100 text-violet-700 border border-violet-200">
+                                <Check size={12} />
+                                Recibido
+                              </span>
+                              <span className="block text-[9px] text-violet-400 mt-0.5">{receipt.confirmedBy?.name}</span>
+                            </div>
+                          )
                         ) : (
-                          <button
-                            onClick={() => toggleReceipt(inv)}
-                            className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg bg-slate-100 text-slate-500 border border-slate-200 hover:bg-violet-50 hover:text-violet-600 hover:border-violet-300 transition-colors"
-                          >
-                            <Check size={12} />
-                            Marcar Recibo
-                          </button>
+                          canManageReceipts ? (
+                            <button
+                              onClick={() => toggleReceipt(inv)}
+                              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg bg-slate-100 text-slate-500 border border-slate-200 hover:bg-violet-50 hover:text-violet-600 hover:border-violet-300 transition-colors"
+                            >
+                              <Check size={12} />
+                              Marcar Recibo
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg bg-slate-50 text-slate-400 border border-slate-200">
+                              Sin Recibo
+                            </span>
+                          )
                         )}
                       </td>
                     </tr>
