@@ -16,13 +16,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body.actualStartTime !== undefined) allowedFields.actualStartTime = body.actualStartTime || null;
   if (body.actualEndTime !== undefined) allowedFields.actualEndTime = body.actualEndTime || null;
 
-  // Audit notes: only ADMIN and SUPERVISOR_SAFETY_LP
+  // Audit notes: only SUPERVISOR_SAFETY_LP can edit
   if (body.auditNotes !== undefined) {
     const role = session.user.role;
-    if (role !== 'ADMIN' && role !== 'SUPERVISOR_SAFETY_LP') {
+    if (role !== 'SUPERVISOR_SAFETY_LP') {
       return NextResponse.json({ error: 'Sin permisos para notas de auditoría' }, { status: 403 });
     }
     allowedFields.auditNotes = body.auditNotes || null;
+  }
+
+  // Alert notes: only SUPERVISOR_SAFETY_LP can edit
+  if (body.alertNotes !== undefined) {
+    const role = session.user.role;
+    if (role !== 'SUPERVISOR_SAFETY_LP') {
+      return NextResponse.json({ error: 'Sin permisos para notas de alerta' }, { status: 403 });
+    }
+    allowedFields.alertNotes = body.alertNotes || null;
   }
 
   // Safety audit image: ADMIN, SUPERVISOR_SAFETY_LP, or the activity's own engineer

@@ -111,6 +111,7 @@ model Activity {
   notes           String?
   weekendNotes    String?
   auditNotes      String?
+  alertNotes      String?              // Safety alert notes (only SUPERVISOR_SAFETY_LP can edit)
   safetyAuditImage String?            // Base64 data URL of safety audit screenshot
   teraFolio        String?            // TERA folio number (e.g. BC-1234)
   consortiumCompany String?            // Target company when type=CONSORCIO (e.g. DROBOTS)

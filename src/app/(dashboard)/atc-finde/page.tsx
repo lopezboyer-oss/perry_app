@@ -87,6 +87,7 @@ export default async function AtcFindePage() {
         loto: true,
         weekendNotes: true,
         auditNotes: true,
+        alertNotes: true,
         safetyAuditImage: true,
         teraFolio: true,
         user: { select: { id: true, name: true } },

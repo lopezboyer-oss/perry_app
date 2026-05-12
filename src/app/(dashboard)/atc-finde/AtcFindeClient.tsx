@@ -22,6 +22,7 @@ interface Activity {
   loto: boolean;
   weekendNotes: string | null;
   auditNotes: string | null;
+  alertNotes: string | null;
   safetyAuditImage: string | null;
   teraFolio: string | null;
   user: { id: string; name: string } | null;
@@ -204,6 +205,7 @@ export function AtcFindeClient({
   const [folioState, setFolioState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.workOrderFolio || ''])));
   const [notesState, setNotesState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.weekendNotes || ''])));
   const [auditNotesState, setAuditNotesState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.auditNotes || ''])));
+  const [alertNotesState, setAlertNotesState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.alertNotes || ''])));
 
   // Safety audit image state
   const [auditImages, setAuditImages] = useState<Record<string, string | null>>(Object.fromEntries(activities.map((a) => [a.id, a.safetyAuditImage || null])));
@@ -222,8 +224,10 @@ export function AtcFindeClient({
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditFields = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canViewAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canEditAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canViewAudit = true; // All profiles can now see Notas Auditoría
+  const canEditAudit = userRole === 'SUPERVISOR_SAFETY_LP'; // Only Safety & LP can edit audit notes
+  const canViewAlertNotes = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canEditAlertNotes = userRole === 'SUPERVISOR_SAFETY_LP';
   const canManageExtraDays = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
 
   const canEditAuditImage = (act: Activity) => {
@@ -468,7 +472,7 @@ export function AtcFindeClient({
 
   // ── CSV EXPORT ──
   const exportCSV = () => {
-    const h = ['#','Día','Inicio','Fin','Resp.','Contacto','Actividad','Folio','P.O.','LOTO','Técnicos','Sup.Operativo','S.Dedicado','Vehículo','Chofer','Eq.Elev.','Notas','N.Auditoría','TERA'];
+    const h = ['#','Día','Inicio','Fin','Resp.','Contacto','Actividad','Folio','P.O.','LOTO','Técnicos','Sup.Operativo','S.Dedicado','Vehículo','Chofer','Eq.Elev.','Notas Ingeniero','N.Auditoría','TERA'];
     const rows = activities.map((a, i) => {
       const t = techAssignments.filter((x) => x.activityId === a.id && x.role === 'TECNICO').map((x) => x.technician.name).join(';');
       const sd = techAssignments.filter((x) => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map((x) => x.technician.name).join(';');
@@ -1118,14 +1122,15 @@ export function AtcFindeClient({
                 <th className="font-semibold min-w-[130px]">Vehículo</th>
                 <th className="font-semibold min-w-[120px]">Chofer</th>
                 <th className="font-semibold min-w-[140px]">Eq. Elevación</th>
-                <th className="font-semibold min-w-[120px]">Notas</th>
-                {canViewAudit && <th className="font-semibold min-w-[120px]">Auditoría</th>}
+                <th className="font-semibold min-w-[120px]">Notas Ingeniero</th>
+                <th className="font-semibold min-w-[120px]">Auditoría</th>
+                {canViewAlertNotes && <th className="font-semibold min-w-[120px]">Notas Alertas</th>}
                 <th className="font-semibold w-[90px] text-center">TERA</th>
               </tr>
             </thead>
             <tbody>
               {activities.length === 0 ? (
-                <tr><td colSpan={canViewAudit ? 18 : 17} className="text-center py-16">
+                <tr><td colSpan={canViewAlertNotes ? 19 : 18} className="text-center py-16">
                   <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-600" />
                   <p className="font-medium text-lg text-slate-400">Fin de Semana Despejado</p>
                   <p className="text-sm mt-1 text-slate-400">No hay actividades para este fin de semana.</p>
@@ -1148,10 +1153,15 @@ export function AtcFindeClient({
                   ...aSDesignado.map((x) => ({ assignmentId: x.id, id: `sd-${x.safetyDedicadoId}`, name: x.safetyDedicado.name, removeType: 'SAFETY_DEDICADO' as const })),
                 ];
 
+                const hasAlert = canViewAlertNotes && !!(alertNotesState[act.id]);
+
                 return (
-                  <tr key={act.id} className="hover:bg-slate-50/50 transition-colors align-top">
+                  <tr key={act.id} className={`hover:bg-slate-50/50 transition-colors align-top ${hasAlert ? 'bg-amber-50/40' : ''}`}>
                     <td className="text-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">{idx + 1}</span>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${hasAlert ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-700'}`}>{idx + 1}</span>
+                        {hasAlert && <AlertTriangle size={12} className="text-amber-500" />}
+                      </div>
                     </td>
                     <td className="whitespace-nowrap">
                       <div className="flex flex-col">
@@ -1251,15 +1261,22 @@ export function AtcFindeClient({
                     {/* EQ. ELEVACIÓN */}
                     <td><AssignDropdown label="Equipo" options={elevationEquips.map((e) => ({ id: e.id, name: e.name, badge: e.ownership }))} assigned={aE.map((x) => ({ assignmentId: x.id, id: x.equipId, name: x.equip.name, hasConflict: !!conflictAlerts[`${act.id}-${x.equipId}`] }))} onAssign={(id) => handleAssign('EQUIP', act.id, id)} onRemove={(id) => handleRemove(id, 'EQUIP')} disabled={!canAssign} colorClass="bg-orange-100 text-orange-700" /></td>
 
-                    {/* NOTAS GENERALES */}
+                    {/* NOTAS INGENIERO */}
                     <td>
                       <NoteCell value={notesState[act.id] || ''} onChange={(v) => { setNotesState(p => ({ ...p, [act.id]: v })); updateField(act.id, 'weekendNotes', v); }} disabled={!canEditNotes(act)} placeholder="Agregar nota..." color="text-slate-700" />
                     </td>
 
-                    {/* NOTAS AUDITORÍA */}
-                    {canViewAudit && (
+                    {/* NOTAS AUDITORÍA — visible to all, editable only by Safety & LP */}
+                    <td>
+                      <NoteCell value={auditNotesState[act.id] || ''} onChange={(v) => { setAuditNotesState(p => ({ ...p, [act.id]: v })); updateField(act.id, 'auditNotes', v); }} disabled={!canEditAudit} placeholder={canEditAudit ? 'Nota auditoría...' : ''} color="text-red-600" />
+                    </td>
+
+                    {/* NOTAS ALERTAS — visible only to ADMIN + Safety LP, editable only by Safety & LP */}
+                    {canViewAlertNotes && (
                       <td>
-                        <NoteCell value={auditNotesState[act.id] || ''} onChange={(v) => { setAuditNotesState(p => ({ ...p, [act.id]: v })); updateField(act.id, 'auditNotes', v); }} disabled={!canEditAudit} placeholder="Nota auditoría..." color="text-red-600" />
+                        <div className="relative">
+                          <NoteCell value={alertNotesState[act.id] || ''} onChange={(v) => { setAlertNotesState(p => ({ ...p, [act.id]: v })); updateField(act.id, 'alertNotes', v); }} disabled={!canEditAlertNotes} placeholder={canEditAlertNotes ? 'Nota alerta...' : ''} color="text-amber-700" />
+                        </div>
                       </td>
                     )}
 

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
-import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X } from 'lucide-react';
+import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface Activity {
@@ -11,6 +11,7 @@ interface Activity {
   actualStartTime: string | null; actualEndTime: string | null;
   workOrderFolio: string | null; purchaseOrder: string | null;
   loto: boolean; weekendNotes: string | null; auditNotes: string | null;
+  alertNotes: string | null;
   safetyAuditImage: string | null;
   teraFolio: string | null;
   user: { id: string; name: string } | null;
@@ -41,8 +42,10 @@ export function PlanesPasadosClient({
 }: Props) {
   const router = useRouter();
   const canEdit = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canViewAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canEditAudit = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canViewAudit = true; // All profiles can see Notas Auditoría
+  const canEditAudit = userRole === 'SUPERVISOR_SAFETY_LP'; // Only Safety & LP can edit
+  const canViewAlertNotes = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canEditAlertNotes = userRole === 'SUPERVISOR_SAFETY_LP';
 
   const [actualTimes, setActualTimes] = useState<Record<string, { start: string; end: string }>>(
     Object.fromEntries(activities.map((a) => [a.id, { start: a.actualStartTime || '', end: a.actualEndTime || '' }]))
@@ -50,6 +53,9 @@ export function PlanesPasadosClient({
 
   const [auditNotesState, setAuditNotesState] = useState<Record<string, string>>(
     Object.fromEntries(activities.map((a) => [a.id, a.auditNotes || '']))
+  );
+  const [alertNotesState, setAlertNotesState] = useState<Record<string, string>>(
+    Object.fromEntries(activities.map((a) => [a.id, a.alertNotes || '']))
   );
 
   // TERA image state
@@ -232,14 +238,15 @@ export function PlanesPasadosClient({
                   <th className="font-semibold min-w-[100px]">Vehículo</th>
                   <th className="font-semibold min-w-[90px]">Chofer</th>
                   <th className="font-semibold min-w-[100px]">Eq.Elev.</th>
-                  <th className="font-semibold min-w-[110px]">Notas</th>
-                  {canViewAudit && <th className="font-semibold min-w-[180px]">Notas Auditoría</th>}
+                  <th className="font-semibold min-w-[110px]">Notas Ingeniero</th>
+                  <th className="font-semibold min-w-[180px]">Notas Auditoría</th>
+                  {canViewAlertNotes && <th className="font-semibold min-w-[140px]">Notas Alertas</th>}
                   <th className="font-semibold w-[90px] text-center">TERA</th>
                 </tr>
               </thead>
               <tbody>
                 {activities.length === 0 ? (
-                  <tr><td colSpan={canViewAudit ? 20 : 19} className="text-center py-16">
+                  <tr><td colSpan={canViewAlertNotes ? 21 : 20} className="text-center py-16">
                     <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-600" />
                     <p className="font-medium text-lg text-slate-400">Sin actividades para este fin de semana</p>
                   </td></tr>
@@ -266,10 +273,15 @@ export function PlanesPasadosClient({
                     else { deviation = '✓ Puntual'; devColor = 'text-emerald-600 font-semibold'; }
                   }
 
+                  const hasAlert = canViewAlertNotes && !!(alertNotesState[act.id]);
+
                   return (
-                    <tr key={act.id} className="hover:bg-slate-50/50 transition-colors align-top">
+                    <tr key={act.id} className={`hover:bg-slate-50/50 transition-colors align-top ${hasAlert ? 'bg-amber-50/40' : ''}`}>
                       <td className="text-center">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">{idx + 1}</span>
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${hasAlert ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-700'}`}>{idx + 1}</span>
+                          {hasAlert && <AlertTriangle size={12} className="text-amber-500" />}
+                        </div>
                       </td>
                       <td className="whitespace-nowrap">
                         <span className="font-medium text-slate-800 text-xs">{formatDate(act.date)}</span>
@@ -317,20 +329,36 @@ export function PlanesPasadosClient({
                       <td><span className="text-xs text-slate-600">{eqs.join(', ') || '-'}</span></td>
                       <td><span className="text-xs text-slate-600 block max-w-[110px]" title={act.weekendNotes || ''}>{act.weekendNotes || '-'}</span></td>
 
-                      {/* NOTAS AUDITORÍA — editable inline */}
-                      {canViewAudit && (
+                      {/* NOTAS AUDITORÍA — visible to all, editable only by Safety & LP */}
+                      <td>
+                        {canEditAudit ? (
+                          <textarea
+                            className="w-full min-w-[160px] text-xs px-2 py-1 rounded border border-red-200 bg-red-50 text-red-800 placeholder-red-300 focus:ring-2 focus:ring-red-400 focus:border-red-400 resize-none"
+                            rows={2}
+                            value={auditNotesState[act.id] || ''}
+                            placeholder="Nota de auditoría..."
+                            onChange={(e) => setAuditNotesState((p) => ({ ...p, [act.id]: e.target.value }))}
+                            onBlur={() => updateField(act.id, 'auditNotes', auditNotesState[act.id] || null)}
+                          />
+                        ) : (
+                          <span className="text-xs text-red-600 block max-w-[160px]">{auditNotesState[act.id] || '-'}</span>
+                        )}
+                      </td>
+
+                      {/* NOTAS ALERTAS — visible only ADMIN + Safety LP, editable only Safety LP */}
+                      {canViewAlertNotes && (
                         <td>
-                          {canEditAudit ? (
+                          {canEditAlertNotes ? (
                             <textarea
-                              className="w-full min-w-[160px] text-xs px-2 py-1 rounded border border-red-200 bg-red-50 text-red-800 placeholder-red-300 focus:ring-2 focus:ring-red-400 focus:border-red-400 resize-none"
+                              className="w-full min-w-[120px] text-xs px-2 py-1 rounded border border-amber-200 bg-amber-50 text-amber-800 placeholder-amber-300 focus:ring-2 focus:ring-amber-400 focus:border-amber-400 resize-none"
                               rows={2}
-                              value={auditNotesState[act.id] || ''}
-                              placeholder="Nota de auditoría..."
-                              onChange={(e) => setAuditNotesState((p) => ({ ...p, [act.id]: e.target.value }))}
-                              onBlur={() => updateField(act.id, 'auditNotes', auditNotesState[act.id] || null)}
+                              value={alertNotesState[act.id] || ''}
+                              placeholder="Nota alerta..."
+                              onChange={(e) => setAlertNotesState((p) => ({ ...p, [act.id]: e.target.value }))}
+                              onBlur={() => updateField(act.id, 'alertNotes', alertNotesState[act.id] || null)}
                             />
                           ) : (
-                            <span className="text-xs text-red-600 block max-w-[160px]">{act.auditNotes || '-'}</span>
+                            <span className="text-xs text-amber-700 block max-w-[120px]">{alertNotesState[act.id] || '-'}</span>
                           )}
                         </td>
                       )}
