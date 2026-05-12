@@ -90,6 +90,8 @@ export default async function AtcFindePage() {
         alertNotes: true,
         safetyAuditImage: true,
         teraFolio: true,
+        teraUploadedAt: true,
+        teraUploadedBy: true,
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true } },
@@ -135,6 +137,7 @@ export default async function AtcFindePage() {
       activities={activities.map((a) => ({
         ...a,
         date: a.date.toISOString(),
+        teraUploadedAt: a.teraUploadedAt?.toISOString() || null,
       }))}
       technicians={technicians}
       safetyDedicados={safetyDedicados}
@@ -150,6 +153,7 @@ export default async function AtcFindePage() {
       userSafetyAssignments={userSafetyAssignments}
       userRole={role}
       userId={userId}
+      userName={session.user.name || 'Desconocido'}
       weekendOf={saturday}
       weekendLabel={weekendLabel}
       planDays={planDays}

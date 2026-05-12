@@ -114,6 +114,8 @@ model Activity {
   alertNotes      String?              // Safety alert notes (only SUPERVISOR_SAFETY_LP can edit)
   safetyAuditImage String?            // Base64 data URL of safety audit screenshot
   teraFolio        String?            // TERA folio number (e.g. BC-1234)
+  teraUploadedAt   DateTime?          // When the TERA image was uploaded
+  teraUploadedBy   String?            // Name of user who uploaded the TERA image
   consortiumCompany String?            // Target company when type=CONSORCIO (e.g. DROBOTS)
   companyId       String?
   company         Company?     @relation(fields: [companyId], references: [id])

@@ -25,6 +25,8 @@ interface Activity {
   alertNotes: string | null;
   safetyAuditImage: string | null;
   teraFolio: string | null;
+  teraUploadedAt: string | null;
+  teraUploadedBy: string | null;
   user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
@@ -68,6 +70,7 @@ interface Props {
   userSafetyAssignments: UserSafetyAssignment[];
   userRole: string;
   userId: string;
+  userName: string;
   weekendOf: string;
   weekendLabel: string;
   planDays: PlanDay[];
@@ -189,7 +192,7 @@ export function AtcFindeClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
-  userRole, userId, weekendOf, weekendLabel, planDays,
+  userRole, userId, userName, weekendOf, weekendLabel, planDays,
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -214,6 +217,7 @@ export function AtcFindeClient({
   const [teraFolios, setTeraFolios] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.teraFolio || ''])));
   const [teraFolioSaving, setTeraFolioSaving] = useState<Record<string, boolean>>({});
   const deletingTeraRef = useRef<Set<string>>(new Set());
+  const [teraUploadInfo, setTeraUploadInfo] = useState<Record<string, { at: string | null; by: string | null }>>(Object.fromEntries(activities.map((a) => [a.id, { at: a.teraUploadedAt || null, by: a.teraUploadedBy || null }])));
 
   // Extra day dialog state
   const [showExtraDayDialog, setShowExtraDayDialog] = useState(false);
@@ -419,7 +423,10 @@ export function AtcFindeClient({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ safetyAuditImage: dataUrl }),
         });
-        if (res.ok) setAuditImages((p) => ({ ...p, [actId]: dataUrl }));
+        if (res.ok) {
+          setAuditImages((p) => ({ ...p, [actId]: dataUrl }));
+          setTeraUploadInfo((p) => ({ ...p, [actId]: { at: new Date().toISOString(), by: userName } }));
+        }
         else { const d = await res.json(); alert(d.error || 'Error al subir'); }
       } catch (err: any) { alert(err.message || 'Error de conexión'); }
       setAuditImageLoading((p) => ({ ...p, [actId]: false }));
@@ -441,6 +448,7 @@ export function AtcFindeClient({
       });
       if (res.ok) {
         setAuditImages((p) => ({ ...p, [actId]: null }));
+        setTeraUploadInfo((p) => ({ ...p, [actId]: { at: null, by: null } }));
       }
     } catch { alert('Error de conexión'); }
     setAuditImageLoading((p) => ({ ...p, [actId]: false }));
@@ -1322,32 +1330,46 @@ export function AtcFindeClient({
                           </div>
                           {/* TERA Folio */}
                           {canEditAuditImage(act) ? (
-                            <div className="flex items-center gap-0.5">
-                              <input
-                                type="text"
-                                maxLength={8}
-                                placeholder="BC-000"
-                                value={teraFolios[act.id] || ''}
-                                onChange={(e) => {
-                                  const v = e.target.value.toUpperCase();
-                                  setTeraFolios((p) => ({ ...p, [act.id]: v }));
-                                }}
-                                onBlur={() => saveTeraFolio(act.id)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') saveTeraFolio(act.id); }}
-                                className={`w-[70px] text-[10px] font-mono px-1 py-0.5 rounded border text-center ${
-                                  teraFolios[act.id] && /^BC-\d{3,5}$/.test(teraFolios[act.id])
-                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 font-bold'
-                                    : 'border-slate-200 text-slate-500'
-                                }`}
-                              />
-                              {teraFolioSaving[act.id] && <Loader2 size={10} className="animate-spin text-indigo-400" />}
-                            </div>
+                            <>
+                              <div className="flex items-center gap-0.5">
+                                <input
+                                  type="text"
+                                  maxLength={8}
+                                  placeholder="BC-000"
+                                  value={teraFolios[act.id] || ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value.toUpperCase();
+                                    setTeraFolios((p) => ({ ...p, [act.id]: v }));
+                                  }}
+                                  onBlur={() => saveTeraFolio(act.id)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveTeraFolio(act.id); }}
+                                  className={`w-[70px] text-[10px] font-mono px-1 py-0.5 rounded border text-center ${
+                                    teraFolios[act.id] && /^BC-\d{3,5}$/.test(teraFolios[act.id])
+                                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 font-bold'
+                                      : 'border-slate-200 text-slate-500'
+                                  }`}
+                                />
+                                {teraFolioSaving[act.id] && <Loader2 size={10} className="animate-spin text-indigo-400" />}
+                              </div>
+                              {teraUploadInfo[act.id]?.at && (
+                                <span className="text-[9px] text-slate-400 leading-tight text-center block" title={`Subido por ${teraUploadInfo[act.id]?.by || '?'}`}>
+                                  {teraUploadInfo[act.id]?.by || '?'} · {new Date(teraUploadInfo[act.id]!.at!).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: 'America/Tijuana' })} {new Date(teraUploadInfo[act.id]!.at!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })}
+                                </span>
+                              )}
+                            </>
                           ) : (
-                            teraFolios[act.id] && (
-                              <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                {teraFolios[act.id]}
-                              </span>
-                            )
+                            <>
+                              {teraFolios[act.id] && (
+                                <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                  {teraFolios[act.id]}
+                                </span>
+                              )}
+                              {teraUploadInfo[act.id]?.at && (
+                                <span className="text-[9px] text-slate-400 leading-tight text-center block">
+                                  {teraUploadInfo[act.id]?.by || '?'} · {new Date(teraUploadInfo[act.id]!.at!).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: 'America/Tijuana' })} {new Date(teraUploadInfo[act.id]!.at!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                       )}

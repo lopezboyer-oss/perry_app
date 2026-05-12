@@ -51,6 +51,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: 'Imagen demasiado grande (máx. 2MB)' }, { status: 400 });
     }
     allowedFields.safetyAuditImage = body.safetyAuditImage || null;
+    // Track who uploaded and when
+    if (body.safetyAuditImage) {
+      allowedFields.teraUploadedAt = new Date();
+      allowedFields.teraUploadedBy = session.user.name || 'Desconocido';
+    } else {
+      allowedFields.teraUploadedAt = null;
+      allowedFields.teraUploadedBy = null;
+    }
   }
 
   // TERA folio: same permissions as safetyAuditImage

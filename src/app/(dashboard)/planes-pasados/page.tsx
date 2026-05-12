@@ -83,7 +83,7 @@ export default async function PlanesPasadosPage({
     <PlanesPasadosClient
       weekendDates={weekendDates}
       selectedWeekend={selectedWeekend}
-      activities={activities.map((a: any) => ({ ...a, date: a.date.toISOString() }))}
+      activities={activities.map((a: any) => ({ ...a, date: a.date.toISOString(), teraUploadedAt: a.teraUploadedAt?.toISOString() || null }))}
       techAssignments={techAssignments}
       safetyAssignments={safetyAssignments}
       vehicleAssignments={vehicleAssignments}
@@ -92,6 +92,7 @@ export default async function PlanesPasadosPage({
       userSafetyAssignments={userSafetyAssignments}
       userRole={role}
       userId={session.user.id}
+      userName={session.user.name || 'Desconocido'}
     />
   );
 }
