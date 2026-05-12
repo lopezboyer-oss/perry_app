@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ interface Activity {
   user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
+  timeRegistryEntries: TimeRegistryEntryData[];
 }
 
 interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; }
@@ -218,6 +220,10 @@ export function AtcFindeClient({
   const [teraFolioSaving, setTeraFolioSaving] = useState<Record<string, boolean>>({});
   const deletingTeraRef = useRef<Set<string>>(new Set());
   const [teraUploadInfo, setTeraUploadInfo] = useState<Record<string, { at: string | null; by: string | null }>>(Object.fromEntries(activities.map((a) => [a.id, { at: a.teraUploadedAt || null, by: a.teraUploadedBy || null }])));
+
+  // Time registry state
+  const [timeRegistries, setTimeRegistries] = useState<Record<string, TimeRegistryEntryData[]>>(Object.fromEntries(activities.map((a) => [a.id, a.timeRegistryEntries || []])));
+  const [timeRegistryModal, setTimeRegistryModal] = useState<{ activityId: string; activityTitle: string } | null>(null);
 
   // Extra day dialog state
   const [showExtraDayDialog, setShowExtraDayDialog] = useState(false);
@@ -1118,6 +1124,7 @@ export function AtcFindeClient({
                 <th className="font-semibold w-[40px] text-center">#</th>
                 <th className="font-semibold w-[110px]">Día</th>
                 <th className="font-semibold w-[100px]">Horario</th>
+                <th className="font-semibold w-[70px] text-center">Registro</th>
                 <th className="font-semibold w-[120px]">Responsable</th>
                 <th className="font-semibold w-[120px]">Contacto</th>
                 <th className="font-semibold">Actividad</th>
@@ -1187,6 +1194,29 @@ export function AtcFindeClient({
                     </td>
                     <td className="whitespace-nowrap">
                       <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-mono border border-slate-200">{act.startTime || '--:--'} — {act.endTime || '--:--'}</span>
+                    </td>
+                    {/* REGISTRO HORARIO */}
+                    <td className="text-center">
+                      {(() => {
+                        const entries = timeRegistries[act.id] || [];
+                        const count = entries.length;
+                        return (
+                          <button
+                            onClick={() => setTimeRegistryModal({ activityId: act.id, activityTitle: act.title })}
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all hover:shadow-md ${
+                              count === 4
+                                ? 'bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200'
+                                : count > 0
+                                ? 'bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200'
+                                : 'bg-slate-100 text-slate-500 border border-slate-300 hover:bg-slate-200'
+                            }`}
+                            title="Registro Horario"
+                          >
+                            {count === 4 ? '✅' : <Clock size={10} />}
+                            {count}/4
+                          </button>
+                        );
+                      })()}
                     </td>
                     <td><span className="text-xs font-medium text-slate-700">{act.user?.name || '-'}</span></td>
                     <td><span className="text-xs font-medium text-slate-800">{act.contact?.name || '-'}</span></td>
@@ -1469,6 +1499,22 @@ export function AtcFindeClient({
             <pre className="flex-1 overflow-y-auto p-4 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap font-mono bg-white">{generateEquipReport().text}</pre>
           </div>
         </div>
+      )}
+
+      {/* TIME REGISTRY MODAL */}
+      {timeRegistryModal && (
+        <TimeRegistryModal
+          activityId={timeRegistryModal.activityId}
+          activityTitle={timeRegistryModal.activityTitle}
+          entries={timeRegistries[timeRegistryModal.activityId] || []}
+          onClose={() => setTimeRegistryModal(null)}
+          onEntryAdded={(entry) => {
+            setTimeRegistries((prev) => ({
+              ...prev,
+              [timeRegistryModal.activityId]: [...(prev[timeRegistryModal.activityId] || []), entry],
+            }));
+          }}
+        />
       )}
     </div>
   );

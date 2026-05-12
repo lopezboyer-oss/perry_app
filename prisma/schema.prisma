@@ -128,6 +128,24 @@ model Activity {
   weekendDriverAssignments  WeekendDriverAssignment[]
   weekendEquipAssignments   WeekendEquipAssignment[]
   weekendUserSafetyAssignments WeekendUserSafetyAssignment[]
+  timeRegistryEntries          TimeRegistryEntry[]
+}
+
+// ─── REGISTRO HORARIO ───────────────────────────────────────────
+
+model TimeRegistryEntry {
+  id           String   @id @default(cuid())
+  activityId   String
+  activity     Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  phase        String   // "INICIO_LOGISTICO" | "INICIO_OPERATIVO" | "FINAL_OPERATIVO" | "FINAL_LOGISTICO"
+  time         String   // "HH:MM" — la hora registrada (ej: "06:30")
+  registeredBy String   // Nombre del usuario que registró
+  userId       String   // ID del usuario que registró (para futuras queries de nómina)
+  registeredAt DateTime @default(now()) // Timestamp exacto del registro
+
+  @@unique([activityId, phase]) // Solo un registro por fase por actividad
+  @@index([userId])             // Para queries futuras: horas por persona
+  @@index([activityId])         // Para cargar registros de una actividad
 }
 
 // ─── PERSONAL OPERATIVO (FINDE) ─────────────────────────────────

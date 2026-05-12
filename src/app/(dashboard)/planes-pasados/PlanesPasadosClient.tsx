@@ -5,6 +5,7 @@ import { useState, useRef } from 'react';
 import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { TimeInput24h } from '@/components/ui/TimeInput24h';
+import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 
 interface Activity {
   id: string; title: string; date: string;
@@ -20,6 +21,7 @@ interface Activity {
   user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
+  timeRegistryEntries: TimeRegistryEntryData[];
 }
 
 interface Props {
@@ -72,6 +74,10 @@ export function PlanesPasadosClient({
   const [teraFolioSaving, setTeraFolioSaving] = useState<Record<string, boolean>>({});
   const deletingTeraRef = useRef<Set<string>>(new Set());
   const [teraUploadInfo, setTeraUploadInfo] = useState<Record<string, { at: string | null; by: string | null }>>(Object.fromEntries(activities.map((a) => [a.id, { at: a.teraUploadedAt || null, by: a.teraUploadedBy || null }])));
+
+  // Time registry state
+  const [timeRegistries, setTimeRegistries] = useState<Record<string, TimeRegistryEntryData[]>>(Object.fromEntries(activities.map((a) => [a.id, a.timeRegistryEntries || []])));
+  const [timeRegistryModal, setTimeRegistryModal] = useState<{ activityId: string; activityTitle: string } | null>(null);
 
   const canEditAuditImage = (act: Activity) => {
     if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
@@ -235,6 +241,7 @@ export function PlanesPasadosClient({
                   <th className="font-semibold w-[40px] text-center">#</th>
                   <th className="font-semibold w-[100px]">Día</th>
                   <th className="font-semibold w-[110px]">Horario Plan</th>
+                  <th className="font-semibold w-[70px] text-center">Registro</th>
                   <th className="font-semibold w-[160px]">Horario Real</th>
                   <th className="font-semibold w-[90px]">Desviación</th>
                   <th className="font-semibold w-[110px]">Responsable</th>
@@ -300,6 +307,29 @@ export function PlanesPasadosClient({
                       </td>
                       <td className="whitespace-nowrap">
                         <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-mono border border-slate-200">{act.startTime || '--:--'} — {act.endTime || '--:--'}</span>
+                      </td>
+                      {/* REGISTRO HORARIO */}
+                      <td className="text-center">
+                        {(() => {
+                          const entries = timeRegistries[act.id] || [];
+                          const count = entries.length;
+                          return (
+                            <button
+                              onClick={() => setTimeRegistryModal({ activityId: act.id, activityTitle: act.title })}
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all hover:shadow-md ${
+                                count === 4
+                                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200'
+                                  : count > 0
+                                  ? 'bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200'
+                                  : 'bg-slate-100 text-slate-500 border border-slate-300 hover:bg-slate-200'
+                              }`}
+                              title="Registro Horario"
+                            >
+                              {count === 4 ? '✅' : <Clock size={10} />}
+                              {count}/4
+                            </button>
+                          );
+                        })()}
                       </td>
 
                       {/* HORARIO REAL */}
@@ -463,6 +493,22 @@ export function PlanesPasadosClient({
             <img src={previewImage} alt="TERA" className="max-w-full max-h-[85vh] object-contain" />
           </div>
         </div>
+      )}
+
+      {/* TIME REGISTRY MODAL */}
+      {timeRegistryModal && (
+        <TimeRegistryModal
+          activityId={timeRegistryModal.activityId}
+          activityTitle={timeRegistryModal.activityTitle}
+          entries={timeRegistries[timeRegistryModal.activityId] || []}
+          onClose={() => setTimeRegistryModal(null)}
+          onEntryAdded={(entry) => {
+            setTimeRegistries((prev) => ({
+              ...prev,
+              [timeRegistryModal.activityId]: [...(prev[timeRegistryModal.activityId] || []), entry],
+            }));
+          }}
+        />
       )}
     </div>
   );

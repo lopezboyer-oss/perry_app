@@ -67,6 +67,7 @@ export default async function PlanesPasadosPage({
           user: { select: { id: true, name: true } },
           client: { select: { id: true, name: true } },
           contact: { select: { id: true, name: true } },
+          timeRegistryEntries: { select: { id: true, phase: true, time: true, registeredBy: true, userId: true, registeredAt: true }, orderBy: { registeredAt: 'asc' } },
         },
         orderBy: [{ date: 'asc' }, { startTime: 'asc' }, { id: 'asc' }],
       }),
@@ -83,7 +84,7 @@ export default async function PlanesPasadosPage({
     <PlanesPasadosClient
       weekendDates={weekendDates}
       selectedWeekend={selectedWeekend}
-      activities={activities.map((a: any) => ({ ...a, date: a.date.toISOString(), teraUploadedAt: a.teraUploadedAt?.toISOString() || null }))}
+      activities={activities.map((a: any) => ({ ...a, date: a.date.toISOString(), teraUploadedAt: a.teraUploadedAt?.toISOString() || null, timeRegistryEntries: (a.timeRegistryEntries || []).map((e: any) => ({ ...e, registeredAt: e.registeredAt?.toISOString() || '' })) }))}
       techAssignments={techAssignments}
       safetyAssignments={safetyAssignments}
       vehicleAssignments={vehicleAssignments}

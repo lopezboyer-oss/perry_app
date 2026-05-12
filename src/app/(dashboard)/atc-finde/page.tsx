@@ -95,6 +95,7 @@ export default async function AtcFindePage() {
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true } },
+        timeRegistryEntries: { select: { id: true, phase: true, time: true, registeredBy: true, userId: true, registeredAt: true }, orderBy: { registeredAt: 'asc' } },
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }, { id: 'asc' }],
     }),
@@ -138,6 +139,7 @@ export default async function AtcFindePage() {
         ...a,
         date: a.date.toISOString(),
         teraUploadedAt: a.teraUploadedAt?.toISOString() || null,
+        timeRegistryEntries: a.timeRegistryEntries.map(e => ({ ...e, registeredAt: e.registeredAt.toISOString() })),
       }))}
       technicians={technicians}
       safetyDedicados={safetyDedicados}
