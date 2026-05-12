@@ -211,6 +211,7 @@ export function AtcFindeClient({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [teraFolios, setTeraFolios] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.teraFolio || ''])));
   const [teraFolioSaving, setTeraFolioSaving] = useState<Record<string, boolean>>({});
+  const deletingTeraRef = useRef<Set<string>>(new Set());
 
   // Extra day dialog state
   const [showExtraDayDialog, setShowExtraDayDialog] = useState(false);
@@ -424,6 +425,9 @@ export function AtcFindeClient({
 
   const handleAuditImageDelete = async (actId: string) => {
     if (!confirm('¿Eliminar imagen y folio TERA?')) return;
+    // Mark as deleting BEFORE clearing state, so onBlur saveTeraFolio won't re-save the old value
+    deletingTeraRef.current.add(actId);
+    setTeraFolios((p) => ({ ...p, [actId]: '' }));
     setAuditImageLoading((p) => ({ ...p, [actId]: true }));
     try {
       const res = await fetch(`/api/activities/${actId}`, {
@@ -433,13 +437,15 @@ export function AtcFindeClient({
       });
       if (res.ok) {
         setAuditImages((p) => ({ ...p, [actId]: null }));
-        setTeraFolios((p) => ({ ...p, [actId]: '' }));
       }
     } catch { alert('Error de conexión'); }
     setAuditImageLoading((p) => ({ ...p, [actId]: false }));
+    deletingTeraRef.current.delete(actId);
   };
 
   const saveTeraFolio = async (actId: string) => {
+    // Skip if a delete is in progress — the delete handler already cleared the folio
+    if (deletingTeraRef.current.has(actId)) return;
     const folio = teraFolios[actId]?.trim().toUpperCase() || '';
     if (folio && !/^BC-\d{3,5}$/.test(folio)) {
       alert('Formato inválido. Use BC- seguido de 3 a 5 dígitos (ej: BC-123, BC-1234 o BC-12345)');
