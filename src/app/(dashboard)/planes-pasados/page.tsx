@@ -68,7 +68,7 @@ export default async function PlanesPasadosPage({
           client: { select: { id: true, name: true } },
           contact: { select: { id: true, name: true } },
         },
-        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+        orderBy: [{ date: 'asc' }, { startTime: 'asc' }, { id: 'asc' }],
       }),
       prisma.weekendTechAssignment.findMany({ where: { weekendOf: selectedWeekend }, include: { technician: true } }),
       prisma.weekendSafetyAssignment.findMany({ where: { weekendOf: selectedWeekend }, include: { safetyDedicado: true } }),

@@ -93,7 +93,7 @@ export default async function AtcFindePage() {
         client: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true } },
       },
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }, { id: 'asc' }],
     }),
     prisma.technician.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isCruzVerde: true, phone: true }, orderBy: { name: 'asc' } }),
     prisma.safetyDedicado.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
