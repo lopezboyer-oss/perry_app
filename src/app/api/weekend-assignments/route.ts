@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 });
       }
 
-      // Check: same safety dedicado assigned to another activity on the SAME DAY
+      // Check: same safety dedicado assigned to another activity with OVERLAPPING TIME on the same day
       const dayStart = new Date(activity.date);
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(activity.date);
@@ -108,12 +108,22 @@ export async function POST(req: NextRequest) {
         include: conflictActivityInclude,
       });
 
-      if (existing.length > 0) {
-        const ex = existing[0].activity;
+      // Filter to only those with time overlap
+      const overlapping = existing.filter((a) =>
+        timesOverlap(
+          activity.startTime || null,
+          activity.endTime || null,
+          a.activity.startTime,
+          a.activity.endTime
+        )
+      );
+
+      if (overlapping.length > 0) {
+        const ex = overlapping[0].activity;
         const dayName = DAY_NAMES[ex.date.getUTCDay()] || '';
         const companyTag = ex.company?.shortName ? ` [${ex.company.shortName}]` : '';
         return NextResponse.json({
-          error: `Este Safety Dedicado ya está asignado a: "${ex.title}" (${ex.startTime || '?'} - ${ex.endTime || '?'}) ${dayName}${companyTag}. Un Safety Dedicado solo puede cubrir una actividad por día.`,
+          error: `Este Safety Dedicado ya está asignado a: "${ex.title}" (${ex.startTime || '?'} - ${ex.endTime || '?'}) ${dayName}${companyTag}. Los horarios se traslapan.`,
           blocked: true,
         }, { status: 409 });
       }
