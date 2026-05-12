@@ -15,6 +15,8 @@ interface Activity {
   date: string;
   startTime: string | null;
   endTime: string | null;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
   workOrderFolio: string | null;
   purchaseOrder: string | null;
   loto: boolean;

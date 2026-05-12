@@ -80,6 +80,8 @@ export default async function AtcFindePage() {
         date: true,
         startTime: true,
         endTime: true,
+        actualStartTime: true,
+        actualEndTime: true,
         workOrderFolio: true,
         purchaseOrder: true,
         loto: true,
