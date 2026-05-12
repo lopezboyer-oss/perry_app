@@ -27,6 +27,7 @@ export const activitySchema = z.object({
   durationMinutes: z.number().optional().nullable(),
   location: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  continuedFromId: z.string().optional().nullable(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

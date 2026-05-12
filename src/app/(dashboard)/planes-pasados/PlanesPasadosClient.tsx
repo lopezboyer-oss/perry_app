@@ -22,6 +22,7 @@ interface Activity {
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
   timeRegistryEntries: TimeRegistryEntryData[];
+  continuedFromId?: string | null;
 }
 
 interface Props {
@@ -358,7 +359,7 @@ export function PlanesPasadosClient({
 
                       <td><span className="text-xs font-medium text-slate-700">{act.user?.name || '-'}</span></td>
                       <td><span className="text-xs font-medium text-slate-800">{act.contact?.name || '-'}</span></td>
-                      <td><p className="font-semibold text-slate-800 text-xs leading-snug">{act.title}</p></td>
+                      <td><p className="font-semibold text-slate-800 text-xs leading-snug">{act.continuedFromId && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}{act.title}</p></td>
                       <td><span className="text-xs font-mono text-slate-600">{act.workOrderFolio || '-'}</span></td>
                       <td><span className={`text-xs font-mono ${act.purchaseOrder ? 'text-slate-700' : 'text-red-500 font-bold'}`}>{act.purchaseOrder || 'PEND.'}</span></td>
                       <td className="text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${act.loto ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>{act.loto ? 'SI' : 'NO'}</span></td>

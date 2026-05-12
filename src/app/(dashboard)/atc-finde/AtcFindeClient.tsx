@@ -32,6 +32,7 @@ interface Activity {
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
   timeRegistryEntries: TimeRegistryEntryData[];
+  continuedFromId?: string | null;
 }
 
 interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; }
@@ -1222,6 +1223,7 @@ export function AtcFindeClient({
                     <td><span className="text-xs font-medium text-slate-800">{act.contact?.name || '-'}</span></td>
                     <td>
                       <p className="font-semibold text-slate-800 text-xs leading-snug cursor-pointer hover:text-indigo-600" onClick={() => router.push(`/actividades/${act.id}`)}>
+                        {act.continuedFromId && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}
                         {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
                       </p>
                     </td>

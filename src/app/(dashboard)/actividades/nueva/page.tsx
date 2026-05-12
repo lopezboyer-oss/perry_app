@@ -62,6 +62,7 @@ export default async function NuevaActividadPage({
         location: source.location || '',
         consortiumCompany: source.consortiumCompany || '',
         companyId: source.companyId || '',
+        continuedFromId: searchParams.continuar,
         // These stay blank for the new activity
         result: '',
         nextStep: '',

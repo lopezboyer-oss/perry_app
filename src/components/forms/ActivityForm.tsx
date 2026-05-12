@@ -43,6 +43,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     notes: initialData?.notes || '',
     consortiumCompany: initialData?.consortiumCompany || '',
     companyId: initialData?.companyId || '',
+    continuedFromId: initialData?.continuedFromId || '',
   });
 
   // On mount, read active company from cookie if no companyId set

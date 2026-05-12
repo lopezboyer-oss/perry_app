@@ -92,6 +92,7 @@ export default async function AtcFindePage() {
         teraFolio: true,
         teraUploadedAt: true,
         teraUploadedBy: true,
+        continuedFromId: true,
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true } },

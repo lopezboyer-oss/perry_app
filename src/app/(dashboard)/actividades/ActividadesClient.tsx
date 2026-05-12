@@ -22,6 +22,7 @@ interface Activity {
   purchaseOrder: string | null;
   user: { id: string; name: string };
   client: { id: string; name: string } | null;
+  continuedFromId?: string | null;
 }
 
 interface Props {
@@ -371,6 +372,7 @@ export function ActividadesClient({ activities: initialActivities, users, client
                     <td className="whitespace-nowrap text-sm">{formatDate(act.date)}</td>
                     <td>
                       <p className="font-medium text-slate-800 text-sm">
+                        {act.continuedFromId && <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1.5 py-0.5 rounded-full mr-1.5 align-middle">🔄 CONT.</span>}
                         {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
                       </p>
                       {act.workOrderFolio && (

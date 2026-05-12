@@ -117,6 +117,7 @@ model Activity {
   teraUploadedAt   DateTime?          // When the TERA image was uploaded
   teraUploadedBy   String?            // Name of user who uploaded the TERA image
   consortiumCompany String?            // Target company when type=CONSORCIO (e.g. DROBOTS)
+  continuedFromId  String?             // ID of the parent activity if created via "Continuar"
   companyId       String?
   company         Company?     @relation(fields: [companyId], references: [id])
   createdAt       DateTime     @default(now())
