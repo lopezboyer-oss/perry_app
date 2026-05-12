@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -60,6 +60,7 @@ export function PlanesPasadosClient({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [teraFolios, setTeraFolios] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.teraFolio || ''])));
   const [teraFolioSaving, setTeraFolioSaving] = useState<Record<string, boolean>>({});
+  const deletingTeraRef = useRef<Set<string>>(new Set());
 
   const canEditAuditImage = (act: Activity) => {
     if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
@@ -124,20 +125,26 @@ export function PlanesPasadosClient({
   };
 
   const handleAuditImageDelete = async (actId: string) => {
-    if (!confirm('¿Eliminar imagen TERA?')) return;
+    if (!confirm('¿Eliminar imagen y folio TERA?')) return;
+    // Mark as deleting BEFORE clearing state, so onBlur saveTeraFolio won't re-save the old value
+    deletingTeraRef.current.add(actId);
+    setTeraFolios((p) => ({ ...p, [actId]: '' }));
     setAuditImageLoading((p) => ({ ...p, [actId]: true }));
     try {
       const res = await fetch(`/api/activities/${actId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ safetyAuditImage: null }),
+        body: JSON.stringify({ safetyAuditImage: null, teraFolio: null }),
       });
       if (res.ok) setAuditImages((p) => ({ ...p, [actId]: null }));
     } catch { alert('Error de conexión'); }
     setAuditImageLoading((p) => ({ ...p, [actId]: false }));
+    deletingTeraRef.current.delete(actId);
   };
 
   const saveTeraFolio = async (actId: string) => {
+    // Skip if a delete is in progress
+    if (deletingTeraRef.current.has(actId)) return;
     const folio = teraFolios[actId]?.trim().toUpperCase() || '';
     if (folio && !/^BC-\d{3,5}$/.test(folio)) {
       alert('Formato inválido. Use BC- seguido de 3 a 5 dígitos (ej: BC-123, BC-1234 o BC-12345)');
