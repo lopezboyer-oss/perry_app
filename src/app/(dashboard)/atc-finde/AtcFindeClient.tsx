@@ -423,15 +423,18 @@ export function AtcFindeClient({
   };
 
   const handleAuditImageDelete = async (actId: string) => {
-    if (!confirm('¿Eliminar imagen TERA?')) return;
+    if (!confirm('¿Eliminar imagen y folio TERA?')) return;
     setAuditImageLoading((p) => ({ ...p, [actId]: true }));
     try {
       const res = await fetch(`/api/activities/${actId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ safetyAuditImage: null }),
+        body: JSON.stringify({ safetyAuditImage: null, teraFolio: null }),
       });
-      if (res.ok) setAuditImages((p) => ({ ...p, [actId]: null }));
+      if (res.ok) {
+        setAuditImages((p) => ({ ...p, [actId]: null }));
+        setTeraFolios((p) => ({ ...p, [actId]: '' }));
+      }
     } catch { alert('Error de conexión'); }
     setAuditImageLoading((p) => ({ ...p, [actId]: false }));
   };
