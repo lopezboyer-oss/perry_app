@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { TimeInput24h } from '@/components/ui/TimeInput24h';
 
 interface Activity {
   id: string; title: string; date: string;
@@ -305,16 +306,16 @@ export function PlanesPasadosClient({
                       <td className="whitespace-nowrap">
                         {canEdit ? (
                           <div className="flex items-center gap-1">
-                            <input type="time"
-                              className="w-[76px] text-xs px-1 py-0.5 rounded border border-blue-300 bg-blue-50 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            <TimeInput24h
+                              className="w-[62px] text-xs px-1 py-0.5 rounded border border-blue-300 bg-blue-50 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                               value={at?.start || ''}
-                              onChange={(e) => updateActualTime(act.id, 'actualStartTime', e.target.value)}
+                              onChange={(v) => updateActualTime(act.id, 'actualStartTime', v)}
                             />
                             <span className="text-xs text-slate-400">—</span>
-                            <input type="time"
-                              className="w-[76px] text-xs px-1 py-0.5 rounded border border-blue-300 bg-blue-50 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            <TimeInput24h
+                              className="w-[62px] text-xs px-1 py-0.5 rounded border border-blue-300 bg-blue-50 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
                               value={at?.end || ''}
-                              onChange={(e) => updateActualTime(act.id, 'actualEndTime', e.target.value)}
+                              onChange={(v) => updateActualTime(act.id, 'actualEndTime', v)}
                             />
                           </div>
                         ) : (

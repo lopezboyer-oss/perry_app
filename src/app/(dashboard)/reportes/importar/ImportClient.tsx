@@ -6,6 +6,7 @@ import {
   FileText, Wand2, Save, X, Check, Edit3, AlertCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { activityTypeLabels, activityTypeColors, activityStatusLabels, calculateDuration, getLocalToday } from '@/lib/utils';
+import { TimeInput24h } from '@/components/ui/TimeInput24h';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
 interface ParsedLine {
@@ -432,19 +433,17 @@ export function ImportClient({ users, clients, currentUserId }: Props) {
                           <div className="grid grid-cols-3 gap-2">
                             <div>
                               <label className="block text-xs font-medium text-slate-700 mb-1">Inicio</label>
-                              <input
-                                type="time"
+                              <TimeInput24h
                                 value={line.startTime}
-                                onChange={(e) => updateLine(index, { startTime: e.target.value })}
+                                onChange={(v) => updateLine(index, { startTime: v })}
                                 className="w-full text-sm"
                               />
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-slate-700 mb-1">Fin</label>
-                              <input
-                                type="time"
+                              <TimeInput24h
                                 value={line.endTime}
-                                onChange={(e) => updateLine(index, { endTime: e.target.value })}
+                                onChange={(v) => updateLine(index, { endTime: v })}
                                 className="w-full text-sm"
                               />
                             </div>

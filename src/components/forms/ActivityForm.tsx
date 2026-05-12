@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft, Search, Loader2 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import { TimeInput24h } from '@/components/ui/TimeInput24h';
 import { activityTypeLabels, activityStatusLabels, calculateDuration, getLocalToday, CONSORTIUM_COMPANIES } from '@/lib/utils';
 
 interface Props {
@@ -385,19 +386,17 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Hora Inicio</label>
-            <input
-              type="time"
+            <TimeInput24h
               value={form.startTime}
-              onChange={(e) => handleTimeChange('startTime', e.target.value)}
+              onChange={(v) => handleTimeChange('startTime', v)}
               className="w-full"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Hora Fin</label>
-            <input
-              type="time"
+            <TimeInput24h
               value={form.endTime}
-              onChange={(e) => handleTimeChange('endTime', e.target.value)}
+              onChange={(v) => handleTimeChange('endTime', v)}
               className="w-full"
             />
           </div>
