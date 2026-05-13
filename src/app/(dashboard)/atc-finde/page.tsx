@@ -58,6 +58,12 @@ export default async function AtcFindePage() {
   });
 
   const companyFilter = await getCompanyFilterFromCookies(role, userId);
+  const activeCompanyId = (companyFilter as any).companyId || null;
+  let companyName = 'Todas las empresas';
+  if (activeCompanyId) {
+    const co = await prisma.company.findUnique({ where: { id: activeCompanyId }, select: { name: true } });
+    if (co) companyName = co.name;
+  }
   const where = {
     OR: dateRanges,
     ...companyFilter,
@@ -160,6 +166,7 @@ export default async function AtcFindePage() {
       weekendOf={saturday}
       weekendLabel={weekendLabel}
       planDays={planDays}
+      companyName={companyName}
     />
   );
 }

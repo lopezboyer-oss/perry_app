@@ -77,6 +77,7 @@ interface Props {
   weekendOf: string;
   weekendLabel: string;
   planDays: PlanDay[];
+  companyName: string;
 }
 
 // ─── MULTI-SELECT DROPDOWN ──────────────────────────────────────
@@ -195,7 +196,7 @@ export function AtcFindeClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
-  userRole, userId, userName, weekendOf, weekendLabel, planDays,
+  userRole, userId, userName, weekendOf, weekendLabel, planDays, companyName,
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -522,7 +523,7 @@ export function AtcFindeClient({
     });
 
     // Excel HTML with styling
-    const headers = ['#','Día','Inicio','Fin','Responsable','Contacto','Actividad','Folio OPP','LOTO','Técnicos','S.Designado','S.Dedicado','Eq.Elevación','Notas Ingeniero'];
+    const headers = ['#','Día','Inicio','Fin','Responsable','Contacto','Actividad','Folio Odoo','LOTO','Técnicos','S.Designado','S.Dedicado','Eq.Elevación','Notas Ingeniero'];
     const colWidths = [30, 110, 55, 55, 120, 120, 280, 80, 45, 160, 120, 120, 130, 200];
 
     const thStyle = 'style="background:#1e293b;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 8px;border:1px solid #94a3b8;text-align:center;font-family:Calibri,Arial;"';
@@ -541,7 +542,7 @@ export function AtcFindeClient({
     html += colWidths.map(w => `<col width="${w}">`).join('');
 
     // Title row
-    html += `<tr><td colspan="${headers.length}" ${titleStyle}>📋 PLAN FINDE — ${weekendLabel}</td></tr>`;
+    html += `<tr><td colspan="${headers.length}" ${titleStyle}>📋 PLAN FINDE — ${weekendLabel} · ${companyName}</td></tr>`;
 
     // Header row
     html += '<tr>' + headers.map(h => `<th ${thStyle}>${h}</th>`).join('') + '</tr>';
