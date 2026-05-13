@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { TimeInput24h } from '@/components/ui/TimeInput24h';
@@ -269,7 +269,17 @@ export function PlanesPasadosClient({
                     <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-600" />
                     <p className="font-medium text-lg text-slate-400">Sin actividades para este fin de semana</p>
                   </td></tr>
-                ) : activities.map((act, idx) => {
+                ) : (() => {
+                const dayNamesLong = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+                const monthNames = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+                const dayColors = ['bg-violet-600','bg-blue-700','bg-blue-700','bg-blue-700','bg-blue-700','bg-blue-700','bg-indigo-600'];
+                let lastDateKey = '';
+                const totalCols = canViewAlertNotes ? 21 : 20;
+                return activities.map((act, idx) => {
+                  const dateKey = act.date.substring(0, 10);
+                  const showDaySeparator = dateKey !== lastDateKey;
+                  lastDateKey = dateKey;
+
                   const techs = techAssignments.filter((x: any) => x.activityId === act.id && x.role === 'TECNICO').map((x: any) => x.technician.name);
                   const designados = [
                     ...techAssignments.filter((x: any) => x.activityId === act.id && x.role === 'SAFETY_DESIGNADO').map((x: any) => x.technician.name),
@@ -293,9 +303,25 @@ export function PlanesPasadosClient({
                   }
 
                   const hasAlert = canViewAlertNotes && !!(alertNotesState[act.id]);
+                  const dt = new Date(`${dateKey}T12:00:00`);
+                  const dayName = dayNamesLong[dt.getDay()] || '';
+                  const monthName = monthNames[dt.getMonth()] || '';
+                  const dayColor = dayColors[dt.getDay()] || 'bg-slate-700';
+                  const dayCount = activities.filter(a => a.date.substring(0, 10) === dateKey).length;
 
                   return (
-                    <tr key={act.id} className={`hover:bg-slate-50/50 transition-colors align-top ${hasAlert ? 'bg-amber-50/40' : ''}`}>
+                    <React.Fragment key={act.id}>
+                    {showDaySeparator && (
+                      <tr>
+                        <td colSpan={totalCols} className={`${dayColor} text-white py-2 px-4`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-sm tracking-wide">📅 {dayName} {dt.getDate()} DE {monthName}</span>
+                            <span className="text-xs font-medium opacity-80">{dayCount} actividad{dayCount !== 1 ? 'es' : ''}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    <tr className={`hover:bg-slate-50/50 transition-colors align-top ${hasAlert ? 'bg-amber-50/40' : ''}`}>
                       <td className="text-center">
                         <div className="flex flex-col items-center gap-0.5">
                           <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${hasAlert ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-700'}`}>{idx + 1}</span>
@@ -476,8 +502,10 @@ export function PlanesPasadosClient({
                         )}
                       </td>
                     </tr>
+                    </React.Fragment>
                   );
-                })}
+                });
+                })()}
               </tbody>
             </table>
           </div>

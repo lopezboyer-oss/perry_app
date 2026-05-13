@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -1368,18 +1368,27 @@ export function AtcFindeClient({
                   <p className="font-medium text-lg text-slate-400">Fin de Semana Despejado</p>
                   <p className="text-sm mt-1 text-slate-400">No hay actividades para este fin de semana.</p>
                 </td></tr>
-              ) : activities.map((act, idx) => {
+              ) : (() => {
+                const dayNamesLong = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+                const monthNames = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+                const dayColors = ['bg-violet-600','bg-blue-700','bg-blue-700','bg-blue-700','bg-blue-700','bg-blue-700','bg-indigo-600'];
+                let lastDateKey = '';
+                const totalCols = canViewAlertNotes ? 19 : 18;
+                return activities.map((act, idx) => {
+                const dateKey = act.date.substring(0, 10);
+                const showDaySeparator = dateKey !== lastDateKey;
+                lastDateKey = dateKey;
+
                 const aT = getTechs(act.id, 'TECNICO');
                 const aD = getTechs(act.id, 'SAFETY_DESIGNADO');
                 const aUserSafety = userSafetyAssignments.filter((x) => x.activityId === act.id);
                 const allSafetyForAct = safetyAssignments.filter((x) => x.activityId === act.id);
-                const aS = allSafetyForAct.filter((x) => x.role !== 'DESIGNADO'); // Only DEDICADO
-                const aSDesignado = allSafetyForAct.filter((x) => x.role === 'DESIGNADO'); // Safety Dedicado as Designado
+                const aS = allSafetyForAct.filter((x) => x.role !== 'DESIGNADO');
+                const aSDesignado = allSafetyForAct.filter((x) => x.role === 'DESIGNADO');
                 const aV = getVehicles(act.id);
                 const aDr = getDrivers(act.id);
                 const aE = getEquips(act.id);
 
-                // Merge tech-based, user-based, and safety-dedicado-as-designado for display
                 const allDesignados = [
                   ...aD.map((x) => ({ assignmentId: x.id, id: x.technicianId, name: x.technician.name, removeType: 'TECH' as const })),
                   ...aUserSafety.map((x) => ({ assignmentId: x.id, id: `usr-${x.userId}`, name: x.user.name, removeType: 'USER_SAFETY_DESIGNADO' as const })),
@@ -1387,9 +1396,25 @@ export function AtcFindeClient({
                 ];
 
                 const hasAlert = canViewAlertNotes && !!(alertNotesState[act.id]);
+                const dt = new Date(`${dateKey}T12:00:00`);
+                const dayName = dayNamesLong[dt.getDay()] || '';
+                const monthName = monthNames[dt.getMonth()] || '';
+                const dayColor = dayColors[dt.getDay()] || 'bg-slate-700';
+                const dayCount = activities.filter(a => a.date.substring(0, 10) === dateKey).length;
 
                 return (
-                  <tr key={act.id} className={`hover:bg-slate-50/50 transition-colors align-top ${hasAlert ? 'bg-amber-50/40' : ''}`}>
+                  <React.Fragment key={act.id}>
+                  {showDaySeparator && (
+                    <tr>
+                      <td colSpan={totalCols} className={`${dayColor} text-white py-2 px-4`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm tracking-wide">📅 {dayName} {dt.getDate()} DE {monthName}</span>
+                          <span className="text-xs font-medium opacity-80">{dayCount} actividad{dayCount !== 1 ? 'es' : ''}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  <tr className={`hover:bg-slate-50/50 transition-colors align-top ${hasAlert ? 'bg-amber-50/40' : ''}`}>
                     <td className="text-center">
                       <div className="flex flex-col items-center gap-0.5">
                         <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${hasAlert ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-700'}`}>{idx + 1}</span>
@@ -1624,8 +1649,10 @@ export function AtcFindeClient({
                       )}
                     </td>
                   </tr>
+                  </React.Fragment>
                 );
-              })}
+              });
+              })()}
             </tbody>
           </table>
         </div>
