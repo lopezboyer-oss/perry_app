@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Perry App — Reporte Sesión 5 Mayo 2026</title>
+  <title>Perry App — Reporte Sesión 12 Mayo 2026</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -17,6 +17,8 @@
       --red-light: #fee2e2;
       --blue: #2563eb;
       --blue-light: #dbeafe;
+      --violet: #7c3aed;
+      --violet-light: #ede9fe;
       --slate-50: #f8fafc;
       --slate-100: #f1f5f9;
       --slate-200: #e2e8f0;
@@ -130,6 +132,7 @@
     .stat-card.emerald .stat-value { color: var(--emerald); }
     .stat-card.amber .stat-value { color: var(--amber); }
     .stat-card.blue .stat-value { color: var(--blue); }
+    .stat-card.violet .stat-value { color: var(--violet); }
 
     /* Section titles */
     h2 {
@@ -153,10 +156,10 @@
       font-size: 14px;
     }
 
-    h2 .icon.security { background: var(--red-light); }
-    h2 .icon.receipts { background: var(--blue-light); }
-    h2 .icon.ux { background: var(--emerald-light); }
+    h2 .icon.feature { background: var(--emerald-light); }
     h2 .icon.bugfix { background: var(--amber-light); }
+    h2 .icon.registry { background: var(--violet-light); }
+    h2 .icon.notes { background: var(--blue-light); }
 
     /* Tables */
     table {
@@ -209,29 +212,12 @@
       letter-spacing: 0.3px;
     }
 
-    .badge.security { background: var(--red-light); color: var(--red); }
-    .badge.receipts { background: var(--blue-light); color: var(--blue); }
-    .badge.ux { background: var(--emerald-light); color: var(--emerald); }
+    .badge.feature { background: var(--emerald-light); color: var(--emerald); }
     .badge.bugfix { background: var(--amber-light); color: var(--amber); }
-    .badge.multiempresa { background: #f3e8ff; color: #7c3aed; }
-
-    /* Migration table */
-    .migration-table {
-      margin-top: 8px;
-    }
-
-    .migration-table td:last-child {
-      text-align: right;
-      font-weight: 700;
-      color: var(--primary);
-    }
-
-    .total-row td {
-      font-weight: 800 !important;
-      border-top: 2px solid var(--slate-300);
-      color: var(--slate-900) !important;
-      font-size: 10pt;
-    }
+    .badge.registry { background: var(--violet-light); color: var(--violet); }
+    .badge.notes { background: var(--blue-light); color: var(--blue); }
+    .badge.tera { background: var(--red-light); color: var(--red); }
+    .badge.time { background: #fdf4ff; color: #a21caf; }
 
     /* Category summary */
     .category-grid {
@@ -277,6 +263,11 @@
       font-weight: 700;
     }
 
+    /* Schema table */
+    .schema-table { margin-top: 8px; }
+    .schema-table td:first-child { font-weight: 600; color: var(--slate-700); }
+    .schema-table td:last-child { font-family: 'SF Mono', monospace; font-size: 8.5pt; color: var(--violet); }
+
     /* Footer */
     .footer {
       margin-top: 40px;
@@ -321,26 +312,26 @@
       <div class="header-text">
         <h1>Perry App</h1>
         <div class="subtitle">Reporte de Cambios — Sesión Desarrollo</div>
-        <span class="date-badge">📅 5 de Mayo, 2026</span>
+        <span class="date-badge">📅 12 de Mayo, 2026</span>
       </div>
     </div>
 
     <!-- Stats -->
     <div class="stats-bar">
       <div class="stat-card">
-        <div class="stat-value">16</div>
+        <div class="stat-value">12</div>
         <div class="stat-label">Commits</div>
       </div>
       <div class="stat-card emerald">
-        <div class="stat-value">4</div>
+        <div class="stat-value">5</div>
         <div class="stat-label">Features</div>
       </div>
       <div class="stat-card amber">
-        <div class="stat-value">71</div>
-        <div class="stat-label">Registros Migrados</div>
+        <div class="stat-value">5</div>
+        <div class="stat-label">Bug Fixes</div>
       </div>
-      <div class="stat-card blue">
-        <div class="stat-value">12</div>
+      <div class="stat-card violet">
+        <div class="stat-value">21</div>
         <div class="stat-label">Archivos Modificados</div>
       </div>
     </div>
@@ -359,99 +350,75 @@
       <tbody>
         <tr>
           <td>1</td>
-          <td><span class="commit-hash">2a1236b</span></td>
-          <td>Corregido error al guardar reporte importado (campo <code>opportunityId</code> inexistente)</td>
+          <td><span class="commit-hash">5015175</span></td>
+          <td>Agregado campo <code>actualStartTime</code> al query inicial de Plan Finde</td>
           <td><span class="badge bugfix">Bug Fix</span></td>
         </tr>
         <tr>
           <td>2</td>
-          <td><span class="commit-hash">9c71bcb</span></td>
-          <td>Aislamiento de datos por empresa para ADMINISTRACION y no-ADMIN en todas las páginas</td>
-          <td><span class="badge security">Seguridad</span></td>
+          <td><span class="commit-hash">ac58dd6</span></td>
+          <td>Al borrar imagen TERA, se limpia automáticamente el número de folio del recuadro</td>
+          <td><span class="badge tera">TERA</span></td>
         </tr>
         <tr>
           <td>3</td>
-          <td><span class="commit-hash">251f03b</span></td>
-          <td>Filtros de usuario en dropdowns scopeados por empresa activa en 6 módulos</td>
-          <td><span class="badge security">Seguridad</span></td>
-        </tr>
-        <tr>
-          <td>4</td>
-          <td><span class="commit-hash">d10c85f</span></td>
-          <td>Resolución dinámica de empresa del usuario para Recibos/Odoo</td>
-          <td><span class="badge multiempresa">Multi-empresa</span></td>
-        </tr>
-        <tr>
-          <td>5</td>
-          <td><span class="commit-hash">b75b2bb</span></td>
-          <td>Ingeniero obtenido de <code>invoice_user_id</code> de Odoo (vendedor) como fuente primaria</td>
-          <td><span class="badge receipts">Recibos</span></td>
-        </tr>
-        <tr>
-          <td>6</td>
-          <td><span class="commit-hash">a87f2b8</span></td>
-          <td>Solo ADMIN MAESTRO puede crear/asignar rol ADMIN MAESTRO (backend + frontend)</td>
-          <td><span class="badge security">Permisos</span></td>
-        </tr>
-        <tr>
-          <td>7</td>
-          <td><span class="commit-hash">4c69820</span></td>
-          <td>Auto-normalización de nombres de usuarios a Title Case + migración de 11 existentes</td>
-          <td><span class="badge ux">UX</span></td>
-        </tr>
-        <tr>
-          <td>8</td>
-          <td><span class="commit-hash">95b68fd</span></td>
-          <td>Auto-normalización de nombres de técnicos a Title Case + migración de 16 existentes</td>
-          <td><span class="badge ux">UX</span></td>
-        </tr>
-        <tr>
-          <td>9</td>
-          <td><span class="commit-hash">c3447e5</span></td>
-          <td>Botón "Continuar" en detalle de actividad — crea seguimiento con datos pre-llenados</td>
-          <td><span class="badge ux">Feature</span></td>
-        </tr>
-        <tr>
-          <td>10</td>
-          <td><span class="commit-hash">e45a373</span></td>
-          <td>Fix: botón Continuar crea actividad (POST) en vez de intentar actualizar (PUT)</td>
+          <td><span class="commit-hash">eeec6be</span></td>
+          <td>Orden determinístico de actividades en listados: <code>date → startTime → id</code> para consistencia entre perfiles</td>
           <td><span class="badge bugfix">Bug Fix</span></td>
         </tr>
         <tr>
+          <td>4</td>
+          <td><span class="commit-hash">5c4bca9</span></td>
+          <td>Fix: folio TERA ahora sí se limpia visualmente al borrar imagen en Plan Finde</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">9483832</span></td>
+          <td>Mismo fix de limpieza de folio TERA aplicado a Planes Pasados</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">9410964</span></td>
+          <td>Reestructuración de columnas de notas: Notas Ingeniero (visible todos), Notas Auditoría (edita Safety & LP, ve todos), Notas Alertas (edita Safety & LP, ve solo Admin+Safety) con badge visual ⚠️</td>
+          <td><span class="badge notes">Notas</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">83c0819</span></td>
+          <td>Formato 24h estandarizado + tracking de quién/cuándo cargó TERA + reporte ALARMA TERA</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><span class="commit-hash">648b1cc</span></td>
+          <td>Fix: reescritura de página ALARMA TERA con timezone Tijuana y filtros de empresa</td>
+          <td><span class="badge tera">TERA</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><span class="commit-hash">9fcdc53</span></td>
+          <td>Componente <code>TimeInput24h</code> reutilizable — estandarización en todas las páginas</td>
+          <td><span class="badge time">Tiempo</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><span class="commit-hash">3883b5b</span></td>
+          <td>Sistema <strong>Registro Horario</strong>: modelo relacional, API con validación secuencial, modal con 4 fases, botón con indicador de progreso en Plan Finde y Planes Pasados</td>
+          <td><span class="badge registry">Registro</span></td>
+        </tr>
+        <tr>
           <td>11</td>
-          <td><span class="commit-hash">64a5942</span></td>
-          <td>Vista detalle de actividad muestra TODOS los campos — antes ocultaba los vacíos</td>
-          <td><span class="badge ux">UX</span></td>
+          <td><span class="commit-hash">82197e3</span></td>
+          <td>Badge visual 🔄 <strong>CONTINUACIÓN</strong> para actividades creadas vía botón Continuar — visible en Actividades, Plan Finde, Planes Pasados y Detalle</td>
+          <td><span class="badge feature">Feature</span></td>
         </tr>
         <tr>
           <td>12</td>
-          <td><span class="commit-hash">a400c92</span></td>
-          <td>Dashboard muestra datos correctos por empresa + migración de 19 actividades sin companyId</td>
-          <td><span class="badge multiempresa">Multi-empresa</span></td>
-        </tr>
-        <tr>
-          <td>13</td>
-          <td><span class="commit-hash">70ba3ef</span></td>
-          <td>Dashboard usa zona horaria Tijuana (America/Tijuana) en vez de UTC</td>
-          <td><span class="badge bugfix">Timezone</span></td>
-        </tr>
-        <tr>
-          <td>14</td>
-          <td><span class="commit-hash">047a925</span></td>
-          <td>Top Recibos: filtro por prefijo de folio (reemplazado en #16)</td>
-          <td><span class="badge receipts">Recibos</span></td>
-        </tr>
-        <tr>
-          <td>15</td>
-          <td><span class="commit-hash">35f5c0a</span></td>
-          <td>Campo companyId agregado al modelo InvoiceReceipt + migración de 25 recibos</td>
-          <td><span class="badge multiempresa">Multi-empresa</span></td>
-        </tr>
-        <tr>
-          <td>16</td>
-          <td><span class="commit-hash">85c3a5f</span></td>
-          <td>Top Recibos usa Odoo como fuente de verdad: consulta facturas por empresa → cruza con recibos → agrupa por vendedor</td>
-          <td><span class="badge receipts">Recibos</span></td>
+          <td><span class="commit-hash">c01292e</span></td>
+          <td>Safety Dedicado: validación cambiada de "1 por día" a "sin traslape de horario" — permite múltiples actividades en mismo día si no se cruzan</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
         </tr>
       </tbody>
     </table>
@@ -460,77 +427,100 @@
     <h2>Resumen por Categoría</h2>
     <div class="category-grid">
       <div class="category-card">
-        <h3><span class="icon security" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">🔒</span> Multi-empresa / Seguridad</h3>
+        <h3><span class="icon registry" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">⏱</span> Registro Horario (Nuevo)</h3>
         <ul>
-          <li>Aislamiento completo de datos en 6+ módulos</li>
-          <li>Dropdowns filtrados por empresa activa</li>
-          <li>Recibos vinculados directamente a empresa</li>
-          <li>Solo ADMIN puede crear ADMIN</li>
+          <li>Modelo <code>TimeRegistryEntry</code> con índice por usuario</li>
+          <li>4 fases secuenciales: Inicio/Final Logístico y Operativo</li>
+          <li>API con validación estricta de orden</li>
+          <li>Modal con barra de progreso y ayuda por fase</li>
+          <li>Botón ⏱ 0/4 → ✅ 4/4 en tablas</li>
+          <li>Preparado para cálculo de nómina y pago a externos</li>
         </ul>
       </div>
       <div class="category-card">
-        <h3><span class="icon receipts" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">📊</span> Recibos / Odoo</h3>
+        <h3><span class="icon notes" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">📝</span> Sistema de Notas</h3>
         <ul>
-          <li>Ingeniero de Odoo invoice_user_id (fuente primaria)</li>
-          <li>Dashboard consulta Odoo directo por empresa</li>
-          <li>Empresa default resuelta automáticamente</li>
+          <li>Notas Ingeniero — visible por todos los perfiles</li>
+          <li>Notas Auditoría — edita Safety & LP, ve todos</li>
+          <li>Notas Alertas — edita Safety & LP, ve solo Admin + Safety</li>
+          <li>Badge ⚠️ visual en actividades con alerta</li>
+          <li>Persistencia en Planes Pasados</li>
         </ul>
       </div>
       <div class="category-card">
-        <h3><span class="icon ux" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">✨</span> UX / Features</h3>
+        <h3><span class="icon feature" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">✨</span> Features</h3>
         <ul>
-          <li>Nombres normalizados a Title Case (27 registros)</li>
-          <li>Botón "Continuar" para seguimiento de actividades</li>
-          <li>Vista detalle muestra todos los campos siempre</li>
+          <li>Badge 🔄 CONTINUACIÓN para actividades continuadas</li>
+          <li>Campo <code>continuedFromId</code> en modelo Activity</li>
+          <li>Componente <code>TimeInput24h</code> reutilizable</li>
+          <li>Tracking de quién/cuándo cargó imagen TERA</li>
+          <li>Reporte ALARMA TERA para actividades sin TERA</li>
         </ul>
       </div>
       <div class="category-card">
         <h3><span class="icon bugfix" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">🐛</span> Bug Fixes</h3>
         <ul>
-          <li>Error al importar reportes corregido</li>
-          <li>Timezone UTC → America/Tijuana en dashboard</li>
-          <li>Botón Continuar: POST en vez de PUT</li>
+          <li>Folio TERA ahora se limpia al borrar imagen</li>
+          <li>Orden de actividades estandarizado entre perfiles</li>
+          <li>ALARMA TERA: timezone y filtros corregidos</li>
+          <li>Safety Dedicado: permite mismo día si no hay traslape</li>
+          <li>Campo actualStartTime agregado al query inicial</li>
         </ul>
       </div>
     </div>
 
-    <!-- Data Migrations -->
-    <h2>Migraciones de Datos Ejecutadas</h2>
-    <table class="migration-table">
+    <!-- New Schema -->
+    <h2>Cambios en Base de Datos</h2>
+    <table class="schema-table">
       <thead>
         <tr>
-          <th>Migración</th>
-          <th style="text-align:right;width:120px">Registros</th>
+          <th>Cambio</th>
+          <th style="text-align:right;width:200px">Detalle</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>Nombres de usuarios → Title Case</td>
-          <td>11</td>
+          <td>Nuevo modelo <strong>TimeRegistryEntry</strong></td>
+          <td>activityId, phase, time, userId, registeredBy, registeredAt</td>
         </tr>
         <tr>
-          <td>Nombres de técnicos → Title Case</td>
-          <td>16</td>
+          <td>Constraint único</td>
+          <td>@@unique([activityId, phase])</td>
         </tr>
         <tr>
-          <td>Actividades sin companyId → DROBOTS</td>
-          <td>19</td>
+          <td>Índice para nómina</td>
+          <td>@@index([userId])</td>
         </tr>
         <tr>
-          <td>Recibos sin companyId → empresa correcta</td>
-          <td>25</td>
+          <td>Campo en Activity</td>
+          <td>continuedFromId (String?)</td>
         </tr>
-        <tr class="total-row">
-          <td>Total registros corregidos</td>
-          <td>71</td>
+        <tr>
+          <td>Campos TERA en Activity</td>
+          <td>teraUploadedAt, teraUploadedBy</td>
+        </tr>
+        <tr>
+          <td>Campo en Activity</td>
+          <td>alertNotes (String?)</td>
         </tr>
       </tbody>
     </table>
 
+    <!-- Architecture note -->
+    <h2>Decisión Arquitectónica Clave</h2>
+    <div class="category-card" style="border-left: 4px solid var(--violet); margin-bottom: 20px;">
+      <h3>🏗️ Registro Horario: Modelo Relacional vs JSON</h3>
+      <p style="font-size: 9pt; color: var(--slate-600); margin-top: 6px; line-height: 1.7;">
+        Se optó por una tabla <strong>TimeRegistryEntry</strong> con registros individuales en vez de un campo JSON en Activity.
+        Esto permite queries directas como <code>SELECT SUM(...) FROM TimeRegistryEntry WHERE userId = ?</code> para cálculo de horas normales/extra,
+        y validación de pago a técnicos externos. El índice <code>@@index([userId])</code> garantiza rendimiento en reportes de nómina futuros sin necesidad de migrar datos.
+      </p>
+    </div>
+
     <!-- Footer -->
     <div class="footer">
       <span>Perry App v2.x — Desarrollado con Antigravity por CHIGÜIRE LABS | IVAN LOPEZ BOYER</span>
-      <span>Generado: 5 de Mayo, 2026 · 23:35 hrs (Tijuana, BC)</span>
+      <span>Generado: 12 de Mayo, 2026 · 15:21 hrs (Tijuana, BC)</span>
     </div>
 
   </div>
@@ -539,5 +529,6 @@
   <button class="print-btn no-print" onclick="window.print()">
     📄 Guardar como PDF
   </button>
+
 </body>
 </html>

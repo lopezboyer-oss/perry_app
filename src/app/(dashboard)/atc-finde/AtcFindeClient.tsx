@@ -487,20 +487,105 @@ export function AtcFindeClient({
 
   // ── CSV EXPORT ──
   const exportCSV = () => {
-    const h = ['#','Día','Inicio','Fin','Resp.','Contacto','Actividad','Folio','P.O.','LOTO','Técnicos','Sup.Operativo','S.Dedicado','Vehículo','Chofer','Eq.Elev.','Notas Ingeniero','N.Auditoría','TERA'];
-    const rows = activities.map((a, i) => {
-      const t = techAssignments.filter((x) => x.activityId === a.id && x.role === 'TECNICO').map((x) => x.technician.name).join(';');
-      const sd = techAssignments.filter((x) => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map((x) => x.technician.name).join(';');
-      const dd = safetyAssignments.filter((x) => x.activityId === a.id).map((x) => x.safetyDedicado.name).join(';');
-      const v = vehicleAssignments.filter((x) => x.activityId === a.id).map((x) => x.vehicle.name).join(';');
-      const dr = driverAssignments.filter((x) => x.activityId === a.id).map((x) => x.driver.name).join(';');
-      const eq = equipAssignments.filter((x) => x.activityId === a.id).map((x) => x.equip.name).join(';');
-      return [i+1,formatDate(a.date),a.startTime||'-',a.endTime||'-',a.user?.name||'-',a.contact?.name||'-',`"${a.title.replace(/"/g,'""')}"`,folioState[a.id]||'-',poState[a.id]||'PEND.',lotoState[a.id]?'SI':'NO',t||'-',sd||'-',dd||'-',v||'-',dr||'-',eq||'-',`"${(notesState[a.id]||'').replace(/"/g,'""')}"`,canViewAudit?`"${(auditNotesState[a.id]||'').replace(/"/g,'""')}"`:'-',auditImages[a.id]?'SI':'NO'];
+    const dayNames = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+
+    // Build rows data
+    const rowsData = activities.map((a, i) => {
+      const techs = techAssignments.filter((x) => x.activityId === a.id && x.role === 'TECNICO').map((x) => x.technician.name).join(', ');
+      const designados = [
+        ...techAssignments.filter((x) => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map((x) => x.technician.name),
+        ...(userSafetyAssignments || []).filter((x: any) => x.activityId === a.id).map((x: any) => x.user.name),
+      ].join(', ');
+      const dedicados = safetyAssignments.filter((x) => x.activityId === a.id).map((x) => x.safetyDedicado.name).join(', ');
+      const eqs = equipAssignments.filter((x) => x.activityId === a.id).map((x) => x.equip.name).join(', ');
+      const d = new Date(a.date);
+      const dayLabel = dayNames[d.getUTCDay()] || '';
+      const isLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
+      return {
+        num: i + 1,
+        day: `${formatDate(a.date)} ${dayLabel}`,
+        start: a.startTime || '-',
+        end: a.endTime || '-',
+        resp: a.user?.name || '-',
+        contact: a.contact?.name || '-',
+        activity: a.title,
+        folio: folioState[a.id] || '-',
+        loto: isLoto ? 'SÍ' : 'NO',
+        isLoto,
+        techs: techs || '-',
+        designados: designados || '-',
+        dedicados: dedicados || '-',
+        equip: eqs || '-',
+        notes: notesState[a.id] || '',
+        continued: !!a.continuedFromId,
+      };
     });
-    const csv = '\uFEFF' + [h.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+    // Excel HTML with styling
+    const headers = ['#','Día','Inicio','Fin','Responsable','Contacto','Actividad','Folio OPP','LOTO','Técnicos','S.Designado','S.Dedicado','Eq.Elevación','Notas Ingeniero'];
+    const colWidths = [30, 110, 55, 55, 120, 120, 280, 80, 45, 160, 120, 120, 130, 200];
+
+    const thStyle = 'style="background:#1e293b;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 8px;border:1px solid #94a3b8;text-align:center;font-family:Calibri,Arial;"';
+    const titleStyle = 'style="background:#4f46e5;color:#ffffff;font-weight:bold;font-size:13pt;padding:10px 8px;text-align:left;font-family:Calibri,Arial;border:1px solid #4f46e5;"';
+
+    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>Plan Finde</x:Name>
+<x:WorksheetOptions><x:DisplayGridlines/><x:FitToPage/><x:Print><x:FitWidth>1</x:FitWidth></x:Print></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+</head><body>
+<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Calibri,Arial;font-size:10pt;">`;
+
+    // Column widths
+    html += colWidths.map(w => `<col width="${w}">`).join('');
+
+    // Title row
+    html += `<tr><td colspan="${headers.length}" ${titleStyle}>📋 PLAN FINDE — ${weekendLabel}</td></tr>`;
+
+    // Header row
+    html += '<tr>' + headers.map(h => `<th ${thStyle}>${h}</th>`).join('') + '</tr>';
+
+    // Data rows
+    rowsData.forEach((r, idx) => {
+      const even = idx % 2 === 0;
+      const bgColor = even ? '#ffffff' : '#f1f5f9';
+      const cellStyle = (extra = '') => `style="background:${bgColor};padding:5px 8px;border:1px solid #e2e8f0;font-size:9.5pt;font-family:Calibri,Arial;vertical-align:top;${extra}"`;
+      const lotoStyle = r.isLoto
+        ? `style="background:#fee2e2;color:#dc2626;font-weight:bold;padding:5px 8px;border:1px solid #e2e8f0;font-size:9.5pt;font-family:Calibri,Arial;text-align:center;"`
+        : `style="background:${bgColor};color:#059669;padding:5px 8px;border:1px solid #e2e8f0;font-size:9.5pt;font-family:Calibri,Arial;text-align:center;"`;
+      const contBadge = r.continued ? '🔄 ' : '';
+
+      html += '<tr>';
+      html += `<td ${cellStyle('text-align:center;font-weight:bold;color:#4f46e5;')}>${r.num}</td>`;
+      html += `<td ${cellStyle('white-space:nowrap;font-weight:600;')}>${r.day}</td>`;
+      html += `<td ${cellStyle('text-align:center;font-family:Consolas,monospace;')}>${r.start}</td>`;
+      html += `<td ${cellStyle('text-align:center;font-family:Consolas,monospace;')}>${r.end}</td>`;
+      html += `<td ${cellStyle('font-weight:500;')}>${r.resp}</td>`;
+      html += `<td ${cellStyle('')}>${r.contact}</td>`;
+      html += `<td ${cellStyle('font-weight:600;color:#1e293b;')}>${contBadge}${r.activity}</td>`;
+      html += `<td ${cellStyle('text-align:center;font-family:Consolas,monospace;color:#4f46e5;')}>${r.folio}</td>`;
+      html += `<td ${lotoStyle}>${r.loto}</td>`;
+      html += `<td ${cellStyle('')}>${r.techs}</td>`;
+      html += `<td ${cellStyle('')}>${r.designados}</td>`;
+      html += `<td ${cellStyle('')}>${r.dedicados}</td>`;
+      html += `<td ${cellStyle('')}>${r.equip}</td>`;
+      html += `<td ${cellStyle('font-style:italic;color:#475569;')}>${r.notes}</td>`;
+      html += '</tr>';
+    });
+
+    // Summary row
+    html += `<tr><td colspan="${headers.length}" style="background:#e0e7ff;color:#4f46e5;font-weight:bold;padding:8px;border:1px solid #c7d2fe;font-size:9.5pt;font-family:Calibri,Arial;">Total actividades: ${rowsData.length} · Generado: ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Tijuana' })} ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })} hrs</td></tr>`;
+
+    html += '</table></body></html>';
+
+    const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a'); link.href = url; link.download = `plan_finde_${weekendOf}.csv`; link.click(); URL.revokeObjectURL(url);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Plan_Finde_${weekendOf}.xls`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   // ── TECH PLANS MODAL ──
@@ -816,7 +901,7 @@ export function AtcFindeClient({
           )}
           <button onClick={() => { setSelectedTechId(assignedTechs[0]?.id || null); setShowTechPlansModal(true); }} className="btn-secondary text-sm shrink-0 !bg-sky-50 !text-sky-700 !border-sky-300 hover:!bg-sky-100">📋 Planes Técnicos</button>
           <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary text-sm shrink-0 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100">🏗️ Reporte Equipos</button>
-          <button onClick={exportCSV} className="btn-secondary text-sm shrink-0"><Download size={16} /> Exportar Plan</button>
+          <button onClick={exportCSV} className="btn-secondary text-sm shrink-0 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100"><Download size={16} /> Exportar Excel</button>
         </div>
       </div>
 
