@@ -71,7 +71,7 @@ export async function GET(req: Request) {
     }),
     prisma.weekendSafetyAssignment.findMany({
       where: { weekendOf },
-      select: { activityId: true, safetyDedicado: { select: { name: true } } },
+      select: { activityId: true, role: true, safetyDedicado: { select: { name: true } } },
     }),
     prisma.weekendEquipAssignment.findMany({
       where: { weekendOf },

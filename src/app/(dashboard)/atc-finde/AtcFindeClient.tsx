@@ -493,11 +493,15 @@ export function AtcFindeClient({
     // Build rows data
     const rowsData = activities.map((a, i) => {
       const techs = techAssignments.filter((x) => x.activityId === a.id && x.role === 'TECNICO').map((x) => x.technician.name).join(', ');
-      const designados = [
+      // Sup Operativo = tech-based SAFETY_DESIGNADO + user-based + safetyDedicado with DESIGNADO role
+      const allSafetyForAct = safetyAssignments.filter((x) => x.activityId === a.id);
+      const supOperativo = [
         ...techAssignments.filter((x) => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map((x) => x.technician.name),
         ...(userSafetyAssignments || []).filter((x: any) => x.activityId === a.id).map((x: any) => x.user.name),
+        ...allSafetyForAct.filter((x) => x.role === 'DESIGNADO').map((x) => x.safetyDedicado.name),
       ].join(', ');
-      const dedicados = safetyAssignments.filter((x) => x.activityId === a.id).map((x) => x.safetyDedicado.name).join(', ');
+      // Safety Dedicado = only safetyAssignments with role !== DESIGNADO
+      const dedicados = allSafetyForAct.filter((x) => x.role !== 'DESIGNADO').map((x) => x.safetyDedicado.name).join(', ');
       const eqs = equipAssignments.filter((x) => x.activityId === a.id).map((x) => x.equip.name).join(', ');
       const d = new Date(a.date);
       const dayLabel = dayNames[d.getUTCDay()] || '';
@@ -514,7 +518,7 @@ export function AtcFindeClient({
         loto: isLoto ? 'SÍ' : 'NO',
         isLoto,
         techs: techs || '-',
-        designados: designados || '-',
+        supOperativo: supOperativo || '-',
         dedicados: dedicados || '-',
         equip: eqs || '-',
         notes: notesState[a.id] || '',
@@ -523,7 +527,7 @@ export function AtcFindeClient({
     });
 
     // Excel HTML with styling
-    const headers = ['#','Día','Inicio','Fin','Responsable','Contacto','Actividad','Folio Odoo','LOTO','Técnicos','S.Designado','S.Dedicado','Eq.Elevación','Notas Ingeniero'];
+    const headers = ['#','Día','Inicio','Fin','Responsable','Contacto','Actividad','Folio Odoo','LOTO','Técnicos','Sup Operativo','Safety Dedicado','Eq. Elevación','Notas Ingeniero'];
     const colWidths = [30, 110, 55, 55, 120, 120, 280, 80, 45, 160, 120, 120, 130, 200];
 
     const thStyle = 'style="background:#1e293b;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 8px;border:1px solid #94a3b8;text-align:center;font-family:Calibri,Arial;"';
@@ -568,7 +572,7 @@ export function AtcFindeClient({
       html += `<td ${cellStyle('text-align:center;font-family:Consolas,monospace;color:#4f46e5;')}>${r.folio}</td>`;
       html += `<td ${lotoStyle}>${r.loto}</td>`;
       html += `<td ${cellStyle('')}>${r.techs}</td>`;
-      html += `<td ${cellStyle('')}>${r.designados}</td>`;
+      html += `<td ${cellStyle('')}>${r.supOperativo}</td>`;
       html += `<td ${cellStyle('')}>${r.dedicados}</td>`;
       html += `<td ${cellStyle('')}>${r.equip}</td>`;
       html += `<td ${cellStyle('font-style:italic;color:#475569;')}>${r.notes}</td>`;
@@ -605,11 +609,13 @@ export function AtcFindeClient({
 
       const rowsData = (data.activities as MultiAct[]).map((a: MultiAct, i: number) => {
         const techs = data.techAssignments.filter((x: any) => x.activityId === a.id && x.role === 'TECNICO').map((x: any) => x.technician.name).join(', ');
-        const designados = [
+        const allSafetyForAct = data.safetyAssignments.filter((x: any) => x.activityId === a.id);
+        const supOperativo = [
           ...data.techAssignments.filter((x: any) => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map((x: any) => x.technician.name),
           ...data.userSafetyAssignments.filter((x: any) => x.activityId === a.id).map((x: any) => x.user.name),
+          ...allSafetyForAct.filter((x: any) => x.role === 'DESIGNADO').map((x: any) => x.safetyDedicado.name),
         ].join(', ');
-        const dedicados = data.safetyAssignments.filter((x: any) => x.activityId === a.id).map((x: any) => x.safetyDedicado.name).join(', ');
+        const dedicados = allSafetyForAct.filter((x: any) => x.role !== 'DESIGNADO').map((x: any) => x.safetyDedicado.name).join(', ');
         const eqs = data.equipAssignments.filter((x: any) => x.activityId === a.id).map((x: any) => x.equip.name).join(', ');
         const d = new Date(a.date);
         const dayLabel = dayNames[d.getUTCDay()] || '';
@@ -626,7 +632,7 @@ export function AtcFindeClient({
           loto: a.loto ? 'SÍ' : 'NO',
           isLoto: a.loto,
           techs: techs || '-',
-          designados: designados || '-',
+          supOperativo: supOperativo || '-',
           dedicados: dedicados || '-',
           equip: eqs || '-',
           notes: a.weekendNotes || '',
@@ -634,7 +640,7 @@ export function AtcFindeClient({
         };
       });
 
-      const headers = ['#','Empresa','Día','Inicio','Fin','Responsable','Contacto','Actividad','Folio Odoo','LOTO','Técnicos','S.Designado','S.Dedicado','Eq.Elevación','Notas Ingeniero'];
+      const headers = ['#','Empresa','Día','Inicio','Fin','Responsable','Contacto','Actividad','Folio Odoo','LOTO','Técnicos','Sup Operativo','Safety Dedicado','Eq. Elevación','Notas Ingeniero'];
       const colWidths = [30, 100, 110, 55, 55, 120, 120, 280, 80, 45, 160, 120, 120, 130, 200];
 
       const thStyle = 'style="background:#1e293b;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 8px;border:1px solid #94a3b8;text-align:center;font-family:Calibri,Arial;"';
@@ -686,7 +692,7 @@ export function AtcFindeClient({
         html += `<td ${cellStyle('text-align:center;font-family:Consolas,monospace;color:#4f46e5;')}>${r.folio}</td>`;
         html += `<td ${lotoStyle}>${r.loto}</td>`;
         html += `<td ${cellStyle('')}>${r.techs}</td>`;
-        html += `<td ${cellStyle('')}>${r.designados}</td>`;
+        html += `<td ${cellStyle('')}>${r.supOperativo}</td>`;
         html += `<td ${cellStyle('')}>${r.dedicados}</td>`;
         html += `<td ${cellStyle('')}>${r.equip}</td>`;
         html += `<td ${cellStyle('font-style:italic;color:#475569;')}>${r.notes}</td>`;
@@ -1407,9 +1413,9 @@ export function AtcFindeClient({
                   {showDaySeparator && (
                     <tr>
                       <td colSpan={totalCols} className={`${dayColor} text-white py-2 px-4`}>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
                           <span className="font-bold text-sm tracking-wide">📅 {dayName} {dt.getDate()} DE {monthName}</span>
-                          <span className="text-xs font-medium opacity-80">{dayCount} actividad{dayCount !== 1 ? 'es' : ''}</span>
+                          <span className="text-xs font-medium opacity-80 bg-white/20 px-2 py-0.5 rounded-full">{dayCount} actividad{dayCount !== 1 ? 'es' : ''}</span>
                         </div>
                       </td>
                     </tr>

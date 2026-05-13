@@ -314,9 +314,9 @@ export function PlanesPasadosClient({
                     {showDaySeparator && (
                       <tr>
                         <td colSpan={totalCols} className={`${dayColor} text-white py-2 px-4`}>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
                             <span className="font-bold text-sm tracking-wide">📅 {dayName} {dt.getDate()} DE {monthName}</span>
-                            <span className="text-xs font-medium opacity-80">{dayCount} actividad{dayCount !== 1 ? 'es' : ''}</span>
+                            <span className="text-xs font-medium opacity-80 bg-white/20 px-2 py-0.5 rounded-full">{dayCount} actividad{dayCount !== 1 ? 'es' : ''}</span>
                           </div>
                         </td>
                       </tr>
