@@ -584,9 +584,135 @@ export function AtcFindeClient({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Plan_Finde_${weekendOf}.xls`;
+    const safeCompany = companyName.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, '').replace(/\s+/g, '_');
+    link.download = `Plan_Finde_${weekendOf}_${safeCompany}.xls`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  // ── MULTI-COMPANY EXCEL EXPORT ──
+  const [exportingMulti, setExportingMulti] = useState(false);
+
+  const exportMultiCompanyExcel = async () => {
+    setExportingMulti(true);
+    try {
+      const res = await fetch(`/api/weekend-export-all?weekendOf=${weekendOf}`);
+      if (!res.ok) throw new Error('Error al obtener datos');
+      const data = await res.json();
+
+      const dayNames = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+      type MultiAct = { id: string; title: string; date: string; startTime: string | null; endTime: string | null; workOrderFolio: string | null; loto: boolean; weekendNotes: string | null; continuedFromId: string | null; user: { name: string } | null; contact: { name: string } | null; company: { name: string; shortName: string | null } | null };
+
+      const rowsData = (data.activities as MultiAct[]).map((a: MultiAct, i: number) => {
+        const techs = data.techAssignments.filter((x: any) => x.activityId === a.id && x.role === 'TECNICO').map((x: any) => x.technician.name).join(', ');
+        const designados = [
+          ...data.techAssignments.filter((x: any) => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map((x: any) => x.technician.name),
+          ...data.userSafetyAssignments.filter((x: any) => x.activityId === a.id).map((x: any) => x.user.name),
+        ].join(', ');
+        const dedicados = data.safetyAssignments.filter((x: any) => x.activityId === a.id).map((x: any) => x.safetyDedicado.name).join(', ');
+        const eqs = data.equipAssignments.filter((x: any) => x.activityId === a.id).map((x: any) => x.equip.name).join(', ');
+        const d = new Date(a.date);
+        const dayLabel = dayNames[d.getUTCDay()] || '';
+        return {
+          num: i + 1,
+          company: a.company?.shortName || a.company?.name || '-',
+          day: `${formatDate(a.date)} ${dayLabel}`,
+          start: a.startTime || '-',
+          end: a.endTime || '-',
+          resp: a.user?.name || '-',
+          contact: a.contact?.name || '-',
+          activity: a.title,
+          folio: a.workOrderFolio || '-',
+          loto: a.loto ? 'SÍ' : 'NO',
+          isLoto: a.loto,
+          techs: techs || '-',
+          designados: designados || '-',
+          dedicados: dedicados || '-',
+          equip: eqs || '-',
+          notes: a.weekendNotes || '',
+          continued: !!a.continuedFromId,
+        };
+      });
+
+      const headers = ['#','Empresa','Día','Inicio','Fin','Responsable','Contacto','Actividad','Folio Odoo','LOTO','Técnicos','S.Designado','S.Dedicado','Eq.Elevación','Notas Ingeniero'];
+      const colWidths = [30, 100, 110, 55, 55, 120, 120, 280, 80, 45, 160, 120, 120, 130, 200];
+
+      const thStyle = 'style="background:#1e293b;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 8px;border:1px solid #94a3b8;text-align:center;font-family:Calibri,Arial;"';
+      const titleStyle = 'style="background:#7c3aed;color:#ffffff;font-weight:bold;font-size:13pt;padding:10px 8px;text-align:left;font-family:Calibri,Arial;border:1px solid #7c3aed;"';
+
+      let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>Multiempresa</x:Name>
+<x:WorksheetOptions><x:DisplayGridlines/><x:FitToPage/><x:Print><x:FitWidth>1</x:FitWidth></x:Print></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+</head><body>
+<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Calibri,Arial;font-size:10pt;">`;
+
+      html += colWidths.map(w => `<col width="${w}">`).join('');
+      html += `<tr><td colspan="${headers.length}" ${titleStyle}>🏢 PLAN FINDE MULTIEMPRESA — ${weekendLabel}</td></tr>`;
+      html += '<tr>' + headers.map(h => `<th ${thStyle}>${h}</th>`).join('') + '</tr>';
+
+      // Company color map
+      const companyColors: Record<string, string> = {};
+      const palette = ['#dbeafe','#d1fae5','#fef3c7','#fce7f3','#e0e7ff','#ccfbf1','#fde68a'];
+      let colorIdx = 0;
+      rowsData.forEach(r => {
+        if (!companyColors[r.company]) {
+          companyColors[r.company] = palette[colorIdx % palette.length];
+          colorIdx++;
+        }
+      });
+
+      rowsData.forEach((r, idx) => {
+        const even = idx % 2 === 0;
+        const bgColor = even ? '#ffffff' : '#f8fafc';
+        const cellStyle = (extra = '') => `style="background:${bgColor};padding:5px 8px;border:1px solid #e2e8f0;font-size:9.5pt;font-family:Calibri,Arial;vertical-align:top;${extra}"`;
+        const lotoStyle = r.isLoto
+          ? `style="background:#fee2e2;color:#dc2626;font-weight:bold;padding:5px 8px;border:1px solid #e2e8f0;font-size:9.5pt;font-family:Calibri,Arial;text-align:center;"`
+          : `style="background:${bgColor};color:#059669;padding:5px 8px;border:1px solid #e2e8f0;font-size:9.5pt;font-family:Calibri,Arial;text-align:center;"`;
+        const coBg = companyColors[r.company] || bgColor;
+        const contBadge = r.continued ? '🔄 ' : '';
+
+        html += '<tr>';
+        html += `<td ${cellStyle('text-align:center;font-weight:bold;color:#4f46e5;')}>${r.num}</td>`;
+        html += `<td style="background:${coBg};padding:5px 8px;border:1px solid #e2e8f0;font-size:9pt;font-family:Calibri,Arial;font-weight:bold;text-align:center;">${r.company}</td>`;
+        html += `<td ${cellStyle('white-space:nowrap;font-weight:600;')}>${r.day}</td>`;
+        html += `<td ${cellStyle('text-align:center;font-family:Consolas,monospace;')}>${r.start}</td>`;
+        html += `<td ${cellStyle('text-align:center;font-family:Consolas,monospace;')}>${r.end}</td>`;
+        html += `<td ${cellStyle('font-weight:500;')}>${r.resp}</td>`;
+        html += `<td ${cellStyle('')}>${r.contact}</td>`;
+        html += `<td ${cellStyle('font-weight:600;color:#1e293b;')}>${contBadge}${r.activity}</td>`;
+        html += `<td ${cellStyle('text-align:center;font-family:Consolas,monospace;color:#4f46e5;')}>${r.folio}</td>`;
+        html += `<td ${lotoStyle}>${r.loto}</td>`;
+        html += `<td ${cellStyle('')}>${r.techs}</td>`;
+        html += `<td ${cellStyle('')}>${r.designados}</td>`;
+        html += `<td ${cellStyle('')}>${r.dedicados}</td>`;
+        html += `<td ${cellStyle('')}>${r.equip}</td>`;
+        html += `<td ${cellStyle('font-style:italic;color:#475569;')}>${r.notes}</td>`;
+        html += '</tr>';
+      });
+
+      // Company summary
+      const companyCounts: Record<string, number> = {};
+      rowsData.forEach(r => { companyCounts[r.company] = (companyCounts[r.company] || 0) + 1; });
+      const summaryParts = Object.entries(companyCounts).map(([co, cnt]) => `${co}: ${cnt}`).join(' · ');
+
+      html += `<tr><td colspan="${headers.length}" style="background:#ede9fe;color:#7c3aed;font-weight:bold;padding:8px;border:1px solid #c4b5fd;font-size:9.5pt;font-family:Calibri,Arial;">Total: ${rowsData.length} actividades · ${summaryParts} · Generado: ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Tijuana' })} ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })} hrs</td></tr>`;
+      html += '</table></body></html>';
+
+      const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+      const dlUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = `Plan_Finde_${weekendOf}_MULTIEMPRESA.xls`;
+      link.click();
+      URL.revokeObjectURL(dlUrl);
+    } catch (err) {
+      alert('Error al generar el Excel multiempresa');
+    } finally {
+      setExportingMulti(false);
+    }
   };
 
   // ── TECH PLANS MODAL ──
@@ -903,6 +1029,11 @@ export function AtcFindeClient({
           <button onClick={() => { setSelectedTechId(assignedTechs[0]?.id || null); setShowTechPlansModal(true); }} className="btn-secondary text-sm shrink-0 !bg-sky-50 !text-sky-700 !border-sky-300 hover:!bg-sky-100">📋 Planes Técnicos</button>
           <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary text-sm shrink-0 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100">🏗️ Reporte Equipos</button>
           <button onClick={exportCSV} className="btn-secondary text-sm shrink-0 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100"><Download size={16} /> Exportar Excel</button>
+          {['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole) && (
+            <button onClick={exportMultiCompanyExcel} disabled={exportingMulti} className="btn-secondary text-sm shrink-0 !bg-violet-50 !text-violet-700 !border-violet-300 hover:!bg-violet-100 disabled:opacity-50">
+              {exportingMulti ? <><Loader2 size={16} className="animate-spin" /> Generando...</> : <><Download size={16} /> Excel Multiempresa</>}
+            </button>
+          )}
         </div>
       </div>
 
