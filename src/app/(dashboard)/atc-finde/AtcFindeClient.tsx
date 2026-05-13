@@ -1480,7 +1480,7 @@ export function AtcFindeClient({
                     <td>
                       {canEditFields ? (
                         <div className="flex items-center gap-0.5">
-                          <input type="text" maxLength={6} className={`w-[62px] text-[10px] px-1 py-1 rounded-l border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
+                          <input type="text" maxLength={6} className={`w-[72px] text-xs px-1.5 py-1 rounded-l border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
                             value={folioState[act.id] || ''} placeholder="—"
                             onChange={(e) => setFolioState((p) => ({ ...p, [act.id]: e.target.value.slice(0, 6).toUpperCase() }))}
                             onBlur={() => lookupOdoo(act.id, folioState[act.id])}
@@ -1502,7 +1502,7 @@ export function AtcFindeClient({
                     <td>
                       {canEditFields ? (
                         <div>
-                          <input type="text" maxLength={10} className={`w-[80px] text-[10px] px-1 py-1 rounded border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${poState[act.id] ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
+                          <input type="text" maxLength={10} className={`w-[90px] text-xs px-1.5 py-1 rounded border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${poState[act.id] ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
                             value={poState[act.id] || ''} placeholder="PENDIENTE"
                             onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setPoState((p) => ({ ...p, [act.id]: v })); }}
                             onBlur={() => updateField(act.id, 'purchaseOrder', poState[act.id] || null)}
@@ -1623,7 +1623,7 @@ export function AtcFindeClient({
                                   }}
                                   onBlur={() => saveTeraFolio(act.id)}
                                   onKeyDown={(e) => { if (e.key === 'Enter') saveTeraFolio(act.id); }}
-                                  className={`w-[70px] text-[10px] font-mono px-1 py-0.5 rounded border text-center ${
+                                  className={`w-[76px] text-xs font-mono px-1.5 py-1 rounded border text-center ${
                                     teraFolios[act.id] && /^BC-\d{3,5}$/.test(teraFolios[act.id])
                                       ? 'border-emerald-300 bg-emerald-50 text-emerald-700 font-bold'
                                       : 'border-slate-200 text-slate-500'
@@ -1640,7 +1640,7 @@ export function AtcFindeClient({
                           ) : (
                             <>
                               {teraFolios[act.id] && (
-                                <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                <span className="text-xs font-mono font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                                   {teraFolios[act.id]}
                                 </span>
                               )}
