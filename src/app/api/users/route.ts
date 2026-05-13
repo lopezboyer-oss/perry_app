@@ -19,6 +19,7 @@ export async function GET() {
         email: true,
         role: true,
         isSafetyDesignado: true,
+        isSafetyAuditor: true,
         supervisorId: true,
         baseCompanyId: true,
         supervisor: { select: { name: true } },
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, password, role, supervisorId, isSafetyDesignado, baseCompanyId, companyIds, defaultCompanyId } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -79,6 +80,7 @@ export async function POST(req: Request) {
         role: role || 'INGENIERO',
         supervisorId: role === 'INGENIERO' ? supervisorId : null,
         isSafetyDesignado: isSafetyDesignado || false,
+        isSafetyAuditor: isSafetyAuditor || false,
         baseCompanyId: baseCompanyId || null,
       },
       select: {

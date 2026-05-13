@@ -27,6 +27,7 @@ model User {
   role              String    @default("INGENIERO")
   isActive          Boolean   @default(true)
   isSafetyDesignado Boolean   @default(false)
+  isSafetyAuditor   Boolean   @default(false)   // Enables editing Auditoría + TERA Auditor
   supervisorId      String?
   supervisor        User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
   team              User[]    @relation("SupervisorTeam")
@@ -116,6 +117,10 @@ model Activity {
   teraFolio        String?            // TERA folio number (e.g. BC-1234)
   teraUploadedAt   DateTime?          // When the TERA image was uploaded
   teraUploadedBy   String?            // Name of user who uploaded the TERA image
+  teraAuditorFolio       String?      // TERA Auditor folio number
+  teraAuditorUploadedAt  DateTime?    // When the auditor TERA was uploaded
+  teraAuditorUploadedBy  String?      // Name of user who uploaded auditor TERA
+  teraAuditorImage       String?      // Base64 data URL of auditor TERA image
   consortiumCompany String?            // Target company when type=CONSORCIO (e.g. DROBOTS)
   continuedFromId  String?             // ID of the parent activity if created via "Continuar"
   companyId       String?

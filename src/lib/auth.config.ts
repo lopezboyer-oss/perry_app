@@ -9,6 +9,7 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.isSafetyAuditor = (user as any).isSafetyAuditor || false;
       }
 
       // Re-fetch role from DB on every request to guarantee
@@ -22,6 +23,7 @@ export const authConfig = {
               role: true,
               name: true,
               baseCompanyId: true,
+              isSafetyAuditor: true,
               companies: {
                 select: {
                   companyId: true,
@@ -37,6 +39,7 @@ export const authConfig = {
             token.companyIds = freshUser.companies.map(c => c.companyId);
             token.defaultCompanyId = freshUser.companies.find(c => c.isDefault)?.companyId
                                      || freshUser.baseCompanyId;
+            token.isSafetyAuditor = freshUser.isSafetyAuditor || false;
           }
         } catch (e) {
           // If DB is unreachable, keep the cached values
@@ -53,6 +56,7 @@ export const authConfig = {
         (session.user as any).baseCompanyId = token.baseCompanyId || null;
         (session.user as any).companyIds = token.companyIds || [];
         (session.user as any).defaultCompanyId = token.defaultCompanyId || null;
+        (session.user as any).isSafetyAuditor = token.isSafetyAuditor || false;
       }
       return session;
     },

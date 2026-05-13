@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { roleLabels, roleColors } from '@/lib/utils';
 
 interface SupervisorRef { id: string; name: string; }
-interface UserData { id: string; name: string; email: string; role: string; isSafetyDesignado: boolean; supervisorId: string | null; supervisor: { name: string } | null; isActive: boolean; baseCompanyId: string | null; companies: { companyId: string; isDefault: boolean; company: { id: string; name: string; shortName: string | null; color: string | null } }[]; }
+interface UserData { id: string; name: string; email: string; role: string; isSafetyDesignado: boolean; isSafetyAuditor: boolean; supervisorId: string | null; supervisor: { name: string } | null; isActive: boolean; baseCompanyId: string | null; companies: { companyId: string; isDefault: boolean; company: { id: string; name: string; shortName: string | null; color: string | null } }[]; }
 interface TechnicianData { id: string; name: string; type: string; isCruzVerde: boolean; isActive: boolean; }
 interface SafetyData { id: string; name: string; isActive: boolean; }
 interface VehicleData { id: string; name: string; isAvailable: boolean; isActive: boolean; baseCompanyId: string | null; baseCompany?: { id: string; name: string; shortName: string | null; color: string | null } | null; }
@@ -94,6 +94,7 @@ export default function UsuariosPage() {
     setEditingUser({
       id: user.id, name: user.name, email: user.email, role: user.role,
       supervisorId: user.supervisorId, isSafetyDesignado: user.isSafetyDesignado,
+      isSafetyAuditor: user.isSafetyAuditor,
       baseCompanyId: user.baseCompanyId,
       companyIds: user.companies?.map(c => c.companyId) || [],
       defaultCompanyId: defaultUC?.companyId || null,

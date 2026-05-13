@@ -13,6 +13,7 @@ export interface UserFormData {
   role: Role;
   supervisorId?: string | null;
   isSafetyDesignado?: boolean;
+  isSafetyAuditor?: boolean;
   baseCompanyId?: string | null;
   companyIds?: string[];          // empresas a las que tiene acceso
   defaultCompanyId?: string | null; // empresa por defecto al login
@@ -45,6 +46,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
     role: 'INGENIERO',
     supervisorId: null,
     isSafetyDesignado: false,
+    isSafetyAuditor: false,
     baseCompanyId: null,
     companyIds: [],
     defaultCompanyId: null,
@@ -63,6 +65,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
           role: initialData.role || 'INGENIERO',
           supervisorId: initialData.supervisorId || null,
           isSafetyDesignado: initialData.isSafetyDesignado || false,
+          isSafetyAuditor: initialData.isSafetyAuditor || false,
           baseCompanyId: initialData.baseCompanyId || null,
           companyIds: initialData.companyIds || [],
           defaultCompanyId: initialData.defaultCompanyId || null,
@@ -70,7 +73,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
       } else {
         setFormData({
           name: '', email: '', password: '', role: 'INGENIERO',
-          supervisorId: null, isSafetyDesignado: false,
+          supervisorId: null, isSafetyDesignado: false, isSafetyAuditor: false,
           baseCompanyId: companies[0]?.id || null,
           companyIds: companies[0] ? [companies[0].id] : [],
           defaultCompanyId: companies[0]?.id || null,
@@ -197,6 +200,18 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
                   className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
                 <span className="text-sm font-medium text-slate-700">🟢 Acreditado como Safety Designado</span>
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2 py-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isSafetyAuditor || false}
+                  onChange={(e) => setFormData({ ...formData, isSafetyAuditor: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                />
+                <span className="text-sm font-medium text-slate-700">🟡 Acreditado como Auditor Safety</span>
               </label>
             </div>
 

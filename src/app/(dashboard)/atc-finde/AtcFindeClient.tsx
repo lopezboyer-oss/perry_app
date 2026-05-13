@@ -28,6 +28,10 @@ interface Activity {
   teraFolio: string | null;
   teraUploadedAt: string | null;
   teraUploadedBy: string | null;
+  teraAuditorFolio: string | null;
+  teraAuditorUploadedAt: string | null;
+  teraAuditorUploadedBy: string | null;
+  teraAuditorImage: string | null;
   user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
@@ -78,6 +82,7 @@ interface Props {
   weekendLabel: string;
   planDays: PlanDay[];
   companyName: string;
+  userIsSafetyAuditor: boolean;
 }
 
 // ─── MULTI-SELECT DROPDOWN ──────────────────────────────────────
@@ -196,7 +201,7 @@ export function AtcFindeClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
-  userRole, userId, userName, weekendOf, weekendLabel, planDays, companyName,
+  userRole, userId, userName, weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor,
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -223,6 +228,13 @@ export function AtcFindeClient({
   const deletingTeraRef = useRef<Set<string>>(new Set());
   const [teraUploadInfo, setTeraUploadInfo] = useState<Record<string, { at: string | null; by: string | null }>>(Object.fromEntries(activities.map((a) => [a.id, { at: a.teraUploadedAt || null, by: a.teraUploadedBy || null }])));
 
+  // TERA Auditor state
+  const [teraAuditorFolios, setTeraAuditorFolios] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.teraAuditorFolio || ''])));
+  const [teraAuditorFolioSaving, setTeraAuditorFolioSaving] = useState<Record<string, boolean>>({});
+  const [teraAuditorImages, setTeraAuditorImages] = useState<Record<string, string | null>>(Object.fromEntries(activities.map((a) => [a.id, a.teraAuditorImage || null])));
+  const [teraAuditorImageLoading, setTeraAuditorImageLoading] = useState<Record<string, boolean>>({});
+  const [teraAuditorUploadInfo, setTeraAuditorUploadInfo] = useState<Record<string, { at: string | null; by: string | null }>>(Object.fromEntries(activities.map((a) => [a.id, { at: a.teraAuditorUploadedAt || null, by: a.teraAuditorUploadedBy || null }])));
+
   // Time registry state
   const [timeRegistries, setTimeRegistries] = useState<Record<string, TimeRegistryEntryData[]>>(Object.fromEntries(activities.map((a) => [a.id, a.timeRegistryEntries || []])));
   const [timeRegistryModal, setTimeRegistryModal] = useState<{ activityId: string; activityTitle: string } | null>(null);
@@ -237,7 +249,7 @@ export function AtcFindeClient({
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditFields = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canViewAudit = true; // All profiles can now see Notas Auditoría
-  const canEditAudit = userRole === 'SUPERVISOR_SAFETY_LP'; // Only Safety & LP can edit audit notes
+  const canEditAudit = userRole === 'SUPERVISOR_SAFETY_LP' || userIsSafetyAuditor; // Safety & LP + Auditor Safety
   const canViewAlertNotes = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditAlertNotes = userRole === 'SUPERVISOR_SAFETY_LP';
   const canManageExtraDays = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -245,7 +257,20 @@ export function AtcFindeClient({
   const canEditAuditImage = (act: Activity) => {
     if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
     if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
+    // Sup Operativo assigned to this activity
+    if (isUserSupOperativoForActivity(act.id)) return true;
     return false;
+  };
+
+  const canEditTeraAuditor = () => {
+    if (['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
+    if (userIsSafetyAuditor) return true;
+    return false;
+  };
+
+  // Check if current user is assigned as Sup Operativo for an activity
+  const isUserSupOperativoForActivity = (actId: string) => {
+    return (userSafetyAssignments || []).some((x: any) => x.activityId === actId && x.userId === userId);
   };
 
   // Odoo lookup state
@@ -307,6 +332,8 @@ export function AtcFindeClient({
     if (userRole === 'ADMIN' || userRole === 'SUPERVISOR_SAFETY_LP') return true;
     if (userRole === 'SUPERVISOR') return true;
     if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
+    // Sup Operativo assigned to this activity
+    if (isUserSupOperativoForActivity(act.id)) return true;
     return false;
   };
 
@@ -484,6 +511,30 @@ export function AtcFindeClient({
       }
     } catch { alert('Error de conexión'); }
     setTeraFolioSaving((p) => ({ ...p, [actId]: false }));
+  };
+
+  const saveTeraAuditorFolio = async (actId: string) => {
+    const folio = teraAuditorFolios[actId]?.trim().toUpperCase() || '';
+    if (folio && !/^BC-\d{3,5}$/.test(folio)) {
+      alert('Formato inválido. Use BC- seguido de 3 a 5 dígitos (ej: BC-123, BC-1234 o BC-12345)');
+      return;
+    }
+    setTeraAuditorFolioSaving((p) => ({ ...p, [actId]: true }));
+    try {
+      const now = new Date().toISOString();
+      const res = await fetch(`/api/activities/${actId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teraAuditorFolio: folio || null, teraAuditorUploadedAt: folio ? now : null, teraAuditorUploadedBy: folio ? userName : null }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        alert(d.error || 'Error al guardar folio auditor');
+      } else if (folio) {
+        setTeraAuditorUploadInfo((p) => ({ ...p, [actId]: { at: now, by: userName } }));
+      }
+    } catch { alert('Error de conexión'); }
+    setTeraAuditorFolioSaving((p) => ({ ...p, [actId]: false }));
   };
 
   // ── CSV EXPORT ──
@@ -1365,11 +1416,12 @@ export function AtcFindeClient({
                 <th className="font-semibold min-w-[120px]">Auditoría</th>
                 {canViewAlertNotes && <th className="font-semibold min-w-[120px]">Notas Alertas</th>}
                 <th className="font-semibold w-[90px] text-center">TERA</th>
+                <th className="font-semibold w-[90px] text-center">TERA Auditor</th>
               </tr>
             </thead>
             <tbody>
               {activities.length === 0 ? (
-                <tr><td colSpan={canViewAlertNotes ? 19 : 18} className="text-center py-16">
+                <tr><td colSpan={canViewAlertNotes ? 20 : 19} className="text-center py-16">
                   <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-30 text-indigo-600" />
                   <p className="font-medium text-lg text-slate-400">Fin de Semana Despejado</p>
                   <p className="text-sm mt-1 text-slate-400">No hay actividades para este fin de semana.</p>
@@ -1379,7 +1431,7 @@ export function AtcFindeClient({
                 const monthNames = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
                 const dayColors = ['bg-violet-600','bg-blue-700','bg-blue-700','bg-blue-700','bg-blue-700','bg-blue-700','bg-indigo-600'];
                 let lastDateKey = '';
-                const totalCols = canViewAlertNotes ? 19 : 18;
+                const totalCols = canViewAlertNotes ? 20 : 19;
                 return activities.map((act, idx) => {
                 const dateKey = act.date.substring(0, 10);
                 const showDaySeparator = dateKey !== lastDateKey;
@@ -1653,6 +1705,54 @@ export function AtcFindeClient({
                           )}
                         </div>
                       )}
+                    </td>
+
+                    {/* TERA AUDITOR */}
+                    <td className="text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        {canEditTeraAuditor() ? (
+                          <>
+                            <div className="flex items-center gap-0.5">
+                              <input
+                                type="text"
+                                maxLength={8}
+                                placeholder="BC-000"
+                                value={teraAuditorFolios[act.id] || ''}
+                                onChange={(e) => {
+                                  const v = e.target.value.toUpperCase();
+                                  setTeraAuditorFolios((p) => ({ ...p, [act.id]: v }));
+                                }}
+                                onBlur={() => saveTeraAuditorFolio(act.id)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') saveTeraAuditorFolio(act.id); }}
+                                className={`w-[76px] text-xs font-mono px-1.5 py-1 rounded border text-center ${
+                                  teraAuditorFolios[act.id] && /^BC-\d{3,5}$/.test(teraAuditorFolios[act.id])
+                                    ? 'border-amber-300 bg-amber-50 text-amber-700 font-bold'
+                                    : 'border-slate-200 text-slate-500'
+                                }`}
+                              />
+                              {teraAuditorFolioSaving[act.id] && <Loader2 size={10} className="animate-spin text-amber-400" />}
+                            </div>
+                            {teraAuditorUploadInfo[act.id]?.at && (
+                              <span className="text-[9px] text-slate-400 leading-tight text-center block">
+                                {teraAuditorUploadInfo[act.id]?.by || '?'} · {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: 'America/Tijuana' })} {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {teraAuditorFolios[act.id] && (
+                              <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                {teraAuditorFolios[act.id]}
+                              </span>
+                            )}
+                            {teraAuditorUploadInfo[act.id]?.at && (
+                              <span className="text-[9px] text-slate-400 leading-tight text-center block">
+                                {teraAuditorUploadInfo[act.id]?.by || '?'} · {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: 'America/Tijuana' })} {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                   </React.Fragment>

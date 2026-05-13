@@ -98,6 +98,10 @@ export default async function AtcFindePage() {
         teraFolio: true,
         teraUploadedAt: true,
         teraUploadedBy: true,
+        teraAuditorFolio: true,
+        teraAuditorUploadedAt: true,
+        teraAuditorUploadedBy: true,
+        teraAuditorImage: true,
         continuedFromId: true,
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
@@ -146,6 +150,7 @@ export default async function AtcFindePage() {
         ...a,
         date: a.date.toISOString(),
         teraUploadedAt: a.teraUploadedAt?.toISOString() || null,
+        teraAuditorUploadedAt: a.teraAuditorUploadedAt?.toISOString() || null,
         timeRegistryEntries: a.timeRegistryEntries.map(e => ({ ...e, registeredAt: e.registeredAt.toISOString() })),
       }))}
       technicians={technicians}
@@ -167,6 +172,7 @@ export default async function AtcFindePage() {
       weekendLabel={weekendLabel}
       planDays={planDays}
       companyName={companyName}
+      userIsSafetyAuditor={!!(session.user as any).isSafetyAuditor}
     />
   );
 }

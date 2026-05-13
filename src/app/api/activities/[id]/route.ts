@@ -16,10 +16,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body.actualStartTime !== undefined) allowedFields.actualStartTime = body.actualStartTime || null;
   if (body.actualEndTime !== undefined) allowedFields.actualEndTime = body.actualEndTime || null;
 
-  // Audit notes: only SUPERVISOR_SAFETY_LP can edit
+  // Audit notes: only SUPERVISOR_SAFETY_LP or isSafetyAuditor can edit
   if (body.auditNotes !== undefined) {
     const role = session.user.role;
-    if (role !== 'SUPERVISOR_SAFETY_LP') {
+    const isSafetyAuditor = (session.user as any).isSafetyAuditor || false;
+    if (role !== 'SUPERVISOR_SAFETY_LP' && !isSafetyAuditor) {
       return NextResponse.json({ error: 'Sin permisos para notas de auditoría' }, { status: 403 });
     }
     allowedFields.auditNotes = body.auditNotes || null;
@@ -72,6 +73,27 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     } else {
       allowedFields.teraFolio = null;
     }
+  }
+
+  // TERA Auditor fields
+  if (body.teraAuditorFolio !== undefined) {
+    if (body.teraAuditorFolio) {
+      const folio = String(body.teraAuditorFolio).trim().toUpperCase();
+      if (!/^BC-\d{3,5}$/.test(folio)) {
+        return NextResponse.json({ error: 'Folio TERA Auditor inválido. Formato: BC- seguido de 3 a 5 dígitos' }, { status: 400 });
+      }
+      allowedFields.teraAuditorFolio = folio;
+    } else {
+      allowedFields.teraAuditorFolio = null;
+    }
+  }
+  if (body.teraAuditorUploadedAt !== undefined) allowedFields.teraAuditorUploadedAt = body.teraAuditorUploadedAt ? new Date(body.teraAuditorUploadedAt) : null;
+  if (body.teraAuditorUploadedBy !== undefined) allowedFields.teraAuditorUploadedBy = body.teraAuditorUploadedBy || null;
+  if (body.teraAuditorImage !== undefined) {
+    if (body.teraAuditorImage && body.teraAuditorImage.length > 2_800_000) {
+      return NextResponse.json({ error: 'Imagen demasiado grande (máx. 2MB)' }, { status: 400 });
+    }
+    allowedFields.teraAuditorImage = body.teraAuditorImage || null;
   }
 
   if (Object.keys(allowedFields).length === 0) {

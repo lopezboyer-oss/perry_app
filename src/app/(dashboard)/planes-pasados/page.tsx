@@ -84,7 +84,7 @@ export default async function PlanesPasadosPage({
     <PlanesPasadosClient
       weekendDates={weekendDates}
       selectedWeekend={selectedWeekend}
-      activities={activities.map((a: any) => ({ ...a, date: a.date.toISOString(), teraUploadedAt: a.teraUploadedAt?.toISOString() || null, timeRegistryEntries: (a.timeRegistryEntries || []).map((e: any) => ({ ...e, registeredAt: e.registeredAt?.toISOString() || '' })) }))}
+      activities={activities.map((a: any) => ({ ...a, date: a.date.toISOString(), teraUploadedAt: a.teraUploadedAt?.toISOString() || null, teraAuditorUploadedAt: a.teraAuditorUploadedAt?.toISOString() || null, timeRegistryEntries: (a.timeRegistryEntries || []).map((e: any) => ({ ...e, registeredAt: e.registeredAt?.toISOString() || '' })) }))}
       techAssignments={techAssignments}
       safetyAssignments={safetyAssignments}
       vehicleAssignments={vehicleAssignments}
@@ -94,6 +94,7 @@ export default async function PlanesPasadosPage({
       userRole={role}
       userId={session.user.id}
       userName={session.user.name || 'Desconocido'}
+      userIsSafetyAuditor={!!(session.user as any).isSafetyAuditor}
     />
   );
 }
