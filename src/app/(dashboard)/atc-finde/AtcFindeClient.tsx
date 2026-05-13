@@ -537,6 +537,51 @@ export function AtcFindeClient({
     setTeraAuditorFolioSaving((p) => ({ ...p, [actId]: false }));
   };
 
+  const handleTeraAuditorImageUpload = (actId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setTeraAuditorImageLoading((p) => ({ ...p, [actId]: true }));
+      try {
+        const dataUrl = await compressImage(file);
+        const now = new Date().toISOString();
+        const res = await fetch(`/api/activities/${actId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teraAuditorImage: dataUrl, teraAuditorUploadedAt: now, teraAuditorUploadedBy: userName }),
+        });
+        if (res.ok) {
+          setTeraAuditorImages((p) => ({ ...p, [actId]: dataUrl }));
+          setTeraAuditorUploadInfo((p) => ({ ...p, [actId]: { at: now, by: userName } }));
+        }
+        else { const d = await res.json(); alert(d.error || 'Error al subir'); }
+      } catch (err: any) { alert(err.message || 'Error de conexión'); }
+      setTeraAuditorImageLoading((p) => ({ ...p, [actId]: false }));
+    };
+    input.click();
+  };
+
+  const handleTeraAuditorImageDelete = async (actId: string) => {
+    if (!confirm('¿Eliminar imagen y folio TERA Auditor?')) return;
+    setTeraAuditorFolios((p) => ({ ...p, [actId]: '' }));
+    setTeraAuditorImageLoading((p) => ({ ...p, [actId]: true }));
+    try {
+      const res = await fetch(`/api/activities/${actId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teraAuditorImage: null, teraAuditorFolio: null, teraAuditorUploadedAt: null, teraAuditorUploadedBy: null }),
+      });
+      if (res.ok) {
+        setTeraAuditorImages((p) => ({ ...p, [actId]: null }));
+        setTeraAuditorUploadInfo((p) => ({ ...p, [actId]: { at: null, by: null } }));
+      }
+    } catch { alert('Error de conexión'); }
+    setTeraAuditorImageLoading((p) => ({ ...p, [actId]: false }));
+  };
+
   // ── CSV EXPORT ──
   const exportCSV = () => {
     const dayNames = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
@@ -1709,50 +1754,89 @@ export function AtcFindeClient({
 
                     {/* TERA AUDITOR */}
                     <td className="text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        {canEditTeraAuditor() ? (
-                          <>
-                            <div className="flex items-center gap-0.5">
-                              <input
-                                type="text"
-                                maxLength={8}
-                                placeholder="BC-000"
-                                value={teraAuditorFolios[act.id] || ''}
-                                onChange={(e) => {
-                                  const v = e.target.value.toUpperCase();
-                                  setTeraAuditorFolios((p) => ({ ...p, [act.id]: v }));
-                                }}
-                                onBlur={() => saveTeraAuditorFolio(act.id)}
-                                onKeyDown={(e) => { if (e.key === 'Enter') saveTeraAuditorFolio(act.id); }}
-                                className={`w-[76px] text-xs font-mono px-1.5 py-1 rounded border text-center ${
-                                  teraAuditorFolios[act.id] && /^BC-\d{3,5}$/.test(teraAuditorFolios[act.id])
-                                    ? 'border-amber-300 bg-amber-50 text-amber-700 font-bold'
-                                    : 'border-slate-200 text-slate-500'
-                                }`}
-                              />
-                              {teraAuditorFolioSaving[act.id] && <Loader2 size={10} className="animate-spin text-amber-400" />}
-                            </div>
-                            {teraAuditorUploadInfo[act.id]?.at && (
-                              <span className="text-[9px] text-slate-400 leading-tight text-center block">
-                                {teraAuditorUploadInfo[act.id]?.by || '?'} · {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: 'America/Tijuana' })} {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })}
-                              </span>
+                      {teraAuditorImageLoading[act.id] ? (
+                        <Loader2 size={16} className="mx-auto animate-spin text-amber-500" />
+                      ) : (
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center justify-center gap-1">
+                            {/* Visual indicator */}
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${teraAuditorImages[act.id] ? 'bg-amber-500' : 'bg-slate-300'}`} title={teraAuditorImages[act.id] ? 'Imagen cargada' : 'Sin imagen'} />
+                            {/* Upload */}
+                            {canEditTeraAuditor() && (
+                              <button
+                                onClick={() => handleTeraAuditorImageUpload(act.id)}
+                                className="p-1 rounded hover:bg-amber-50 text-amber-500 hover:text-amber-700 transition-colors"
+                                title="Subir imagen TERA Auditor"
+                              >
+                                <ImagePlus size={14} />
+                              </button>
                             )}
-                          </>
-                        ) : (
-                          <>
-                            {teraAuditorFolios[act.id] && (
-                              <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                {teraAuditorFolios[act.id]}
-                              </span>
+                            {/* View */}
+                            {teraAuditorImages[act.id] && (
+                              <button
+                                onClick={() => setPreviewImage(teraAuditorImages[act.id])}
+                                className="p-1 rounded hover:bg-violet-50 text-violet-500 hover:text-violet-700 transition-colors"
+                                title="Ver imagen"
+                              >
+                                <Eye size={14} />
+                              </button>
                             )}
-                            {teraAuditorUploadInfo[act.id]?.at && (
-                              <span className="text-[9px] text-slate-400 leading-tight text-center block">
-                                {teraAuditorUploadInfo[act.id]?.by || '?'} · {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: 'America/Tijuana' })} {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })}
-                              </span>
+                            {/* Delete */}
+                            {teraAuditorImages[act.id] && canEditTeraAuditor() && (
+                              <button
+                                onClick={() => handleTeraAuditorImageDelete(act.id)}
+                                className="p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+                                title="Eliminar imagen"
+                              >
+                                <Trash2 size={13} />
+                              </button>
                             )}
-                          </>
-                        )}
-                      </div>
+                          </div>
+                          {/* TERA Auditor Folio */}
+                          {canEditTeraAuditor() ? (
+                            <>
+                              <div className="flex items-center gap-0.5">
+                                <input
+                                  type="text"
+                                  maxLength={8}
+                                  placeholder="BC-000"
+                                  value={teraAuditorFolios[act.id] || ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value.toUpperCase();
+                                    setTeraAuditorFolios((p) => ({ ...p, [act.id]: v }));
+                                  }}
+                                  onBlur={() => saveTeraAuditorFolio(act.id)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') saveTeraAuditorFolio(act.id); }}
+                                  className={`w-[76px] text-xs font-mono px-1.5 py-1 rounded border text-center ${
+                                    teraAuditorFolios[act.id] && /^BC-\d{3,5}$/.test(teraAuditorFolios[act.id])
+                                      ? 'border-amber-300 bg-amber-50 text-amber-700 font-bold'
+                                      : 'border-slate-200 text-slate-500'
+                                  }`}
+                                />
+                                {teraAuditorFolioSaving[act.id] && <Loader2 size={10} className="animate-spin text-amber-400" />}
+                              </div>
+                              {teraAuditorUploadInfo[act.id]?.at && (
+                                <span className="text-[9px] text-slate-400 leading-tight text-center block" title={`Subido por ${teraAuditorUploadInfo[act.id]?.by || '?'}`}>
+                                  {teraAuditorUploadInfo[act.id]?.by || '?'} · {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: 'America/Tijuana' })} {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {teraAuditorFolios[act.id] && (
+                                <span className="text-xs font-mono font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                  {teraAuditorFolios[act.id]}
+                                </span>
+                              )}
+                              {teraAuditorUploadInfo[act.id]?.at && (
+                                <span className="text-[9px] text-slate-400 leading-tight text-center block">
+                                  {teraAuditorUploadInfo[act.id]?.by || '?'} · {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: 'America/Tijuana' })} {new Date(teraAuditorUploadInfo[act.id]!.at!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </tr>
                   </React.Fragment>
