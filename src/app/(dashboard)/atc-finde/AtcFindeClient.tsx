@@ -1498,7 +1498,7 @@ export function AtcFindeClient({
                 const monthNames = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
                 const dayColors = ['bg-violet-600','bg-blue-700','bg-blue-700','bg-blue-700','bg-blue-700','bg-blue-700','bg-indigo-600'];
                 let lastDateKey = '';
-                const totalCols = canViewAlertNotes ? 20 : 19;
+                const totalCols = canViewAlertNotes ? 21 : 20;
                 return activities.map((act, idx) => {
                 const dateKey = act.date.substring(0, 10);
                 const showDaySeparator = dateKey !== lastDateKey;
@@ -1900,10 +1900,10 @@ export function AtcFindeClient({
                       ) : (canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
                         <button
                           onClick={() => { setCancelModal({ activity: act }); setCancelReason(''); setCancelNotes(''); setCancelHasCharges(false); setCancelResult(null); setCancelCopied(false); }}
-                          className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                          className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors text-[10px]"
                           title="Cancelar actividad"
                         >
-                          <Ban size={14} />
+                          <Ban size={12} /> <span className="font-medium">Cancelar</span>
                         </button>
                       )}
                     </td>
