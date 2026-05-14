@@ -32,16 +32,17 @@ export default function DirectorioPage() {
       if (tab === 'CLIENTES') {
         const res = await fetch('/api/clientes');
         const data = await res.json();
-        setClients(data);
+        setClients(Array.isArray(data) ? data : []);
       } else {
         const res = await fetch('/api/contactos');
         const data = await res.json();
-        setContacts(data);
+        setContacts(Array.isArray(data) ? data : []);
         
         // Also fetch clients for the dropdown if needed in contacts tab
         if (clients.length === 0) {
            const cRes = await fetch('/api/clientes');
-           setClients(await cRes.json());
+           const cData = await cRes.json();
+           setClients(Array.isArray(cData) ? cData : []);
         }
       }
     } catch (e) {
@@ -114,8 +115,8 @@ export default function DirectorioPage() {
   };
 
   const filteredData = tab === 'CLIENTES' 
-    ? clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.code?.toLowerCase().includes(search.toLowerCase()))
-    : contacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.client?.name.toLowerCase().includes(search.toLowerCase()));
+    ? clients.filter(c => (c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.code || '').toLowerCase().includes(search.toLowerCase()))
+    : contacts.filter(c => (c.name || '').toLowerCase().includes(search.toLowerCase()) || (c.client?.name || '').toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto animate-fade-in">
