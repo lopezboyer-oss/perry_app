@@ -206,9 +206,8 @@ export default function DirectorioPage() {
                     <td className="px-6 py-4 text-slate-500 font-mono text-xs">{c.code || '-'}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-3 text-xs text-slate-500">
-                        <span title="Reportes/Visitas" className="flex items-center gap-1"><span className="font-medium text-slate-700">{c._count?.activities || 0}</span> Rep.</span>
-                        <span title="Oportunidades" className="flex items-center gap-1"><span className="font-medium text-slate-700">{c._count?.opportunities || 0}</span> Ops.</span>
-                        <span title="Contactos" className="flex items-center gap-1"><span className="font-medium text-slate-700">{c.contacts?.length || 0}</span> User.</span>
+                        <span title="Reportes/Visitas" className="flex items-center gap-1"><span className="font-medium text-slate-700">{c._count?.activities || 0}</span> Actividades</span>
+                        <span title="Contactos" className="flex items-center gap-1"><span className="font-medium text-slate-700">{c.contacts?.length || 0}</span> Contactos</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">

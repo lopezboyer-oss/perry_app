@@ -14,7 +14,7 @@ export async function GET() {
       include: {
         contacts: true,
         _count: {
-          select: { activities: true, opportunities: true }
+          select: { activities: true }
         }
       },
       orderBy: { name: 'asc' },
