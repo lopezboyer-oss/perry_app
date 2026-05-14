@@ -869,7 +869,13 @@ export function AtcFindeClient({
 
         text += `\n${idx + 1}️⃣ ${timeRange}\n`;
         text += `   📌 ${a.title}\n`;
-        text += `   👷 Resp: ${a.user?.name || 'Sin asignar'}\n`;
+        // Sup Operativo = tech SAFETY_DESIGNADO + user safety + safetyDedicado DESIGNADO
+        const supOps = [
+          ...techAssignments.filter(x => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map(x => x.technician.name),
+          ...(userSafetyAssignments || []).filter((x: any) => x.activityId === a.id).map((x: any) => x.user.name),
+          ...safetyAssignments.filter(x => x.activityId === a.id && x.role === 'DESIGNADO').map(x => x.safetyDedicado.name),
+        ];
+        text += `   👷 Sup Operativo: ${supOps.length > 0 ? supOps.join(', ') : 'Sin asignar'}\n`;
         text += `   🔒 LOTO: ${hasLoto ? '✅ SÍ — Requiere LOTO' : '❌ NO'}\n`;
 
         // Equipment — always show status
