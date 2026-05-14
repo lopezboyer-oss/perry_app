@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
@@ -239,6 +239,17 @@ export function AtcFindeClient({
   const [timeRegistries, setTimeRegistries] = useState<Record<string, TimeRegistryEntryData[]>>(Object.fromEntries(activities.map((a) => [a.id, a.timeRegistryEntries || []])));
   const [timeRegistryModal, setTimeRegistryModal] = useState<{ activityId: string; activityTitle: string } | null>(null);
 
+  // Cancel modal state
+  const [cancelModal, setCancelModal] = useState<{ activity: Activity } | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelNotes, setCancelNotes] = useState('');
+  const [cancelHasCharges, setCancelHasCharges] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelResult, setCancelResult] = useState<{ whatsappNotice: string; newCotizacionId: string | null; releasedResources: any } | null>(null);
+  const [cancelCopied, setCancelCopied] = useState(false);
+  // Track locally-cancelled activity IDs so UI reflects cancellation without reload
+  const [cancelledIds, setCancelledIds] = useState<Set<string>>(new Set(activities.filter(a => a.status === 'CANCELADA').map(a => a.id)));
+
   // Extra day dialog state
   const [showExtraDayDialog, setShowExtraDayDialog] = useState(false);
   const [extraDayDate, setExtraDayDate] = useState('');
@@ -253,6 +264,8 @@ export function AtcFindeClient({
   const canViewAlertNotes = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditAlertNotes = userRole === 'SUPERVISOR_SAFETY_LP';
   const canManageExtraDays = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canCancelAny = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canCancelOwn = userRole === 'INGENIERO';
 
   const canEditAuditImage = (act: Activity) => {
     if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
@@ -1523,7 +1536,7 @@ export function AtcFindeClient({
                       </td>
                     </tr>
                   )}
-                  <tr className={`hover:bg-slate-50/50 transition-colors align-top ${hasAlert ? 'bg-amber-50/40' : ''}`}>
+                  <tr className={`hover:bg-slate-50/50 transition-colors align-top ${cancelledIds.has(act.id) ? 'bg-red-50/60 opacity-60' : hasAlert ? 'bg-amber-50/40' : ''}`}>
                     <td className="text-center">
                       <div className="flex flex-col items-center gap-0.5">
                         <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${hasAlert ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-700'}`}>{idx + 1}</span>
@@ -1573,8 +1586,9 @@ export function AtcFindeClient({
                     <td><span className="text-xs font-medium text-slate-700">{act.user?.name || '-'}</span></td>
                     <td><span className="text-xs font-medium text-slate-800">{act.contact?.name || '-'}</span></td>
                     <td>
-                      <p className="font-semibold text-slate-800 text-xs leading-snug cursor-pointer hover:text-indigo-600" onClick={() => router.push(`/actividades/${act.id}`)}>
-                        {act.continuedFromId && act.type === 'EJECUCION' && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}
+                      <p className={`font-semibold text-xs leading-snug cursor-pointer hover:text-indigo-600 ${cancelledIds.has(act.id) ? 'line-through text-red-400' : 'text-slate-800'}`} onClick={() => router.push(`/actividades/${act.id}`)}>
+                        {cancelledIds.has(act.id) && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-red-100 text-red-700 border border-red-200 px-1 py-0.5 rounded-full mr-1 align-middle no-underline" style={{ textDecoration: 'none' }}>❌ CANCELADA</span>}
+                        {act.continuedFromId && act.type === 'EJECUCION' && !cancelledIds.has(act.id) && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}
                         {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
                       </p>
                     </td>
@@ -1844,6 +1858,19 @@ export function AtcFindeClient({
                         </div>
                       )}
                     </td>
+
+                    {/* CANCEL BUTTON */}
+                    <td className="text-center">
+                      {!cancelledIds.has(act.id) && (canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
+                        <button
+                          onClick={() => { setCancelModal({ activity: act }); setCancelReason(''); setCancelNotes(''); setCancelHasCharges(false); setCancelResult(null); setCancelCopied(false); }}
+                          className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                          title="Cancelar actividad"
+                        >
+                          <Ban size={14} />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                   </React.Fragment>
                 );
@@ -1957,6 +1984,147 @@ export function AtcFindeClient({
             }));
           }}
         />
+      )}
+      {/* ── CANCEL ACTIVITY MODAL ── */}
+      {cancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-fade-in" onClick={() => !cancelLoading && setCancelModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-slide-in" onClick={e => e.stopPropagation()}>
+            {!cancelResult ? (
+              <>
+                {/* Header */}
+                <div className="flex items-center justify-between p-5 border-b border-slate-200">
+                  <h3 className="text-lg font-bold text-red-600 flex items-center gap-2"><Ban size={20} /> Cancelar Actividad</h3>
+                  <button onClick={() => setCancelModal(null)} className="p-2 hover:bg-slate-100 rounded-lg" disabled={cancelLoading}><X size={20} /></button>
+                </div>
+                {/* Activity info */}
+                <div className="px-5 pt-4">
+                  <p className="font-semibold text-slate-800 text-sm">{cancelModal.activity.title}</p>
+                  <p className="text-xs text-slate-500 mt-1">{cancelModal.activity.client?.name || 'Sin cliente'} · {formatDate(cancelModal.activity.date)} · {cancelModal.activity.startTime || '--:--'} — {cancelModal.activity.endTime || '--:--'}</p>
+                </div>
+                {/* Reason select */}
+                <div className="px-5 pt-4">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Motivo de cancelación *</label>
+                  <select
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  >
+                    <option value="">Seleccionar motivo...</option>
+                    <option value="PERMISOLOGIA_INCOMPLETA">Permisología Incompleta</option>
+                    <option value="AREA_NO_DESPEJADA">Área no despejada de equipos Cliente</option>
+                    <option value="FALTO_PERSONAL_NUESTRO">Faltó Personal nuestro</option>
+                    <option value="FALTO_PERSONAL_CLIENTE">Faltó personal Cliente</option>
+                    <option value="FALTO_MATERIAL">Faltó Material</option>
+                    <option value="MEDIDAS_NO_COINCIDEN">Medidas de fabricación/Instalación no coinciden</option>
+                    <option value="ALCANCE_DISTINTO">Alcance distinto al considerado en plan</option>
+                    <option value="OBSTRUCCION_OTRA_EMPRESA">Obstrucción con otra empresa</option>
+                    <option value="OTRA">Otra (especificar)</option>
+                  </select>
+                </div>
+                {/* Notes */}
+                <div className="px-5 pt-3">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Detalles / Notas {cancelReason === 'OTRA' && <span className="text-red-500">*</span>}</label>
+                  <textarea
+                    value={cancelNotes}
+                    onChange={(e) => setCancelNotes(e.target.value)}
+                    rows={3}
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                    placeholder={cancelReason === 'OTRA' ? 'Obligatorio: describe el motivo...' : 'Opcional: detalles adicionales...'}
+                  />
+                </div>
+                {/* Has charges */}
+                <div className="px-5 pt-3">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={cancelHasCharges}
+                      onChange={(e) => setCancelHasCharges(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-slate-800">¿La cancelación genera cargos al cliente?</span>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Se creará automáticamente una cotización de cargo al ingeniero</p>
+                    </div>
+                  </label>
+                </div>
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-200 mt-4">
+                  <button onClick={() => setCancelModal(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" disabled={cancelLoading}>No, volver</button>
+                  <button
+                    onClick={async () => {
+                      if (!cancelReason) { alert('Selecciona un motivo de cancelación'); return; }
+                      if (cancelReason === 'OTRA' && !cancelNotes.trim()) { alert('Debes especificar detalles cuando el motivo es "Otra"'); return; }
+                      setCancelLoading(true);
+                      try {
+                        const res = await fetch(`/api/activities/${cancelModal.activity.id}/cancel`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ reason: cancelReason, notes: cancelNotes, hasCharges: cancelHasCharges }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) { alert(data.error || 'Error al cancelar'); setCancelLoading(false); return; }
+                        setCancelResult(data);
+                        setCancelledIds(prev => new Set([...prev, cancelModal.activity.id]));
+                      } catch (err) {
+                        alert('Error de conexión');
+                      }
+                      setCancelLoading(false);
+                    }}
+                    disabled={cancelLoading || !cancelReason}
+                    className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {cancelLoading ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
+                    Cancelar Actividad
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Success result */}
+                <div className="p-5 border-b border-slate-200">
+                  <h3 className="text-lg font-bold text-emerald-600 flex items-center gap-2"><Check size={20} /> Actividad Cancelada</h3>
+                </div>
+                <div className="px-5 py-4 space-y-4">
+                  {/* Released resources summary */}
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Recursos liberados</p>
+                    <div className="grid grid-cols-2 gap-1 text-xs text-slate-600">
+                      {cancelResult.releasedResources.techs.length > 0 && <p>🔧 {cancelResult.releasedResources.techs.join(', ')}</p>}
+                      {cancelResult.releasedResources.safety.length > 0 && <p>🛡️ {cancelResult.releasedResources.safety.join(', ')}</p>}
+                      {cancelResult.releasedResources.vehicles.length > 0 && <p>🚗 {cancelResult.releasedResources.vehicles.join(', ')}</p>}
+                      {cancelResult.releasedResources.drivers.length > 0 && <p>🚙 {cancelResult.releasedResources.drivers.join(', ')}</p>}
+                      {cancelResult.releasedResources.equips.length > 0 && <p>🏗️ {cancelResult.releasedResources.equips.join(', ')}</p>}
+                      {[...Object.values(cancelResult.releasedResources) as any[]].every((a: any[]) => a.length === 0) && <p className="text-slate-400">Sin recursos asignados</p>}
+                    </div>
+                  </div>
+                  {/* New cotización link */}
+                  {cancelResult.newCotizacionId && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-amber-800 flex items-center gap-1">💰 Se creó cotización de cargo automática</p>
+                      <button onClick={() => router.push(`/actividades/${cancelResult!.newCotizacionId}`)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 mt-1">
+                        <ExternalLink size={12} /> Ver cotización creada
+                      </button>
+                    </div>
+                  )}
+                  {/* WhatsApp notice */}
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Aviso para WhatsApp</p>
+                    <pre className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 whitespace-pre-wrap font-mono max-h-48 overflow-y-auto">{cancelResult.whatsappNotice}</pre>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(cancelResult!.whatsappNotice); setCancelCopied(true); setTimeout(() => setCancelCopied(false), 2000); }}
+                      className={`mt-2 px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${cancelCopied ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                    >
+                      {cancelCopied ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar Aviso para WhatsApp</>}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end p-5 border-t border-slate-200">
+                  <button onClick={() => { setCancelModal(null); router.refresh(); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cerrar</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

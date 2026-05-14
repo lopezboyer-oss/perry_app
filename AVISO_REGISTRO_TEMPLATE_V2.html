@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f172a; width: 1080px; height: 1920px; overflow: hidden; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+  .container {
+    flex: 1;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    padding: 80px 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header { display: flex; flex-direction: column; align-items: center; gap: 30px; width: 100%; }
+  .logo { width: 180px; height: 180px; border-radius: 36px; object-fit: cover; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
+  .badge {
+    background: linear-gradient(135deg, #4f46e5, #3730a3);
+    color: white; font-weight: 800; font-size: 28px;
+    padding: 16px 40px; border-radius: 40px;
+    text-transform: uppercase; letter-spacing: 2px;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+  }
+  .title {
+    font-size: 72px; font-weight: 900; color: white;
+    text-align: center; line-height: 1.1; letter-spacing: -2px;
+    text-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  }
+  
+  .content { width: 100%; display: flex; flex-direction: column; gap: 40px; }
+  
+  .objective-box {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(180, 83, 9, 0.15));
+    border: 2px solid rgba(217, 119, 6, 0.3);
+    border-radius: 32px; padding: 40px; text-align: center;
+  }
+  .objective-box h2 { color: #fbbf24; font-size: 32px; margin-bottom: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+  .objective-box p { color: #f8fafc; font-size: 32px; line-height: 1.5; font-weight: 500; }
+  
+  .phases-card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 40px; padding: 20px 40px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  .phase {
+    display: flex; align-items: center; gap: 20px;
+    padding: 20px 0; border-bottom: 2px solid #e2e8f0;
+  }
+  .phase:last-child { border-bottom: none; }
+  .phase-num {
+    width: 60px; height: 60px; border-radius: 16px;
+    background: #f1f5f9; color: #334155;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 900; flex-shrink: 0;
+  }
+  .phase.active .phase-num { background: #4f46e5; color: white; }
+  .phase.done .phase-num { background: #10b981; color: white; }
+  
+  .phase-content { display: flex; flex-direction: column; gap: 4px; }
+  .phase-text { font-size: 28px; font-weight: 800; color: #1e293b; }
+  .phase-desc { font-size: 20px; font-weight: 500; color: #64748b; line-height: 1.3; }
+  
+  .progress {
+    text-align: center; padding-top: 20px;
+    font-size: 42px; font-weight: 800; color: #059669;
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+  }
+  
+  .rules {
+    background: rgba(255,255,255,0.05); border-radius: 24px; padding: 35px;
+  }
+  .rules p { color: #cbd5e1; font-size: 28px; line-height: 1.6; font-weight: 500; text-align: center; }
+  .rules strong { color: white; font-weight: 800; }
+
+  .footer {
+    color: #64748b; font-size: 26px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    width: 100%; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <img src="public/perry-logo.jpg" class="logo" alt="Perry">
+    <div class="badge">⏱️ NUEVA FUNCIÓN</div>
+    <h1 class="title">REGISTRO HORARIO<br>EN PERRY</h1>
+  </div>
+
+  <div class="content">
+    <div class="objective-box">
+      <h2>🎯 Objetivo</h2>
+      <p>Que sirva de base a <strong>administración</strong> para el cálculo de <strong>nómina</strong> y <strong>pagos a contratistas</strong>.</p>
+    </div>
+
+    <div class="phases-card">
+      <div class="phase active">
+        <div class="phase-num">1</div>
+        <div class="phase-content">
+          <div class="phase-text">Inicio Logístico</div>
+          <div class="phase-desc">Hora en que inicia preparativos previos a ingresar a planta.</div>
+        </div>
+      </div>
+      <div class="phase active">
+        <div class="phase-num">2</div>
+        <div class="phase-content">
+          <div class="phase-text">Inicio Operativo</div>
+          <div class="phase-desc">Hora en que inicia EFECTIVAMENTE en área de trabajo con permisos.</div>
+        </div>
+      </div>
+      <div class="phase done">
+        <div class="phase-num">3</div>
+        <div class="phase-content">
+          <div class="phase-text">Final Operativo</div>
+          <div class="phase-desc">Hora en que se concluye alcance, 5S y retiro de material del área.</div>
+        </div>
+      </div>
+      <div class="phase done">
+        <div class="phase-num">4</div>
+        <div class="phase-content">
+          <div class="phase-text">Final Logístico</div>
+          <div class="phase-desc">Hora en que culminan tareas, material y equipo regresan a trailer.</div>
+        </div>
+      </div>
+      <div class="progress">
+        <span>⏱️ 0/4</span> <span>→</span> <span>✅ 4/4</span>
+      </div>
+    </div>
+
+    <div class="rules">
+      <p><strong>IMPORTANTE:</strong><br>Se deben registrar en estricto orden. Usa formato 24h. Registra cada fase en el momento exacto en que ocurre.</p>
+    </div>
+  </div>
+
+  <div class="footer">Perry App | By Chigüire Labs | Ivan Lopez</div>
+</div>
+</body>
+</html>

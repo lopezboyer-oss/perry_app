@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import {
   ClipboardList, Target, Clock, AlertTriangle, TrendingUp, Users,
   HardHat, FileSearch, Wrench, Calendar, Trophy, FileText, Receipt,
+  ChevronDown, ChevronUp,
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -36,6 +38,16 @@ interface HoursByUser {
   minutes: number;
 }
 
+interface ScheduleActivity {
+  id: string;
+  userName: string;
+  title: string;
+  type: string;
+  startTime: string;
+  endTime: string;
+  date: string;
+}
+
 interface DashboardData {
   totalActivities: number;
   activitiesByType: { type: string; count: number }[];
@@ -48,6 +60,7 @@ interface DashboardData {
   topQuotations: TopPerformer | null;
   topReceipts: TopPerformer | null;
   hoursByUser: HoursByUser[];
+  scheduleActivities: ScheduleActivity[];
   recentActivities: {
     id: string;
     title: string;
@@ -259,38 +272,13 @@ export function DashboardClient({ data }: { data: DashboardData }) {
           </div>
         </div>
 
-        {/* Hours by User - Bar Chart (replaces old Activities by User) */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-800">Horas por Responsable</h3>
-            <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{periodLabel}</span>
-          </div>
-          <div className="h-72">
-            {data.hoursByUser.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.hoursByUser} layout="vertical" margin={{ left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 12 }} unit=" hrs" />
-                  <YAxis
-                    type="category"
-                    dataKey="userName"
-                    tick={{ fontSize: 11 }}
-                    width={110}
-                  />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }}
-                    formatter={(value: number) => [`${value} hrs`, 'Horas']}
-                  />
-                  <Bar dataKey="hours" fill="#6366f1" radius={[0, 6, 6, 0]} name="Horas" barSize={22} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-400 text-sm">
-                Sin horas registradas en este periodo
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Schedule / Hours by User — dual mode */}
+        <ScheduleTimeline
+          hoursByUser={data.hoursByUser}
+          scheduleActivities={data.scheduleActivities}
+          period={data.period}
+          periodLabel={periodLabel}
+        />
       </div>
 
       {/* Activity Type Breakdown Cards */}
@@ -519,6 +507,283 @@ function KPICard({
         <div className={`p-2 md:p-3 rounded-xl bg-gradient-to-br ${colorClasses[color]} shadow-lg`}>
           <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Schedule Timeline (dual-mode: day=timeline, week=bars+expand) ─
+
+const SCHEDULE_TYPE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  VISITA_CAMPO: { bg: 'bg-blue-200', border: 'border-blue-400', text: 'text-blue-900' },
+  COTIZACION: { bg: 'bg-amber-200', border: 'border-amber-400', text: 'text-amber-900' },
+  EJECUCION: { bg: 'bg-green-200', border: 'border-green-400', text: 'text-green-900' },
+  PLANEACION: { bg: 'bg-purple-200', border: 'border-purple-400', text: 'text-purple-900' },
+  DISENO: { bg: 'bg-rose-200', border: 'border-rose-400', text: 'text-rose-900' },
+  CONSORCIO: { bg: 'bg-cyan-200', border: 'border-cyan-400', text: 'text-cyan-900' },
+};
+
+function ScheduleTimeline({
+  hoursByUser,
+  scheduleActivities,
+  period,
+  periodLabel,
+}: {
+  hoursByUser: HoursByUser[];
+  scheduleActivities: ScheduleActivity[];
+  period: string;
+  periodLabel: string;
+}) {
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const isSingleDay = period === 'today' || period === 'yesterday';
+
+  const toggleUser = (userName: string) => {
+    setExpandedUsers((prev) => {
+      const next = new Set(prev);
+      if (next.has(userName)) next.delete(userName);
+      else next.add(userName);
+      return next;
+    });
+  };
+
+  // For single day: show timeline directly
+  if (isSingleDay) {
+    return (
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-800">Horario por Responsable</h3>
+          <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{periodLabel}</span>
+        </div>
+        {scheduleActivities.length > 0 ? (
+          <ScheduleTimelineChart activities={scheduleActivities} />
+        ) : (
+          <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
+            Sin actividades con horario en este periodo
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Group schedule activities by user
+  const activitiesByUserMap = new Map<string, ScheduleActivity[]>();
+  for (const act of scheduleActivities) {
+    if (!activitiesByUserMap.has(act.userName)) activitiesByUserMap.set(act.userName, []);
+    activitiesByUserMap.get(act.userName)!.push(act);
+  }
+
+  // For week: show accumulated bars with expand buttons
+  return (
+    <div className="card p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-slate-800">Horas por Responsable</h3>
+        <span className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{periodLabel}</span>
+      </div>
+      {hoursByUser.length > 0 ? (
+        <div className="space-y-2">
+          {hoursByUser.map((user) => {
+            const isExpanded = expandedUsers.has(user.userName);
+            const userActivities = activitiesByUserMap.get(user.userName) || [];
+            const hasSchedule = userActivities.length > 0;
+            const maxHours = hoursByUser[0]?.hours || 1;
+            const barPct = Math.max(5, (user.hours / maxHours) * 100);
+
+            return (
+              <div key={user.userName}>
+                <div
+                  className={`flex items-center gap-3 ${hasSchedule ? 'cursor-pointer hover:bg-slate-50 rounded-lg px-1 -mx-1 transition-colors' : ''}`}
+                  onClick={() => hasSchedule && toggleUser(user.userName)}
+                >
+                  <div className="w-28 flex-shrink-0 text-right">
+                    <span className="text-xs font-semibold text-slate-700 truncate block">{user.userName}</span>
+                  </div>
+                  <div className="flex-1 relative">
+                    <div className="h-7 bg-slate-100 rounded-md overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-md transition-all duration-500 flex items-center justify-end pr-2"
+                        style={{ width: `${barPct}%` }}
+                      >
+                        <span className="text-[10px] font-bold text-white drop-shadow-sm">{user.hours}h</span>
+                      </div>
+                    </div>
+                  </div>
+                  {hasSchedule && (
+                    <button className="p-1 text-slate-400 hover:text-indigo-600 transition-colors flex-shrink-0">
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  )}
+                </div>
+
+                {isExpanded && hasSchedule && (
+                  <div className="ml-28 pl-3 mt-2 mb-3 border-l-2 border-indigo-200 animate-fade-in">
+                    <WeeklyDetailTimeline activities={userActivities} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
+          Sin horas registradas en este periodo
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Weekly Detail: groups activities by date and shows mini timelines ──
+
+function WeeklyDetailTimeline({ activities }: { activities: ScheduleActivity[] }) {
+  const byDate = new Map<string, ScheduleActivity[]>();
+  for (const act of activities) {
+    const dateKey = act.date.split('T')[0];
+    if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+    byDate.get(dateKey)!.push(act);
+  }
+  const sortedDates = Array.from(byDate.keys()).sort();
+
+  return (
+    <div className="space-y-3">
+      {sortedDates.map((dateStr) => {
+        const dayActivities = byDate.get(dateStr)!;
+        const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-MX', {
+          weekday: 'short',
+          day: '2-digit',
+          month: 'short',
+          timeZone: 'UTC',
+        });
+        return (
+          <div key={dateStr}>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{dateLabel}</p>
+            <ScheduleTimelineChart activities={dayActivities} compact />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Timeline Chart: renders horizontal Gantt bars ──────────────
+
+function ScheduleTimelineChart({
+  activities,
+  compact = false,
+}: {
+  activities: ScheduleActivity[];
+  compact?: boolean;
+}) {
+  const parseTime = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  // Find min/max time range
+  let minTime = 1440;
+  let maxTime = 0;
+  for (const act of activities) {
+    const s = parseTime(act.startTime);
+    const e = parseTime(act.endTime);
+    if (s < minTime) minTime = s;
+    if (e > maxTime) maxTime = e;
+  }
+  minTime = Math.floor(minTime / 60) * 60;
+  maxTime = Math.ceil(maxTime / 60) * 60;
+  if (maxTime <= minTime) maxTime = minTime + 60;
+  const totalSpan = maxTime - minTime;
+
+  // Hour labels
+  const hourLabels: number[] = [];
+  for (let t = minTime; t <= maxTime; t += 60) hourLabels.push(t);
+
+  // Group by user
+  const userMap = new Map<string, ScheduleActivity[]>();
+  for (const act of activities) {
+    if (!userMap.has(act.userName)) userMap.set(act.userName, []);
+    userMap.get(act.userName)!.push(act);
+  }
+  const users = Array.from(userMap.keys()).sort();
+
+  const rowH = compact ? 'h-5' : 'h-8';
+  const textSize = compact ? 'text-[8px]' : 'text-[10px]';
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[350px]">
+        {/* Hour header */}
+        <div className={`flex ${compact ? '' : 'ml-28'}`}>
+          <div className="flex-1 relative h-5 border-b border-slate-200">
+            {hourLabels.map((t) => (
+              <span
+                key={t}
+                className="absolute text-[9px] text-slate-400 font-medium -translate-x-1/2 bottom-0.5"
+                style={{ left: `${((t - minTime) / totalSpan) * 100}%` }}
+              >
+                {Math.floor(t / 60)}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* User rows */}
+        {users.map((userName) => {
+          const userActs = userMap.get(userName)!;
+          return (
+            <div key={userName} className={`flex items-center gap-2 ${compact ? 'py-0.5' : 'py-1'}`}>
+              {!compact && (
+                <div className="w-28 flex-shrink-0 text-right pr-2">
+                  <span className="text-xs font-semibold text-slate-700 truncate block">{userName}</span>
+                </div>
+              )}
+              <div className={`flex-1 relative ${rowH} bg-slate-50 rounded-md border border-slate-100`}>
+                {/* Gridlines */}
+                {hourLabels.map((t) => (
+                  <div
+                    key={t}
+                    className="absolute top-0 bottom-0 border-l border-slate-200/60"
+                    style={{ left: `${((t - minTime) / totalSpan) * 100}%` }}
+                  />
+                ))}
+                {/* Activity blocks */}
+                {userActs.map((act) => {
+                  const start = parseTime(act.startTime);
+                  const end = parseTime(act.endTime);
+                  const left = ((start - minTime) / totalSpan) * 100;
+                  const width = ((end - start) / totalSpan) * 100;
+                  const colors = SCHEDULE_TYPE_COLORS[act.type] || SCHEDULE_TYPE_COLORS.EJECUCION;
+                  const label = activityTypeLabels[act.type] || act.type;
+                  return (
+                    <div
+                      key={act.id}
+                      className={`absolute top-0.5 bottom-0.5 ${colors.bg} ${colors.border} border rounded-sm flex items-center overflow-hidden px-1 cursor-default`}
+                      style={{ left: `${left}%`, width: `${Math.max(width, 2)}%` }}
+                      title={`${act.title}\n${act.startTime} – ${act.endTime}\n${label}`}
+                    >
+                      <span className={`${textSize} font-semibold ${colors.text} truncate leading-tight`}>
+                        {width > 10 ? act.title : (width > 5 ? label.substring(0, 4) : '')}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Legend */}
+        {!compact && (
+          <div className="flex flex-wrap gap-3 mt-3 ml-28">
+            {Object.entries(SCHEDULE_TYPE_COLORS).map(([type, colors]) => {
+              if (!activities.some((a) => a.type === type)) return null;
+              return (
+                <div key={type} className="flex items-center gap-1">
+                  <div className={`w-3 h-3 rounded-sm ${colors.bg} ${colors.border} border`} />
+                  <span className="text-[10px] text-slate-500 font-medium">{activityTypeLabels[type] || type}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

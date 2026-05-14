@@ -172,6 +172,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     }),
   ]);
 
+  // Schedule activities for timeline view (activities with start/end times)
+  const scheduleActivitiesRaw = await prisma.activity.findMany({
+    where: { ...activityFilter, startTime: { not: null }, endTime: { not: null }, userId: { not: null } },
+    select: { id: true, userId: true, title: true, type: true, startTime: true, endTime: true, date: true },
+    orderBy: { startTime: 'asc' },
+  });
+
   // Derived opportunity stats from COTIZACION activities (new model)
   const cotizacionActs = await prisma.activity.findMany({
     where: { ...userFilter, ...companyFilter, type: 'COTIZACION' },
@@ -300,6 +307,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     topQuotations,
     topReceipts,
     hoursByUser,
+    scheduleActivities: scheduleActivitiesRaw.map((a) => ({
+      id: a.id,
+      userName: userMap[a.userId!] || 'Desconocido',
+      title: a.title,
+      type: a.type,
+      startTime: a.startTime!,
+      endTime: a.endTime!,
+      date: a.date.toISOString(),
+    })),
     recentActivities: recentActivities.map((a) => ({
       id: a.id,
       title: a.title,

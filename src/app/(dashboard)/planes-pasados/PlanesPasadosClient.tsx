@@ -8,7 +8,7 @@ import { TimeInput24h } from '@/components/ui/TimeInput24h';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 
 interface Activity {
-  id: string; title: string; type: string; date: string;
+  id: string; title: string; type: string; status: string; date: string;
   startTime: string | null; endTime: string | null;
   actualStartTime: string | null; actualEndTime: string | null;
   workOrderFolio: string | null; purchaseOrder: string | null;
@@ -414,7 +414,7 @@ export function PlanesPasadosClient({
                         </td>
                       </tr>
                     )}
-                    <tr className={`hover:bg-slate-50/50 transition-colors align-top ${hasAlert ? 'bg-amber-50/40' : ''}`}>
+                    <tr className={`hover:bg-slate-50/50 transition-colors align-top ${act.status === 'CANCELADA' ? 'bg-red-50/60 opacity-60' : hasAlert ? 'bg-amber-50/40' : ''}`}>
                       <td className="text-center">
                         <div className="flex flex-col items-center gap-0.5">
                           <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${hasAlert ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-700'}`}>{idx + 1}</span>
@@ -478,7 +478,7 @@ export function PlanesPasadosClient({
 
                       <td><span className="text-xs font-medium text-slate-700">{act.user?.name || '-'}</span></td>
                       <td><span className="text-xs font-medium text-slate-800">{act.contact?.name || '-'}</span></td>
-                      <td><p className="font-semibold text-slate-800 text-xs leading-snug">{act.continuedFromId && act.type === 'EJECUCION' && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}{act.title}</p></td>
+                      <td><p className={`font-semibold text-xs leading-snug ${act.status === 'CANCELADA' ? 'line-through text-red-400' : 'text-slate-800'}`}>{act.status === 'CANCELADA' && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-red-100 text-red-700 border border-red-200 px-1 py-0.5 rounded-full mr-1 align-middle no-underline" style={{ textDecoration: 'none' }}>❌ CANCELADA</span>}{act.continuedFromId && act.type === 'EJECUCION' && act.status !== 'CANCELADA' && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}{act.title}</p></td>
                       <td><span className="text-xs font-mono text-slate-600">{act.workOrderFolio || '-'}</span></td>
                       <td><span className={`text-xs font-mono ${act.purchaseOrder ? 'text-slate-700' : 'text-red-500 font-bold'}`}>{act.purchaseOrder || 'PEND.'}</span></td>
                       <td className="text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${act.loto ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>{act.loto ? 'SI' : 'NO'}</span></td>

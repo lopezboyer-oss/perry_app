@@ -41,7 +41,7 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
         <div>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/actividades')}
             className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-2"
           >
             <ArrowLeft size={14} /> Volver

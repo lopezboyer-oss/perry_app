@@ -123,6 +123,11 @@ model Activity {
   teraAuditorImage       String?      // Base64 data URL of auditor TERA image
   consortiumCompany String?            // Target company when type=CONSORCIO (e.g. DROBOTS)
   continuedFromId  String?             // ID of the parent activity if created via "Continuar"
+  cancelledAt      DateTime?           // When the activity was cancelled
+  cancelReason     String?             // Selectable reason key for KPI (e.g. PERMISOLOGIA_INCOMPLETA)
+  cancelNotes      String?             // Free-text cancellation details
+  cancelHasCharges Boolean?            // Whether the cancellation generates client charges
+  cancelledBy      String?             // Name of user who cancelled
   companyId       String?
   company         Company?     @relation(fields: [companyId], references: [id])
   createdAt       DateTime     @default(now())

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f172a; display: flex; justify-content: center; }
+  .card {
+    width: 1080px;
+    height: 1920px;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    padding: 60px 56px 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    font-family: 'Inter', sans-serif;
+  }
+  .logo { width: 140px; height: 140px; border-radius: 28px; object-fit: cover; margin-bottom: 32px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #d97706, #b45309);
+    color: white; font-weight: 800; font-size: 22px;
+    padding: 10px 28px; border-radius: 30px;
+    margin-bottom: 20px; letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .title {
+    font-size: 68px; font-weight: 900; color: white;
+    text-align: center; line-height: 1.15;
+    margin-bottom: 40px; letter-spacing: -1px;
+  }
+  .intro-box {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px; padding: 36px 36px;
+    text-align: center; margin-bottom: 44px;
+    width: 100%;
+  }
+  .intro-box p {
+    color: #cbd5e1; font-size: 30px; line-height: 1.6;
+    font-weight: 500;
+  }
+  .intro-box strong { color: white; font-weight: 700; }
+  .steps-card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 24px; padding: 16px 32px;
+    width: 100%; margin-bottom: 44px;
+  }
+  .step {
+    display: flex; align-items: flex-start; gap: 20px;
+    padding: 28px 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-border {
+    width: 6px; min-height: 64px; border-radius: 6px;
+    flex-shrink: 0; margin-top: 4px;
+  }
+  .step-border.indigo { background: #4f46e5; }
+  .step-border.blue { background: #2563eb; }
+  .step-border.green { background: #059669; }
+  .step-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+  }
+  .step-icon.indigo { background: #e0e7ff; }
+  .step-icon.blue { background: #dbeafe; }
+  .step-icon.green { background: #d1fae5; }
+  .step-text h3 {
+    font-size: 28px; font-weight: 800; color: #1e293b;
+    margin-bottom: 4px;
+  }
+  .step-text p {
+    font-size: 23px; color: #64748b; font-weight: 500;
+    line-height: 1.4;
+  }
+  .alert-box {
+    background: linear-gradient(135deg, #7f1d1d, #991b1b);
+    border: 2px solid #dc2626;
+    border-radius: 20px; padding: 36px 36px;
+    width: 100%; text-align: center;
+    margin-bottom: 44px;
+  }
+  .alert-box p {
+    color: white; font-size: 28px; font-weight: 700;
+    line-height: 1.5;
+  }
+  .motivational {
+    text-align: center; margin-bottom: 50px;
+  }
+  .motivational p {
+    font-size: 40px; font-weight: 900;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.35;
+  }
+  .footer {
+    color: #64748b; font-size: 24px; font-weight: 500;
+    letter-spacing: 0.5px; margin-top: auto;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <img src="public/perry-logo.jpg" class="logo" alt="Perry">
+  <div class="badge">⚠️ Aviso Importante</div>
+  <h1 class="title">CARGA DE TERA<br>EN PERRY</h1>
+
+  <div class="intro-box">
+    <p>A partir de ahora, el documento TERA debe ser cargado en Perry App <strong>el mismo día de la actividad</strong>.</p>
+  </div>
+
+  <div class="steps-card">
+    <div class="step">
+      <div class="step-border indigo"></div>
+      <div class="step-icon indigo">📸</div>
+      <div class="step-text">
+        <h3>Sube la foto del TERA</h3>
+        <p>Toma foto legible del documento TERA firmado.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-border blue"></div>
+      <div class="step-icon blue">✏️</div>
+      <div class="step-text">
+        <h3>Registra el folio (BC-XXXXX)</h3>
+        <p>Ingresa el número de folio en formato BC- seguido de 3 a 5 dígitos.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-border green"></div>
+      <div class="step-icon green">📅</div>
+      <div class="step-text">
+        <h3>Hazlo el mismo día</h3>
+        <p>Carga la imagen y folio antes de que termine el día de la actividad.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert-box">
+    <p>❌ Si no se carga a tiempo, la actividad aparecerá en el listado <strong>ALARMA TERA</strong> 🚨</p>
+  </div>
+
+  <div class="motivational">
+    <p>¡Evita aparecer en la lista!<br>Cumple con la carga el mismo día.</p>
+  </div>
+
+  <div class="footer">Perry App | By Chigüire Labs | Ivan Lopez</div>
+</div>
+</body>
+</html>
