@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Reporte Sesión 13 Mayo 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --emerald: #059669;
+      --emerald-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --violet: #7c3aed;
+      --violet-light: #ede9fe;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: white;
+      color: var(--slate-800);
+      line-height: 1.6;
+      font-size: 11pt;
+    }
+
+    @page {
+      size: letter;
+      margin: 1.5cm 2cm;
+    }
+
+    @media print {
+      body { background: white; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none !important; }
+      .container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    .header-text h1 {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.5px;
+    }
+
+    .header-text .subtitle {
+      font-size: 11pt;
+      color: var(--slate-500);
+      font-weight: 400;
+    }
+
+    .header-text .date-badge {
+      display: inline-block;
+      margin-top: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-card .stat-label {
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card.emerald .stat-value { color: var(--emerald); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue .stat-value { color: var(--blue); }
+    .stat-card.violet .stat-value { color: var(--violet); }
+
+    /* Section titles */
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin-top: 28px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2 .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    h2 .icon.feature { background: var(--emerald-light); }
+    h2 .icon.bugfix { background: var(--amber-light); }
+    h2 .icon.registry { background: var(--violet-light); }
+    h2 .icon.notes { background: var(--blue-light); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 9.5pt;
+    }
+
+    thead th {
+      background: var(--slate-800);
+      color: white;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+
+    tbody td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: var(--slate-50); }
+    tbody tr:hover { background: var(--primary-light); }
+
+    .commit-hash {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge.feature { background: var(--emerald-light); color: var(--emerald); }
+    .badge.bugfix { background: var(--amber-light); color: var(--amber); }
+    .badge.export { background: var(--blue-light); color: var(--blue); }
+    .badge.permisos { background: var(--violet-light); color: var(--violet); }
+    .badge.tera { background: var(--red-light); color: var(--red); }
+    .badge.ui { background: #fdf4ff; color: #a21caf; }
+
+    /* Category summary */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .category-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px;
+      background: white;
+    }
+
+    .category-card h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .category-card ul {
+      list-style: none;
+      font-size: 8.5pt;
+      color: var(--slate-600);
+    }
+
+    .category-card li {
+      padding: 2px 0;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .category-card li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--emerald);
+      font-weight: 700;
+    }
+
+    /* Schema table */
+    .schema-table { margin-top: 8px; }
+    .schema-table td:first-child { font-weight: 600; color: var(--slate-700); }
+    .schema-table td:last-child { font-family: 'SF Mono', monospace; font-size: 8.5pt; color: var(--violet); }
+
+    /* Footer */
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: var(--slate-500);
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 11pt;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Perry App</h1>
+        <div class="subtitle">Reporte de Cambios — Sesión Desarrollo</div>
+        <span class="date-badge">📅 13 de Mayo, 2026</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">8</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Features</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Fixes / UI</div>
+      </div>
+      <div class="stat-card violet">
+        <div class="stat-value">13</div>
+        <div class="stat-label">Archivos Modificados</div>
+      </div>
+    </div>
+
+    <!-- Full commit table -->
+    <h2>Detalle de Cambios</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:35px">#</th>
+          <th style="width:75px">Commit</th>
+          <th>Descripción</th>
+          <th style="width:90px">Categoría</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="commit-hash">cf14840</span></td>
+          <td>Exportación de Plan Finde ahora genera archivo <strong>.xls con formato</strong>: encabezados con fondo, columnas anchas, alineación — reemplaza CSV plano</td>
+          <td><span class="badge export">Export</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><span class="commit-hash">23016c9</span></td>
+          <td>Columna "Folio OPP" renombrada a <strong>Folio Odoo</strong> en exportación + nombre de empresa visible junto a la fecha del plan</td>
+          <td><span class="badge bugfix">Fix</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><span class="commit-hash">32f7677</span></td>
+          <td>Nombre de empresa incluido en nombre del archivo exportado + nuevo botón <strong>EXCEL MULTIEMPRESA</strong> (solo Admin Maestro y Safety &amp; LP) que genera Excel con actividades de todas las empresas ordenadas por fecha/hora</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><span class="commit-hash">2550125</span></td>
+          <td><strong>Separadores de día</strong> en Plan Finde y Planes Pasados: banner visual con nombre del día, fecha y cantidad de actividades para identificar rápidamente sábado vs domingo</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">a73ea39</span></td>
+          <td>Fix: columnas de exportación ahora coinciden exactamente con tabla en pantalla (Sup Operativo = Sup Operativo, no Safety Dedicado) + cantidad de actividades en separador al lado de la fecha</td>
+          <td><span class="badge bugfix">Fix</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">d6cd318</span></td>
+          <td>Estandarización del tamaño de texto en campos Folio Odoo, P.O. y TERA — ahora todos usan <code>text-xs</code> con <code>font-mono</code> para consistencia visual entre usuarios</td>
+          <td><span class="badge ui">UI</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">6dffc32</span></td>
+          <td><strong>Permisos Sup Operativo + TERA Auditor + Auditor Safety</strong>: Sup Operativo puede editar Notas Ingeniero y TERA, nueva columna TERA Auditor con folio, flag <code>isSafetyAuditor</code> en usuarios para editar Auditoría y TERA Auditor</td>
+          <td><span class="badge permisos">Permisos</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><span class="commit-hash">8e0c6a9</span></td>
+          <td>Columna TERA Auditor ahora incluye <strong>carga de imagen</strong> (upload, preview, eliminar) con las mismas funciones que la columna TERA original — en Plan Finde y Planes Pasados</td>
+          <td><span class="badge tera">TERA</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Category Summary -->
+    <h2>Resumen por Categoría</h2>
+    <div class="category-grid">
+      <div class="category-card">
+        <h3><span class="icon feature" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">📊</span> Exportación Excel</h3>
+        <ul>
+          <li>Archivo .xls con formato (encabezados, ancho, alineación)</li>
+          <li>Columnas excluidas: PO, Vehículo, Chofer, Auditoría, Alertas, TERA</li>
+          <li>Nombre de empresa en el archivo y en la cabecera</li>
+          <li>Folio OPP → Folio Odoo en exportación</li>
+          <li>Botón EXCEL MULTIEMPRESA (Admin + Safety)</li>
+          <li>Actividades multiempresa ordenadas por fecha/hora</li>
+        </ul>
+      </div>
+      <div class="category-card">
+        <h3><span class="icon registry" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">🔐</span> Permisos y Auditoría</h3>
+        <ul>
+          <li>Sup Operativo → edita Notas Ingeniero + TERA</li>
+          <li>Flag <code>isSafetyAuditor</code> en modelo User</li>
+          <li>Checkbox "Auditor Safety" en gestión de usuarios</li>
+          <li>Auditor Safety → edita Auditoría + TERA Auditor</li>
+          <li>Propagado a JWT/session para permisos en tiempo real</li>
+        </ul>
+      </div>
+      <div class="category-card">
+        <h3><span class="icon notes" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">📋</span> TERA Auditor (Nueva Columna)</h3>
+        <ul>
+          <li>Folio con formato BC-000 (3-5 dígitos)</li>
+          <li>Carga de imagen con compresión automática</li>
+          <li>Preview modal y eliminación con confirmación</li>
+          <li>Indicador visual (punto ámbar/gris)</li>
+          <li>Registro de quién y cuándo subió</li>
+          <li>Presente en Plan Finde y Planes Pasados</li>
+        </ul>
+      </div>
+      <div class="category-card">
+        <h3><span class="icon bugfix" style="width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">🎨</span> Mejoras Visuales</h3>
+        <ul>
+          <li>Separadores de día con banner colorido</li>
+          <li>Contador de actividades por día visible</li>
+          <li>Tamaños de texto estandarizados (Folio, PO, TERA)</li>
+          <li>Columnas de exportación consistentes con pantalla</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- New Schema -->
+    <h2>Cambios en Base de Datos</h2>
+    <table class="schema-table">
+      <thead>
+        <tr>
+          <th>Cambio</th>
+          <th style="text-align:right;width:280px">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Nuevo campo en <strong>User</strong></td>
+          <td>isSafetyAuditor Boolean @default(false)</td>
+        </tr>
+        <tr>
+          <td>Nuevos campos en <strong>Activity</strong></td>
+          <td>teraAuditorFolio (String?)</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>teraAuditorUploadedAt (DateTime?)</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>teraAuditorUploadedBy (String?)</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>teraAuditorImage (String?)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Permissions table -->
+    <h2>Matriz de Permisos Actualizada</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Campo</th>
+          <th>Quién puede editar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Notas Ingeniero</strong></td>
+          <td>Admin, Supervisor, Safety &amp; LP, Ingeniero propio, <span style="color:var(--violet);font-weight:600">+ Sup Operativo asignado</span></td>
+        </tr>
+        <tr>
+          <td><strong>TERA</strong> (imagen + folio)</td>
+          <td>Admin, Supervisor, Safety &amp; LP, Ingeniero propio, <span style="color:var(--violet);font-weight:600">+ Sup Operativo asignado</span></td>
+        </tr>
+        <tr>
+          <td><strong>Auditoría</strong></td>
+          <td>Safety &amp; LP, <span style="color:var(--amber);font-weight:600">+ Auditor Safety (flag)</span></td>
+        </tr>
+        <tr>
+          <td><strong>TERA Auditor</strong> (nueva)</td>
+          <td>Admin, Safety &amp; LP, <span style="color:var(--amber);font-weight:600">+ Auditor Safety (flag)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Architecture note -->
+    <h2>Decisión Arquitectónica Clave</h2>
+    <div class="category-card" style="border-left: 4px solid var(--violet); margin-bottom: 20px;">
+      <h3>🏗️ Excel Multiempresa: API Route Dedicada</h3>
+      <p style="font-size: 9pt; color: var(--slate-600); margin-top: 6px; line-height: 1.7;">
+        La funcionalidad Excel Multiempresa se implementó como un <strong>API Route separado</strong> (<code>/api/weekend-export-all</code>)
+        en vez de extender la lógica del cliente. Esto permite query directo a la BD sin limitaciones de cookie de empresa activa,
+        genera el archivo en el servidor con datos de todas las empresas, y mantiene el control de acceso centralizado (solo ADMIN + SAFETY_LP).
+        La columna "Empresa" se agrega automáticamente al inicio para identificar cada actividad.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Perry App v2.x — Desarrollado con Antigravity por CHIGÜIRE LABS | IVAN LOPEZ BOYER</span>
+      <span>Generado: 14 de Mayo, 2026 · 08:22 hrs (Tijuana, BC)</span>
+    </div>
+
+  </div>
+
+  <!-- Print button (hidden on print) -->
+  <button class="print-btn no-print" onclick="window.print()">
+    📄 Guardar como PDF
+  </button>
+
+</body>
+</html>

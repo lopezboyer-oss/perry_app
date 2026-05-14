@@ -1508,7 +1508,7 @@ export function AtcFindeClient({
                 return (
                   <React.Fragment key={act.id}>
                   {showDaySeparator && (
-                    <tr>
+                    <tr className="day-separator">
                       <td colSpan={totalCols} className={`${dayColor} text-white py-2 px-4`}>
                         <div className="flex items-center gap-3">
                           <span className="font-bold text-sm tracking-wide">📅 {dayName} {dt.getDate()} DE {monthName}</span>
@@ -1568,7 +1568,7 @@ export function AtcFindeClient({
                     <td><span className="text-xs font-medium text-slate-800">{act.contact?.name || '-'}</span></td>
                     <td>
                       <p className="font-semibold text-slate-800 text-xs leading-snug cursor-pointer hover:text-indigo-600" onClick={() => router.push(`/actividades/${act.id}`)}>
-                        {act.continuedFromId && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}
+                        {act.continuedFromId && act.type === 'EJECUCION' && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}
                         {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
                       </p>
                     </td>

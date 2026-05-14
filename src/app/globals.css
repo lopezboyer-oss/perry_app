@@ -165,7 +165,7 @@ select {
   @apply px-4 py-3 border-b border-slate-100;
 }
 
-.data-table tr:hover td {
+.data-table tr:not(.day-separator):hover td {
   @apply bg-slate-50;
 }
 
