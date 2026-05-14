@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { activitySchema } from '@/lib/validators';
 import { parseLocalDate } from '@/lib/timezone';
+import { toSentenceCase } from '@/lib/utils';
 import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
         userId: data.userId,
         type: data.type as any,
         status: data.status as any,
-        title: data.title,
+        title: toSentenceCase(data.title),
         clientId: data.clientId || null,
         contactId: data.contactId || null,
         workOrderFolio: data.workOrderFolio || null,

@@ -6,6 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Normaliza texto a Sentence case: "INSTALACION DE GUARDAS" → "Instalacion de guardas"
+ * Solo la primera letra en mayúscula, el resto en minúscula.
+ */
+export function toSentenceCase(text: string): string {
+  if (!text) return text;
+  const trimmed = text.trim();
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
+
+/**
  * Normaliza un nombre a Title Case: "JUAN PEREZ" → "Juan Perez"
  * Preposiciones comunes se mantienen en minúscula (excepto si es la primera palabra).
  */

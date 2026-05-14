@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { toSentenceCase } from '@/lib/utils';
 
 // Cancel reason labels for the WhatsApp notice
 const CANCEL_REASON_LABELS: Record<string, string> = {
@@ -145,7 +146,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
           date: nextBizDay,
           type: 'COTIZACION',
           status: 'PENDIENTE',
-          title: `Cargo por cancelación — ${activity.title}`,
+          title: toSentenceCase(`Cargo por cancelación — ${activity.title}`),
           notes: `Generada automáticamente por cancelación de actividad del ${activity.date.toISOString().substring(0, 10)}.\nMotivo: ${CANCEL_REASON_LABELS[reason] || reason}${notes ? `\nDetalles: ${notes}` : ''}`,
           startTime: '09:00',
           endTime: '10:00',

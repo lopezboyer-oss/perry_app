@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseLocalDate } from '@/lib/timezone';
+import { toSentenceCase } from '@/lib/utils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
             date: parseLocalDate(reportDate),
             type: act.type,
             status: act.status || 'COMPLETADA',
-            title: act.title,
+            title: toSentenceCase(act.title),
             clientId: act.clientId || null,
             contactId: act.contactId || null,
             workOrderFolio: act.workOrderFolio || null,
