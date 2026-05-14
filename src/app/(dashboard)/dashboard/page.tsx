@@ -103,6 +103,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const dateFilter = { date: { gte: dateFrom, lte: dateTo } };
   const activityFilter = { ...userFilter, ...dateFilter, ...companyFilter };
 
+  // For weekly view, cap schedule/hours queries at today so we don't show future activities
+  const todayEndOfDay = new Date(`${getTijuanaToday()}T23:59:59.999`);
+  const scheduleDateTo = dateTo > todayEndOfDay ? todayEndOfDay : dateTo;
+
   // Company ID for receipt filtering
   const receiptCompanyId = (companyFilter as any).companyId || null;
 
@@ -162,7 +166,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     prisma.activity.groupBy({
       by: ['userId'],
       _sum: { durationMinutes: true },
-      where: { ...activityFilter, durationMinutes: { not: null }, userId: { not: null } },
+      where: { ...userFilter, ...companyFilter, date: { gte: dateFrom, lte: scheduleDateTo }, durationMinutes: { not: null }, userId: { not: null } },
     }),
     // Activities by user (for bar chart)
     prisma.activity.groupBy({
@@ -174,7 +178,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
   // Schedule activities for timeline view (activities with start/end times)
   const scheduleActivitiesRaw = await prisma.activity.findMany({
-    where: { ...activityFilter, startTime: { not: null }, endTime: { not: null }, userId: { not: null } },
+    where: { ...userFilter, ...companyFilter, date: { gte: dateFrom, lte: scheduleDateTo }, startTime: { not: null }, endTime: { not: null }, userId: { not: null } },
     select: { id: true, userId: true, title: true, type: true, startTime: true, endTime: true, date: true },
     orderBy: { startTime: 'asc' },
   });
