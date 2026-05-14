@@ -166,8 +166,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     timeZone: 'UTC',
   });
 
-  const techNames = releasedResources.techs.join(', ') || 'N/A';
-  const safetyNames = releasedResources.safety.join(', ') || 'N/A';
+  const techNames = releasedResources.techs.join(', ') || 'Ninguno';
+  const safetyNames = releasedResources.safety.join(', ') || 'Ninguno';
+  const vehicleNames = releasedResources.vehicles.join(', ');
+  const driverNames = releasedResources.drivers.join(', ');
+  const equipNames = releasedResources.equips.join(', ');
 
   const whatsappNotice = [
     '⚠️ *AVISO DE CANCELACIÓN* ⚠️',
@@ -176,14 +179,18 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     `🏢 *Empresa:* ${activity.client?.name || 'Sin cliente'}`,
     `📅 *Fecha programada:* ${dateFormatted}`,
     `🕐 *Horario:* ${activity.startTime || '--:--'} — ${activity.endTime || '--:--'}`,
-    '',
     `👷 *Sup Operativo:* ${activity.user?.name || 'Sin asignar'}`,
-    `🔧 *Técnicos:* ${techNames}`,
-    `🛡️ *Safety:* ${safetyNames}`,
     '',
     `📝 *Motivo:* ${reasonLabel}`,
     ...(notes ? [`💬 *Detalles:* ${notes}`] : []),
     `💰 *Cargos al cliente:* ${hasCharges ? 'Sí' : 'No'}`,
+    '',
+    '🔓 *Recursos liberados (disponibles):*',
+    `🔧 Técnicos: ${techNames}`,
+    `🛡️ Safety: ${safetyNames}`,
+    ...(vehicleNames ? [`🚗 Vehículos: ${vehicleNames}`] : []),
+    ...(driverNames ? [`🚙 Choferes: ${driverNames}`] : []),
+    ...(equipNames ? [`🏗️ Eq. Elevación: ${equipNames}`] : []),
     '',
     '_Perry App | By Chigüire Labs_',
   ].join('\n');
