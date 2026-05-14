@@ -86,7 +86,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   let newCotizacionId: string | null = null;
 
   await prisma.$transaction(async (tx) => {
-    // 1. Update activity status and cancellation metadata
+    // 1. Snapshot resource assignments for undo capability
+    const resourceSnapshot = {
+      techs: activity.weekendTechAssignments.map(a => ({ technicianId: a.technicianId, role: a.role, weekendOf: a.weekendOf })),
+      safety: activity.weekendSafetyAssignments.map(a => ({ safetyDedicadoId: a.safetyDedicadoId, role: a.role, weekendOf: a.weekendOf })),
+      userSafety: activity.weekendUserSafetyAssignments.map(a => ({ userId: a.userId, weekendOf: a.weekendOf })),
+      vehicles: activity.weekendVehicleAssignments.map(a => ({ vehicleId: a.vehicleId, weekendOf: a.weekendOf })),
+      drivers: activity.weekendDriverAssignments.map(a => ({ driverId: a.driverId, weekendOf: a.weekendOf })),
+      equips: activity.weekendEquipAssignments.map(a => ({ equipId: a.equipId, weekendOf: a.weekendOf })),
+    };
+
+    // 2. Update activity status and cancellation metadata
     await tx.activity.update({
       where: { id: params.id },
       data: {
@@ -96,6 +106,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         cancelNotes: notes || null,
         cancelHasCharges: hasCharges,
         cancelledBy: session.user.name || 'Desconocido',
+        cancelledResources: JSON.stringify(resourceSnapshot),
       },
     });
 

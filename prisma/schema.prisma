@@ -128,6 +128,7 @@ model Activity {
   cancelNotes      String?             // Free-text cancellation details
   cancelHasCharges Boolean?            // Whether the cancellation generates client charges
   cancelledBy      String?             // Name of user who cancelled
+  cancelledResources String?            // JSON snapshot of resource assignments before cancellation (for undo)
   companyId       String?
   company         Company?     @relation(fields: [companyId], references: [id])
   createdAt       DateTime     @default(now())

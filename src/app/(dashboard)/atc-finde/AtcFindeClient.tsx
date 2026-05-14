@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
@@ -37,6 +37,7 @@ interface Activity {
   contact: { id: string; name: string } | null;
   timeRegistryEntries: TimeRegistryEntryData[];
   continuedFromId?: string | null;
+  cancelledBy?: string | null;
 }
 
 interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; }
@@ -249,6 +250,8 @@ export function AtcFindeClient({
   const [cancelCopied, setCancelCopied] = useState(false);
   // Track locally-cancelled activity IDs so UI reflects cancellation without reload
   const [cancelledIds, setCancelledIds] = useState<Set<string>>(new Set(activities.filter(a => a.status === 'CANCELADA').map(a => a.id)));
+  const [cancelledByMap, setCancelledByMap] = useState<Record<string, string>>(Object.fromEntries(activities.filter(a => a.cancelledBy).map(a => [a.id, a.cancelledBy!])));
+  const [uncancelLoading, setUncancelLoading] = useState<Record<string, boolean>>({});
 
   // Extra day dialog state
   const [showExtraDayDialog, setShowExtraDayDialog] = useState(false);
@@ -1859,9 +1862,42 @@ export function AtcFindeClient({
                       )}
                     </td>
 
-                    {/* CANCEL BUTTON */}
+                    {/* CANCEL / UNDO BUTTON */}
                     <td className="text-center">
-                      {!cancelledIds.has(act.id) && (canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
+                      {cancelledIds.has(act.id) ? (
+                        <div className="flex flex-col items-center gap-0.5">
+                          {cancelledByMap[act.id] && (
+                            <span className="text-[9px] text-red-400 leading-tight">por {cancelledByMap[act.id]}</span>
+                          )}
+                          {(canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm('¿Restaurar actividad y recuperar recursos?')) return;
+                                setUncancelLoading(p => ({ ...p, [act.id]: true }));
+                                try {
+                                  const res = await fetch(`/api/activities/${act.id}/uncancel`, { method: 'POST' });
+                                  const data = await res.json();
+                                  if (!res.ok) { alert(data.error || 'Error'); setUncancelLoading(p => ({ ...p, [act.id]: false })); return; }
+                                  setCancelledIds(prev => { const next = new Set(prev); next.delete(act.id); return next; });
+                                  const msg = [
+                                    '✅ Actividad restaurada',
+                                    data.restored.length > 0 ? `\nRecursos restaurados:\n${data.restored.join('\n')}` : '',
+                                    data.conflicts.length > 0 ? `\n⚠️ No se pudieron restaurar:\n${data.conflicts.join('\n')}` : '',
+                                  ].filter(Boolean).join('');
+                                  alert(msg);
+                                  router.refresh();
+                                } catch { alert('Error de conexión'); }
+                                setUncancelLoading(p => ({ ...p, [act.id]: false }));
+                              }}
+                              disabled={uncancelLoading[act.id]}
+                              className="p-1 rounded hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 transition-colors disabled:opacity-50"
+                              title="Deshacer cancelación"
+                            >
+                              {uncancelLoading[act.id] ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                            </button>
+                          )}
+                        </div>
+                      ) : (canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
                         <button
                           onClick={() => { setCancelModal({ activity: act }); setCancelReason(''); setCancelNotes(''); setCancelHasCharges(false); setCancelResult(null); setCancelCopied(false); }}
                           className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
@@ -2065,6 +2101,7 @@ export function AtcFindeClient({
                         if (!res.ok) { alert(data.error || 'Error al cancelar'); setCancelLoading(false); return; }
                         setCancelResult(data);
                         setCancelledIds(prev => new Set([...prev, cancelModal.activity.id]));
+                        setCancelledByMap(prev => ({ ...prev, [cancelModal.activity.id]: userName }));
                       } catch (err) {
                         alert('Error de conexión');
                       }
