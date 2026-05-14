@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Reporte Sesión 14 Mayo 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --emerald: #059669;
+      --emerald-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --violet: #7c3aed;
+      --violet-light: #ede9fe;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: white;
+      color: var(--slate-800);
+      line-height: 1.6;
+      font-size: 11pt;
+    }
+
+    @page {
+      size: letter;
+      margin: 1.5cm 2cm;
+    }
+
+    @media print {
+      body { background: white; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none !important; }
+      .container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    .header-text h1 {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.5px;
+    }
+
+    .header-text .subtitle {
+      font-size: 11pt;
+      color: var(--slate-500);
+      font-weight: 400;
+    }
+
+    .header-text .date-badge {
+      display: inline-block;
+      margin-top: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-card .stat-label {
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card.emerald .stat-value { color: var(--emerald); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue .stat-value { color: var(--blue); }
+    .stat-card.violet .stat-value { color: var(--violet); }
+    .stat-card.red .stat-value { color: var(--red); }
+
+    /* Section titles */
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin-top: 28px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2 .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    h2 .icon.feature { background: var(--emerald-light); }
+    h2 .icon.bugfix { background: var(--amber-light); }
+    h2 .icon.cancel { background: var(--red-light); }
+    h2 .icon.notes { background: var(--blue-light); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 9.5pt;
+    }
+
+    thead th {
+      background: var(--slate-800);
+      color: white;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+
+    tbody td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: var(--slate-50); }
+    tbody tr:hover { background: var(--primary-light); }
+
+    .commit-hash {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge.feature { background: var(--emerald-light); color: var(--emerald); }
+    .badge.bugfix { background: var(--amber-light); color: var(--amber); }
+    .badge.cancel { background: var(--red-light); color: var(--red); }
+    .badge.dashboard { background: var(--blue-light); color: var(--blue); }
+    .badge.data { background: var(--violet-light); color: var(--violet); }
+
+    /* Category summary */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .category-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px;
+      background: white;
+    }
+
+    .category-card h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .category-card ul {
+      list-style: none;
+      font-size: 8.5pt;
+      color: var(--slate-600);
+    }
+
+    .category-card li {
+      padding: 2px 0;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .category-card li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--emerald);
+      font-weight: 700;
+    }
+
+    /* Schema table */
+    .schema-table { margin-top: 8px; }
+    .schema-table td:first-child { font-weight: 600; color: var(--slate-700); }
+    .schema-table td:last-child { font-family: 'SF Mono', monospace; font-size: 8.5pt; color: var(--violet); }
+
+    /* Footer */
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: var(--slate-500);
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 11pt;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Perry App</h1>
+        <div class="subtitle">Reporte de Cambios — Sesión Desarrollo</div>
+        <span class="date-badge">📅 14 de Mayo, 2026</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">10</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Features</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Bug Fixes</div>
+      </div>
+      <div class="stat-card violet">
+        <div class="stat-value">26</div>
+        <div class="stat-label">Archivos Mod.</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-value">1949</div>
+        <div class="stat-label">Líneas Añadidas</div>
+      </div>
+    </div>
+
+    <!-- Full commit table -->
+    <h2>Detalle de Cambios</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:35px">#</th>
+          <th style="width:75px">Commit</th>
+          <th>Descripción</th>
+          <th style="width:90px">Categoría</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="commit-hash">def8319</span></td>
+          <td>Separador de días sin efecto hover + Badge CONT solo para tipo EJECUCION</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><span class="commit-hash">bc649a8</span></td>
+          <td>Vista técnico: columna cambiada de "Responsable" a "Sup Operativo" para claridad</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><span class="commit-hash">3454dd9</span></td>
+          <td><strong>Workflow completo de cancelación de actividades</strong>: modal con motivos KPI, liberación de recursos, auto-cotización, aviso WhatsApp, indicadores visuales ❌ CANCELADA + Dashboard timeline Gantt</td>
+          <td><span class="badge cancel">Cancelación</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><span class="commit-hash">7635cea</span></td>
+          <td>Deshacer cancelación con restauración inteligente de recursos + mostrar quién canceló</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">828d41b</span></td>
+          <td>Aviso WhatsApp: recursos liberados al final del mensaje, sin duplicar técnicos</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">1aecefe</span></td>
+          <td>Barra separadora de días ahora llega hasta la última columna + texto "Cancelar" junto al ícono</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">c6db742</span></td>
+          <td>Normalización de títulos a <em>Sentence case</em>: función <code>toSentenceCase()</code> en 4 puntos de guardado + migración de 465 registros existentes</td>
+          <td><span class="badge data">Datos</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><span class="commit-hash">da9a6ad</span></td>
+          <td>Dashboard semanal: tablero "Horas por Responsable" ahora excluye actividades futuras — se limita al día de visualización</td>
+          <td><span class="badge dashboard">Dashboard</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><span class="commit-hash">79ef790</span></td>
+          <td>Directorio: protección null safety en filtros de búsqueda + validación de respuesta API como array</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><span class="commit-hash">76b60a6</span></td>
+          <td>Directorio: removido campo <code>opportunities</code> inexistente del query <code>_count</code> que causaba error 500 — causa raíz del crash</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Category Summary -->
+    <h2>Resumen por Categoría</h2>
+    <div class="category-grid">
+      <div class="category-card" style="border-left: 4px solid var(--red);">
+        <h3>🚫 Cancelación de Actividades (Nuevo)</h3>
+        <ul>
+          <li>Modal con 9 motivos seleccionables (KPI ready)</li>
+          <li>Notas libres opcionales (obligatorias si motivo = "Otra")</li>
+          <li>Checkbox de cargos → auto-crea COTIZACIÓN al día hábil siguiente</li>
+          <li>Liberación atómica de recursos (técnicos, safety, vehículos, choferes, equipo)</li>
+          <li>Generador de aviso WhatsApp con recursos liberados</li>
+          <li>Visual: fila roja + badge ❌ CANCELADA + tachado</li>
+          <li>Muestra "por [nombre]" de quién canceló</li>
+        </ul>
+      </div>
+      <div class="category-card" style="border-left: 4px solid var(--emerald);">
+        <h3>↩️ Deshacer Cancelación</h3>
+        <ul>
+          <li>Snapshot JSON de recursos antes de borrarlos</li>
+          <li>Endpoint <code>POST /api/activities/[id]/uncancel</code></li>
+          <li>Restaura status a PENDIENTE y limpia metadata</li>
+          <li>Re-crea asignaciones originales si están disponibles</li>
+          <li>Reporta conflictos si el recurso ya fue asignado a otra actividad</li>
+          <li>Botón ↩️ verde con confirmación</li>
+        </ul>
+      </div>
+      <div class="category-card" style="border-left: 4px solid var(--blue);">
+        <h3>📊 Dashboard</h3>
+        <ul>
+          <li>Timeline Gantt horizontal para Hoy/Ayer</li>
+          <li>Vista semanal: barras acumuladas con expand diario</li>
+          <li>Labels de hora sin <code>:00</code> para ahorrar espacio</li>
+          <li>Vista semanal limitada al día actual (excluye futuro)</li>
+        </ul>
+      </div>
+      <div class="category-card" style="border-left: 4px solid var(--violet);">
+        <h3>🔤 Normalización de Datos</h3>
+        <ul>
+          <li>Función <code>toSentenceCase()</code> en utils.ts</li>
+          <li>Aplicada en crear, editar, importar y auto-cotización</li>
+          <li>Script de migración: 465 de 540 títulos normalizados</li>
+          <li>Uniformidad visual en todas las tablas de actividades</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- New Schema -->
+    <h2>Cambios en Base de Datos</h2>
+    <table class="schema-table">
+      <thead>
+        <tr>
+          <th>Cambio</th>
+          <th style="text-align:right;width:200px">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Campo en Activity</td>
+          <td>cancelledAt (DateTime?)</td>
+        </tr>
+        <tr>
+          <td>Campo en Activity</td>
+          <td>cancelReason (String?)</td>
+        </tr>
+        <tr>
+          <td>Campo en Activity</td>
+          <td>cancelNotes (String?)</td>
+        </tr>
+        <tr>
+          <td>Campo en Activity</td>
+          <td>cancelHasCharges (Boolean?)</td>
+        </tr>
+        <tr>
+          <td>Campo en Activity</td>
+          <td>cancelledBy (String?)</td>
+        </tr>
+        <tr>
+          <td>Campo en Activity</td>
+          <td>cancelledResources (String?)</td>
+        </tr>
+        <tr>
+          <td>Nuevo endpoint</td>
+          <td>POST /api/activities/[id]/cancel</td>
+        </tr>
+        <tr>
+          <td>Nuevo endpoint</td>
+          <td>POST /api/activities/[id]/uncancel</td>
+        </tr>
+        <tr>
+          <td>Nueva utilidad</td>
+          <td>toSentenceCase() en utils.ts</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Architecture note -->
+    <h2>Decisión Arquitectónica Clave</h2>
+    <div class="category-card" style="border-left: 4px solid var(--red); margin-bottom: 20px;">
+      <h3>🔄 Cancelación: Snapshot & Restore vs. Soft-Delete</h3>
+      <p style="font-size: 9pt; color: var(--slate-600); margin-top: 6px; line-height: 1.7;">
+        Se optó por un modelo de <strong>snapshot + hard-delete</strong> para las asignaciones de recursos:
+        al cancelar, se guarda un JSON con todas las asignaciones originales en <code>cancelledResources</code>,
+        luego se borran las filas de asignación para liberar los recursos inmediatamente.
+        Al deshacer, se parsea el JSON y se intentan re-crear las asignaciones, reportando conflictos si el recurso
+        ya fue asignado a otra actividad. Este enfoque es preferible a soft-delete porque: (1) las queries de disponibilidad
+        siguen siendo simples (<code>WHERE activityId = ?</code>), (2) no hay riesgo de "recursos fantasma" y
+        (3) el snapshot JSON es auto-contenido para auditoría.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Perry App v2.x — Desarrollado con Antigravity por CHIGÜIRE LABS | IVAN LOPEZ BOYER</span>
+      <span>Generado: 14 de Mayo, 2026 · 15:32 hrs (Tijuana, BC)</span>
+    </div>
+
+  </div>
+
+  <!-- Print button (hidden on print) -->
+  <button class="print-btn no-print" onclick="window.print()">
+    📄 Guardar como PDF
+  </button>
+
+</body>
+</html>
