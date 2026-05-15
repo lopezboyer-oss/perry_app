@@ -24,6 +24,19 @@ export function TimeInput24h({ value, onChange, onBlur, className = '', placehol
     // Limit to 4 digits
     digits = digits.slice(0, 4);
     
+    // If first 2 digits form an invalid hour (>23), treat first digit as hour, rest as minutes
+    // e.g. "80" → hour "08", minute start "0" → "08:0"
+    if (digits.length >= 2) {
+      const first2 = parseInt(digits.slice(0, 2), 10);
+      if (first2 > 23) {
+        // Reinterpret: pad first digit as hour, shift rest to minutes
+        const hourPart = '0' + digits[0];
+        const minutePart = digits.slice(1, 3); // up to 2 minute digits
+        digits = hourPart + minutePart;
+        digits = digits.slice(0, 4);
+      }
+    }
+    
     // Build formatted value
     let formatted = '';
     if (digits.length <= 2) {
@@ -32,14 +45,8 @@ export function TimeInput24h({ value, onChange, onBlur, className = '', placehol
       formatted = digits.slice(0, 2) + ':' + digits.slice(2);
     }
     
-    // Validate hours (00-23) and minutes (00-59) if complete
-    if (digits.length >= 2) {
-      const hours = parseInt(digits.slice(0, 2), 10);
-      if (hours > 23) {
-        formatted = '23' + (digits.length > 2 ? ':' + digits.slice(2) : '');
-      }
-    }
-    if (digits.length === 4) {
+    // Validate minutes (00-59) if complete
+    if (digits.length >= 4) {
       const minutes = parseInt(digits.slice(2, 4), 10);
       if (minutes > 59) {
         formatted = digits.slice(0, 2) + ':59';
