@@ -1236,21 +1236,21 @@ export function AtcFindeClient({
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {canManageExtraDays && (
-            <button onClick={() => setShowExtraDayDialog(true)} className="btn-secondary text-sm shrink-0 !bg-amber-50 !text-amber-700 !border-amber-300 hover:!bg-amber-100">
-              <Plus size={16} /> Día Extra
+            <button onClick={() => setShowExtraDayDialog(true)} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-amber-50 !text-amber-700 !border-amber-300 hover:!bg-amber-100 leading-tight text-center">
+              <Plus size={12} /> Día<br/>Extra
             </button>
           )}
-          <button onClick={() => { setSelectedTechId(assignedTechs[0]?.id || null); setShowTechPlansModal(true); }} className="btn-secondary text-sm shrink-0 !bg-sky-50 !text-sky-700 !border-sky-300 hover:!bg-sky-100">📋 Planes Técnicos</button>
+          <button onClick={() => { setSelectedTechId(assignedTechs[0]?.id || null); setShowTechPlansModal(true); }} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-sky-50 !text-sky-700 !border-sky-300 hover:!bg-sky-100 leading-tight text-center">📋 Planes<br/>Técnicos</button>
           {assignedContractors.length > 0 && (
-            <button onClick={() => { setSelectedContractorId(assignedContractors[0]?.id || null); setShowContractorPlansModal(true); }} className="btn-secondary text-sm shrink-0 !bg-purple-50 !text-purple-700 !border-purple-300 hover:!bg-purple-100">🏭 Plan Contratista</button>
+            <button onClick={() => { setSelectedContractorId(assignedContractors[0]?.id || null); setShowContractorPlansModal(true); }} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-purple-50 !text-purple-700 !border-purple-300 hover:!bg-purple-100 leading-tight text-center">🏭 Plan<br/>Contratista</button>
           )}
-          <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary text-sm shrink-0 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100">🏗️ Reporte Equipos</button>
-          <button onClick={exportCSV} className="btn-secondary text-sm shrink-0 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100"><Download size={16} /> Exportar Excel</button>
+          <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100 leading-tight text-center">🏗️ Reporte<br/>Equipos</button>
+          <button onClick={exportCSV} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100 leading-tight text-center"><Download size={12} /> Exportar<br/>Excel</button>
           {['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole) && (
-            <button onClick={exportMultiCompanyExcel} disabled={exportingMulti} className="btn-secondary text-sm shrink-0 !bg-violet-50 !text-violet-700 !border-violet-300 hover:!bg-violet-100 disabled:opacity-50">
-              {exportingMulti ? <><Loader2 size={16} className="animate-spin" /> Generando...</> : <><Download size={16} /> Excel Multiempresa</>}
+            <button onClick={exportMultiCompanyExcel} disabled={exportingMulti} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-violet-50 !text-violet-700 !border-violet-300 hover:!bg-violet-100 disabled:opacity-50 leading-tight text-center">
+              {exportingMulti ? <><Loader2 size={12} className="animate-spin" /> Generando...</> : <><Download size={12} /> Excel<br/>Multiempresa</>}
             </button>
           )}
         </div>
