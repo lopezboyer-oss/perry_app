@@ -40,7 +40,7 @@ interface Activity {
   cancelledBy?: string | null;
 }
 
-interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; }
+interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; contractorId?: string | null; contractor?: { id: string; name: string } | null; }
 interface SafetyDedicado { id: string; name: string; }
 interface SafetyDesignadoUser { id: string; name: string; }
 interface Vehicle { id: string; name: string; }
@@ -918,10 +918,102 @@ export function AtcFindeClient({
       });
     });
 
+    text += `\n\n_Mensaje de Perry App_\n_By CHIGÜIRE LABS_`;
+
     return text;
   };
 
-  // ── EQUIPMENT REPORT MODAL ──
+  // ── CONTRACTOR PLANS MODAL ──
+  const [showContractorPlansModal, setShowContractorPlansModal] = useState(false);
+  const [selectedContractorId, setSelectedContractorId] = useState<string | null>(null);
+
+  // Get contractors that have techs assigned in this plan
+  const assignedContractors = (() => {
+    const contractorMap = new Map<string, { id: string; name: string; techCount: number }>();
+    assignedTechs.forEach(t => {
+      if (t.contractorId && t.contractor) {
+        const existing = contractorMap.get(t.contractorId);
+        if (existing) {
+          existing.techCount++;
+        } else {
+          contractorMap.set(t.contractorId, { id: t.contractorId, name: t.contractor.name, techCount: 1 });
+        }
+      }
+    });
+    return [...contractorMap.values()].sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
+  const generateContractorPlan = (contractorId: string): string => {
+    const contractor = assignedContractors.find(c => c.id === contractorId);
+    if (!contractor) return 'Contratista no encontrado.';
+
+    // Get techs belonging to this contractor that are assigned
+    const contractorTechs = assignedTechs.filter(t => t.contractorId === contractorId);
+    if (contractorTechs.length === 0) return `📋 PLAN CONTRATISTA — ${contractor.name}\n\nSin técnicos asignados.`;
+
+    const dayNamesLong = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+    let text = `📋 *PLAN DE TRABAJO — ${weekendLabel}*\n🏭 *Contratista: ${contractor.name}*\n👷 Técnicos asignados: ${contractorTechs.length}\n`;
+
+    // For each tech, list their activities grouped by date
+    contractorTechs.forEach(tech => {
+      const techActIds = techAssignments
+        .filter(x => x.technicianId === tech.id && x.role === 'TECNICO')
+        .map(x => x.activityId);
+
+      const techActs = techActIds
+        .map(actId => activities.find(a => a.id === actId))
+        .filter((a): a is Activity => a !== undefined && a !== null);
+
+      if (techActs.length === 0) return;
+
+      text += `\n━━━━━━━━━━━━━━━━━━━━\n👤 *${tech.name}* (${techActs.length} actividades)\n━━━━━━━━━━━━━━━━━━━━\n`;
+
+      // Group by date
+      const byDate = new Map<string, Activity[]>();
+      techActs.forEach(a => {
+        const dateKey = a.date.substring(0, 10);
+        const existing = byDate.get(dateKey) || [];
+        existing.push(a);
+        byDate.set(dateKey, existing);
+      });
+
+      const sortedDates = [...byDate.keys()].sort();
+      sortedDates.forEach(dateKey => {
+        const dt = new Date(`${dateKey}T12:00:00`);
+        const dayName = dayNamesLong[dt.getDay()];
+
+        text += `\n📅 ${dayName.toUpperCase()} ${dt.getDate()} de ${monthNames[dt.getMonth()]}\n`;
+
+        const acts = byDate.get(dateKey)!.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+        acts.forEach((a, idx) => {
+          const timeRange = a.startTime && a.endTime ? `${a.startTime} — ${a.endTime}` : 'Horario pendiente';
+          const hasLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
+
+          text += `${idx + 1}️⃣ ${timeRange}\n`;
+          text += `   📌 ${a.title}\n`;
+          text += `   👷 Responsable: ${a.user?.name || 'Sin asignar'}\n`;
+          text += `   🔒 LOTO: ${hasLoto ? '✅ SÍ' : '❌ NO'}\n`;
+
+          // Equipment
+          const actEquips = equipAssignments.filter(x => x.activityId === a.id);
+          if (actEquips.length > 0) {
+            text += `   🏗️ Eq. Elevación: ${actEquips.map(x => x.equip.name).join(', ')}\n`;
+          }
+
+          const noteText = notesState[a.id] || a.weekendNotes || '';
+          if (noteText) {
+            text += `   📝 Nota: ${noteText}\n`;
+          }
+        });
+      });
+    });
+
+    text += `\n\n_Mensaje de Perry App_\n_By CHIGÜIRE LABS_`;
+    return text;
+  };
+
   const [showEquipReportModal, setShowEquipReportModal] = useState(false);
 
   const generateEquipReport = (): { text: string; data: { equip: string; ownership: string; day: string; time: string; activity: string; engineer: string }[] } => {
@@ -984,7 +1076,7 @@ export function AtcFindeClient({
       });
     });
 
-    text += `\n══════════════════════════════════\nTotal equipos: ${byEquip.size} | Total usos: ${totalUses}\n══════════════════════════════════`;
+    text += `\n══════════════════════════════════\nTotal equipos: ${byEquip.size} | Total usos: ${totalUses}\n══════════════════════════════════\n\n_Mensaje de Perry App_\n_By CHIGÜIRE LABS_`;
 
     return { text, data: csvData };
   };
@@ -1151,6 +1243,9 @@ export function AtcFindeClient({
             </button>
           )}
           <button onClick={() => { setSelectedTechId(assignedTechs[0]?.id || null); setShowTechPlansModal(true); }} className="btn-secondary text-sm shrink-0 !bg-sky-50 !text-sky-700 !border-sky-300 hover:!bg-sky-100">📋 Planes Técnicos</button>
+          {assignedContractors.length > 0 && (
+            <button onClick={() => { setSelectedContractorId(assignedContractors[0]?.id || null); setShowContractorPlansModal(true); }} className="btn-secondary text-sm shrink-0 !bg-purple-50 !text-purple-700 !border-purple-300 hover:!bg-purple-100">🏭 Plan Contratista</button>
+          )}
           <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary text-sm shrink-0 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100">🏗️ Reporte Equipos</button>
           <button onClick={exportCSV} className="btn-secondary text-sm shrink-0 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100"><Download size={16} /> Exportar Excel</button>
           {['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole) && (
@@ -1980,6 +2075,49 @@ export function AtcFindeClient({
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">Selecciona un técnico</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── CONTRACTOR PLANS MODAL ── */}
+      {showContractorPlansModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowContractorPlansModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col animate-slide-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">🏭 Plan Contratista — {weekendLabel}</h3>
+              <button onClick={() => setShowContractorPlansModal(false)} className="p-2 hover:bg-slate-100 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="flex flex-1 overflow-hidden">
+              {/* Left: Contractor list */}
+              <div className="w-64 border-r border-slate-200 overflow-y-auto bg-slate-50 p-3 shrink-0">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Contratistas ({assignedContractors.length})</p>
+                {assignedContractors.map(c => (
+                  <button key={c.id} onClick={() => setSelectedContractorId(c.id)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-colors text-sm ${selectedContractorId === c.id ? 'bg-purple-100 text-purple-800 font-semibold ring-1 ring-purple-300' : 'hover:bg-white text-slate-700'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="truncate">{c.name}</span>
+                      <span className="bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 shrink-0">{c.techCount}</span>
+                    </div>
+                    <div className="text-[9px] text-slate-500 mt-0.5">{c.techCount} técnico{c.techCount !== 1 ? 's' : ''} asignado{c.techCount !== 1 ? 's' : ''}</div>
+                  </button>
+                ))}
+                {assignedContractors.length === 0 && <p className="text-xs text-slate-400 text-center py-4">Sin contratistas en este plan</p>}
+              </div>
+              {/* Right: Generated text */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {selectedContractorId ? (
+                  <>
+                    <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                      <span className="text-xs text-slate-500">🏭 {assignedContractors.find(c => c.id === selectedContractorId)?.name}</span>
+                      <button onClick={() => { navigator.clipboard.writeText(generateContractorPlan(selectedContractorId)); alert('📋 Plan contratista copiado al portapapeles'); }}
+                        className="btn-primary text-xs !py-1.5 !px-3">📋 Copiar para WhatsApp</button>
+                    </div>
+                    <pre className="flex-1 overflow-y-auto p-4 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap font-mono bg-white">{generateContractorPlan(selectedContractorId)}</pre>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">Selecciona una contratista</div>
                 )}
               </div>
             </div>
