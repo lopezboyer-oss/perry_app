@@ -94,6 +94,7 @@ interface Props {
   companyName: string;
   userIsSafetyAuditor: boolean;
   allCompanyActivities: AllCompanyActivity[];
+  preloadedConflicts: Record<string, string[]>;
 }
 
 // ─── MULTI-SELECT DROPDOWN ──────────────────────────────────────
@@ -212,7 +213,7 @@ export function AtcFindeClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
-  userRole, userId, userName, weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, allCompanyActivities,
+  userRole, userId, userName, weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, allCompanyActivities, preloadedConflicts,
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -221,7 +222,7 @@ export function AtcFindeClient({
   const [driverAssignments, setDriverAssignments] = useState(initialDriverAssignments);
   const [equipAssignments, setEquipAssignments] = useState(initialEquipAssignments);
   const [userSafetyAssignments, setUserSafetyAssignments] = useState(initialUserSafetyAssignments);
-  const [conflictAlerts, setConflictAlerts] = useState<Record<string, string[]>>({});
+  const [conflictAlerts, setConflictAlerts] = useState<Record<string, string[]>>(preloadedConflicts);
 
   const [lotoState, setLotoState] = useState<Record<string, boolean>>(Object.fromEntries(activities.map((a) => [a.id, a.loto])));
   const [poState, setPoState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.purchaseOrder || ''])));

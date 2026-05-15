@@ -161,6 +161,46 @@ export default async function AtcFindePage() {
     ? visibleDays.map(d => d.date).join(' — ')
     : `${saturday} — ${sunday}`;
 
+  // Precompute cross-company conflicts for all tech assignments
+  const preloadedConflicts: Record<string, string[]> = {};
+  const allActMap = new Map(allCompanyActivities.map(a => [a.id, a]));
+
+  function timesOverlap(s1: string | null, e1: string | null, s2: string | null, e2: string | null): boolean {
+    if (!s1 || !e1 || !s2 || !e2) return true;
+    return s1 < e2 && s2 < e1;
+  }
+
+  // Check tech conflicts
+  const techsByTech = new Map<string, typeof techAssignments>();
+  techAssignments.forEach(ta => {
+    const arr = techsByTech.get(ta.technicianId) || [];
+    arr.push(ta);
+    techsByTech.set(ta.technicianId, arr);
+  });
+  techsByTech.forEach((assignments, techId) => {
+    if (assignments.length < 2) return;
+    for (let i = 0; i < assignments.length; i++) {
+      for (let j = i + 1; j < assignments.length; j++) {
+        const a1 = allActMap.get(assignments[i].activityId);
+        const a2 = allActMap.get(assignments[j].activityId);
+        if (!a1 || !a2) continue;
+        const d1 = a1.date.toISOString().substring(0, 10);
+        const d2 = a2.date.toISOString().substring(0, 10);
+        if (d1 !== d2) continue;
+        if (timesOverlap(a1.startTime, a1.endTime, a2.startTime, a2.endTime)) {
+          const co1 = a1.company?.name || '';
+          const co2 = a2.company?.name || '';
+          const key1 = `${assignments[i].activityId}-${techId}`;
+          const key2 = `${assignments[j].activityId}-${techId}`;
+          if (!preloadedConflicts[key1]) preloadedConflicts[key1] = [];
+          if (!preloadedConflicts[key2]) preloadedConflicts[key2] = [];
+          preloadedConflicts[key1].push(`⚠️ "${a2.title}" (${a2.startTime || '?'} - ${a2.endTime || '?'}) [${co2}]`);
+          preloadedConflicts[key2].push(`⚠️ "${a1.title}" (${a1.startTime || '?'} - ${a1.endTime || '?'}) [${co1}]`);
+        }
+      }
+    }
+  });
+
   return (
     <AtcFindeClient
       activities={activities.map((a) => ({
@@ -195,6 +235,7 @@ export default async function AtcFindePage() {
         date: a.date.toISOString(),
         companyName: a.company?.name || companyName,
       }))}
+      preloadedConflicts={preloadedConflicts}
     />
   );
 }
