@@ -27,6 +27,9 @@ interface Activity {
   contact: { id: string; name: string } | null;
   timeRegistryEntries: TimeRegistryEntryData[];
   continuedFromId?: string | null;
+  cancelledBy?: string | null;
+  cancelReason?: string | null;
+  cancelNotes?: string | null;
 }
 
 interface Props {
@@ -323,6 +326,61 @@ export function PlanesPasadosClient({
           ))}
         </div>
       </div>
+
+      {/* ── CANCELLED ACTIVITIES CARD ── */}
+      {selectedWeekend && (() => {
+        const cancelledActs = activities.filter(a => a.status === 'CANCELADA');
+        if (cancelledActs.length === 0) return null;
+
+        const REASON_LABELS: Record<string, string> = {
+          PERMISOLOGIA_INCOMPLETA: 'Permisología Incompleta',
+          AREA_NO_DESPEJADA: 'Área no despejada',
+          FALTO_PERSONAL_NUESTRO: 'Faltó Personal nuestro',
+          FALTO_PERSONAL_CLIENTE: 'Faltó Personal Cliente',
+          FALTO_MATERIAL: 'Faltó Material',
+          MEDIDAS_NO_COINCIDEN: 'Medidas no coinciden',
+          ALCANCE_DISTINTO: 'Alcance distinto',
+          OBSTRUCCION_OTRA_EMPRESA: 'Obstrucción otra empresa',
+          OTRA: 'Otra',
+        };
+
+        const dayNamesShort = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+
+        return (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 animate-fade-in">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <AlertTriangle size={16} className="text-red-500" />
+                ❌ ACTIVIDADES CANCELADAS
+              </h3>
+              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{cancelledActs.length}</span>
+            </div>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {cancelledActs.map(act => {
+                const dt = new Date(`${act.date.substring(0, 10)}T12:00:00`);
+                const dayLabel = dayNamesShort[dt.getDay()] + ' ' + dt.getDate();
+                const timeRange = act.startTime && act.endTime ? `${act.startTime}-${act.endTime}` : 'S/H';
+                const reasonLabel = act.cancelReason ? (REASON_LABELS[act.cancelReason] || act.cancelReason) : '';
+
+                return (
+                  <div key={act.id} className="bg-white rounded-lg px-3 py-2 border border-slate-100 flex items-start gap-2">
+                    <span className="text-red-400 text-xs mt-0.5">❌</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-700 truncate">{act.title}</p>
+                      <p className="text-[10px] text-slate-500 leading-tight">
+                        📅 {dayLabel} · 🕐 {timeRange} · 👷 {act.user?.name || 'Sin asignar'}
+                      </p>
+                      {reasonLabel && <p className="text-[10px] text-red-600 leading-tight">📝 Motivo: {reasonLabel}</p>}
+                      {act.cancelNotes && <p className="text-[10px] text-slate-500 leading-tight italic">💬 {act.cancelNotes}</p>}
+                      {act.cancelledBy && <p className="text-[10px] text-slate-400 leading-tight">Cancelada por: {act.cancelledBy}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Plan Table */}
       {selectedWeekend && (
