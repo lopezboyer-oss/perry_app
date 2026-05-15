@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Directorio de Usuarios y Accesos</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --emerald: #059669;
+      --emerald-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --violet: #7c3aed;
+      --violet-light: #ede9fe;
+      --cyan: #0891b2;
+      --cyan-light: #cffafe;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: white; color: var(--slate-800); line-height: 1.5; font-size: 10pt; }
+
+    @page { size: letter landscape; margin: 1.2cm 1.5cm; }
+    @media print {
+      body { background: white; }
+      .no-print { display: none !important; }
+      .container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 30px; }
+
+    .header { display: flex; align-items: center; gap: 20px; padding-bottom: 16px; border-bottom: 3px solid var(--primary); margin-bottom: 24px; }
+    .header img { width: 60px; height: 60px; border-radius: 14px; object-fit: cover; }
+    .header-text h1 { font-size: 20pt; font-weight: 800; color: var(--slate-900); }
+    .header-text .subtitle { font-size: 10pt; color: var(--slate-500); }
+    .header-text .date-badge { display: inline-block; margin-top: 4px; background: var(--primary-light); color: var(--primary); font-weight: 600; font-size: 8pt; padding: 2px 10px; border-radius: 20px; }
+
+    .stats-bar { display: flex; gap: 12px; margin-bottom: 20px; }
+    .stat-card { flex: 1; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 10px; padding: 10px 14px; text-align: center; }
+    .stat-card .stat-value { font-size: 20pt; font-weight: 800; color: var(--primary); }
+    .stat-card .stat-label { font-size: 7.5pt; font-weight: 600; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card.emerald .stat-value { color: var(--emerald); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue .stat-value { color: var(--blue); }
+    .stat-card.violet .stat-value { color: var(--violet); }
+    .stat-card.cyan .stat-value { color: var(--cyan); }
+
+    h2 { font-size: 13pt; font-weight: 700; color: var(--slate-800); margin-top: 20px; margin-bottom: 10px; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 8.5pt; }
+    thead th { background: var(--slate-800); color: white; font-weight: 600; padding: 7px 8px; text-align: left; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.3px; }
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+    tbody td { padding: 6px 8px; border-bottom: 1px solid var(--slate-100); vertical-align: middle; }
+    tbody tr:nth-child(even) { background: var(--slate-50); }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 7pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge.admin { background: var(--red-light); color: var(--red); }
+    .badge.supervisor { background: var(--amber-light); color: var(--amber); }
+    .badge.safety { background: var(--violet-light); color: var(--violet); }
+    .badge.ingeniero { background: var(--blue-light); color: var(--blue); }
+    .badge.administracion { background: var(--cyan-light); color: var(--cyan); }
+    .badge.company { background: var(--emerald-light); color: var(--emerald); font-size: 6.5pt; margin: 1px 2px; }
+    .badge.default { background: var(--primary-light); color: var(--primary); font-size: 6.5pt; margin: 1px 2px; }
+    .badge.active { background: var(--emerald-light); color: var(--emerald); }
+    .badge.inactive { background: var(--red-light); color: var(--red); }
+
+    .email-cell { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 7.5pt; color: var(--primary); }
+
+    .legend { margin-top: 20px; padding: 14px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 10px; }
+    .legend h3 { font-size: 9pt; font-weight: 700; margin-bottom: 8px; }
+    .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; font-size: 8pt; color: var(--slate-600); }
+    .legend-grid .item { display: flex; align-items: center; gap: 6px; }
+
+    .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--slate-200); display: flex; justify-content: space-between; font-size: 7.5pt; color: var(--slate-500); }
+
+    .print-btn { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-size: 10pt; font-weight: 600; cursor: pointer; box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4); transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .print-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5); }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Directorio de Usuarios y Accesos</h1>
+        <div class="subtitle">Perry App — Control de Accesos por Rol y Empresa</div>
+        <span class="date-badge">📅 Generado: 15 de Mayo, 2026</span>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">28</div>
+        <div class="stat-label">Usuarios Total</div>
+      </div>
+      <div class="stat-card" style="--c: var(--red);">
+        <div class="stat-value" style="color:var(--red)">6</div>
+        <div class="stat-label">Admin</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">2</div>
+        <div class="stat-label">Supervisores</div>
+      </div>
+      <div class="stat-card violet">
+        <div class="stat-value">1</div>
+        <div class="stat-label">Safety & LP</div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-value">2</div>
+        <div class="stat-label">Administración</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-value">17</div>
+        <div class="stat-label">Ingenieros</div>
+      </div>
+    </div>
+
+    <h2>👥 Usuarios Registrados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:25px">#</th>
+          <th>Nombre</th>
+          <th>Email de Acceso</th>
+          <th style="width:100px">Rol</th>
+          <th>Empresas Asignadas</th>
+          <th style="width:55px">Estado</th>
+          <th style="width:60px">Desde</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- ADMIN -->
+        <tr>
+          <td>1</td>
+          <td><strong>Carlos Sevilla</strong></td>
+          <td class="email-cell">caseme1970@gmail.com</td>
+          <td><span class="badge admin">Admin</span></td>
+          <td><span class="badge default">GRUPO CASEME</span><span class="badge company">DROBOTS</span><span class="badge company">VULCAN FORGE</span><span class="badge company">SAINPRO</span><span class="badge company">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>13/04</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Ivan Lopez</strong></td>
+          <td class="email-cell">lopezboyer@gmail.com</td>
+          <td><span class="badge admin">Admin</span></td>
+          <td><span class="badge default">GRUPO CASEME</span><span class="badge company">DROBOTS</span><span class="badge company">VULCAN FORGE</span><span class="badge company">SAINPRO</span><span class="badge company">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>14/04</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Jenrique Lopez</strong></td>
+          <td class="email-cell">enrique.lopez.gsi@gmail.com</td>
+          <td><span class="badge admin">Admin</span></td>
+          <td><span class="badge default">GRUPO CASEME</span><span class="badge company">DROBOTS</span><span class="badge company">VULCAN FORGE</span><span class="badge company">SAINPRO</span><span class="badge company">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>13/04</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Jose Angel Molina</strong></td>
+          <td class="email-cell">joseangel.molina.gsi@gmail.com</td>
+          <td><span class="badge admin">Admin</span></td>
+          <td><span class="badge default">GRUPO CASEME</span><span class="badge company">DROBOTS</span><span class="badge company">VULCAN FORGE</span><span class="badge company">SAINPRO</span><span class="badge company">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>27/04</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Adriano Jerez Araujo</strong></td>
+          <td class="email-cell">adriano1gsi@gmail.com</td>
+          <td><span class="badge admin">Admin</span></td>
+          <td><span class="badge company">GRUPO CASEME</span><span class="badge default">DROBOTS</span><span class="badge company">VULCAN FORGE</span><span class="badge company">SAINPRO</span><span class="badge company">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>30/04</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Huglimar Oliva</strong></td>
+          <td class="email-cell">huglimar.gsi@gmail.com</td>
+          <td><span class="badge admin">Admin</span></td>
+          <td><span class="badge company">GRUPO CASEME</span><span class="badge company">DROBOTS</span><span class="badge company">VULCAN FORGE</span><span class="badge company">SAINPRO</span><span class="badge default">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>30/04</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Javier Francisco Oropeza</strong></td>
+          <td class="email-cell">coordinacionoperaciones@drobots.mx</td>
+          <td><span class="badge admin">Admin</span></td>
+          <td><span class="badge default">DROBOTS</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <!-- SUPERVISORES -->
+        <tr style="border-top: 2px solid var(--amber);">
+          <td>8</td>
+          <td><strong>Medardo Bohorquez</strong></td>
+          <td class="email-cell">medardo.bohorquez@gsingenieria.mx</td>
+          <td><span class="badge supervisor">Supervisor</span></td>
+          <td><span class="badge default">GRUPO CASEME</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>14/04</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><strong>Francisco Molina Orocopey</strong></td>
+          <td class="email-cell">francisco.molina@drobots.mx</td>
+          <td><span class="badge supervisor">Supervisor</span></td>
+          <td><span class="badge default">DROBOTS</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>04/05</td>
+        </tr>
+        <!-- SAFETY & LP -->
+        <tr style="border-top: 2px solid var(--violet);">
+          <td>10</td>
+          <td><strong>Naudy Oropeza</strong></td>
+          <td class="email-cell">naudyogsi@gmail.com</td>
+          <td><span class="badge safety">Safety & LP</span></td>
+          <td><span class="badge default">GRUPO CASEME</span><span class="badge company">DROBOTS</span><span class="badge company">VULCAN FORGE</span><span class="badge company">SAINPRO</span><span class="badge company">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>17/04</td>
+        </tr>
+        <!-- ADMINISTRACIÓN -->
+        <tr style="border-top: 2px solid var(--cyan);">
+          <td>11</td>
+          <td><strong>Fabián Amador</strong></td>
+          <td class="email-cell">fabian.amador@opusingenium.mx</td>
+          <td><span class="badge administracion">Administración</span></td>
+          <td><span class="badge default">OPUS INGENIUM</span><span class="badge company">VULCAN FORGE</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>04/05</td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td><strong>Ofelia Rojas Ortiz</strong></td>
+          <td class="email-cell">cuentasporpagar@drobots.mx</td>
+          <td><span class="badge administracion">Administración</span></td>
+          <td><span class="badge default">DROBOTS</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>04/05</td>
+        </tr>
+        <!-- INGENIEROS -->
+        <tr style="border-top: 2px solid var(--blue);">
+          <td>13</td>
+          <td>Antonio Villanueva</td>
+          <td class="email-cell">antonio.villanueva@gsingenieria.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">GRUPO CASEME</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>14/04</td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td>Carlos Lopez</td>
+          <td class="email-cell">carlos.lopez@gsingenieria.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">GRUPO CASEME</span><span class="badge company">DROBOTS</span><span class="badge company">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>16/04</td>
+        </tr>
+        <tr>
+          <td>15</td>
+          <td>Daniel Diosdado</td>
+          <td class="email-cell">daniel.diosdado@gsingenieria.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">GRUPO CASEME</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>14/04</td>
+        </tr>
+        <tr>
+          <td>16</td>
+          <td>Jesus Hernandez</td>
+          <td class="email-cell">jesus.hernandez@gsingenieria.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">GRUPO CASEME</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>14/04</td>
+        </tr>
+        <tr>
+          <td>17</td>
+          <td>Marcos Montiel</td>
+          <td class="email-cell">mmontiel.gsi@gmail.com</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">GRUPO CASEME</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>14/04</td>
+        </tr>
+        <tr>
+          <td>18</td>
+          <td>Mariana Salazar Ramirez</td>
+          <td class="email-cell">mariana.salazar@opusingenium.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge company">GRUPO CASEME</span><span class="badge default">OPUS INGENIUM</span><span class="badge company">VULCAN FORGE</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>21/04</td>
+        </tr>
+        <tr>
+          <td>19</td>
+          <td>Adrian Jarquin Torres</td>
+          <td class="email-cell">adrianjarquin.drobots@gmail.com</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">DROBOTS</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <tr>
+          <td>20</td>
+          <td>Alejandro Agustimiano Cayetano</td>
+          <td class="email-cell">alejandro.a@opusingenium.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <tr>
+          <td>21</td>
+          <td>Andres Gallardo Gasga</td>
+          <td class="email-cell">andres.g@drobots.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">DROBOTS</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <tr>
+          <td>22</td>
+          <td>Guadalupe Gonzalez Dominguez</td>
+          <td class="email-cell">guadalupe.sainpro@gmail.com</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">DROBOTS</span><span class="badge company">GRUPO CASEME</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <tr>
+          <td>23</td>
+          <td>Kevin Alejandro Valenzuela Flores</td>
+          <td class="email-cell">alejandro.valenzuela@opusingenium.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">OPUS INGENIUM</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <tr>
+          <td>24</td>
+          <td>Pablo Alfonso Avalos</td>
+          <td class="email-cell">pablo.a@drobots.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">DROBOTS</span><span class="badge company">GRUPO CASEME</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <tr>
+          <td>25</td>
+          <td>Victor Manuel Piña Chavez</td>
+          <td class="email-cell">victor.p@drobots.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">DROBOTS</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <tr>
+          <td>26</td>
+          <td>Werner Jordan Zellhuber Osuna</td>
+          <td class="email-cell">werner.z@drobots.mx</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">DROBOTS</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>05/05</td>
+        </tr>
+        <tr>
+          <td>27</td>
+          <td>Felix Jimenez</td>
+          <td class="email-cell">felixjsainpro@gmail.com</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge default">GRUPO CASEME</span><span class="badge company">DROBOTS</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>13/05</td>
+        </tr>
+        <tr>
+          <td>28</td>
+          <td>Misael Badillo</td>
+          <td class="email-cell">misaelbsainpro@gmail.com</td>
+          <td><span class="badge ingeniero">Ingeniero</span></td>
+          <td><span class="badge company">GRUPO CASEME</span><span class="badge company">DROBOTS</span><span class="badge default">SAINPRO</span></td>
+          <td><span class="badge active">Activo</span></td>
+          <td>13/05</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Legend -->
+    <div class="legend">
+      <h3>📋 Permisos por Rol</h3>
+      <div class="legend-grid">
+        <div class="item"><span class="badge admin">Admin</span> Acceso total: gestión de usuarios, empresas, recursos, cancelar cualquier actividad, ver alertas</div>
+        <div class="item"><span class="badge supervisor">Supervisor</span> Ve actividades de su equipo, asigna recursos en Plan Finde, cancela cualquier actividad</div>
+        <div class="item"><span class="badge safety">Safety & LP</span> Edita notas auditoría/alertas, carga TERA, cancela cualquier actividad, ve reportes de seguridad</div>
+        <div class="item"><span class="badge administracion">Administración</span> Gestión de recibos/cobranza, acceso a módulos administrativos, reportes financieros</div>
+        <div class="item"><span class="badge ingeniero">Ingeniero</span> Carga sus actividades, solo puede cancelar las propias, vista limitada a su información</div>
+        <div class="item"><span class="badge default">DEFAULT</span> Empresa principal del usuario &nbsp;|&nbsp; <span class="badge company">EMPRESA</span> Empresa adicional asignada</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Perry App v2.x — Desarrollado con Antigravity por CHIGÜIRE LABS | IVAN LOPEZ BOYER</span>
+      <span>⚠ CONFIDENCIAL — No distribuir fuera de la organización · Generado: 15 de Mayo, 2026 · 11:47 hrs</span>
+    </div>
+
+  </div>
+
+  <button class="print-btn no-print" onclick="window.print()">📄 Guardar como PDF</button>
+</body>
+</html>

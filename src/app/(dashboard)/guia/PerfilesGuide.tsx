@@ -50,6 +50,7 @@ export function PerfilesGuide() {
             {[
               ['Dashboard',1,1,1,1,1],['Actividades',1,1,1,1,1],['ATC Finde',1,1,1,1,1],['Planes Pasados',1,1,1,1,1],
               ['Recibos',1,1,1,1,1],['Importar Reporte',1,1,1,1,1],['Oportunidades',1,1,1,1,1],['Analítica',1,1,1,1,1],
+              ['Alarma TERA',1,1,1,1,0],
               ['Guía Perry (Sistema)',1,1,1,1,1],['Guía Perry (Perfiles)',1,1,1,1,0],['Gestión de Clientes',1,1,1,1,0],['Gestión de Recursos',1,1,0,0,0],['Consorcio',1,0,0,0,0],
             ].map(([page,...vals]) => (
               <tr key={page as string} className="hover:bg-slate-50/80">
@@ -71,11 +72,15 @@ export function PerfilesGuide() {
             <tr><td className={tdl}>Ver actividades</td><td className={td}><C /> Todas</td><td className={td}><C /> Todas</td><td className={td}><Tm /> Equipo</td><td className={td}><C /> Todas</td><td className={td}><Sl /> Propias</td></tr>
             <tr><td className={tdl}>Crear actividades</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
             <tr><td className={tdl}>Editar actividades</td><td className={td}><C /> Todas</td><td className={td}><C /> Todas</td><td className={td}><Tm /> Equipo</td><td className={td}><C /> Todas</td><td className={td}><Sl /> Propias</td></tr>
+            <tr><td className={tdl}>🚫 Cancelar actividad</td><td className={td}><C /> Todas</td><td className={td}><Xx /></td><td className={td}><C /> Todas</td><td className={td}><C /> Todas</td><td className={td}><Sl /> Propias</td></tr>
+            <tr><td className={tdl}>↩️ Deshacer cancelación</td><td className={td}><C /> Todas</td><td className={td}><Xx /></td><td className={td}><C /> Todas</td><td className={td}><C /> Todas</td><td className={td}><Sl /> Propias</td></tr>
             <tr><td className={tdl}>Exportar CSV</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
           </tbody></table>
         </div>
         <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-800">
-          👥 <strong>&quot;Su equipo&quot;</strong> = El supervisor ve sus propias actividades + las de los ingenieros que tiene asignados.
+          👥 <strong>&quot;Su equipo&quot;</strong> = El supervisor ve sus propias actividades + las de los ingenieros que tiene asignados.<br />
+          🚫 <strong>Cancelar</strong> = Libera recursos, genera aviso WhatsApp y opcionalmente crea cotización de cargo. Registra quién canceló.<br />
+          ↩️ <strong>Deshacer</strong> = Restaura el status y re-asigna los recursos originales si están disponibles.
         </div>
       </div>
 
@@ -111,8 +116,12 @@ export function PerfilesGuide() {
             <tr><td className={tdl}>Editar notas de fin de semana</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
             <tr><td className={tdl}>Editar notas propias (Ingeniero)</td><td className={td}>—</td><td className={td}>—</td><td className={td}>—</td><td className={td}>—</td><td className={td}><C /></td></tr>
             <tr><td className={tdl}>Editar auditoría Safety</td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
+            <tr><td className={tdl}>Editar notas de alerta ⚠️</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
             <tr><td className={tdl}>Crear Día Extra</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
             <tr><td className={tdl}>Editar horarios / LOTO / TERA</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Sl /> Propias</td></tr>
+            <tr><td className={tdl}>⏱ Registro Horario (4 fases)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
+            <tr><td className={tdl}>🚫 Cancelar actividad</td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Sl /> Propias</td></tr>
+            <tr><td className={tdl}>↩️ Deshacer cancelación</td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Sl /> Propias</td></tr>
             <tr><td className={tdl}>📋 Planes Técnicos (generar/copiar)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
             <tr><td className={tdl}>🏗️ Reporte Equipos (texto/CSV)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
             <tr><td className={tdl}>Exportar Plan CSV</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
