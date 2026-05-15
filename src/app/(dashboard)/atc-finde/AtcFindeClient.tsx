@@ -1317,6 +1317,70 @@ export function AtcFindeClient({
         </div>
       </div>
 
+      {/* ── CONFLICT SUMMARY CARD ── */}
+      {Object.keys(conflictAlerts).length > 0 && (() => {
+        // Group conflicts by resource (techId, vehicleId, etc.)
+        const resourceConflicts = new Map<string, { name: string; type: string; conflicts: { activityId: string; messages: string[] }[] }>();
+
+        Object.entries(conflictAlerts).forEach(([key, msgs]) => {
+          if (msgs.length === 0) return;
+          const [activityId, resourceId] = [key.substring(0, key.lastIndexOf('-')), key.substring(key.lastIndexOf('-') + 1)];
+
+          // Find the resource name
+          const tech = technicians.find(t => t.id === resourceId);
+          const vehicle = vehicles.find(v => v.id === resourceId);
+          const driver = drivers.find(d => d.id === resourceId);
+          const equip = elevationEquips.find(e => e.id === resourceId);
+          const resName = tech?.name || vehicle?.name || driver?.name || equip?.name || resourceId;
+          const resType = tech ? '🔧 Técnico' : vehicle ? '🚗 Vehículo' : driver ? '🚙 Chofer' : equip ? '🏗️ Equipo' : '❓ Recurso';
+
+          if (!resourceConflicts.has(resourceId)) {
+            resourceConflicts.set(resourceId, { name: resName, type: resType, conflicts: [] });
+          }
+          resourceConflicts.get(resourceId)!.conflicts.push({ activityId, messages: msgs });
+        });
+
+        const totalResources = resourceConflicts.size;
+        const totalConflicts = [...resourceConflicts.values()].reduce((sum, r) => sum + r.conflicts.length, 0);
+
+        return (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 animate-fade-in">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold text-red-800 flex items-center gap-2">
+                <AlertTriangle size={16} className="text-red-600" />
+                ⚠️ TRASLAPE DE RECURSOS DETECTADO
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{totalResources} recurso{totalResources !== 1 ? 's' : ''}</span>
+                <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{totalConflicts} traslape{totalConflicts !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {[...resourceConflicts.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([resId, res]) => (
+                <div key={resId} className="bg-white/70 rounded-lg px-3 py-2 border border-red-100">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold text-red-800">{res.type}</span>
+                    <span className="text-xs font-semibold text-slate-800">{res.name}</span>
+                    <span className="bg-red-100 text-red-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full">{res.conflicts.length} traslape{res.conflicts.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {res.conflicts.map((c, i) => {
+                      const act = activities.find(a => a.id === c.activityId) || allCompanyActivities.find(a => a.id === c.activityId);
+                      const actLabel = act ? `"${act.title}" (${act.startTime || '?'} - ${act.endTime || '?'})` : c.activityId;
+                      return (
+                        <div key={i} className="text-[10px] text-red-700 leading-tight">
+                          📌 {actLabel} → {c.messages.map(m => m.replace('⚠️ ', '')).join(', ')}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Extra Day Dialog */}
       {showExtraDayDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowExtraDayDialog(false)}>
