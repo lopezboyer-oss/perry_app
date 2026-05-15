@@ -69,12 +69,16 @@ export default async function AtcFindePage() {
     ...companyFilter,
   };
 
+  // For tech/contractor plans: fetch ALL weekend activities across all companies
+  const allCompanyWhere = { OR: dateRanges };
+
   const [
     activities, technicians, safetyDedicados,
     vehicles, drivers, elevationEquips,
     techAssignments, safetyAssignments,
     vehicleAssignments, driverAssignments, equipAssignments,
     safetyDesignadoUsers, userSafetyAssignments,
+    allCompanyActivities,
   ] = await Promise.all([
     prisma.activity.findMany({
       where,
@@ -122,6 +126,19 @@ export default async function AtcFindePage() {
     prisma.weekendEquipAssignment.findMany({ where: { weekendOf: saturday }, include: { equip: true } }),
     prisma.user.findMany({ where: { isActive: true, isSafetyDesignado: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
     prisma.weekendUserSafetyAssignment.findMany({ where: { weekendOf: saturday }, include: { user: { select: { id: true, name: true } } } }),
+    // All-company activities for tech/contractor plans
+    prisma.activity.findMany({
+      where: allCompanyWhere,
+      select: {
+        id: true, title: true, type: true, status: true, date: true,
+        startTime: true, endTime: true, loto: true, weekendNotes: true,
+        workOrderFolio: true, purchaseOrder: true,
+        user: { select: { id: true, name: true } },
+        client: { select: { id: true, name: true } },
+        company: { select: { id: true, name: true } },
+      },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+    }),
   ]);
 
   // Build plan days info for client
@@ -173,6 +190,11 @@ export default async function AtcFindePage() {
       planDays={planDays}
       companyName={companyName}
       userIsSafetyAuditor={!!(session.user as any).isSafetyAuditor}
+      allCompanyActivities={allCompanyActivities.map(a => ({
+        ...a,
+        date: a.date.toISOString(),
+        companyName: a.company?.name || companyName,
+      }))}
     />
   );
 }

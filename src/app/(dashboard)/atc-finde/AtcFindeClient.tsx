@@ -54,6 +54,15 @@ interface DriverAssignment { id: string; activityId: string; driverId: string; d
 interface EquipAssignment { id: string; activityId: string; equipId: string; equip: ElevationEquip; }
 interface UserSafetyAssignment { id: string; activityId: string; userId: string; user: { id: string; name: string }; }
 
+interface AllCompanyActivity {
+  id: string; title: string; type: string; status: string; date: string;
+  startTime: string | null; endTime: string | null; loto: boolean; weekendNotes: string | null;
+  workOrderFolio: string | null; purchaseOrder: string | null;
+  user: { id: string; name: string } | null;
+  client: { id: string; name: string } | null;
+  companyName: string;
+}
+
 interface PlanDay {
   date: string;
   isExtra: boolean;
@@ -84,6 +93,7 @@ interface Props {
   planDays: PlanDay[];
   companyName: string;
   userIsSafetyAuditor: boolean;
+  allCompanyActivities: AllCompanyActivity[];
 }
 
 // ─── MULTI-SELECT DROPDOWN ──────────────────────────────────────
@@ -202,7 +212,7 @@ export function AtcFindeClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
-  userRole, userId, userName, weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor,
+  userRole, userId, userName, weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, allCompanyActivities,
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -841,24 +851,55 @@ export function AtcFindeClient({
   const assignedTechIds = [...new Set(techAssignments.filter(x => x.role === 'TECNICO' && companyActivityIds.has(x.activityId)).map(x => x.technicianId))];
   const assignedTechs = technicians.filter(t => assignedTechIds.includes(t.id));
 
+  // Helper: detect time overlaps within same day for a list of activities
+  const detectOverlaps = (acts: { id: string; date: string; startTime: string | null; endTime: string | null }[]): Set<string> => {
+    const overlapped = new Set<string>();
+    // Group by date
+    const byDate = new Map<string, typeof acts>();
+    acts.forEach(a => {
+      const dk = a.date.substring(0, 10);
+      const arr = byDate.get(dk) || [];
+      arr.push(a);
+      byDate.set(dk, arr);
+    });
+    byDate.forEach(dayActs => {
+      for (let i = 0; i < dayActs.length; i++) {
+        for (let j = i + 1; j < dayActs.length; j++) {
+          const a = dayActs[i], b = dayActs[j];
+          if (!a.startTime || !a.endTime || !b.startTime || !b.endTime) continue;
+          // Compare HH:MM strings directly
+          if (a.startTime < b.endTime && b.startTime < a.endTime) {
+            overlapped.add(a.id);
+            overlapped.add(b.id);
+          }
+        }
+      }
+    });
+    return overlapped;
+  };
+
   const generateTechPlan = (techId: string): string => {
     const tech = technicians.find(t => t.id === techId);
     if (!tech) return 'Técnico no encontrado.';
 
+    // Get ALL activities for this tech across all companies
     const techActIds = techAssignments
       .filter(x => x.technicianId === techId && x.role === 'TECNICO')
       .map(x => x.activityId);
 
     const techActs = techActIds
-      .map(actId => activities.find(a => a.id === actId))
-      .filter((a): a is Activity => a !== undefined && a !== null);
+      .map(actId => allCompanyActivities.find(a => a.id === actId))
+      .filter((a): a is AllCompanyActivity => a !== undefined && a !== null);
 
     if (techActs.length === 0) {
-      return `📋 PLAN DE TRABAJO — ${weekendLabel}\nTécnico: ${tech.name}\n\nSin actividades asignadas en esta empresa.\n`;
+      return `📋 PLAN DE TRABAJO — ${weekendLabel}\nTécnico: ${tech.name}\n\nSin actividades asignadas.\n`;
     }
 
-    // Group by date (extract YYYY-MM-DD portion only)
-    const byDate = new Map<string, Activity[]>();
+    // Detect overlaps
+    const overlapped = detectOverlaps(techActs);
+
+    // Group by date
+    const byDate = new Map<string, AllCompanyActivity[]>();
     techActs.forEach(a => {
       const dateKey = a.date.substring(0, 10);
       const existing = byDate.get(dateKey) || [];
@@ -871,6 +912,10 @@ export function AtcFindeClient({
 
     let text = `📋 PLAN DE TRABAJO — ${weekendLabel}\nTécnico: ${tech.name}\nTotal actividades: ${techActs.length}\n`;
 
+    if (overlapped.size > 0) {
+      text += `⚠️ ATENCIÓN: Se detectaron actividades con horario traslapado\n`;
+    }
+
     const sortedDates = [...byDate.keys()].sort();
     sortedDates.forEach(dateKey => {
       const dt = new Date(`${dateKey}T12:00:00`);
@@ -882,10 +927,14 @@ export function AtcFindeClient({
       acts.forEach((a, idx) => {
         const timeRange = a.startTime && a.endTime ? `${a.startTime} — ${a.endTime}` : 'Horario pendiente';
         const hasLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
+        const isOverlap = overlapped.has(a.id);
 
-        text += `\n${idx + 1}️⃣ ${timeRange}\n`;
+        text += `\n${idx + 1}️⃣ ${timeRange}`;
+        if (isOverlap) text += ` ⚠️ ACTIVIDAD TRASLAPADA`;
+        text += `\n`;
+        text += `   🏢 ${a.companyName}\n`;
         text += `   📌 ${a.title}\n`;
-        // Sup Operativo = tech SAFETY_DESIGNADO + user safety + safetyDedicado DESIGNADO
+        // Sup Operativo
         const supOps = [
           ...techAssignments.filter(x => x.activityId === a.id && x.role === 'SAFETY_DESIGNADO').map(x => x.technician.name),
           ...(userSafetyAssignments || []).filter((x: any) => x.activityId === a.id).map((x: any) => x.user.name),
@@ -894,7 +943,7 @@ export function AtcFindeClient({
         text += `   👷 Sup Operativo: ${supOps.length > 0 ? supOps.join(', ') : 'Sin asignar'}\n`;
         text += `   🔒 LOTO: ${hasLoto ? '✅ SÍ — Requiere LOTO' : '❌ NO'}\n`;
 
-        // Equipment — always show status
+        // Equipment
         const actEquips = equipAssignments.filter(x => x.activityId === a.id);
         if (actEquips.length > 0) {
           text += `   🏗️ Eq. Elevación: ✅ SÍ\n`;
@@ -956,22 +1005,27 @@ export function AtcFindeClient({
 
     let text = `📋 *PLAN DE TRABAJO — ${weekendLabel}*\n🏭 *Contratista: ${contractor.name}*\n👷 Técnicos asignados: ${contractorTechs.length}\n`;
 
-    // For each tech, list their activities grouped by date
+    // For each tech, list ALL activities across companies grouped by date
     contractorTechs.forEach(tech => {
       const techActIds = techAssignments
         .filter(x => x.technicianId === tech.id && x.role === 'TECNICO')
         .map(x => x.activityId);
 
       const techActs = techActIds
-        .map(actId => activities.find(a => a.id === actId))
-        .filter((a): a is Activity => a !== undefined && a !== null);
+        .map(actId => allCompanyActivities.find(a => a.id === actId))
+        .filter((a): a is AllCompanyActivity => a !== undefined && a !== null);
 
       if (techActs.length === 0) return;
 
-      text += `\n━━━━━━━━━━━━━━━━━━━━\n👤 *${tech.name}* (${techActs.length} actividades)\n━━━━━━━━━━━━━━━━━━━━\n`;
+      // Detect overlaps for this tech
+      const overlapped = detectOverlaps(techActs);
+
+      text += `\n━━━━━━━━━━━━━━━━━━━━\n👤 *${tech.name}* (${techActs.length} actividades)`;
+      if (overlapped.size > 0) text += ` ⚠️`;
+      text += `\n━━━━━━━━━━━━━━━━━━━━\n`;
 
       // Group by date
-      const byDate = new Map<string, Activity[]>();
+      const byDate = new Map<string, AllCompanyActivity[]>();
       techActs.forEach(a => {
         const dateKey = a.date.substring(0, 10);
         const existing = byDate.get(dateKey) || [];
@@ -990,8 +1044,12 @@ export function AtcFindeClient({
         acts.forEach((a, idx) => {
           const timeRange = a.startTime && a.endTime ? `${a.startTime} — ${a.endTime}` : 'Horario pendiente';
           const hasLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
+          const isOverlap = overlapped.has(a.id);
 
-          text += `${idx + 1}️⃣ ${timeRange}\n`;
+          text += `${idx + 1}️⃣ ${timeRange}`;
+          if (isOverlap) text += ` ⚠️ ACTIVIDAD TRASLAPADA`;
+          text += `\n`;
+          text += `   🏢 ${a.companyName}\n`;
           text += `   📌 ${a.title}\n`;
           text += `   👷 Responsable: ${a.user?.name || 'Sin asignar'}\n`;
           text += `   🔒 LOTO: ${hasLoto ? '✅ SÍ' : '❌ NO'}\n`;
@@ -1061,7 +1119,9 @@ export function AtcFindeClient({
           text += `📅 ${dayLabel}:\n`;
           dateAssignments.sort((a, b) => (a.activity.startTime || '').localeCompare(b.activity.startTime || '')).forEach(({ activity: a }) => {
             const timeRange = a.startTime && a.endTime ? `${a.startTime}-${a.endTime}` : 'S/H';
-            text += `  • ${timeRange} | ${a.title} | ${a.user?.name || 'Sin asignar'}\n`;
+            const acaMatch = allCompanyActivities.find(ac => ac.id === a.id);
+            const coName = acaMatch?.companyName || companyName;
+            text += `  • ${timeRange} | ${coName} | ${a.title} | ${a.user?.name || 'Sin asignar'}\n`;
             totalUses++;
             csvData.push({
               equip: equip.name,
