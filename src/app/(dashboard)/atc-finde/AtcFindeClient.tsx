@@ -870,8 +870,13 @@ export function AtcFindeClient({
         for (let j = i + 1; j < dayActs.length; j++) {
           const a = dayActs[i], b = dayActs[j];
           if (!a.startTime || !a.endTime || !b.startTime || !b.endTime) continue;
-          // Compare HH:MM strings directly
-          if (a.startTime < b.endTime && b.startTime < a.endTime) {
+          // Convert to minutes, handle overnight (endTime <= startTime = crosses midnight)
+          const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+          let s1 = toMin(a.startTime), e1 = toMin(a.endTime);
+          let s2 = toMin(b.startTime), e2 = toMin(b.endTime);
+          if (e1 <= s1) e1 += 1440;
+          if (e2 <= s2) e2 += 1440;
+          if (s1 < e2 && s2 < e1) {
             overlapped.add(a.id);
             overlapped.add(b.id);
           }

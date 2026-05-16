@@ -257,7 +257,11 @@ function timesOverlap(
   s2: string | null, e2: string | null
 ): boolean {
   if (!s1 || !e1 || !s2 || !e2) return true; // If times unknown, assume overlap
-  return s1 < e2 && s2 < e1;
+  const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  let a = toMin(s1), b = toMin(e1), c = toMin(s2), d = toMin(e2);
+  if (b <= a) b += 1440; // overnight shift
+  if (d <= c) d += 1440;
+  return a < d && c < b;
 }
 
 function sameDay(d1: Date | null | undefined, d2: Date | null | undefined): boolean {
