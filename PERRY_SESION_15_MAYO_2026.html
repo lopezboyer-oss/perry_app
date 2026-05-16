@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Reporte Sesión 15 Mayo 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --emerald: #059669;
+      --emerald-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --violet: #7c3aed;
+      --violet-light: #ede9fe;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: white;
+      color: var(--slate-800);
+      line-height: 1.6;
+      font-size: 11pt;
+    }
+
+    @page {
+      size: letter;
+      margin: 1.5cm 2cm;
+    }
+
+    @media print {
+      body { background: white; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none !important; }
+      .container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    .header-text h1 {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.5px;
+    }
+
+    .header-text .subtitle {
+      font-size: 11pt;
+      color: var(--slate-500);
+      font-weight: 400;
+    }
+
+    .header-text .date-badge {
+      display: inline-block;
+      margin-top: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-card .stat-label {
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card.emerald .stat-value { color: var(--emerald); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue .stat-value { color: var(--blue); }
+    .stat-card.violet .stat-value { color: var(--violet); }
+    .stat-card.red .stat-value { color: var(--red); }
+
+    /* Section titles */
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin-top: 28px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2 .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    h2 .icon.feature { background: var(--emerald-light); }
+    h2 .icon.bugfix { background: var(--amber-light); }
+    h2 .icon.cancel { background: var(--red-light); }
+    h2 .icon.notes { background: var(--blue-light); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 9.5pt;
+    }
+
+    thead th {
+      background: var(--slate-800);
+      color: white;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+
+    tbody td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: var(--slate-50); }
+    tbody tr:hover { background: var(--primary-light); }
+
+    .commit-hash {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge.feature { background: var(--emerald-light); color: var(--emerald); }
+    .badge.bugfix { background: var(--amber-light); color: var(--amber); }
+    .badge.cancel { background: var(--red-light); color: var(--red); }
+    .badge.dashboard { background: var(--blue-light); color: var(--blue); }
+    .badge.data { background: var(--violet-light); color: var(--violet); }
+    .badge.docs { background: #fce7f3; color: #db2777; }
+
+    /* Category summary */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .category-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px;
+      background: white;
+    }
+
+    .category-card h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .category-card ul {
+      list-style: none;
+      font-size: 8.5pt;
+      color: var(--slate-600);
+    }
+
+    .category-card li {
+      padding: 2px 0;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .category-card li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--emerald);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: var(--slate-500);
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 11pt;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Perry App</h1>
+        <div class="subtitle">Reporte de Cambios — Sesión Desarrollo</div>
+        <span class="date-badge">📅 15 de Mayo, 2026</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">10</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Features</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">2</div>
+        <div class="stat-label">Bug Fixes</div>
+      </div>
+      <div class="stat-card violet">
+        <div class="stat-value">9</div>
+        <div class="stat-label">Archivos Mod.</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-value">1003</div>
+        <div class="stat-label">Líneas Añadidas</div>
+      </div>
+    </div>
+
+    <!-- Full commit table -->
+    <h2>Detalle de Cambios</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:35px">#</th>
+          <th style="width:75px">Commit</th>
+          <th>Descripción</th>
+          <th style="width:90px">Categoría</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="commit-hash">8b93381</span></td>
+          <td>Corrección <code>TimeInput24h</code>: dígitos como "80" ahora se convierten correctamente en "08:00" en lugar de "23:00" — resuelve bug del Ing. Diosdado</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><span class="commit-hash">3211114</span></td>
+          <td>Directorio de usuarios HTML + actualización de Guía Perfiles con permisos de cancelar/descancelar, alertNotes, TERA y registro</td>
+          <td><span class="badge docs">Docs</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><span class="commit-hash">a38defd</span></td>
+          <td><strong>Plan Contratista</strong>: nuevo botón y modal para generar plan WhatsApp filtrado por contratista + firma <em>"Mensaje de Perry App — By CHIGÜIRE LABS"</em> en todos los mensajes</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><span class="commit-hash">96a0d60</span></td>
+          <td>Botones compactos en toolbar ATC Finde: texto más pequeño, layout de 2 líneas, <code>flex-wrap</code> para pantallas pequeñas</td>
+          <td><span class="badge bugfix">UI Fix</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">e254850</span></td>
+          <td>Infografía de anuncio "Plan Contratista" — formato vertical JPG para WhatsApp</td>
+          <td><span class="badge docs">Docs</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">0946c29</span></td>
+          <td><strong>Planes cross-company</strong>: nombre de empresa (🏢) en cada actividad + detección de traslape ⚠️ <code>ACTIVIDAD TRASLAPADA</code> en planes técnico, contratista y equipo</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">487a0ab</span></td>
+          <td>Pre-carga de conflictos cross-company al cargar página — <code>preloadedConflicts</code> computados server-side para que ⚠️ aparezcan sin esperar asignación</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><span class="commit-hash">45c744e</span></td>
+          <td><strong>Tarjeta de Traslape de Recursos</strong>: card rojo con conteo, agrupación por recurso, y detalle de actividades conflictivas</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><span class="commit-hash">51e6083</span></td>
+          <td><strong>Tarjeta de Actividades Canceladas</strong>: card con conteo y detalle (motivo, notas, quién canceló) en ATC Finde + Planes Pasados</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><span class="commit-hash">2a1ca21</span></td>
+          <td><strong>Detección de conflictos al editar fecha/hora</strong>: el endpoint PUT valida traslapes de técnicos, vehículos, choferes y equipos cross-company y alerta al usuario antes de redirigir</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Category Summary -->
+    <h2>Resumen por Categoría</h2>
+    <div class="category-grid">
+      <div class="category-card" style="border-left: 4px solid var(--emerald);">
+        <h3>🏭 Plan Contratista (Nuevo)</h3>
+        <ul>
+          <li>Botón en toolbar ATC Finde</li>
+          <li>Modal con sidebar de selección de contratista</li>
+          <li>Genera mensaje WhatsApp con solo los técnicos de esa empresa</li>
+          <li>Incluye actividades de TODAS las empresas del consorcio</li>
+          <li>Firma estandarizada "Perry App | By CHIGÜIRE LABS"</li>
+          <li>Infografía de aviso para distribución al equipo</li>
+        </ul>
+      </div>
+      <div class="category-card" style="border-left: 4px solid var(--red);">
+        <h3>⚠️ Detección de Traslapes Cross-Company</h3>
+        <ul>
+          <li>Nuevo dataset <code>allCompanyActivities</code> sin filtro de empresa</li>
+          <li>Pre-carga server-side de conflictos al cargar página</li>
+          <li>Tarjeta resumen roja con conteo de recursos y traslapes</li>
+          <li>Badge ⚠️ en cada actividad traslapada dentro de planes</li>
+          <li>Validación al editar fecha/hora vía formulario</li>
+          <li>Alert inmediato al guardar si hay nuevos conflictos</li>
+        </ul>
+      </div>
+      <div class="category-card" style="border-left: 4px solid var(--blue);">
+        <h3>🏢 Planes Multi-Empresa</h3>
+        <ul>
+          <li>Planes técnicos incluyen actividades de todas las empresas</li>
+          <li>Nombre de empresa (🏢) en cada línea de actividad</li>
+          <li>Reporte de equipos con empresa por uso</li>
+          <li>Plan contratista con vista cross-company</li>
+          <li>Un solo mensaje por técnico sin importar la empresa</li>
+        </ul>
+      </div>
+      <div class="category-card" style="border-left: 4px solid var(--violet);">
+        <h3>❌ Tarjeta de Canceladas</h3>
+        <ul>
+          <li>Card en ATC Finde y Planes Pasados</li>
+          <li>Conteo total de actividades canceladas</li>
+          <li>Detalle: título, día, horario, responsable</li>
+          <li>Motivo de cancelación (9 opciones KPI)</li>
+          <li>Notas del motivo + quién canceló</li>
+          <li>Lista scrollable (max 160px)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Architecture -->
+    <h2>Decisión Arquitectónica Clave</h2>
+    <div class="category-card" style="border-left: 4px solid var(--red); margin-bottom: 20px;">
+      <h3>🌐 Cross-Company: allCompanyActivities</h3>
+      <p style="font-size: 9pt; color: var(--slate-600); margin-top: 6px; line-height: 1.7;">
+        Para resolver el problema de técnicos compartidos entre empresas del consorcio (ej. Angel Gomez asignado en DROBOTS y GRUPO CASEME),
+        se creó un segundo dataset <code>allCompanyActivities</code> que se obtiene <strong>sin filtro de empresa</strong>.
+        Este dataset se usa exclusivamente para: (1) generar planes técnicos/contratista con visión completa,
+        (2) detectar traslapes de horario cross-company, y (3) pre-calcular <code>preloadedConflicts</code> server-side.
+        Las actividades de la tabla principal siguen filtradas por empresa activa para no afectar la vista operativa.
+        Los conflictos se detectan en tres puntos: al <strong>asignar</strong> un recurso, al <strong>cargar</strong> la página, y al <strong>editar</strong> fecha/hora.
+      </p>
+    </div>
+
+    <!-- Files modified -->
+    <h2>Archivos Modificados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Archivo</th>
+          <th style="text-align:right;width:100px">Cambios</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>AtcFindeClient.tsx</code></td>
+          <td style="text-align:right">+365 líneas</td>
+        </tr>
+        <tr>
+          <td><code>atc-finde/page.tsx</code></td>
+          <td style="text-align:right">+68 líneas</td>
+        </tr>
+        <tr>
+          <td><code>api/actividades/[id]/route.ts</code></td>
+          <td style="text-align:right">+75 líneas</td>
+        </tr>
+        <tr>
+          <td><code>PlanesPasadosClient.tsx</code></td>
+          <td style="text-align:right">+58 líneas</td>
+        </tr>
+        <tr>
+          <td><code>ActivityForm.tsx</code></td>
+          <td style="text-align:right">+6 líneas</td>
+        </tr>
+        <tr>
+          <td><code>TimeInput24h.tsx</code></td>
+          <td style="text-align:right">+23 / -10 líneas</td>
+        </tr>
+        <tr>
+          <td><code>PerfilesGuide.tsx</code></td>
+          <td style="text-align:right">+11 líneas</td>
+        </tr>
+        <tr>
+          <td><code>PERRY_DIRECTORIO_USUARIOS.html</code></td>
+          <td style="text-align:right">+430 líneas (nuevo)</td>
+        </tr>
+        <tr>
+          <td><code>AVISO_PLAN_CONTRATISTA_PERRY.jpg</code></td>
+          <td style="text-align:right">200 KB (nuevo)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Perry App v2.x — Desarrollado con Antigravity por CHIGÜIRE LABS | IVAN LOPEZ BOYER</span>
+      <span>Generado: 15 de Mayo, 2026 · 18:34 hrs (Tijuana, BC)</span>
+    </div>
+
+  </div>
+
+  <!-- Print button (hidden on print) -->
+  <button class="print-btn no-print" onclick="window.print()">
+    📄 Guardar como PDF
+  </button>
+
+</body>
+</html>
