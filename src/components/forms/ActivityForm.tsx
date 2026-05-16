@@ -198,6 +198,12 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
       }
 
       const saved = await res.json();
+
+      // Show resource conflict warnings if any
+      if (saved.resourceConflicts && saved.resourceConflicts.length > 0) {
+        alert(`⚠️ TRASLAPE DE RECURSOS DETECTADO:\n\n${saved.resourceConflicts.join('\n')}\n\nLa actividad fue guardada. Revisa el Plan Finde para resolver los traslapes.`);
+      }
+
       router.push(`/actividades/${saved.id}`);
       router.refresh();
     } catch (err: any) {
