@@ -19,6 +19,7 @@ import {
   DollarSign,
   Building2,
   AlertTriangle,
+  Forklift,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ const navItems = [
   { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },
   { href: '/planes-pasados', label: 'Planes Pasados', icon: Clock },
   { href: '/alarma-tera', label: 'Alarma TERA', icon: AlertTriangle },
+  { href: '/registro-equipos', label: 'Reg. Equipos', icon: Forklift },
   { href: '/cobranza', label: 'Recibos', icon: DollarSign },
   { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
