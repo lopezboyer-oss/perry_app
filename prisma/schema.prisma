@@ -141,6 +141,7 @@ model Activity {
   weekendEquipAssignments   WeekendEquipAssignment[]
   weekendUserSafetyAssignments WeekendUserSafetyAssignment[]
   timeRegistryEntries          TimeRegistryEntry[]
+  equipRecords                 EquipRecord[]
 }
 
 // ─── REGISTRO HORARIO ───────────────────────────────────────────
@@ -240,6 +241,7 @@ model ElevationEquip {
   updatedAt DateTime @updatedAt
 
   weekendAssignments WeekendEquipAssignment[]
+  equipRecords       EquipRecord[]
 }
 
 // ─── ASIGNACIONES FINDE ─────────────────────────────────────────
@@ -371,4 +373,45 @@ model UserCompany {
   isDefault Boolean  @default(false)   // empresa que se carga al login
 
   @@unique([userId, companyId])
+}
+
+// ─── REGISTRO EQUIPOS ────────────────────────────────────────────
+
+model EquipRecord {
+  id         String         @id @default(cuid())
+  activityId String
+  activity   Activity       @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  equipId    String
+  equip      ElevationEquip @relation(fields: [equipId], references: [id], onDelete: Cascade)
+  weekendOf  String         // "YYYY-MM-DD" del sábado de ese fin de semana
+
+  // Operador
+  operatorId        String?
+  operatorName      String?
+  operatorUpdatedBy String?
+  operatorUpdatedAt DateTime?
+
+  // Checklist de seguridad
+  chkCondicionesGenerales Boolean  @default(false)
+  chkCargaBateria100      Boolean  @default(false)
+  chk5sEquipo             Boolean  @default(false)
+  chkPaseClienteVigente   Boolean  @default(false)
+  chkExtintorFuncional    Boolean  @default(false)
+  checklistUpdatedBy      String?
+  checklistUpdatedAt      DateTime?
+
+  // Evidencias fotográficas (JSON: [{id, url, uploadedBy, uploadedAt}])
+  evidencias String?
+
+  // Notas libres
+  notes          String?
+  notesUpdatedBy String?
+  notesUpdatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([activityId, equipId, weekendOf])
+  @@index([weekendOf])
+  @@index([activityId])
 }
