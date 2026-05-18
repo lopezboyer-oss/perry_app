@@ -94,6 +94,7 @@ export default async function AlarmaTeraPage({
           teraUploadedBy: true,
           user: { select: { id: true, name: true } },
           client: { select: { id: true, name: true } },
+          company: { select: { name: true, shortName: true } },
         },
         orderBy: [{ date: 'asc' }, { startTime: 'asc' }, { id: 'asc' }],
       })
@@ -124,6 +125,7 @@ export default async function AlarmaTeraPage({
       hasFolio: !!a.teraFolio,
       user: a.user,
       client: a.client,
+      company: a.company,
     }));
 
   // Stats: total = all non-cancelled activities in the weekend

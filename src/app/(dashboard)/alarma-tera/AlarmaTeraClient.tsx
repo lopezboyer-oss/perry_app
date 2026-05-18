@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, Shield, ShieldAlert, CheckCircle, XCircle, Image, FileText } from 'lucide-react';
+import { AlertTriangle, Shield, ShieldAlert, CheckCircle, XCircle, Image, FileText, X, Bell } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface AlarmaActivity {
@@ -19,6 +20,7 @@ interface AlarmaActivity {
   hasFolio: boolean;
   user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
+  company: { name: string; shortName: string | null } | null;
 }
 
 interface Props {
@@ -29,10 +31,60 @@ interface Props {
   compliantCount: number;
 }
 
+const DAY_NAMES = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+
 export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, totalActivities, compliantCount }: Props) {
   const router = useRouter();
   const alarmaCount = activities.length;
   const complianceRate = totalActivities > 0 ? Math.round((compliantCount / totalActivities) * 100) : 100;
+
+  // ── RECORDATORIO MODAL ──
+  const [showRecordatorio, setShowRecordatorio] = useState(false);
+
+  const generateRecordatorio = (): string => {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    if (activities.length === 0) {
+      return `✅ *RECORDATORIO TERA — ${selectedWeekend}*\n\nTodas las actividades del plan cuentan con imagen y folio TERA. ¡Buen trabajo!\n\n_Mensaje de Perry App_\n_By CHIGÜIRE LABS_`;
+    }
+
+    let text = `⚠️ *RECORDATORIO TERA*\n`;
+    text += `📅 Plan: *${selectedWeekend}*\n`;
+    text += `🗓️ Fecha: ${dateStr}\n`;
+    text += `❌ Pendientes: *${activities.length}* actividad${activities.length !== 1 ? 'es' : ''}\n`;
+    text += `\nSe solicita cargar *Imagen TERA* y/o *Folio TERA* a las siguientes actividades:\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+    // Group by company for clarity
+    const byCompany = new Map<string, AlarmaActivity[]>();
+    for (const act of activities) {
+      const co = act.company?.name || 'Sin empresa';
+      if (!byCompany.has(co)) byCompany.set(co, []);
+      byCompany.get(co)!.push(act);
+    }
+
+    byCompany.forEach((acts, companyName) => {
+      text += `\n🏢 *${companyName}*\n`;
+      acts.forEach((act, i) => {
+        const dayName = DAY_NAMES[new Date(act.date).getUTCDay()] || '';
+        const folio = act.workOrderFolio || 'S/F';
+        const missing = [];
+        if (!act.hasImage) missing.push('📸 Imagen');
+        if (!act.hasFolio) missing.push('📄 Folio');
+        text += `\n  ${i + 1}. *${act.title}*\n`;
+        text += `     👤 Sup: ${act.user?.name || '-'}\n`;
+        text += `     📋 Folio Odoo: ${folio}\n`;
+        text += `     📅 Día: ${dayName} ${act.date.substring(0, 10)}\n`;
+        text += `     ⚡ Falta: ${missing.join(' · ')}\n`;
+      });
+      text += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    });
+
+    text += `\nFavor de subir la información al sistema a la brevedad.\n`;
+    text += `\n_Mensaje de Perry App_\n_By CHIGÜIRE LABS_`;
+    return text;
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -47,15 +99,25 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
             <p className="text-sm text-slate-500">Actividades sin imagen y/o folio TERA</p>
           </div>
         </div>
-        <select
-          className="text-sm border border-slate-300 rounded-lg px-3 py-2"
-          value={selectedWeekend}
-          onChange={(e) => router.push(`/alarma-tera?weekend=${e.target.value}`)}
-        >
-          {weekendDates.map((d) => (
-            <option key={d} value={d}>Fin de Semana: {d}</option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          {/* RECORDATORIO Button */}
+          <button
+            onClick={() => setShowRecordatorio(true)}
+            className="btn-secondary !text-[10px] !py-1.5 !px-2.5 !bg-amber-50 !text-amber-700 !border-amber-300 hover:!bg-amber-100 leading-tight text-center flex items-center gap-1"
+          >
+            <Bell size={12} />
+            <span>🔔 Recordatorio<br/>WhatsApp</span>
+          </button>
+          <select
+            className="text-sm border border-slate-300 rounded-lg px-3 py-2"
+            value={selectedWeekend}
+            onChange={(e) => router.push(`/alarma-tera?weekend=${e.target.value}`)}
+          >
+            {weekendDates.map((d) => (
+              <option key={d} value={d}>Fin de Semana: {d}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -128,7 +190,8 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
                   <th className="font-semibold w-[40px] text-center">#</th>
                   <th className="font-semibold w-[100px]">Día</th>
                   <th className="font-semibold w-[100px]">Horario</th>
-                  <th className="font-semibold w-[120px]">Responsable</th>
+                  <th className="font-semibold w-[120px]">Sup. Operativo</th>
+                  <th className="font-semibold w-[110px]">Empresa</th>
                   <th className="font-semibold w-[120px]">Cliente</th>
                   <th className="font-semibold">Actividad</th>
                   <th className="font-semibold w-[80px]">Folio Odoo</th>
@@ -148,7 +211,7 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
                     <td className="whitespace-nowrap">
                       <span className="font-medium text-slate-800 text-xs">{formatDate(act.date)}</span>
                       <span className="block text-[10px] text-red-500 uppercase font-bold">
-                        {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][new Date(act.date).getUTCDay()]}
+                        {DAY_NAMES[new Date(act.date).getUTCDay()]}
                       </span>
                       {act.date.substring(0, 10) >= new Date().toISOString().substring(0, 10) && (
                         <span className="block text-[9px] bg-amber-100 text-amber-700 font-bold px-1 rounded mt-0.5">⏳ pendiente</span>
@@ -163,6 +226,11 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
                       <span className="text-xs font-medium text-slate-700">{act.user?.name || '-'}</span>
                     </td>
                     <td>
+                      <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+                        {act.company?.shortName || act.company?.name || '-'}
+                      </span>
+                    </td>
+                    <td>
                       <span className="text-xs text-slate-600">{act.client?.name || '-'}</span>
                     </td>
                     <td>
@@ -174,33 +242,33 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
                     <td className="text-center">
                       {act.hasImage ? (
                         <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                          <Image size={10} /> OK
+                          <Image size={10} />OK
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
-                          <XCircle size={10} /> FALTA
+                          <XCircle size={10} />FALTA
                         </span>
                       )}
                     </td>
                     <td className="text-center">
                       {act.hasFolio ? (
                         <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                          <FileText size={10} /> {act.teraFolio}
+                          <FileText size={10} />{act.teraFolio}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
-                          <XCircle size={10} /> FALTA
+                          <XCircle size={10} />FALTA
                         </span>
                       )}
                     </td>
                     <td className="text-center">
                       {!act.hasImage && !act.hasFolio ? (
                         <span className="inline-flex items-center gap-1 bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">
-                          <AlertTriangle size={10} /> CRÍTICO
+                          <AlertTriangle size={10} />CRÍTICO
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                          <AlertTriangle size={10} /> PARCIAL
+                          <AlertTriangle size={10} />PARCIAL
                         </span>
                       )}
                     </td>
@@ -208,6 +276,52 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── RECORDATORIO MODAL ── */}
+      {showRecordatorio && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowRecordatorio(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                🔔 Recordatorio TERA — {selectedWeekend}
+              </h3>
+              <button onClick={() => setShowRecordatorio(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Copy button */}
+            <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-amber-50">
+              <p className="text-xs text-amber-700 font-medium">
+                {alarmaCount === 0
+                  ? '✅ No hay pendientes — mensaje de confirmación listo'
+                  : `⚠️ ${alarmaCount} actividad${alarmaCount !== 1 ? 'es' : ''} con TERA pendiente`}
+              </p>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generateRecordatorio());
+                  alert('🔔 Recordatorio copiado al portapapeles');
+                }}
+                className="btn-primary text-xs !py-1.5 !px-3 !bg-amber-500 hover:!bg-amber-600 !border-amber-600"
+              >
+                📋 Copiar para WhatsApp
+              </button>
+            </div>
+
+            {/* Message preview */}
+            <pre className="flex-1 overflow-y-auto p-5 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap font-mono bg-white">
+              {generateRecordatorio()}
+            </pre>
           </div>
         </div>
       )}
