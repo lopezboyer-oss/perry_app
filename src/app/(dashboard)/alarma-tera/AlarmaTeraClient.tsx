@@ -168,6 +168,59 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
         </div>
       </div>
 
+      {/* ── Resumen por Sup. Operativo ── */}
+      {alarmaCount > 0 && (() => {
+        const byUser = new Map<string, { name: string; count: number; missing: { image: number; folio: number } }>();
+        for (const act of activities) {
+          const key = act.user?.id || '__nouser__';
+          const name = act.user?.name || 'Sin responsable';
+          if (!byUser.has(key)) byUser.set(key, { name, count: 0, missing: { image: 0, folio: 0 } });
+          const entry = byUser.get(key)!;
+          entry.count++;
+          if (!act.hasImage) entry.missing.image++;
+          if (!act.hasFolio) entry.missing.folio++;
+        }
+        const sorted = [...byUser.values()].sort((a, b) => b.count - a.count);
+        return (
+          <div className="card overflow-hidden shadow-sm border-amber-200">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-200">
+              <h2 className="font-bold text-amber-800 flex items-center gap-2 text-sm">
+                👤 Resumen por Sup. Operativo — TERA Pendiente
+              </h2>
+            </div>
+            <div className="p-4">
+              <div className="flex flex-wrap gap-3">
+                {sorted.map(({ name, count, missing }) => (
+                  <div
+                    key={name}
+                    className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm min-w-[200px]"
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${count >= 3 ? 'bg-red-500' : count === 2 ? 'bg-amber-500' : 'bg-slate-400'}`}>
+                      {count}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{name}</p>
+                      <div className="flex gap-2 mt-0.5">
+                        {missing.image > 0 && (
+                          <span className="text-[10px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded">
+                            📸 {missing.image} img
+                          </span>
+                        )}
+                        {missing.folio > 0 && (
+                          <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">
+                            📄 {missing.folio} folio
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Table */}
       {alarmaCount === 0 ? (
         <div className="card p-12 text-center">
