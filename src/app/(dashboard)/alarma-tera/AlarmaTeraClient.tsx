@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/utils';
 interface AlarmaActivity {
   id: string;
   title: string;
+  status: string;
   date: string;
   startTime: string | null;
   endTime: string | null;
@@ -149,6 +150,9 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
                       <span className="block text-[10px] text-red-500 uppercase font-bold">
                         {['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][new Date(act.date).getUTCDay()]}
                       </span>
+                      {act.date.substring(0, 10) >= new Date().toISOString().substring(0, 10) && (
+                        <span className="block text-[9px] bg-amber-100 text-amber-700 font-bold px-1 rounded mt-0.5">⏳ pendiente</span>
+                      )}
                     </td>
                     <td className="whitespace-nowrap">
                       <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-mono border border-slate-200">

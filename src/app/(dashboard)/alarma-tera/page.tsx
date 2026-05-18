@@ -79,6 +79,7 @@ export default async function AlarmaTeraPage({
         select: {
           id: true,
           title: true,
+          status: true,
           date: true,
           startTime: true,
           endTime: true,
@@ -94,19 +95,20 @@ export default async function AlarmaTeraPage({
       })
     : [];
 
-  // Filter: only activities whose day has already passed AND missing TERA image OR folio
-  const todayTijuana = getTijuanaToday();
-
+  // Filter: ALL activities in the weekend missing TERA (image OR folio).
+  // Cancelled activities don't require TERA.
+  // Activities drop off the list as soon as both image AND folio are uploaded.
+  // Pending activities from a past weekend persist until resolved.
   const alarmaActivities = activities
     .filter(a => {
-      const actDate = a.date.toISOString().slice(0, 10);
-      const dayPassed = actDate < todayTijuana;
+      if ((a as any).status === 'CANCELADA') return false;
       const missingTera = !a.safetyAuditImage || !a.teraFolio;
-      return dayPassed && missingTera;
+      return missingTera;
     })
     .map(a => ({
       id: a.id,
       title: a.title,
+      status: (a as any).status,
       date: a.date.toISOString(),
       startTime: a.startTime,
       endTime: a.endTime,
@@ -120,11 +122,8 @@ export default async function AlarmaTeraPage({
       client: a.client,
     }));
 
-  // Compute stats
-  const totalActivities = activities.filter(a => {
-    const actDate = a.date.toISOString().slice(0, 10);
-    return actDate < todayTijuana;
-  }).length;
+  // Stats: total = all non-cancelled activities in the weekend
+  const totalActivities = activities.filter(a => (a as any).status !== 'CANCELADA').length;
   const compliantCount = totalActivities - alarmaActivities.length;
 
   return (
