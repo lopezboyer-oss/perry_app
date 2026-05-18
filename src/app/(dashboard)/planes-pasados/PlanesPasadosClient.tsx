@@ -472,7 +472,7 @@ export function PlanesPasadosClient({
                         </td>
                       </tr>
                     )}
-                    <tr className={`hover:bg-slate-50/50 transition-colors align-top ${act.status === 'CANCELADA' ? 'bg-red-50/60 opacity-60' : hasAlert ? 'bg-amber-50/40' : ''}`}>
+                    <tr className={`transition-colors align-top ${act.status === 'CANCELADA' ? 'bg-red-100 hover:bg-red-100' : hasAlert ? 'bg-amber-50/40 hover:bg-slate-50/50' : 'hover:bg-slate-50/50'}`}>
                       <td className="text-center">
                         <div className="flex flex-col items-center gap-0.5">
                           <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${hasAlert ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-700'}`}>{idx + 1}</span>
