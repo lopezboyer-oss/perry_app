@@ -18,15 +18,19 @@ export default async function AlarmaTeraPage({
   const role = session.user.role;
   const companyFilter = await getCompanyFilterFromCookies();
 
-  // Calculate the current weekend (Saturday) — same logic as atc-finde
+  // Calculate the "reference" weekend for ALARMA TERA:
+  // - On Saturday (dow=6): current ongoing weekend
+  // - On Sunday (dow=0): current ongoing weekend (yesterday was Saturday)
+  // - On Mon-Fri (dow=1-5): the PREVIOUS weekend (most recently completed)
+  // This ensures ALARMA TERA defaults to the weekend that needs review, not the future one.
   const todayStr = getTijuanaToday();
   const today = new Date(`${todayStr}T12:00:00`);
   const dow = today.getDay();
 
   let satOffset: number;
-  if (dow === 6) satOffset = 0;
-  else if (dow === 0) satOffset = -1;
-  else satOffset = 6 - dow;
+  if (dow === 6) satOffset = 0;          // today IS Saturday
+  else if (dow === 0) satOffset = -1;    // Sunday → last Saturday
+  else satOffset = -(dow + 1);           // Mon(1)→-2, Tue(2)→-3 ... Fri(5)→-6
 
   const saturdayDate = new Date(today);
   saturdayDate.setDate(today.getDate() + satOffset);
