@@ -47,7 +47,7 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
             <ArrowLeft size={14} /> Volver
           </button>
           <h1 className="text-2xl font-bold text-slate-800">
-            {activity.continuedFromId && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-2 py-1 rounded-full mr-2 align-middle">🔄 CONTINUACIÓN</span>}
+            {activity.continuedFromId && activity.type === 'EJECUCION' && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-2 py-1 rounded-full mr-2 align-middle">🔄 CONTINUACIÓN</span>}
             {activity.title}
           </h1>
           <div className="flex flex-wrap gap-2 mt-2">

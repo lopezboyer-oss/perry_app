@@ -1851,7 +1851,9 @@ export function AtcFindeClient({
                       {(() => {
                         const entries = timeRegistries[act.id] || [];
                         const count = entries.length;
-                        return (
+                        const canEditRegistry = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)
+                          || (userRole === 'INGENIERO' && act.user?.id === userId);
+                        return canEditRegistry ? (
                           <button
                             onClick={() => setTimeRegistryModal({ activityId: act.id, activityTitle: act.title })}
                             className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all hover:shadow-md ${
@@ -1866,6 +1868,20 @@ export function AtcFindeClient({
                             {count === 4 ? '✅' : <Clock size={10} />}
                             {count}/4
                           </button>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                              count === 4
+                                ? 'bg-emerald-50 text-emerald-600'
+                                : count > 0
+                                ? 'bg-blue-50 text-blue-600'
+                                : 'bg-slate-50 text-slate-400'
+                            }`}
+                            title="Solo el Sup. Operativo puede registrar"
+                          >
+                            {count === 4 ? '✅' : <Clock size={10} />}
+                            {count}/4
+                          </span>
                         );
                       })()}
                     </td>

@@ -104,8 +104,15 @@ export function getChecklistScore(rec: EquipRecordData): number {
   return s;
 }
 
-export function canEdit(userRole: string): boolean {
+export function canEditGlobal(userRole: string): boolean {
   return ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+}
+
+/** INGENIERO can edit only their own activities (where they are the Sup. Operativo) */
+export function canEditActivity(userRole: string, userId: string, activityUserId: string | null): boolean {
+  if (canEditGlobal(userRole)) return true;
+  if (userRole === 'INGENIERO' && activityUserId && userId === activityUserId) return true;
+  return false;
 }
 
 export function canViewFolioReport(userRole: string): boolean {

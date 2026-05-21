@@ -6,14 +6,14 @@ import { ClipboardCheck, Camera, FileText, CheckCircle, XCircle, Shield, Wrench,
 import { formatDate } from '@/lib/utils';
 import {
   type Props, type REActivity, type EquipRecordData,
-  DAY_NAMES, getChecklistScore, canEdit as canEditFn, canViewFolioReport,
+  DAY_NAMES, getChecklistScore, canEditActivity, canViewFolioReport,
 } from './registro-equipos-types';
 import { ChecklistModal, EvidenciasModal, FolioReportModal, NotesModal } from './RegistroEquiposModals';
 
 type ModalState =
-  | { type: 'checklist'; record: EquipRecordData; equipName: string; actTitle: string }
-  | { type: 'evidencias'; record: EquipRecordData; equipName: string }
-  | { type: 'notes'; record: EquipRecordData; equipName: string }
+  | { type: 'checklist'; record: EquipRecordData; equipName: string; actTitle: string; editable: boolean }
+  | { type: 'evidencias'; record: EquipRecordData; equipName: string; editable: boolean }
+  | { type: 'notes'; record: EquipRecordData; equipName: string; editable: boolean }
   | { type: 'folio'; folio: string }
   | { type: 'operator'; record: EquipRecordData; equipName: string; techs: { technicianId: string; technicianName: string }[] }
   | null;
@@ -23,7 +23,6 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
   const [activities, setActivities] = useState(initialActivities);
   const [modal, setModal] = useState<ModalState>(null);
   const [initDone, setInitDone] = useState(false);
-  const editable = canEditFn(userRole);
 
   // ── Auto-create missing EquipRecords on mount ──
   useEffect(() => {
@@ -276,6 +275,7 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
                           const rec = findRecord(act, eq.equipId);
                           const score = rec ? getChecklistScore(rec) : 0;
                           const evidCount = rec?.evidencias?.length || 0;
+                          const actEditable = canEditActivity(userRole, userId, act.userId);
                           return (
                             <tr key={`${act.id}-${eq.equipId}`} className="hover:bg-teal-50/30 transition-colors align-top border-b border-slate-100">
                               {eqIdx === 0 && (
@@ -300,7 +300,7 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
                               </td>
                               {/* Operator */}
                               <td className="text-xs text-slate-600">
-                                {rec && editable ? (
+                                {rec && actEditable ? (
                                   <button
                                     onClick={() => setModal({ type: 'operator', record: rec, equipName: eq.equipName, techs: act.techs })}
                                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-colors hover:opacity-80 ${rec.operatorName ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}
@@ -314,7 +314,7 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
                               {/* Checklist button */}
                               <td className="text-center">
                                 {rec ? (
-                                  <button onClick={() => setModal({ type: 'checklist', record: rec, equipName: eq.equipName, actTitle: act.title })}
+                                  <button onClick={() => setModal({ type: 'checklist', record: rec, equipName: eq.equipName, actTitle: act.title, editable: actEditable })}
                                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-colors hover:opacity-80 ${score === 5 ? 'bg-emerald-100 text-emerald-700' : score >= 3 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                                     {score === 5 ? <CheckCircle size={10} /> : <XCircle size={10} />}{score}/5
                                   </button>
@@ -323,7 +323,7 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
                               {/* Evidencias button */}
                               <td className="text-center">
                                 {rec ? (
-                                  <button onClick={() => setModal({ type: 'evidencias', record: rec, equipName: eq.equipName })}
+                                  <button onClick={() => setModal({ type: 'evidencias', record: rec, equipName: eq.equipName, editable: actEditable })}
                                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-colors hover:opacity-80 ${evidCount > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
                                     <Camera size={10} />{evidCount}
                                   </button>
@@ -332,7 +332,7 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
                               {/* Notes button */}
                               <td className="text-center">
                                 {rec ? (
-                                  <button onClick={() => setModal({ type: 'notes', record: rec, equipName: eq.equipName })}
+                                  <button onClick={() => setModal({ type: 'notes', record: rec, equipName: eq.equipName, editable: actEditable })}
                                     className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold transition-colors hover:opacity-80 ${rec.notes ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-400'}`}>
                                     <StickyNote size={10} />{rec.notes ? '✓' : '-'}
                                   </button>
@@ -353,13 +353,13 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
 
       {/* ── MODALS ── */}
       {modal?.type === 'checklist' && (
-        <ChecklistModal record={modal.record} equipName={modal.equipName} activityTitle={modal.actTitle} canEdit={editable} onClose={() => setModal(null)} onSave={handleSaveChecklist} />
+        <ChecklistModal record={modal.record} equipName={modal.equipName} activityTitle={modal.actTitle} canEdit={modal.editable} onClose={() => setModal(null)} onSave={handleSaveChecklist} />
       )}
       {modal?.type === 'evidencias' && (
-        <EvidenciasModal record={modal.record} equipName={modal.equipName} canEdit={editable} onClose={() => setModal(null)} onSave={handleSaveEvidencias} />
+        <EvidenciasModal record={modal.record} equipName={modal.equipName} canEdit={modal.editable} onClose={() => setModal(null)} onSave={handleSaveEvidencias} />
       )}
       {modal?.type === 'notes' && (
-        <NotesModal record={modal.record} equipName={modal.equipName} canEdit={editable} onClose={() => setModal(null)} onSave={handleSaveNotes} />
+        <NotesModal record={modal.record} equipName={modal.equipName} canEdit={modal.editable} onClose={() => setModal(null)} onSave={handleSaveNotes} />
       )}
       {modal?.type === 'folio' && (
         <FolioReportModal folio={modal.folio} onClose={() => setModal(null)} />
