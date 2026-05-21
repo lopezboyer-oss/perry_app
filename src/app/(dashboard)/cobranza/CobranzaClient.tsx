@@ -122,12 +122,17 @@ export function CobranzaClient({ userRole }: { userRole?: string }) {
     try {
       if (receipts[key]) {
         // Undo receipt
-        await fetch('/api/cobranza/receipts', {
+        const res = await fetch('/api/cobranza/receipts', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ invoiceNumber: key }),
         });
-        setReceipts((p) => { const n = { ...p }; delete n[key]; return n; });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || `Error al revocar recibo (${res.status})`);
+        } else {
+          setReceipts((p) => { const n = { ...p }; delete n[key]; return n; });
+        }
       } else {
         // Mark receipt
         const cookie = document.cookie.split('; ').find(c => c.startsWith('perry_active_company='));
@@ -138,13 +143,15 @@ export function CobranzaClient({ userRole }: { userRole?: string }) {
           body: JSON.stringify({ invoiceNumber: key, folio: inv.folio, po: inv.po, engineerName: inv.engineer, companyId: activeCompanyId && activeCompanyId !== 'ALL' ? activeCompanyId : null }),
         });
         const data = await res.json();
-        if (data.receipt) {
+        if (!res.ok) {
+          alert(data.error || `Error al confirmar recibo (${res.status})`);
+        } else if (data.receipt) {
           setReceipts((p) => ({ ...p, [key]: data.receipt }));
           playCashRegister(); // 🔔 Ka-ching!
         }
       }
-    } catch {
-      // silent fail
+    } catch (err) {
+      alert('Error de conexión al servidor');
     }
     setReceiptLoading((p) => ({ ...p, [key]: false }));
   };
