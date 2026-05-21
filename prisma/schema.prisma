@@ -255,7 +255,7 @@ model WeekendTechAssignment {
   role         String     @default("TECNICO") // TECNICO | SAFETY_DESIGNADO
   weekendOf    String     // "YYYY-MM-DD" del sábado de ese fin de semana
 
-  @@unique([activityId, technicianId, weekendOf])
+  @@unique([activityId, technicianId, weekendOf, role])
 }
 
 model WeekendSafetyAssignment {
