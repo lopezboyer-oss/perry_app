@@ -1,8 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Clock, CheckCircle, Lock, Info, Loader2 } from 'lucide-react';
-import { TimeInput24h } from '@/components/ui/TimeInput24h';
+
+/** Get current time in Tijuana timezone as HH:MM */
+function getCurrentTijuanaTime(): string {
+  return new Date().toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Tijuana',
+  });
+}
 
 const PHASES = [
   {
@@ -49,12 +58,18 @@ interface Props {
 }
 
 export function TimeRegistryModal({ activityId, activityTitle, entries, onClose, onEntryAdded }: Props) {
-  const [timeValue, setTimeValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [liveTime, setLiveTime] = useState(() => getCurrentTijuanaTime());
 
   const entryMap = new Map(entries.map(e => [e.phase, e]));
   const registeredCount = entries.length;
+
+  // Live clock update every second
+  useEffect(() => {
+    const interval = setInterval(() => setLiveTime(getCurrentTijuanaTime()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Find the next phase to register
   const nextPhaseIndex = PHASES.findIndex(p => !entryMap.has(p.key));
@@ -63,10 +78,8 @@ export function TimeRegistryModal({ activityId, activityTitle, entries, onClose,
     if (nextPhaseIndex < 0) return;
     const phase = PHASES[nextPhaseIndex];
 
-    if (!timeValue || !/^\d{2}:\d{2}$/.test(timeValue)) {
-      setError('Ingresa una hora válida (HH:MM)');
-      return;
-    }
+    // Capture current Tijuana time at the moment of click
+    const now = getCurrentTijuanaTime();
 
     setSaving(true);
     setError('');
@@ -74,14 +87,13 @@ export function TimeRegistryModal({ activityId, activityTitle, entries, onClose,
       const res = await fetch(`/api/activities/${activityId}/time-registry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phase: phase.key, time: timeValue }),
+        body: JSON.stringify({ phase: phase.key, time: now }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || 'Error al registrar');
       } else {
         onEntryAdded({ ...data, registeredAt: data.registeredAt || new Date().toISOString() });
-        setTimeValue('');
       }
     } catch {
       setError('Error de conexión');
@@ -170,22 +182,19 @@ export function TimeRegistryModal({ activityId, activityTitle, entries, onClose,
                   </div>
                 )}
 
-                {/* Active input */}
+                {/* Active — auto-register with current time */}
                 {isActive && (
                   <div className="ml-6 flex items-center gap-2 mb-1.5">
-                    <TimeInput24h
-                      value={timeValue}
-                      onChange={setTimeValue}
-                      className="w-[80px] text-center text-sm font-mono font-bold px-2 py-1.5 rounded-lg border-2 border-indigo-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="HH:MM"
-                    />
+                    <span className="text-lg font-bold font-mono text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-200 animate-pulse">
+                      {liveTime}
+                    </span>
                     <button
                       onClick={handleRegister}
-                      disabled={saving || !timeValue}
-                      className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                      disabled={saving}
+                      className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 shadow-md hover:shadow-lg"
                     >
-                      {saving ? <Loader2 size={12} className="animate-spin" /> : null}
-                      Registrar
+                      {saving ? <Loader2 size={12} className="animate-spin" /> : <Clock size={12} />}
+                      Registrar Ahora
                     </button>
                   </div>
                 )}
