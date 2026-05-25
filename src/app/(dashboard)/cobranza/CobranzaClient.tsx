@@ -65,7 +65,7 @@ export function CobranzaClient({ userRole }: { userRole?: string }) {
       const companyParam = activeCompany ? `?companyId=${encodeURIComponent(activeCompany)}` : '';
       const [invRes, recRes] = await Promise.all([
         fetch(`/api/odoo/invoices${companyParam}`),
-        fetch('/api/cobranza/receipts'),
+        fetch(`/api/cobranza/receipts${companyParam}`),
       ]);
       const invData = await invRes.json();
       const recData = await recRes.json();

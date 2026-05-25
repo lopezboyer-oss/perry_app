@@ -2,13 +2,21 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET: List all receipt confirmations
-export async function GET() {
+// GET: List receipt confirmations (filtered by company)
+export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+    const companyId = req.nextUrl.searchParams.get('companyId');
+
+    const where: any = {};
+    if (companyId && companyId !== 'ALL') {
+      where.companyId = companyId;
+    }
+
     const receipts = await prisma.invoiceReceipt.findMany({
+      where,
       include: { confirmedBy: { select: { name: true } } },
       orderBy: { confirmedAt: 'desc' },
     });
