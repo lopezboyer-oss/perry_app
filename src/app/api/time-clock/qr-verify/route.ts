@@ -41,6 +41,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El código QR ha expirado. Solicita al supervisor refrescar la pantalla.' }, { status: 400 });
     }
 
+    // Validate sequence order (CHECK_IN -> CHECK_OUT -> CHECK_IN -> CHECK_OUT)
+    const targetType = type || 'CHECK_IN';
+    const lastEntry = await prisma.timeClockEntry.findFirst({
+      where: { userId: session.user.id },
+      orderBy: { timestamp: 'desc' },
+    });
+
+    if (lastEntry) {
+      if (lastEntry.type === targetType) {
+        const lastTypeStr = lastEntry.type === 'CHECK_IN' ? 'Entrada' : 'Salida';
+        const expectedTypeStr = targetType === 'CHECK_IN' ? 'Salida' : 'Entrada';
+        return NextResponse.json({
+          error: `Secuencia incorrecta. Tu último registro fue una ${lastTypeStr}. Debes registrar una ${expectedTypeStr} ahora.`
+        }, { status: 400 });
+      }
+    } else {
+      if (targetType === 'CHECK_OUT') {
+        return NextResponse.json({
+          error: 'Secuencia incorrecta. Tu primer registro debe ser una Entrada (CHECK_IN).'
+        }, { status: 400 });
+      }
+    }
+
     // Create registry entry
     const entry = await prisma.timeClockEntry.create({
       data: {

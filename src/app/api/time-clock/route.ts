@@ -84,6 +84,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Método inválido (GPS/SELFIE)' }, { status: 400 });
     }
 
+    // Validate sequence order (CHECK_IN -> CHECK_OUT -> CHECK_IN -> CHECK_OUT)
+    const lastEntry = await prisma.timeClockEntry.findFirst({
+      where: { userId: session.user.id },
+      orderBy: { timestamp: 'desc' },
+    });
+
+    if (lastEntry) {
+      if (lastEntry.type === type) {
+        const lastTypeStr = lastEntry.type === 'CHECK_IN' ? 'Entrada' : 'Salida';
+        const expectedTypeStr = type === 'CHECK_IN' ? 'Salida' : 'Entrada';
+        return NextResponse.json({
+          error: `Secuencia incorrecta. Tu último registro fue una ${lastTypeStr}. Debes registrar una ${expectedTypeStr} ahora.`
+        }, { status: 400 });
+      }
+    } else {
+      if (type === 'CHECK_OUT') {
+        return NextResponse.json({
+          error: 'Secuencia incorrecta. Tu primer registro debe ser una Entrada (CHECK_IN).'
+        }, { status: 400 });
+      }
+    }
+
     const data: any = {
       userId: session.user.id,
       type,

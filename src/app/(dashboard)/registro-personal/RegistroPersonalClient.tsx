@@ -75,6 +75,8 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
   const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
   const [selectedMapCoords, setSelectedMapCoords] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [lastUserEntryType, setLastUserEntryType] = useState<'CHECK_IN' | 'CHECK_OUT' | null>(null);
+  const [checkingLastEntry, setCheckingLastEntry] = useState(true);
 
   const isSupervisorOrAdmin = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(currentUser.role);
   const canGenerateQr = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'INGENIERO'].includes(currentUser.role);
@@ -106,6 +108,31 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
+
+  useEffect(() => {
+    const checkLastStatus = async () => {
+      try {
+        const res = await fetch('/api/time-clock');
+        if (res.ok) {
+          const data = await res.json();
+          const myLogs = data.filter((l: any) => l.userId === currentUser.id);
+          if (myLogs.length > 0) {
+            const lastType = myLogs[0].type;
+            setLastUserEntryType(lastType);
+            setType(lastType === 'CHECK_IN' ? 'CHECK_OUT' : 'CHECK_IN');
+          } else {
+            setLastUserEntryType(null);
+            setType('CHECK_IN');
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching attendance status:', err);
+      } finally {
+        setCheckingLastEntry(false);
+      }
+    };
+    checkLastStatus();
+  }, [currentUser.id]);
 
   useEffect(() => {
     if (method === 'GPS' && activeTab === 'registro') {
@@ -242,6 +269,8 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
       
       playSuccessSound();
       setSuccessMsg(`Registro de ${data.type === 'CHECK_IN' ? 'Entrada' : 'Salida'} exitoso vía QR.`);
+      setLastUserEntryType(data.type);
+      setType(data.type === 'CHECK_IN' ? 'CHECK_OUT' : 'CHECK_IN');
       router.refresh();
       fetchLogs();
     } catch (err: any) {
@@ -294,6 +323,8 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
 
       playSuccessSound();
       setSuccessMsg(`Registro de ${type === 'CHECK_IN' ? 'Entrada' : 'Salida'} exitoso.`);
+      setLastUserEntryType(type);
+      setType(type === 'CHECK_IN' ? 'CHECK_OUT' : 'CHECK_IN');
       
       // Clean up form
       setCapturedPhoto(null);
@@ -476,7 +507,18 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
               
               {/* Type selector (In/Out) */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Acción a realizar</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Acción a realizar</label>
+                  {!checkingLastEntry && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      lastUserEntryType === 'CHECK_IN' 
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                        : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                    }`}>
+                      {lastUserEntryType === 'CHECK_IN' ? 'Requerido: Salida 🚪' : 'Requerido: Entrada 🔑'}
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setType('CHECK_IN')}
