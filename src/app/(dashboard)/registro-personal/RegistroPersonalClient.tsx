@@ -345,10 +345,9 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
   // Dynamic QR Code Generator (Supervisor View)
   // ----------------------------------------------------
   const generateQrToken = async () => {
-    if (!genActivityId) return;
     setQrLoading(true);
     try {
-      const res = await fetch(`/api/time-clock/qr-token?activityId=${genActivityId}&type=${genType}`);
+      const res = await fetch(`/api/time-clock/qr-token?activityId=${genActivityId || ''}&type=${genType}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
@@ -366,7 +365,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
 
   // Count down and rotate token
   useEffect(() => {
-    if (activeTab !== 'qr-generator' || !genActivityId) {
+    if (activeTab !== 'qr-generator') {
       setQrCodeDataUrl(null);
       return;
     }
@@ -789,7 +788,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                   value={genActivityId}
                   onChange={(e) => { setGenActivityId(e.target.value); setQrCodeDataUrl(null); }}
                 >
-                  <option value="">-- Elige actividad del Plan Finde --</option>
+                  <option value="">-- Sin vincular (Asistencia General) --</option>
                   {activities.map((act) => (
                     <option key={act.id} value={act.id}>
                       [{act.workOrderFolio || 'SIN FOLIO'}] {act.title}
@@ -828,32 +827,25 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
 
             {/* QR Projection Screen */}
             <div className="w-full md:w-[380px] bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[360px]">
-              {genActivityId ? (
-                qrCodeDataUrl ? (
-                  <div className="text-center space-y-4">
-                    <div className="bg-white p-4 rounded-2xl shadow-lg border border-slate-200 inline-block">
-                      <img src={qrCodeDataUrl} alt="Dynamic Attendance QR" className="w-[280px] h-[280px]" />
-                    </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="flex h-3 w-3 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-600"></span>
-                      </span>
-                      <p className="text-xs font-bold text-slate-600">
-                        El código QR se actualizará en <span className="text-indigo-600 font-extrabold text-sm">{qrCountdown}</span> segundos
-                      </p>
-                    </div>
+              {qrCodeDataUrl ? (
+                <div className="text-center space-y-4">
+                  <div className="bg-white p-4 rounded-2xl shadow-lg border border-slate-200 inline-block">
+                    <img src={qrCodeDataUrl} alt="Dynamic Attendance QR" className="w-[280px] h-[280px]" />
                   </div>
-                ) : (
-                  <div className="text-center space-y-2">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" />
-                    <p className="text-xs text-slate-500">Cargando token dinámico...</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="flex h-3 w-3 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-600"></span>
+                    </span>
+                    <p className="text-xs font-bold text-slate-600">
+                      El código QR se actualizará en <span className="text-indigo-600 font-extrabold text-sm">{qrCountdown}</span> segundos
+                    </p>
                   </div>
-                )
+                </div>
               ) : (
-                <div className="text-center space-y-2 text-slate-400">
-                  <QrCode size={48} className="mx-auto stroke-[1.5] opacity-50" />
-                  <p className="text-xs">Elige una actividad para proyectar el código QR</p>
+                <div className="text-center space-y-2">
+                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500" />
+                  <p className="text-xs text-slate-500">Cargando token dinámico...</p>
                 </div>
               )}
             </div>
