@@ -1030,7 +1030,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                   const digits = String((Math.abs(hash) % 9000) + 1000);
                   const password = `${capitalizedName}${digits}`;
                   
-                  const message = `¡Hola ${selectedUser.name}! Te comparto tus datos de acceso para la aplicación PERRY APP y las instrucciones para registrar tu asistencia:\n\n🌐 Enlace: https://perry.tallerantigravity.com\n📧 Usuario (Email): ${email}\n🔑 Contraseña: ${password}\n\nPasos para registrar Asistencia:\n1. Inicia sesión con tus credenciales.\n2. Ve a la sección "Asistencia".\n3. Elige tu método (GPS 🗺️, Selfie 📷 o Escanear QR 🔍).\n4. Presiona Registrar Entrada o Salida.`;
+                  const message = `¡Hola ${selectedUser.name}! Te comparto tus datos de acceso para la aplicación PERRY APP y las instrucciones para registrar tu asistencia:\n\n🌐 Enlace: https://perryapp.netlify.app\n📧 Usuario (Email): ${email}\n🔑 Contraseña: ${password}\n\nPasos para registrar Asistencia:\n1. Inicia sesión con tus credenciales.\n2. Ve a la sección "Asistencia".\n3. Elige tu método (GPS 🗺️, Selfie 📷 o Escanear QR 🔍).\n4. Presiona Registrar Entrada o Salida.`;
                   
                   const encodedText = encodeURIComponent(message);
                   const phone = selectedUser.phone ? selectedUser.phone.replace(/[^0-9]/g, '') : '';
