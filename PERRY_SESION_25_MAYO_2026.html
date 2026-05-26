@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Reporte Sesión 25 Mayo 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --emerald: #059669;
+      --emerald-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --violet: #7c3aed;
+      --violet-light: #ede9fe;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: white;
+      color: var(--slate-800);
+      line-height: 1.6;
+      font-size: 11pt;
+    }
+
+    @page {
+      size: letter;
+      margin: 1.5cm 2cm;
+    }
+
+    @media print {
+      body { background: white; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none !important; }
+      .container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    .header-text h1 {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.5px;
+    }
+
+    .header-text .subtitle {
+      font-size: 11pt;
+      color: var(--slate-500);
+      font-weight: 400;
+    }
+
+    .header-text .date-badge {
+      display: inline-block;
+      margin-top: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 3px 12px;
+      border-radius: 20px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 22pt;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-card .stat-label {
+      font-size: 8pt;
+      font-weight: 600;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card.emerald .stat-value { color: var(--emerald); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue .stat-value { color: var(--blue); }
+    .stat-card.violet .stat-value { color: var(--violet); }
+    .stat-card.red .stat-value { color: var(--red); }
+    .stat-card.teal .stat-value { color: var(--teal); }
+
+    /* Section titles */
+    h2 {
+      font-size: 14pt;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin-top: 28px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2 .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    h2 .icon.feature { background: var(--emerald-light); }
+    h2 .icon.bugfix { background: var(--amber-light); }
+    h2 .icon.scaffold { background: var(--teal-light); }
+    h2 .icon.notes { background: var(--blue-light); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 9.5pt;
+    }
+
+    thead th {
+      background: var(--slate-800);
+      color: white;
+      font-weight: 600;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+
+    tbody td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: var(--slate-50); }
+    tbody tr:hover { background: var(--primary-light); }
+
+    .commit-hash {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge.feature { background: var(--emerald-light); color: var(--emerald); }
+    .badge.bugfix { background: var(--amber-light); color: var(--amber); }
+    .badge.style { background: var(--blue-light); color: var(--blue); }
+    .badge.scaffold { background: var(--teal-light); color: var(--teal); }
+    .badge.wip { background: var(--violet-light); color: var(--violet); }
+    .badge.docs { background: var(--violet-light); color: var(--violet); }
+
+    /* Category summary */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .category-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 14px;
+      background: white;
+    }
+
+    .category-card h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .category-card ul {
+      list-style: none;
+      font-size: 8.5pt;
+      color: var(--slate-600);
+    }
+
+    .category-card li {
+      padding: 2px 0;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .category-card li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--emerald);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: var(--slate-500);
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 11pt;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Perry App</h1>
+        <div class="subtitle">Reporte de Cambios — Sesión Desarrollo</div>
+        <span class="date-badge">📅 25 de Mayo, 2026</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">7</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Features</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">1</div>
+        <div class="stat-label">Bug Fix</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-value">1</div>
+        <div class="stat-label">Style</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-value">2028</div>
+        <div class="stat-label">Líneas Añadidas</div>
+      </div>
+    </div>
+
+    <!-- Full commit table -->
+    <h2>Detalle de Cambios</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:35px">#</th>
+          <th style="width:75px">Commit</th>
+          <th>Descripción</th>
+          <th style="width:90px">Categoría</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="commit-hash">3f89a44</span></td>
+          <td><strong>GUÍA PERRY — Permisos</strong>: actualizar módulo y añadir permisos de Control de Asistencia a la página de Perfiles y Permisos</td>
+          <td><span class="badge docs">Docs</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><span class="commit-hash">803eee0</span></td>
+          <td><strong>GUÍA DE USO — Estética</strong>: mejorar layout del modal de uso, textos en línea y nombres cortos para evitar saltos de línea</td>
+          <td><span class="badge style">Style</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><span class="commit-hash">eb439ee</span></td>
+          <td><strong>SECUENCIA OBLIGATORIA</strong>: validar orden Entrada -> Salida en frontend y backend e indicador visual de estado requerido</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><span class="commit-hash">8d763cf</span></td>
+          <td><strong>GUÍA DE USO — Modal</strong>: agregar modal interactivo e ilustrado con los pasos del registro de asistencia y logotipo Perry</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">e091f72</span></td>
+          <td><strong>CÁMARA & SEGURIDAD</strong>: fix de carrera asíncrona al montar video selfie y roles autorizados a generar QR (Ingeniero+)</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">7e1587b</span></td>
+          <td><strong>MAPAS INTERACTIVOS</strong>: embeber mapa dinámico de OpenStreetMap en obtención GPS y modal de historial para auditorías</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">67878f5</span></td>
+          <td><strong>CONTROL ASISTENCIA</strong>: sistema principal de asistencia con GPS, foto selfie comprimida, QR Supervisor y feedback de audio</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Category Summary -->
+    <h2>Resumen por Categoría</h2>
+    <div class="category-grid">
+      <div class="category-grid">
+        <div class="category-card" style="border-left: 4px solid var(--emerald);">
+          <h3>⏰ Control de Asistencia</h3>
+          <ul>
+            <li>Modelo Prisma <code>TimeClockEntry</code> para marcas check-in/out.</li>
+            <li>Ubicación nativa GPS con enmascaramiento de coordenadas numéricas.</li>
+            <li>Cámara selfie con compresión client-side y liberación de streams.</li>
+            <li>Generador de QR dinámico firmado SHA256 con 60s de validez.</li>
+            <li>Pitido armónico de validación nativo (Web Audio API).</li>
+          </ul>
+        </div>
+        <div class="category-card" style="border-left: 4px solid var(--blue);">
+          <h3>📍 Mapas y Visualización</h3>
+          <ul>
+            <li>Integración en vivo de iframe de OpenStreetMap.</li>
+            <li>Mapa interactivo al presionar "Obtener GPS".</li>
+            <li>Modal interactivo "Ver Mapa" en bitácora para administradores.</li>
+          </ul>
+        </div>
+        <div class="category-card" style="border-left: 4px solid var(--amber);">
+          <h3>🛡️ Validación de Reglas</h3>
+          <ul>
+            <li>Secuencia obligatoria alternada Entrada ➔ Salida.</li>
+            <li>Filtro en backend para prevenir registros duplicados.</li>
+            <li>Etiqueta dinámica visual de estado requerido en UI.</li>
+            <li>Generación de QR restringida a Ingeniero o superior.</li>
+          </ul>
+        </div>
+        <div class="category-card" style="border-left: 4px solid var(--violet);">
+          <h3>📚 Guías y Documentación</h3>
+          <ul>
+            <li>Modal responsivo de Guía de Uso con logotipo Perry.</li>
+            <li>Corrección estética de quiebres de línea en pasos descriptivos.</li>
+            <li>Nueva matriz de permisos en Guía Perry / Perfiles y Permisos.</li>
+            <li>Diseño de flyer publicitario vertical para móviles.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Files modified -->
+    <h2>Archivos Modificados / Creados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Archivo</th>
+          <th style="text-align:right;width:120px">Cambios</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>src/app/(dashboard)/registro-personal/page.tsx</code></td>
+          <td style="text-align:right">+115 líneas (nuevo)</td>
+        </tr>
+        <tr>
+          <td><code>src/app/(dashboard)/registro-personal/RegistroPersonalClient.tsx</code></td>
+          <td style="text-align:right">+1237 / -1 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/(dashboard)/guia/PerfilesGuide.tsx</code></td>
+          <td style="text-align:right">+77 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/time-clock/route.ts</code></td>
+          <td style="text-align:right">+151 líneas (nuevo)</td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/time-clock/qr-token/route.ts</code></td>
+          <td style="text-align:right">+38 líneas (nuevo)</td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/time-clock/qr-verify/route.ts</code></td>
+          <td style="text-align:right">+92 líneas (nuevo)</td>
+        </tr>
+        <tr>
+          <td><code>src/lib/audio.ts</code></td>
+          <td style="text-align:right">+47 líneas (nuevo)</td>
+        </tr>
+        <tr>
+          <td><code>prisma/schema.prisma</code></td>
+          <td style="text-align:right">+31 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/components/layout/Sidebar.tsx</code></td>
+          <td style="text-align:right">+2 líneas</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Perry App v2.x — Desarrollado con Antigravity por CHIGÜIRE LABS | IVAN LOPEZ BOYER</span>
+      <span>Generado: 25 de Mayo, 2026 · Tijuana, BC</span>
+    </div>
+
+  </div>
+
+  <!-- Print button (hidden on print) -->
+  <button class="print-btn no-print" onclick="window.print()">
+    📄 Guardar como PDF
+  </button>
+
+</body>
+</html>
