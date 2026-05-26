@@ -64,6 +64,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Validate if the activity exists in the database before linking it
+    let validActivityId: string | null = null;
+    if (activityId && activityId !== 'undefined' && activityId !== 'null') {
+      const activityExists = await prisma.activity.findUnique({
+        where: { id: activityId },
+      });
+      if (activityExists) {
+        validActivityId = activityId;
+      }
+    }
+
     // Create registry entry
     const entry = await prisma.timeClockEntry.create({
       data: {
@@ -72,7 +83,7 @@ export async function POST(req: NextRequest) {
         method: 'QR',
         timestamp: new Date(),
         verifiedByUserId: supervisorId,
-        activityId: activityId || null,
+        activityId: validActivityId,
       },
       include: {
         user: {

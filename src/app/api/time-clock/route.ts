@@ -127,8 +127,13 @@ export async function POST(req: NextRequest) {
       data.photo = photo;
     }
 
-    if (activityId) {
-      data.activityId = activityId;
+    if (activityId && activityId !== 'undefined' && activityId !== 'null') {
+      const activityExists = await prisma.activity.findUnique({
+        where: { id: activityId },
+      });
+      if (activityExists) {
+        data.activityId = activityId;
+      }
     }
 
     const entry = await prisma.timeClockEntry.create({

@@ -14,12 +14,13 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const activityId = searchParams.get('activityId');
+    const rawActivityId = searchParams.get('activityId');
+    const activityId = (rawActivityId && rawActivityId !== 'undefined' && rawActivityId !== 'null' && rawActivityId.trim() !== '') ? rawActivityId : null;
     const type = searchParams.get('type') || 'CHECK_IN'; // CHECK_IN or CHECK_OUT
 
     const payload = {
       supervisorId: session.user.id,
-      activityId: activityId || null,
+      activityId,
       type,
       timestamp: Date.now(),
     };
