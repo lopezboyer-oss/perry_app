@@ -121,6 +121,8 @@ model Activity {
   teraAuditorUploadedAt  DateTime?    // When the auditor TERA was uploaded
   teraAuditorUploadedBy  String?      // Name of user who uploaded auditor TERA
   teraAuditorImage       String?      // Base64 data URL of auditor TERA image
+  teraExempt             Boolean  @default(false)  // Activity doesn't require TERA (set by Safety & LP)
+  teraExemptBy           String?                    // Name of user who marked it exempt
   consortiumCompany String?            // Target company when type=CONSORCIO (e.g. DROBOTS)
   continuedFromId  String?             // ID of the parent activity if created via "Continuar"
   cancelledAt      DateTime?           // When the activity was cancelled

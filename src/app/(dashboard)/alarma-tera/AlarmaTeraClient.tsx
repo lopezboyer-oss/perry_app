@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, Shield, ShieldAlert, CheckCircle, XCircle, Image, FileText, X, Bell } from 'lucide-react';
+import { AlertTriangle, Shield, ShieldAlert, ShieldCheck, CheckCircle, XCircle, Image, FileText, X, Bell } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface AlarmaActivity {
@@ -29,11 +29,12 @@ interface Props {
   selectedWeekend: string;
   totalActivities: number;
   compliantCount: number;
+  exemptCount: number;
 }
 
 const DAY_NAMES = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
-export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, totalActivities, compliantCount }: Props) {
+export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, totalActivities, compliantCount, exemptCount }: Props) {
   const router = useRouter();
   const alarmaCount = activities.length;
   const complianceRate = totalActivities > 0 ? Math.round((compliantCount / totalActivities) * 100) : 100;
@@ -166,6 +167,19 @@ export function AlarmaTeraClient({ activities, weekendDates, selectedWeekend, to
             </div>
           </div>
         </div>
+        {exemptCount > 0 && (
+          <div className="card p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <ShieldCheck className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-semibold tracking-wide">Exentas</p>
+                <p className="text-2xl font-bold text-blue-600">{exemptCount}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Resumen por Sup. Operativo ── */}

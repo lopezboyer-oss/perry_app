@@ -106,6 +106,8 @@ export default async function AtcFindePage() {
         teraAuditorUploadedAt: true,
         teraAuditorUploadedBy: true,
         teraAuditorImage: true,
+        teraExempt: true,
+        teraExemptBy: true,
         continuedFromId: true,
         cancelledBy: true,
         cancelReason: true,

@@ -92,6 +92,7 @@ export default async function AlarmaTeraPage({
           teraFolio: true,
           teraUploadedAt: true,
           teraUploadedBy: true,
+          teraExempt: true,
           user: { select: { id: true, name: true } },
           client: { select: { id: true, name: true } },
           company: { select: { name: true, shortName: true } },
@@ -107,6 +108,7 @@ export default async function AlarmaTeraPage({
   const alarmaActivities = activities
     .filter(a => {
       if ((a as any).status === 'CANCELADA') return false;
+      if (a.teraExempt) return false;  // Exempt from TERA — skip
       const missingTera = !a.safetyAuditImage || !a.teraFolio;
       return missingTera;
     })
@@ -129,8 +131,9 @@ export default async function AlarmaTeraPage({
     }));
 
   // Stats: total = all non-cancelled activities in the weekend
-  const totalActivities = activities.filter(a => (a as any).status !== 'CANCELADA').length;
+  const totalActivities = activities.filter(a => (a as any).status !== 'CANCELADA' && !a.teraExempt).length;
   const compliantCount = totalActivities - alarmaActivities.length;
+  const exemptCount = activities.filter(a => (a as any).status !== 'CANCELADA' && a.teraExempt).length;
 
   return (
     <AlarmaTeraClient
@@ -139,6 +142,7 @@ export default async function AlarmaTeraPage({
       selectedWeekend={selectedWeekend}
       totalActivities={totalActivities}
       compliantCount={compliantCount}
+      exemptCount={exemptCount}
     />
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
@@ -32,6 +32,8 @@ interface Activity {
   teraAuditorUploadedAt: string | null;
   teraAuditorUploadedBy: string | null;
   teraAuditorImage: string | null;
+  teraExempt: boolean;
+  teraExemptBy: string | null;
   user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
   contact: { id: string; name: string } | null;
@@ -253,6 +255,11 @@ export function AtcFindeClient({
   const [timeRegistries, setTimeRegistries] = useState<Record<string, TimeRegistryEntryData[]>>(Object.fromEntries(activities.map((a) => [a.id, a.timeRegistryEntries || []])));
   const [timeRegistryModal, setTimeRegistryModal] = useState<{ activityId: string; activityTitle: string } | null>(null);
 
+  // TERA Exempt state
+  const [teraExemptState, setTeraExemptState] = useState<Record<string, boolean>>(Object.fromEntries(activities.map((a) => [a.id, a.teraExempt || false])));
+  const [teraExemptByState, setTeraExemptByState] = useState<Record<string, string | null>>(Object.fromEntries(activities.map((a) => [a.id, a.teraExemptBy || null])));
+  const [teraExemptLoading, setTeraExemptLoading] = useState<Record<string, boolean>>({});
+
   // Cancel modal state
   const [cancelModal, setCancelModal] = useState<{ activity: Activity } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -318,6 +325,30 @@ export function AtcFindeClient({
   };
 
   // Odoo lookup state
+  // Toggle TERA exemption (Safety & LP only)
+  const toggleTeraExempt = async (actId: string) => {
+    const newValue = !teraExemptState[actId];
+    setTeraExemptLoading((p) => ({ ...p, [actId]: true }));
+    try {
+      const res = await fetch(`/api/activities/${actId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teraExempt: newValue,
+          teraExemptBy: newValue ? userName : null,
+        }),
+      });
+      if (res.ok) {
+        setTeraExemptState((p) => ({ ...p, [actId]: newValue }));
+        setTeraExemptByState((p) => ({ ...p, [actId]: newValue ? userName : null }));
+      } else {
+        const d = await res.json();
+        alert(d.error || 'Error al cambiar exención TERA');
+      }
+    } catch { alert('Error de conexión'); }
+    setTeraExemptLoading((p) => ({ ...p, [actId]: false }));
+  };
+
   const [odooLoading, setOdooLoading] = useState<Record<string, boolean>>({});
   const [odooInfo, setOdooInfo] = useState<Record<string, { client?: string; state?: string; found: boolean; hasPO: boolean }>>({});
 
@@ -2005,7 +2036,28 @@ export function AtcFindeClient({
 
                     {/* SAFETY AUDIT IMAGE + TERA FOLIO */}
                     <td className="text-center">
-                      {auditImageLoading[act.id] ? (
+                      {teraExemptState[act.id] ? (
+                        /* ── EXEMPT BADGE ── */
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200">
+                            <ShieldCheck size={12} className="text-blue-500" />
+                            N/A
+                          </span>
+                          <span className="text-[9px] text-slate-400 leading-tight">
+                            {teraExemptByState[act.id] || '?'}
+                          </span>
+                          {(userRole === 'SUPERVISOR_SAFETY_LP' || userRole === 'ADMIN') && (
+                            <button
+                              onClick={() => toggleTeraExempt(act.id)}
+                              disabled={teraExemptLoading[act.id]}
+                              className="text-[9px] text-blue-500 hover:text-blue-700 underline mt-0.5"
+                              title="Quitar exención TERA"
+                            >
+                              {teraExemptLoading[act.id] ? <Loader2 size={10} className="animate-spin" /> : 'Quitar'}
+                            </button>
+                          )}
+                        </div>
+                      ) : auditImageLoading[act.id] ? (
                         <Loader2 size={16} className="mx-auto animate-spin text-indigo-500" />
                       ) : (
                         <div className="flex flex-col items-center gap-1">
@@ -2040,6 +2092,17 @@ export function AtcFindeClient({
                                 title="Eliminar imagen"
                               >
                                 <Trash2 size={13} />
+                              </button>
+                            )}
+                            {/* Exempt toggle — Safety & LP only */}
+                            {(userRole === 'SUPERVISOR_SAFETY_LP' || userRole === 'ADMIN') && (
+                              <button
+                                onClick={() => toggleTeraExempt(act.id)}
+                                disabled={teraExemptLoading[act.id]}
+                                className="p-1 rounded hover:bg-blue-50 text-slate-300 hover:text-blue-500 transition-colors"
+                                title="Marcar como exenta de TERA"
+                              >
+                                {teraExemptLoading[act.id] ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
                               </button>
                             )}
                           </div>

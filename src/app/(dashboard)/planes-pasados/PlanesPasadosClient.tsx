@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useState, useRef } from 'react';
-import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle } from 'lucide-react';
+import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { TimeInput24h } from '@/components/ui/TimeInput24h';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
@@ -601,7 +601,17 @@ export function PlanesPasadosClient({
 
                       {/* TERA IMAGE + FOLIO */}
                       <td className="text-center">
-                        {auditImageLoading[act.id] ? (
+                        {(act as any).teraExempt ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200">
+                              <ShieldCheck size={12} className="text-blue-500" />
+                              N/A
+                            </span>
+                            {(act as any).teraExemptBy && (
+                              <span className="text-[9px] text-slate-400">{(act as any).teraExemptBy}</span>
+                            )}
+                          </div>
+                        ) : auditImageLoading[act.id] ? (
                           <Loader2 size={16} className="mx-auto animate-spin text-indigo-500" />
                         ) : (
                           <div className="flex flex-col items-center gap-1">
