@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     const userIdParam = searchParams.get('userId');
     const startParam = searchParams.get('startDate');
     const endParam = searchParams.get('endDate');
+    const typeParam = searchParams.get('type');
 
     const role = session.user.role;
     const isManager = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role);
@@ -25,6 +26,10 @@ export async function GET(req: NextRequest) {
     } else {
       // Ingenieros only see their own records
       where.userId = session.user.id;
+    }
+
+    if (typeParam && ['CHECK_IN', 'CHECK_OUT'].includes(typeParam)) {
+      where.type = typeParam;
     }
 
     if (startParam || endParam) {

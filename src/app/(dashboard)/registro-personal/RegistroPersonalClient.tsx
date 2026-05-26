@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin, Camera, QrCode, LogIn, LogOut, Calendar, User, Clock,
-  ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map, HelpCircle
+  ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map, HelpCircle, X
 } from 'lucide-react';
 import { playSuccessSound } from '@/lib/audio';
 import QRCode from 'qrcode';
@@ -16,6 +16,14 @@ interface ActivityOption {
   workOrderFolio: string | null;
   date: string;
 }
+
+const roleLabels: Record<string, string> = {
+  ADMIN: 'Admin',
+  ADMINISTRACION: 'Administración',
+  SUPERVISOR: 'Supervisor',
+  SUPERVISOR_SAFETY_LP: 'Sup. Safety',
+  INGENIERO: 'Ingeniero',
+};
 
 interface UserOption {
   id: string;
@@ -72,6 +80,21 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
   const [filterUser, setFilterUser] = useState<string>('');
   const [filterStartDate, setFilterStartDate] = useState<string>('');
   const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
   const [selectedMapCoords, setSelectedMapCoords] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -393,6 +416,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
     try {
       let url = '/api/time-clock?';
       if (filterUser) url += `userId=${filterUser}&`;
+      if (filterType) url += `type=${filterType}&`;
       if (filterStartDate) url += `startDate=${filterStartDate}&`;
       if (filterEndDate) url += `endDate=${filterEndDate}&`;
 
@@ -412,7 +436,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
     if (activeTab === 'historial') {
       fetchLogs();
     }
-  }, [activeTab, filterUser, filterStartDate, filterEndDate]);
+  }, [activeTab, filterUser, filterType, filterStartDate, filterEndDate]);
 
   // Helper date formatter
   const formatDateTime = (dateStr: string) => {
@@ -868,19 +892,95 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                 <ListFilter size={16} /> Filtros de Auditoría
               </div>
               
-              {/* User filter */}
-              <div className="flex-1 min-w-[200px]">
+              {/* Searchable User Combobox */}
+              <div className="flex-1 min-w-[220px] relative" ref={userDropdownRef}>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar colaborador..."
+                    className="w-full text-xs border border-slate-300 rounded-lg pl-3 pr-8 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    value={userSearchQuery}
+                    onFocus={() => setIsUserDropdownOpen(true)}
+                    onChange={(e) => {
+                      setUserSearchQuery(e.target.value);
+                      setIsUserDropdownOpen(true);
+                      if (e.target.value === '') {
+                        setFilterUser('');
+                      }
+                    }}
+                  />
+                  {userSearchQuery && (
+                    <button
+                      onClick={() => {
+                        setUserSearchQuery('');
+                        setFilterUser('');
+                        setIsUserDropdownOpen(false);
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {isUserDropdownOpen && (
+                  <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1">
+                    {(() => {
+                      const filteredUsers = users.filter(u =>
+                        u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                        u.role.toLowerCase().includes(userSearchQuery.toLowerCase())
+                      );
+                      return filteredUsers.length === 0 ? (
+                        <p className="text-xs text-slate-400 px-3 py-2 text-center">No se encontraron resultados</p>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => {
+                              setFilterUser('');
+                              setUserSearchQuery('');
+                              setIsUserDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 border-b border-slate-100"
+                          >
+                            -- Todos los colaboradores --
+                          </button>
+                          {filteredUsers.map((u) => (
+                            <button
+                              key={u.id}
+                              onClick={() => {
+                                setFilterUser(u.id);
+                                setUserSearchQuery(u.name);
+                                setIsUserDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2.5 text-xs transition-colors flex justify-between items-center ${
+                                filterUser === u.id
+                                  ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                                  : 'text-slate-700 hover:bg-slate-50'
+                              }`}
+                            >
+                              <span>{u.name}</span>
+                              <span className="text-[10px] text-slate-400 uppercase tracking-wide">
+                                {roleLabels[u.role] || u.role}
+                              </span>
+                            </button>
+                          ))}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              {/* Type Filter */}
+              <div className="w-[150px]">
                 <select
-                  className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
-                  value={filterUser}
-                  onChange={(e) => setFilterUser(e.target.value)}
+                  className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
                 >
-                  <option value="">-- Todos los colaboradores --</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.role})
-                    </option>
-                  ))}
+                  <option value="">-- Todos los tipos --</option>
+                  <option value="CHECK_IN">Entrada (CHECK_IN)</option>
+                  <option value="CHECK_OUT">Salida (CHECK_OUT)</option>
                 </select>
               </div>
 
