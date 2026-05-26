@@ -49,6 +49,10 @@ export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
+  const visibleNavItems = user.role === 'TECNICO'
+    ? navItems.filter(item => item.href === '/registro-personal')
+    : navItems;
+
   return (
     <>
       {/* Desktop sidebar */}
@@ -74,7 +78,7 @@ export function Sidebar({ user }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = pathname === item.href || 
               (item.href !== '/dashboard' && pathname.startsWith(item.href));
             return (
@@ -168,7 +172,7 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Mobile bottom nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
         <nav className="flex justify-around py-2 px-1">
-          {navItems.slice(0, 5).map((item) => {
+          {(user.role === 'TECNICO' ? visibleNavItems : navItems.slice(0, 5)).map((item) => {
             const isActive = pathname === item.href || 
               (item.href !== '/dashboard' && pathname.startsWith(item.href));
             return (

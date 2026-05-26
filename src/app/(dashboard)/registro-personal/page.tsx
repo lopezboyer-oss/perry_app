@@ -93,10 +93,32 @@ export default async function RegistroPersonalPage() {
           id: true,
           name: true,
           role: true,
+          email: true,
         },
         orderBy: { name: 'asc' },
       })
     : [];
+
+  // Query technician phone numbers to link with users
+  const techs = isManager
+    ? await prisma.technician.findMany({
+        where: { isActive: true, linkedUserId: { not: null } },
+        select: {
+          linkedUserId: true,
+          phone: true,
+        },
+      })
+    : [];
+
+  const phoneMap = new Map(techs.map(t => [t.linkedUserId, t.phone]));
+
+  const usersWithPhone = users.map(u => ({
+    id: u.id,
+    name: u.name,
+    role: u.role,
+    email: u.email,
+    phone: phoneMap.get(u.id) || null,
+  }));
 
   const serializedActivities = activities.map(act => ({
     id: act.id,
@@ -109,7 +131,7 @@ export default async function RegistroPersonalPage() {
     <RegistroPersonalClient
       currentUser={session.user}
       activities={serializedActivities}
-      users={users}
+      users={usersWithPhone}
     />
   );
 }

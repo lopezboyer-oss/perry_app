@@ -15,6 +15,7 @@ const roleLabels: Record<string, string> = {
   SUPERVISOR: 'Supervisor',
   SUPERVISOR_SAFETY_LP: 'Sup. Safety & L.P.',
   INGENIERO: 'Ingeniero',
+  TECNICO: 'Técnico de Campo',
 };
 
 interface HeaderProps {
@@ -26,6 +27,9 @@ export function Header({ user }: HeaderProps) {
   const [companies, setCompanies] = useState<any[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const pathname = usePathname();
+  const visibleNavItems = user.role === 'TECNICO'
+    ? navItems.filter(item => item.href === '/registro-personal')
+    : navItems;
 
   useEffect(() => {
     fetch('/api/company/mine').then(r => r.json()).then(data => {
@@ -101,7 +105,7 @@ export function Header({ user }: HeaderProps) {
               </div>
             </div>
             <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const isActive = pathname === item.href ||
                   (item.href !== '/dashboard' && pathname.startsWith(item.href));
                 return (

@@ -34,3 +34,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local excel credentials and temp queries
+*.xlsx
+prisma/query_*.ts

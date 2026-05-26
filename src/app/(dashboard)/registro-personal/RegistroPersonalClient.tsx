@@ -29,6 +29,8 @@ interface UserOption {
   id: string;
   name: string;
   role: string;
+  email?: string;
+  phone?: string | null;
 }
 
 interface RegistroPersonalClientProps {
@@ -994,7 +996,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                 />
               </div>
 
-              {/* End Date */}
+               {/* End Date */}
               <div className="w-[150px]">
                 <input
                   type="date"
@@ -1003,6 +1005,55 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                   onChange={(e) => setFilterEndDate(e.target.value)}
                 />
               </div>
+
+              {/* WhatsApp Share Credentials Button (for specific selected user) */}
+              {filterUser && (() => {
+                const selectedUser = users.find(u => u.id === filterUser);
+                if (!selectedUser) return null;
+                
+                const handleSendAccess = () => {
+                  const email = selectedUser.email || '';
+                  
+                  // Deterministic password generation matching server side
+                  const firstName = selectedUser.name.trim().split(/\s+/)[0] || 'User';
+                  const normalizedName = firstName
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '');
+                  const capitalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
+                  
+                  // Calculate 4 deterministic digits
+                  const cleanEmail = email.toLowerCase().trim();
+                  let hash = 0;
+                  for (let i = 0; i < cleanEmail.length; i++) {
+                    hash = cleanEmail.charCodeAt(i) + ((hash << 5) - hash);
+                  }
+                  const digits = String((Math.abs(hash) % 9000) + 1000);
+                  const password = `${capitalizedName}${digits}`;
+                  
+                  const message = `¡Hola ${selectedUser.name}! Te comparto tus datos de acceso para la aplicación PERRY APP y las instrucciones para registrar tu asistencia:\n\n🌐 Enlace: https://perry.tallerantigravity.com\n📧 Usuario (Email): ${email}\n🔑 Contraseña: ${password}\n\nPasos para registrar Asistencia:\n1. Inicia sesión con tus credenciales.\n2. Ve a la sección "Asistencia".\n3. Elige tu método (GPS 🗺️, Selfie 📷 o Escanear QR 🔍).\n4. Presiona Registrar Entrada o Salida.`;
+                  
+                  const encodedText = encodeURIComponent(message);
+                  const phone = selectedUser.phone ? selectedUser.phone.replace(/[^0-9]/g, '') : '';
+                  const url = phone 
+                    ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`
+                    : `https://api.whatsapp.com/send?text=${encodedText}`;
+                  
+                  window.open(url, '_blank');
+                };
+
+                return (
+                  <button
+                    onClick={handleSendAccess}
+                    className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors rounded-lg shadow-sm"
+                    title="Compartir datos de acceso e instrucciones por WhatsApp"
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.451 5.436.002 9.851-4.411 9.855-9.847.002-2.634-1.02-5.107-2.88-6.973C16.379 1.819 13.91 .795 11.278.793 5.845.793 1.43 5.207 1.426 10.64c-.001 1.517.404 2.992 1.173 4.298l-.993 3.624 3.71-.973zm13.174-7.464c-.26-.13-1.532-.757-1.77-.843-.238-.087-.41-.13-.58.13-.17.26-.66.843-.81 1.01-.15.17-.3.19-.56.06-.26-.13-1.096-.404-2.09-1.288-.773-.687-1.295-1.538-1.447-1.8-.15-.26-.016-.4.117-.53.12-.12.26-.3.39-.45.13-.15.17-.26.26-.43.09-.17.04-.3-.02-.43-.06-.13-.58-1.393-.794-1.91-.21-.5-.42-.43-.58-.44l-.49-.01c-.17 0-.45.06-.68.3-.23.24-.89.87-.89 2.12 0 1.25.91 2.46 1.03 2.63.13.17 1.79 2.731 4.33 3.824.6.26 1.08.42 1.45.54.6.19 1.15.16 1.59.1.49-.07 1.53-.62 1.74-1.22.21-.6.21-1.12.15-1.22-.06-.1-.23-.15-.49-.28z"/>
+                    </svg>
+                    Enviar Acceso
+                  </button>
+                );
+              })()}
             </div>
           )}
 

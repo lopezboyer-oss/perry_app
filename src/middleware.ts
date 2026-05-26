@@ -19,7 +19,12 @@ export default auth((req) => {
   } else if (!isLoggedIn) {
     response = NextResponse.redirect(new URL('/login', req.url));
   } else {
-    response = NextResponse.next();
+    const userRole = (req.auth?.user as any)?.role;
+    if (userRole === 'TECNICO' && !pathname.startsWith('/registro-personal') && !pathname.startsWith('/api/')) {
+      response = NextResponse.redirect(new URL('/registro-personal', req.url));
+    } else {
+      response = NextResponse.next();
+    }
   }
 
   // Prevent Safari and other browsers from caching pages and API responses

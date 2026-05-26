@@ -176,8 +176,9 @@ export const roleLabels: Record<string, string> = {
   ADMIN: 'Admin Maestro',
   ADMINISTRACION: 'Administración',
   SUPERVISOR: 'Supervisor',
-  SUPERVISOR_SAFETY_LP: 'Supervisor Safety & L.P.',
+  SUPERVISOR_SAFETY_LP: 'Sup. Safety & L.P.',
   INGENIERO: 'Ingeniero',
+  TECNICO: 'Técnico de Campo',
 };
 
 export const roleColors: Record<string, string> = {
@@ -186,6 +187,7 @@ export const roleColors: Record<string, string> = {
   SUPERVISOR: 'bg-amber-100 text-amber-700',
   SUPERVISOR_SAFETY_LP: 'bg-teal-100 text-teal-700',
   INGENIERO: 'bg-emerald-100 text-emerald-700',
+  TECNICO: 'bg-blue-100 text-blue-700',
 };
 
 /**
@@ -210,3 +212,26 @@ export const activityStatusColors: Record<string, string> = {
   COMPLETADA: 'bg-green-100 text-green-800',
   CANCELADA: 'bg-red-100 text-red-800',
 };
+
+/**
+ * Genera una contraseña determinista para un colaborador basada en su primer nombre
+ * y un hash de 4 dígitos basado en su correo electrónico.
+ */
+export function getDeterministicPassword(name: string, email: string): string {
+  // Obtener primer nombre, quitar acentos, y capitalizar la primera letra
+  const firstName = name.trim().split(/\s+/)[0] || 'User';
+  const normalizedName = firstName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // Quita acentos
+  const capitalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
+
+  // Obtener 4 dígitos deterministas basados en el correo
+  const cleanEmail = email.toLowerCase().trim();
+  let hash = 0;
+  for (let i = 0; i < cleanEmail.length; i++) {
+    hash = cleanEmail.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const digits = String((Math.abs(hash) % 9000) + 1000); // 1000 a 9999
+
+  return `${capitalizedName}${digits}`;
+}
