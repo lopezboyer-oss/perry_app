@@ -62,7 +62,21 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(entries);
+    // Fetch all users to map verifiedByUserId to their name
+    const allUsers = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+    const userMap = new Map(allUsers.map(u => [u.id, u.name]));
+
+    const serializedEntries = entries.map(entry => ({
+      ...entry,
+      verifiedByUserName: entry.verifiedByUserId ? (userMap.get(entry.verifiedByUserId) || 'Supervisor') : null,
+    }));
+
+    return NextResponse.json(serializedEntries);
   } catch (error) {
     console.error('Error fetching time clock entries:', error);
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });

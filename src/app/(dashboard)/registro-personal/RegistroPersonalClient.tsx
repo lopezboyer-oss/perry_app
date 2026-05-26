@@ -1014,9 +1014,16 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                             </button>
                           )}
                           {log.method === 'QR' && (
-                            <span className="text-xs text-teal-600 font-bold flex items-center justify-center gap-0.5">
-                              <Check size={12} /> Verificado QR
-                            </span>
+                            <div className="flex flex-col items-center">
+                              <span className="text-xs text-teal-600 font-bold flex items-center justify-center gap-0.5">
+                                <Check size={12} /> Verificado QR
+                              </span>
+                              {log.verifiedByUserName && (
+                                <span className="block text-[10px] text-slate-500 font-semibold mt-0.5">
+                                  Por: {log.verifiedByUserName}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </td>
 
