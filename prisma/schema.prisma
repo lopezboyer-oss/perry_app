@@ -41,6 +41,7 @@ model User {
   dailyReports  DailyReport[]
   userSafetyAssignments WeekendUserSafetyAssignment[]
   invoiceReceipts InvoiceReceipt[]
+  timeClockEntries TimeClockEntry[]
 }
 
 model Client {
@@ -143,6 +144,7 @@ model Activity {
   weekendEquipAssignments   WeekendEquipAssignment[]
   weekendUserSafetyAssignments WeekendUserSafetyAssignment[]
   timeRegistryEntries          TimeRegistryEntry[]
+  timeClockEntries             TimeClockEntry[]
   equipRecords                 EquipRecord[]
 }
 
@@ -417,5 +419,34 @@ model EquipRecord {
 
   @@unique([activityId, equipId, weekendOf])
   @@index([weekendOf])
+  @@index([activityId])
+}
+
+// ─── REGISTRO HORARIO PERSONAL ────────────────────────────────
+model TimeClockEntry {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type             String    // "CHECK_IN" | "CHECK_OUT"
+  method           String    // "GPS" | "SELFIE" | "QR"
+  timestamp        DateTime  @default(now())
+  
+  // Geolocation
+  latitude         Float?
+  longitude        Float?
+  accuracy         Float?
+  
+  // Selfie compressed (Base64 JPEG)
+  photo            String?   @db.Text
+  
+  // QR validation metadata
+  verifiedByUserId String?   // ID of the supervisor who generated QR
+  activityId       String?
+  activity         Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId])
   @@index([activityId])
 }
