@@ -8,6 +8,16 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+    // Validate if the user actually exists in the database (handles stale session cookies)
+    const userExists = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+    if (!userExists) {
+      return NextResponse.json({
+        error: 'Tu usuario no existe en la base de datos o tu sesión es obsoleta (antigua base de datos). Por favor, cierra sesión e inicia sesión de nuevo.'
+      }, { status: 400 });
+    }
+
     const { token } = await req.json();
     if (!token) return NextResponse.json({ error: 'Token es requerido' }, { status: 400 });
 
