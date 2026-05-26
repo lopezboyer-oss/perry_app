@@ -25,7 +25,7 @@ import {
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
+export const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/actividades', label: 'Actividades', icon: ClipboardList },
   { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },

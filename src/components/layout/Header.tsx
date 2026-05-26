@@ -1,25 +1,13 @@
 'use client';
 
 import { logoutAction } from '@/app/actions/auth';
-import { LogOut, User, Menu, X, CalendarDays, LayoutDashboard, ClipboardList, FileText, Target, BarChart3, ClipboardPlus, HelpCircle, Clock } from 'lucide-react';
+import { LogOut, User, Menu, X, Building2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { CompanySwitcher } from './CompanySwitcher';
-
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/actividades', label: 'Actividades', icon: ClipboardList },
-  { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },
-  { href: '/planes-pasados', label: 'Planes Pasados', icon: Clock },
-  { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
-  { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
-  // { href: '/oportunidades', label: 'Oportunidades', icon: Target },
-  { href: '/analitica', label: 'Analítica', icon: BarChart3 },
-  { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
-];
+import { navItems } from './Sidebar';
 
 const roleLabels: Record<string, string> = {
   ADMIN: 'Admin Maestro',
@@ -97,16 +85,14 @@ export function Header({ user }: HeaderProps) {
             </button>
           </form>
         </div>
-      </header>
-
-      {/* Mobile menu overlay */}
+      </header>      {/* Mobile menu overlay */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)}>
           <div
-            className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl animate-slide-in"
+            className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl animate-slide-in flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center h-16 px-4 border-b border-slate-200">
+            <div className="flex items-center h-16 px-4 border-b border-slate-200 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg overflow-hidden shadow-lg shadow-indigo-500/20">
                   <img src="/perry-logo.jpg" alt="Perry" width={36} height={36} className="w-full h-full object-cover" />
@@ -114,9 +100,10 @@ export function Header({ user }: HeaderProps) {
                 <span className="text-lg font-bold text-slate-800">PERRY APP</span>
               </div>
             </div>
-            <nav className="py-4 px-3 space-y-1">
+            <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
               {navItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href ||
+                  (item.href !== '/dashboard' && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.href}
@@ -135,18 +122,33 @@ export function Header({ user }: HeaderProps) {
                 );
               })}
               
-              {/* Only ADMIN sees User Management */}
+              {/* Only ADMIN and ADMINISTRACION see User Management */}
               {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION') && (
                 <Link
                   href="/usuarios"
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-4 border-t border-slate-100 pt-4',
-                    pathname === '/usuarios' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:bg-slate-100'
+                    pathname === '/usuarios' || pathname.startsWith('/usuarios/') ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:bg-slate-100'
                   )}
                 >
-                  <User size={20} className={pathname === '/usuarios' ? 'text-purple-600' : 'text-slate-400'} />
+                  <User size={20} className={pathname === '/usuarios' || pathname.startsWith('/usuarios/') ? 'text-purple-600' : 'text-slate-400'} />
                   Gestión de Recursos
+                </Link>
+              )}
+
+              {/* Only ADMIN sees Consorcio */}
+              {user.role === 'ADMIN' && (
+                <Link
+                  href="/consorcio"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    pathname === '/consorcio' || pathname.startsWith('/consorcio/') ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-100'
+                  )}
+                >
+                  <Building2 size={20} className={pathname === '/consorcio' || pathname.startsWith('/consorcio/') ? 'text-cyan-600' : 'text-slate-400'} />
+                  Consorcio
                 </Link>
               )}
 
@@ -157,10 +159,10 @@ export function Header({ user }: HeaderProps) {
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    pathname === '/directorio' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-100'
+                    pathname === '/directorio' || pathname.startsWith('/directorio/') ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-100'
                   )}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={pathname === '/directorio' ? 'text-emerald-600' : 'text-slate-400'}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={pathname === '/directorio' || pathname.startsWith('/directorio/') ? 'text-emerald-600' : 'text-slate-400'}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                   Gestión de Clientes
                 </Link>
               )}
