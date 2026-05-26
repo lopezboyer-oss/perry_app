@@ -12,15 +12,22 @@ export default auth((req) => {
   const publicRoutes = ['/login', '/api/auth'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
+  let response: NextResponse;
+
   if (isPublicRoute) {
-    return NextResponse.next();
+    response = NextResponse.next();
+  } else if (!isLoggedIn) {
+    response = NextResponse.redirect(new URL('/login', req.url));
+  } else {
+    response = NextResponse.next();
   }
 
-  if (!isLoggedIn) {
-    return NextResponse.redirect(new URL('/login', req.url));
-  }
+  // Prevent Safari and other browsers from caching pages and API responses
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
 
-  return NextResponse.next();
+  return response;
 });
 
 export const config = {

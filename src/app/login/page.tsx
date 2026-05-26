@@ -28,8 +28,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Credenciales incorrectas. Verifica tu email y contraseña.');
       } else {
-        router.push('/dashboard');
-        router.refresh();
+        window.location.href = '/dashboard';
       }
     } catch {
       setError('Error de conexión. Intenta de nuevo.');
