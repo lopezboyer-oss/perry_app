@@ -96,8 +96,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(entry, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error verifying QR token:', error);
-    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
+    return NextResponse.json({ error: `Error del servidor: ${error.message || String(error)}` }, { status: 500 });
   }
 }
