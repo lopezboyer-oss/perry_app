@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin, Camera, QrCode, LogIn, LogOut, Calendar, User, Clock,
-  ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter
+  ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map
 } from 'lucide-react';
 import { playSuccessSound } from '@/lib/audio';
 import QRCode from 'qrcode';
@@ -73,6 +73,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
   const [filterStartDate, setFilterStartDate] = useState<string>('');
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
+  const [selectedMapCoords, setSelectedMapCoords] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
 
   const isSupervisorOrAdmin = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(currentUser.role);
 
@@ -550,13 +551,29 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                       <p className="text-xs text-slate-500">Obteniendo coordenadas GPS de alta precisión...</p>
                     </div>
                   ) : gpsCoords ? (
-                    <div className="space-y-3">
-                      <p className="text-sm font-semibold text-slate-700">📍 Coordenadas listas</p>
-                      <div className="text-xs text-slate-500 font-mono space-y-1 bg-white border border-slate-200 p-3 rounded-xl max-w-xs mx-auto">
-                        <p>Lat: {gpsCoords.latitude.toFixed(6)}</p>
-                        <p>Lng: {gpsCoords.longitude.toFixed(6)}</p>
-                        <p>Precisión: ±{gpsCoords.accuracy.toFixed(1)}m</p>
+                    <div className="space-y-3 w-full">
+                      <p className="text-sm font-semibold text-slate-700">📍 Ubicación Detectada</p>
+                      
+                      <div className="w-full h-40 rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative bg-slate-100">
+                        <iframe
+                          title="Ubicación de Captura"
+                          width="100%"
+                          height="100%"
+                          frameBorder="0"
+                          scrolling="no"
+                          marginHeight={0}
+                          marginWidth={0}
+                          src={`https://www.openstreetmap.org/export/embed.html?bbox=${gpsCoords.longitude - 0.0025},${gpsCoords.latitude - 0.0015},${gpsCoords.longitude + 0.0025},${gpsCoords.latitude + 0.0015}&layer=mapnik&marker=${gpsCoords.latitude},${gpsCoords.longitude}`}
+                          className="w-full h-full"
+                        />
                       </div>
+
+                      <div className="text-[11px] text-slate-500 font-mono space-y-0.5 bg-white border border-slate-200 p-3 rounded-xl max-w-xs mx-auto text-left">
+                        <p className="flex justify-between"><strong>Lat:</strong> <span>{gpsCoords.latitude.toFixed(6)}</span></p>
+                        <p className="flex justify-between"><strong>Lng:</strong> <span>{gpsCoords.longitude.toFixed(6)}</span></p>
+                        <p className="flex justify-between"><strong>Precisión:</strong> <span>±{gpsCoords.accuracy.toFixed(1)}m</span></p>
+                      </div>
+                      
                       <button
                         onClick={fetchGps}
                         className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 mx-auto"
@@ -930,14 +947,16 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
 
                         <td className="px-4 py-3 text-center">
                           {log.method === 'GPS' && log.latitude && log.longitude && (
-                            <a
-                              href={`https://www.google.com/maps?q=${log.latitude},${log.longitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => setSelectedMapCoords({
+                                latitude: log.latitude!,
+                                longitude: log.longitude!,
+                                name: log.user?.name || 'Colaborador'
+                              })}
                               className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
                             >
-                              <ExternalLink size={12} /> Ver Mapa
-                            </a>
+                              <Map size={12} /> Ver Mapa
+                            </button>
                           )}
                           {log.method === 'SELFIE' && log.photo && (
                             <button
@@ -981,6 +1000,52 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
               className="mt-5 w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all"
             >
               Cerrar Vista
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Map Preview Modal */}
+      {selectedMapCoords && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full relative shadow-2xl animate-fade-in border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <MapPin className="text-indigo-600 animate-bounce" /> Ubicación de {selectedMapCoords.name}
+              </h3>
+              <a
+                href={`https://www.google.com/maps?q=${selectedMapCoords.latitude},${selectedMapCoords.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 transition-colors"
+              >
+                <ExternalLink size={12} /> Google Maps
+              </a>
+            </div>
+            
+            <div className="w-full h-72 rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 relative">
+              <iframe
+                title="Ubicación Detallada"
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                scrolling="no"
+                marginHeight={0}
+                marginWidth={0}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedMapCoords.longitude - 0.0025},${selectedMapCoords.latitude - 0.0015},${selectedMapCoords.longitude + 0.0025},${selectedMapCoords.latitude + 0.0015}&layer=mapnik&marker=${selectedMapCoords.latitude},${selectedMapCoords.longitude}`}
+                className="w-full h-full"
+              />
+            </div>
+            
+            <div className="text-xs text-slate-500 font-mono flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <span><strong>Lat:</strong> {selectedMapCoords.latitude.toFixed(6)}</span>
+              <span><strong>Lng:</strong> {selectedMapCoords.longitude.toFixed(6)}</span>
+            </div>
+
+            <button
+              onClick={() => setSelectedMapCoords(null)}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all"
+            >
+              Cerrar Mapa
             </button>
           </div>
         </div>
