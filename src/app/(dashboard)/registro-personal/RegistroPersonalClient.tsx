@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin, Camera, QrCode, LogIn, LogOut, Calendar, User, Clock,
-  ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map
+  ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map, HelpCircle
 } from 'lucide-react';
 import { playSuccessSound } from '@/lib/audio';
 import QRCode from 'qrcode';
@@ -74,6 +74,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
   const [selectedMapCoords, setSelectedMapCoords] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
   const isSupervisorOrAdmin = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(currentUser.role);
   const canGenerateQr = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'INGENIERO'].includes(currentUser.role);
@@ -400,14 +401,22 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
     <div className="max-w-4xl mx-auto py-6 px-4 space-y-6">
       
       {/* Page Title */}
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/20">
-          <Clock className="w-6 h-6 text-white" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/20">
+            <Clock className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Control de Asistencia</h1>
+            <p className="text-xs text-slate-500">Registra tus horarios de entrada y salida mediante validación de presencia</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Control de Asistencia</h1>
-          <p className="text-xs text-slate-500">Registra tus horarios de entrada y salida mediante validación de presencia</p>
-        </div>
+        <button
+          onClick={() => setShowGuideModal(true)}
+          className="self-start sm:self-center px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-bold text-xs rounded-xl shadow hover:shadow-md flex items-center gap-2 transition-all hover:scale-[1.02]"
+        >
+          <HelpCircle size={15} /> Guía de Uso
+        </button>
       </div>
 
       {/* Tabs */}
@@ -1051,6 +1060,132 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
             >
               Cerrar Mapa
             </button>
+          </div>
+        </div>
+      )}
+      {/* Guía de Uso Modal */}
+      {showGuideModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-xl w-full relative shadow-2xl animate-fade-in border border-slate-200 flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <HelpCircle className="text-teal-500" /> Guía de Uso Asistencia
+              </h3>
+              <button
+                onClick={() => setShowGuideModal(false)}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Mascot Greeting */}
+            <div className="flex items-center gap-3 bg-gradient-to-r from-teal-50/50 to-emerald-50/50 p-4 rounded-2xl border border-teal-100/50 my-4 shrink-0">
+              <div className="w-12 h-12 rounded-xl overflow-hidden shadow bg-white border border-slate-200 shrink-0">
+                <img src="/perry-logo.jpg" alt="Perry Logo" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-800">Perry Asistencias</h4>
+                <p className="text-[11px] text-slate-600 leading-normal">
+                  Hola, soy Perry. Te guiaré para que puedas realizar tus registros de entrada y salida de forma rápida y sencilla.
+                </p>
+              </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto space-y-4 pr-1 flex-1">
+              
+              {/* Card 1: GPS */}
+              <div className="p-4 bg-indigo-50/30 rounded-2xl border border-indigo-100/80 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-indigo-500 text-white rounded-lg">
+                    <MapPin size={16} />
+                  </div>
+                  <h4 className="text-xs font-extrabold text-indigo-900 uppercase tracking-wider">1. Registro por Ubicación (GPS)</h4>
+                </div>
+                <p className="text-xs text-indigo-950/80 leading-relaxed">
+                  Ideal para registrar asistencia en campo usando las coordenadas geográficas de tu teléfono.
+                </p>
+                <div className="text-xs space-y-1.5 text-indigo-950 bg-white/70 p-3 rounded-xl border border-indigo-100">
+                  <p className="flex gap-2">
+                    <span className="font-bold text-indigo-600">Paso A:</span> 
+                    <span>Selecciona el método <strong>GPS</strong> e indica la actividad correspondiente.</span>
+                  </p>
+                  <p className="flex gap-2">
+                    <span className="font-bold text-indigo-600">Paso B:</span> 
+                    <span>Presiona <strong>"Obtener GPS"</strong>. Verás un mapa interactivo en vivo con tu ubicación.</span>
+                  </p>
+                  <p className="flex gap-2">
+                    <span className="font-bold text-indigo-600">Paso C:</span> 
+                    <span>Presiona <strong>"Registrar Entrada / Salida"</strong> para guardar.</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2: Selfie */}
+              <div className="p-4 bg-pink-50/30 rounded-2xl border border-pink-100/80 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-pink-500 text-white rounded-lg">
+                    <Camera size={16} />
+                  </div>
+                  <h4 className="text-xs font-extrabold text-pink-900 uppercase tracking-wider">2. Validación Biométrica (Selfie)</h4>
+                </div>
+                <p className="text-xs text-pink-950/80 leading-relaxed">
+                  Para acreditar tu presencia visualmente de forma rápida con la cámara frontal.
+                </p>
+                <div className="text-xs space-y-1.5 text-pink-950 bg-white/70 p-3 rounded-xl border border-pink-100">
+                  <p className="flex gap-2">
+                    <span className="font-bold text-pink-600">Paso A:</span> 
+                    <span>Elige <strong>"Tomar Selfie"</strong>. Otorga los permisos de cámara en tu navegador.</span>
+                  </p>
+                  <p className="flex gap-2">
+                    <span className="font-bold text-pink-600">Paso B:</span> 
+                    <span>Encuadra tu rostro y presiona <strong>"Capturar Foto"</strong>.</span>
+                  </p>
+                  <p className="flex gap-2">
+                    <span className="font-bold text-pink-600">Paso C:</span> 
+                    <span>Si la foto se ve bien, presiona <strong>"Confirmar y Guardar"</strong> (se comprime automáticamente).</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3: QR */}
+              <div className="p-4 bg-teal-50/30 rounded-2xl border border-teal-100/80 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-teal-500 text-white rounded-lg">
+                    <QrCode size={16} />
+                  </div>
+                  <h4 className="text-xs font-extrabold text-teal-900 uppercase tracking-wider">3. Código QR (Supervisor / Ingeniero)</h4>
+                </div>
+                <p className="text-xs text-teal-950/80 leading-relaxed">
+                  Perfecto para cuando estás físicamente al lado del supervisor o ingeniero a cargo.
+                </p>
+                <div className="text-xs space-y-1.5 text-teal-950 bg-white/70 p-3 rounded-xl border border-teal-100">
+                  <p className="flex gap-2">
+                    <span className="font-bold text-teal-600">Para el Supervisor:</span> 
+                    <span>Genera un código QR dinámico desde la pestaña <strong>"Generar QR"</strong>. Este rotará cada 30 segundos.</span>
+                  </p>
+                  <p className="flex gap-2">
+                    <span className="font-bold text-teal-600">Para el Técnico:</span> 
+                    <span>Elige <strong>"Escanear QR de Supervisor"</strong>, apunta tu cámara al QR en la pantalla del supervisor y listo.</span>
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-4 border-t border-slate-100 shrink-0">
+              <button
+                onClick={() => setShowGuideModal(false)}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all"
+              >
+                Entendido
+              </button>
+            </div>
+
           </div>
         </div>
       )}
