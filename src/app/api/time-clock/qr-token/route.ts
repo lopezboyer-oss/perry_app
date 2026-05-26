@@ -8,9 +8,9 @@ export async function GET(req: NextRequest) {
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
     const role = session.user.role;
-    const isSupervisor = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role);
-    if (!isSupervisor) {
-      return NextResponse.json({ error: 'Solo supervisores pueden generar QR de asistencia' }, { status: 403 });
+    const isAuthorized = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'INGENIERO'].includes(role);
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Permisos insuficientes para generar QR de asistencia' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

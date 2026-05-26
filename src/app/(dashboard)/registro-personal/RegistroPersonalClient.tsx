@@ -76,6 +76,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
   const [selectedMapCoords, setSelectedMapCoords] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
 
   const isSupervisorOrAdmin = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(currentUser.role);
+  const canGenerateQr = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'INGENIERO'].includes(currentUser.role);
 
   // ----------------------------------------------------
   // GPS Geolocation Handler
@@ -125,15 +126,18 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
         audio: false,
       });
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
     } catch (err) {
       console.error('Error accessing camera:', err);
       setErrorMsg('No se pudo acceder a la cámara frontal. Asegúrate de otorgar permisos.');
       setMethod('GPS');
     }
   };
+
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
 
   const stopCamera = () => {
     if (stream) {
@@ -416,7 +420,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
         >
           <LogIn size={16} /> Registro Personal
         </button>
-        {isSupervisorOrAdmin && (
+        {canGenerateQr && (
           <button
             onClick={() => { setActiveTab('qr-generator'); stopQrScanner(); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold transition-all ${
@@ -715,7 +719,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
       {/* ---------------------------------------------------- */}
       {/* QR GENERATOR TAB (SUPERVISOR ONLY) */}
       {/* ---------------------------------------------------- */}
-      {activeTab === 'qr-generator' && isSupervisorOrAdmin && (
+      {activeTab === 'qr-generator' && canGenerateQr && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
           
           <div className="flex flex-col md:flex-row gap-6">
