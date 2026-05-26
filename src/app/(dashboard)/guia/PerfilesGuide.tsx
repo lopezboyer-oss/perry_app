@@ -1,210 +1,517 @@
 'use client';
 
-import { Shield, Users, Eye, Zap, Wrench } from 'lucide-react';
+import {
+  Shield, Users, Eye, Zap, Wrench, ShieldCheck, CheckCircle2,
+  XCircle, Forklift, AlertTriangle, Info, Check, X, Bookmark
+} from 'lucide-react';
 
 const roles = [
-  { name: 'Admin Maestro', tag: 'ADMIN', emoji: '🟣', color: '#7c3aed', bg: 'bg-purple-50 border-purple-100', desc: 'Control total. Configura empresas, usuarios, recursos y ve toda la información consolidada. Acceso a Consorcio.' },
-  { name: 'Administración', tag: 'ADMINISTRACION', emoji: '🔴', color: '#e11d48', bg: 'bg-rose-50 border-rose-100', desc: 'Acceso administrativo. Gestiona recursos y usuarios. Similar al Admin pero sin acceso a Consorcio.' },
-  { name: 'Supervisor', tag: 'SUPERVISOR', emoji: '🟡', color: '#f59e0b', bg: 'bg-amber-50 border-amber-100', desc: 'Lidera equipos de ingenieros. Ve las actividades de su equipo, puede asignar recursos en ATC Finde y crear días extra.' },
-  { name: 'Safety & L.P.', tag: 'SUPERVISOR_SAFETY_LP', emoji: '🟢', color: '#0d9488', bg: 'bg-teal-50 border-teal-100', desc: 'Supervisa seguridad. Gestiona Safety Dedicados, choferes, auditorías y notas de seguridad. Ve todas las actividades.' },
-  { name: 'Ingeniero', tag: 'INGENIERO', emoji: '🔵', color: '#10b981', bg: 'bg-emerald-50 border-emerald-100', desc: 'Operativo. Registra sus propias actividades, consulta planes y exporta información.' },
+  {
+    name: 'Admin Maestro',
+    tag: 'ADMIN',
+    emoji: '🟣',
+    color: 'from-violet-600 to-indigo-600',
+    textColor: 'text-violet-700',
+    borderColor: 'border-violet-100',
+    bg: 'bg-gradient-to-br from-violet-50/50 to-indigo-50/20',
+    desc: 'Control total. Configura empresas, usuarios, recursos y ve toda la información consolidada. Acceso completo a Consorcio, préstamos y exenciones TERA.'
+  },
+  {
+    name: 'Administración',
+    tag: 'ADMINISTRACION',
+    emoji: '🔴',
+    color: 'from-rose-600 to-pink-600',
+    textColor: 'text-rose-700',
+    borderColor: 'border-rose-100',
+    bg: 'bg-gradient-to-br from-rose-50/50 to-pink-50/20',
+    desc: 'Acceso administrativo para facturación, recursos y usuarios. Similar al Admin Maestro pero restringido de realizar préstamos Consorcio.'
+  },
+  {
+    name: 'Supervisor',
+    tag: 'SUPERVISOR',
+    emoji: '🟡',
+    color: 'from-amber-500 to-orange-500',
+    textColor: 'text-amber-700',
+    borderColor: 'border-amber-100',
+    bg: 'bg-gradient-to-br from-amber-50/50 to-orange-50/20',
+    desc: 'Lidera equipos de ingenieros. Ve actividades de su equipo, asigna recursos en ATC Finde, crea días extra de planeación y accede a reporte de folios Odoo.'
+  },
+  {
+    name: 'Safety & L.P.',
+    tag: 'SUPERVISOR_SAFETY_LP',
+    emoji: '🟢',
+    color: 'from-teal-500 to-emerald-500',
+    textColor: 'text-teal-700',
+    borderColor: 'border-teal-100',
+    bg: 'bg-gradient-to-br from-teal-50/50 to-emerald-50/20',
+    desc: 'Supervisa seguridad industrial. Gestiona personal de Safety Dedicado, choferes, auditorías, notas de alerta y tiene poder exclusivo para eximir actividades de TERA.'
+  },
+  {
+    name: 'Ingeniero',
+    tag: 'INGENIERO',
+    emoji: '🔵',
+    color: 'from-blue-500 to-sky-500',
+    textColor: 'text-blue-700',
+    borderColor: 'border-blue-100',
+    bg: 'bg-gradient-to-br from-blue-50/50 to-sky-50/20',
+    desc: 'Operativo técnico. Registra y edita sus propias actividades, consulta planes del fin de semana, realiza su registro horario (4 fases) y checklists de equipos.'
+  },
 ];
 
-const C = () => <span className="text-emerald-600 font-bold">✅</span>;
-const Xx = () => <span className="text-red-500 font-bold">❌</span>;
-const Ey = () => <span className="text-amber-500 font-semibold">👁️</span>;
-const Tm = () => <span className="text-blue-500 font-semibold">👥</span>;
-const Sl = () => <span className="text-purple-500 font-semibold">👤</span>;
+const C = () => (
+  <span className="inline-flex items-center justify-center bg-emerald-100 text-emerald-800 rounded-full p-0.5" title="Acceso Permitido">
+    <Check size={12} className="stroke-[3]" />
+  </span>
+);
 
-const th = 'px-3 py-2.5 text-left font-semibold text-slate-600 text-xs whitespace-nowrap bg-slate-50 border-b-2 border-slate-200';
-const td = 'px-3 py-2 border-b border-slate-100 text-center text-sm';
-const tdl = 'px-3 py-2 border-b border-slate-100 text-sm font-medium text-slate-800';
+const Xx = () => (
+  <span className="inline-flex items-center justify-center bg-rose-100 text-rose-800 rounded-full p-0.5" title="Acceso Denegado">
+    <X size={12} className="stroke-[3]" />
+  </span>
+);
+
+const Ey = () => <span className="text-amber-600 font-semibold text-xs bg-amber-50 px-2 py-0.5 rounded border border-amber-100">👁️ Solo Ver</span>;
+const Tm = () => <span className="text-indigo-600 font-semibold text-xs bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">👥 Equipo</span>;
+const Sl = () => <span className="text-blue-600 font-semibold text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-100">👤 Propias</span>;
+
+const th = 'px-4 py-3 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider bg-slate-50 border-b border-slate-200';
+const td = 'px-4 py-3 border-b border-slate-100 text-center text-sm';
+const tdl = 'px-4 py-3 border-b border-slate-100 text-sm font-medium text-slate-800';
 
 export function PerfilesGuide() {
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Roles */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4"><Users size={20} className="text-indigo-500" /> Perfiles de Usuario</h2>
-        <p className="text-sm text-slate-500 mb-4">Perry App tiene <strong>5 perfiles</strong> con niveles de acceso progresivos:</p>
-        <div className="space-y-3">
+    <div className="max-w-4xl mx-auto space-y-8 pb-12">
+      
+      {/* Visual Welcome Header Card */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 text-white rounded-3xl p-6 md:p-8 shadow-xl border border-indigo-500/20">
+        <div className="absolute right-0 top-0 w-[300px] h-[300px] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute left-1/3 bottom-0 w-[200px] h-[200px] bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+        
+        <div className="relative flex flex-col md:flex-row items-center gap-6 z-10">
+          <div className="relative flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-indigo-950/50">
+            <img src="/perry-logo.jpg" alt="Perry Logo" className="w-full h-full object-cover" />
+          </div>
+          <div className="text-center md:text-left space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              <Shield size={12} /> Guía de Permisos
+            </span>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Perfiles y Privilegios en Perry</h1>
+            <p className="text-sm text-indigo-200 max-w-xl">
+              Perry App implementa un control de acceso basado en roles (RBAC) estructurado jerárquicamente para garantizar la seguridad de la información corporativa.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 5 Perfiles de Usuario Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-indigo-50 rounded-xl">
+            <Users size={20} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Perfiles de Usuario</h2>
+            <p className="text-xs text-slate-500">Niveles de acceso del sistema</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4">
           {roles.map(r => (
-            <div key={r.tag} className={`flex gap-3 p-4 rounded-xl border ${r.bg}`}>
-              <div className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0" style={{ background: r.color }} />
-              <div>
-                <p className="font-bold text-sm text-slate-800">{r.emoji} {r.name} <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/60 text-slate-600 ml-1">{r.tag}</span></p>
-                <p className="text-xs text-slate-600 mt-0.5">{r.desc}</p>
+            <div key={r.tag} className={`flex flex-col md:flex-row gap-4 p-5 rounded-2xl border ${r.borderColor} ${r.bg} transition-all hover:shadow-md`}>
+              <div className="flex items-center gap-3 flex-shrink-0 md:w-56">
+                <span className="text-xl">{r.emoji}</span>
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-800">{r.name}</h4>
+                  <span className="inline-block text-[10px] font-mono font-bold bg-white px-2 py-0.5 rounded-md border text-slate-500 mt-0.5">
+                    {r.tag}
+                  </span>
+                </div>
+              </div>
+              <div className="text-xs text-slate-600 md:flex-1 md:border-l md:border-slate-200 md:pl-4 flex items-center">
+                {r.desc}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Acceso a Páginas */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4"><Eye size={20} className="text-indigo-500" /> Acceso a Páginas por Perfil</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full"><thead><tr>
-            <th className={th}>Página</th><th className={th}>🟣 Admin</th><th className={th}>🔴 Admón</th><th className={th}>🟡 Super</th><th className={th}>🟢 Safety</th><th className={th}>🔵 Ing.</th>
-          </tr></thead><tbody>
-            {[
-              ['Dashboard',1,1,1,1,1],['Actividades',1,1,1,1,1],['ATC Finde',1,1,1,1,1],['Planes Pasados',1,1,1,1,1],
-              ['Recibos',1,1,1,1,1],['Importar Reporte',1,1,1,1,1],['Oportunidades',1,1,1,1,1],['Analítica',1,1,1,1,1],
-              ['Alarma TERA',1,1,1,1,0],
-              ['Guía Perry (Sistema)',1,1,1,1,1],['Guía Perry (Perfiles)',1,1,1,1,0],['Gestión de Clientes',1,1,1,1,0],['Gestión de Recursos',1,1,0,0,0],['Consorcio',1,0,0,0,0],
-            ].map(([page,...vals]) => (
-              <tr key={page as string} className="hover:bg-slate-50/80">
-                <td className={tdl}>{page as string}</td>
-                {(vals as number[]).map((v,i) => <td key={i} className={td}>{v ? <C /> : <Xx />}</td>)}
-              </tr>
-            ))}
-          </tbody></table>
-        </div>
-      </div>
-
-      {/* Permisos de Acción */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4"><Shield size={20} className="text-indigo-500" /> Permisos de Acción — Actividades</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full"><thead><tr>
-            <th className={th}>Acción</th><th className={th}>🟣 Admin</th><th className={th}>🔴 Admón</th><th className={th}>🟡 Super</th><th className={th}>🟢 Safety</th><th className={th}>🔵 Ing.</th>
-          </tr></thead><tbody>
-            <tr><td className={tdl}>Ver actividades</td><td className={td}><C /> Todas</td><td className={td}><C /> Todas</td><td className={td}><Tm /> Equipo</td><td className={td}><C /> Todas</td><td className={td}><Sl /> Propias</td></tr>
-            <tr><td className={tdl}>Crear actividades</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
-            <tr><td className={tdl}>Editar actividades</td><td className={td}><C /> Todas</td><td className={td}><C /> Todas</td><td className={td}><Tm /> Equipo</td><td className={td}><C /> Todas</td><td className={td}><Sl /> Propias</td></tr>
-            <tr><td className={tdl}>🚫 Cancelar actividad</td><td className={td}><C /> Todas</td><td className={td}><Xx /></td><td className={td}><C /> Todas</td><td className={td}><C /> Todas</td><td className={td}><Sl /> Propias</td></tr>
-            <tr><td className={tdl}>↩️ Deshacer cancelación</td><td className={td}><C /> Todas</td><td className={td}><Xx /></td><td className={td}><C /> Todas</td><td className={td}><C /> Todas</td><td className={td}><Sl /> Propias</td></tr>
-            <tr><td className={tdl}>Exportar CSV</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
-          </tbody></table>
-        </div>
-        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-800">
-          👥 <strong>&quot;Su equipo&quot;</strong> = El supervisor ve sus propias actividades + las de los ingenieros que tiene asignados.<br />
-          🚫 <strong>Cancelar</strong> = Libera recursos, genera aviso WhatsApp y opcionalmente crea cotización de cargo. Registra quién canceló.<br />
-          ↩️ <strong>Deshacer</strong> = Restaura el status y re-asigna los recursos originales si están disponibles.
-        </div>
-      </div>
-
-      {/* Gestión de Recursos */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4"><Wrench size={20} className="text-indigo-500" /> Permisos — Gestión de Recursos</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full"><thead><tr>
-            <th className={th}>Recurso</th><th className={th}>🟣 Admin</th><th className={th}>🔴 Admón</th><th className={th}>🟡 Super</th><th className={th}>🟢 Safety</th><th className={th}>🔵 Ing.</th>
-          </tr></thead><tbody>
-            <tr><td className={tdl}>Usuarios</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Técnicos (nombre, celular, email, tipo, empresa, contratista)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Safety Dedicado</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><C /></td><td className={td}><Ey /> Ver</td></tr>
-            <tr><td className={tdl}>Vehículos</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Choferes (nombre, tipo, empresa, contratista)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Eq. Elevación</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Ey /> Ver</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Contratistas</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><Xx /></td></tr>
-          </tbody></table>
-        </div>
-      </div>
-
-      {/* ATC Finde — Permisos Especiales */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4"><Zap size={20} className="text-indigo-500" /> ATC Finde — Permisos y Funcionalidades</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full"><thead><tr>
-            <th className={th}>Acción / Función</th><th className={th}>🟣 Admin</th><th className={th}>🔴 Admón</th><th className={th}>🟡 Super</th><th className={th}>🟢 Safety</th><th className={th}>🔵 Ing.</th>
-          </tr></thead><tbody>
-            <tr><td className={tdl}>Asignar técnicos</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Asignar Safety Dedicado</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Asignar Safety Designado (Ingenieros)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Asignar vehículos / choferes / equipos</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Editar notas de fin de semana</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Editar notas propias (Ingeniero)</td><td className={td}>—</td><td className={td}>—</td><td className={td}>—</td><td className={td}>—</td><td className={td}><C /></td></tr>
-            <tr><td className={tdl}>Editar auditoría Safety</td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Editar notas de alerta ⚠️</td><td className={td}><Ey /> Ver</td><td className={td}><Xx /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Crear Día Extra</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Xx /></td></tr>
-            <tr><td className={tdl}>Editar horarios / LOTO / TERA</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Sl /> Propias</td></tr>
-            <tr><td className={tdl}>⏱ Registro Horario (4 fases)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
-            <tr><td className={tdl}>🚫 Cancelar actividad</td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Sl /> Propias</td></tr>
-            <tr><td className={tdl}>↩️ Deshacer cancelación</td><td className={td}><C /></td><td className={td}><Xx /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><Sl /> Propias</td></tr>
-            <tr><td className={tdl}>📋 Planes Técnicos (generar/copiar)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
-            <tr><td className={tdl}>🏗️ Reporte Equipos (texto/CSV)</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
-            <tr><td className={tdl}>Exportar Plan CSV</td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td><td className={td}><C /></td></tr>
-          </tbody></table>
-        </div>
-
-        {/* Tarjetas ATC Finde */}
-        <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-          <h3 className="text-sm font-bold text-indigo-800 mb-2">📊 Tarjetas Resumen del Plan Finde (visibles para todos)</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-            <div className="bg-white rounded-lg px-3 py-2 border border-indigo-100">📋 Total Actividades (por día)</div>
-            <div className="bg-white rounded-lg px-3 py-2 border border-indigo-100">👷 Técnicos Asignados (por día)</div>
-            <div className="bg-white rounded-lg px-3 py-2 border border-indigo-100">👨‍💼 Actividades por Ingeniero</div>
-            <div className="bg-white rounded-lg px-3 py-2 border border-red-100 text-red-700">🔒 Total LOTO (por día)</div>
-            <div className="bg-white rounded-lg px-3 py-2 border border-red-100 text-red-700">🔒 LOTO por Ingeniero (SÁB/DOM)</div>
-            <div className="bg-white rounded-lg px-3 py-2 border border-amber-100 text-amber-700">🛡️ Con Safety Dedicado</div>
-            <div className="bg-white rounded-lg px-3 py-2 border border-violet-100 text-violet-700">🚗 Vehículos por Día</div>
-            <div className="bg-white rounded-lg px-3 py-2 border border-cyan-100 text-cyan-700">👤 Choferes por Día</div>
-            <div className="bg-white rounded-lg px-3 py-2 border border-orange-100 text-orange-700">🏗️ Eq. Elevación por Día</div>
+      {/* Modern Hierarchical Structure Representation */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-indigo-50 rounded-xl">
+            <Bookmark size={20} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Jerarquía y Herencia de Accesos</h2>
+            <p className="text-xs text-slate-500">Visualización de niveles de poder de arriba hacia abajo</p>
           </div>
         </div>
 
-        {/* Detección de Conflictos */}
-        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
-          <h3 className="text-sm font-bold text-red-800 mb-2">⚠️ Detección de Conflictos Cross-Company</h3>
-          <p className="text-xs text-red-700 mb-2">El sistema detecta automáticamente cuando un recurso compartido ya está asignado en otra actividad del <strong>mismo día y horario</strong> (no se comparan días diferentes). Aplica a:</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5 text-xs">
-            {['Técnicos', 'Equipos de Elevación', 'Vehículos', 'Choferes', 'Safety Designado (User)', 'Safety Dedicado (bloquea)'].map(r => (
-              <div key={r} className="flex items-center gap-1.5 bg-white rounded px-2 py-1 border border-red-100">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                <span>{r}</span>
+        <div className="space-y-3 pt-2">
+          {/* Admin Maestro Box */}
+          <div className="bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-xl p-4 shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-sm flex items-center gap-2">🟣 Admin Maestro</span>
+              <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded font-bold">Consorcio + Todas las Empresas</span>
+            </div>
+          </div>
+
+          <div className="pl-6 border-l-2 border-indigo-100 space-y-3">
+            {/* Administracion Box */}
+            <div className="bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-xl p-4 shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sm flex items-center gap-2">🔴 Administración</span>
+                <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded font-bold">Gestión de Usuarios y Recursos</span>
               </div>
-            ))}
+            </div>
+
+            <div className="pl-6 border-l-2 border-pink-100 flex flex-col md:flex-row gap-3">
+              {/* Supervisor Box */}
+              <div className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl p-4 shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm flex items-center gap-2">🟡 Supervisor</span>
+                  <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded font-bold">Lidera Equipo</span>
+                </div>
+              </div>
+
+              {/* Safety Box */}
+              <div className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl p-4 shadow-md">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm flex items-center gap-2">🟢 Safety & L.P.</span>
+                  <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded font-bold">Industrial & TERA</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pl-6 border-l-2 border-slate-200">
+              <div className="pl-6 border-l-2 border-emerald-100">
+                {/* Ingeniero Box */}
+                <div className="bg-gradient-to-r from-blue-500 to-sky-600 text-white rounded-xl p-4 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm flex items-center gap-2">🔵 Ingeniero</span>
+                    <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded font-bold">Operación & Autogestión</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-red-600 mt-2">💡 Los mensajes de alerta incluyen día, horario y empresa. Safety Dedicado <strong>bloquea</strong> la asignación; los demás solo alertan.</p>
         </div>
       </div>
 
-      {/* Jerarquía */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 mb-4">📊 Jerarquía Visual de Accesos</h2>
-        <pre className="bg-slate-800 text-green-400 rounded-xl p-5 text-xs leading-relaxed overflow-x-auto font-mono">{`┌──────────────────────────────────────────────────────┐
-│                  🟣 ADMIN MAESTRO                     │
-│  ┌────────────────────────────────────────────────┐  │
-│  │             🔴 ADMINISTRACIÓN                   │  │
-│  │  ┌──────────────────────────────────────────┐  │  │
-│  │  │   🟡 SUPERVISOR    🟢 SAFETY & L.P.      │  │  │
-│  │  │  ┌────────────────────────────────────┐  │  │  │
-│  │  │  │         🔵 INGENIERO               │  │  │  │
-│  │  │  │  • Mis actividades                 │  │  │  │
-│  │  │  │  • Registrar / Editar propias      │  │  │  │
-│  │  │  │  • ATC Finde (ver + editar mías)   │  │  │  │
-│  │  │  │  • Planes Técnicos / Rpt. Equipos  │  │  │  │
-│  │  │  │  • Exportar CSV                    │  │  │  │
-│  │  │  └────────────────────────────────────┘  │  │  │
-│  │  │  + Actividades del equipo                │  │  │
-│  │  │  + Asignar recursos en ATC Finde         │  │  │
-│  │  │  + Crear Día Extra                       │  │  │
-│  │  │  + Directorio de Clientes                │  │  │
-│  │  │  + Perfiles y Permisos (esta guía)       │  │  │
-│  │  └──────────────────────────────────────────┘  │  │
-│  │  + Gestión de Recursos (usuarios, técnicos..)  │  │
-│  └────────────────────────────────────────────────┘  │
-│  + Consorcio (préstamos inter-empresa)               │
-│  + Selector "TODAS" las empresas                     │
-└──────────────────────────────────────────────────────┘`}</pre>
-      </div>
-
-      {/* Guías rápidas por rol */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-800 mb-4">🚀 Guía Rápida por Rol</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="bg-purple-50 rounded-xl p-4 border border-purple-100"><h3 className="font-bold text-purple-800 text-sm mb-1">🟣 Admin Maestro</h3><p className="text-xs text-purple-700">Acceso total. Todas las páginas, todos los datos. Consorcio y auditoría Safety completa. Selector de empresa (incluido &quot;TODAS&quot;).</p></div>
-          <div className="bg-rose-50 rounded-xl p-4 border border-rose-100"><h3 className="font-bold text-rose-800 text-sm mb-1">🔴 Administración</h3><p className="text-xs text-rose-700">Como Admin pero sin Consorcio. Gestiona usuarios, técnicos (con celular/email) y recursos operativos.</p></div>
-          <div className="bg-amber-50 rounded-xl p-4 border border-amber-100"><h3 className="font-bold text-amber-800 text-sm mb-1">🟡 Supervisor</h3><p className="text-xs text-amber-700">Ve su equipo. Asigna técnicos, vehículos y equipos en ATC Finde. Crea días extra. Genera Planes Técnicos y Reporte de Equipos. Acceso a Perfiles y Clientes.</p></div>
-          <div className="bg-teal-50 rounded-xl p-4 border border-teal-100"><h3 className="font-bold text-teal-800 text-sm mb-1">🟢 Safety & L.P.</h3><p className="text-xs text-teal-700">Ve todas las actividades. Gestiona Safety Dedicados y choferes. Edita auditorías Safety. Detecta conflictos cross-company.</p></div>
+      {/* Tablas de Acceso a Páginas */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-indigo-50 rounded-xl">
+            <Eye size={20} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Acceso a Módulos (Páginas)</h2>
+            <p className="text-xs text-slate-500">¿Quién puede ver qué módulo en la barra de navegación?</p>
+          </div>
         </div>
-        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100 mt-3"><h3 className="font-bold text-emerald-800 text-sm mb-1">🔵 Ingeniero</h3><p className="text-xs text-emerald-700">Ve solo sus actividades. Registra y edita las propias. En ATC Finde puede editar horarios/notas/LOTO de sus actividades. Puede ver Planes Técnicos y Reporte Equipos.</p></div>
+
+        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className={th}>Módulo o Página</th>
+                <th className={`${th} text-center`}>🟣 Admin</th>
+                <th className={`${th} text-center`}>🔴 Admón</th>
+                <th className={`${th} text-center`}>🟡 Super</th>
+                <th className={`${th} text-center`}>🟢 Safety</th>
+                <th className={`${th} text-center`}>🔵 Ing.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {[
+                { page: 'Dashboard & Analítica', values: [1, 1, 1, 1, 1] },
+                { page: 'Actividades (Listado & Crear)', values: [1, 1, 1, 1, 1] },
+                { page: 'ATC Finde (Plan Finde)', values: [1, 1, 1, 1, 1] },
+                { page: 'Reg. Equipos (Checklist)', values: [1, 1, 1, 1, 1] },
+                { page: 'Planes Pasados (Historial)', values: [1, 1, 1, 1, 1] },
+                { page: 'Recibos (Facturación Odoo)', values: [1, 1, 1, 1, 1] },
+                { page: 'Oportunidades (Odoo)', values: [1, 1, 1, 1, 1] },
+                { page: 'Importar Reporte (Texto/Chat)', values: [1, 1, 1, 1, 1] },
+                { page: 'Alarma TERA (Monitoreo)', values: [1, 1, 1, 1, 0] },
+                { page: 'Gestión de Clientes', values: [1, 1, 1, 1, 0] },
+                { page: 'Guía Perry', values: [1, 1, 1, 1, 1] },
+                { page: 'Gestión de Recursos', values: [1, 1, 0, 0, 0] },
+                { page: 'Consorcio (Préstamos)', values: [1, 0, 0, 0, 0] },
+              ].map((item, index) => (
+                <tr key={index} className="hover:bg-slate-50/50">
+                  <td className={tdl}>{item.page}</td>
+                  {item.values.map((v, i) => (
+                    <td key={i} className={td}>
+                      {v ? <C /> : <Xx />}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800">
-        💡 <strong>¿Necesitas un acceso diferente?</strong> Contacta a un Admin Maestro para ajustar tu perfil o asignarte empresas adicionales.
+      {/* Permisos de Acción - Actividades y TERA */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-indigo-50 rounded-xl">
+            <ShieldCheck size={20} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Permisos de Acción — Actividades & TERA</h2>
+            <p className="text-xs text-slate-500">Permisos finos sobre la gestión del plan y seguridad</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className={th}>Acción</th>
+                <th className={`${th} text-center`}>🟣 Admin</th>
+                <th className={`${th} text-center`}>🔴 Admón</th>
+                <th className={`${th} text-center`}>🟡 Super</th>
+                <th className={`${th} text-center`}>🟢 Safety</th>
+                <th className={`${th} text-center`}>🔵 Ing.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              <tr>
+                <td className={tdl}>Ver y Editar Actividades</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><Tm /> Equipo</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><Sl /> Propias</td>
+              </tr>
+              <tr>
+                <td className={tdl}>🚫 Cancelar / Deshacer Actividades</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><Xx /></td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><Sl /> Propias</td>
+              </tr>
+              <tr>
+                <td className={tdl}>🛡️ Exención TERA (Marcar Exenta N/A)</td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>📷 Subir / Eliminar TERA & Folio TERA</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Asignadas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><Sl /> Propias</td>
+              </tr>
+              <tr>
+                <td className={tdl}>🔍 Cargar TERA Auditor (Safety Oficial)</td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>⏰ Registro Horario (1-4 fases)</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Asignadas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Propias</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="flex gap-3 bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-xs text-indigo-800">
+          <Info size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold mb-1">Nota sobre Sup. Operativo:</p>
+            <p>
+              Cualquier usuario asignado como <strong>Supervisor Operativo</strong> en ATC Finde (a través de Asignación de Safety, Técnicos, o Safety Dedicado) adquiere automáticamente los permisos para realizar cargas TERA y registro de horario en la actividad correspondiente, sin importar su perfil base.
+            </p>
+          </div>
+        </div>
       </div>
+
+      {/* Registro Equipos Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-indigo-50 rounded-xl">
+            <Forklift size={20} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Permisos — Registro de Equipos</h2>
+            <p className="text-xs text-slate-500">Control de checklist, fotos de evidencia y folios de equipo</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className={th}>Acción en Registro de Equipos</th>
+                <th className={`${th} text-center`}>🟣 Admin</th>
+                <th className={`${th} text-center`}>🔴 Admón</th>
+                <th className={`${th} text-center`}>🟡 Super</th>
+                <th className={`${th} text-center`}>🟢 Safety</th>
+                <th className={`${th} text-center`}>🔵 Ing.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              <tr>
+                <td className={tdl}>Llenar checklist & subir evidencias (fotos)</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><Sl /> Propias</td>
+              </tr>
+              <tr>
+                <td className={tdl}>Asignar Operador del Equipo</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><C /> Todas</td>
+                <td className={td}><Sl /> Propias</td>
+              </tr>
+              <tr>
+                <td className={tdl}>📂 Ver Reporte Histórico por Folio (Odoo)</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Gestion de Recursos Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-indigo-50 rounded-xl">
+            <Wrench size={20} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Permisos — Gestión de Recursos</h2>
+            <p className="text-xs text-slate-500">¿Quién puede crear y modificar catálogos operativos?</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className={th}>Catálogo</th>
+                <th className={`${th} text-center`}>🟣 Admin</th>
+                <th className={`${th} text-center`}>🔴 Admón</th>
+                <th className={`${th} text-center`}>🟡 Super</th>
+                <th className={`${th} text-center`}>🟢 Safety</th>
+                <th className={`${th} text-center`}>🔵 Ing.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              <tr>
+                <td className={tdl}>Usuarios</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>Técnicos (Internos & Contratistas)</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Ey /></td>
+                <td className={td}><Ey /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>Safety Dedicado</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Ey /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Ey /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>Vehículos</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Ey /></td>
+                <td className={td}><Ey /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>Choferes</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>Equipos de Elevación</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Ey /></td>
+                <td className={td}><Ey /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>Contratistas</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Alertas de Conflictos Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-rose-50 rounded-xl">
+            <AlertTriangle size={20} className="text-rose-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Detección de Conflictos Cross-Company</h2>
+            <p className="text-xs text-slate-500">Reglas automáticas de validación en asignaciones</p>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-600 leading-relaxed">
+          El sistema analiza dinámicamente el plan para advertir al programador en tiempo real si un recurso compartido (técnico, vehículo, chofer o equipo) ya ha sido asignado en otra actividad de la misma fecha que se superponga en horarios.
+        </p>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2 text-xs">
+          <div className="bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
+            <span className="font-bold block text-slate-700">Técnicos & Choferes</span>
+            <span className="text-slate-500">Advertencia visual en la tarjeta de asignación</span>
+          </div>
+          <div className="bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
+            <span className="font-bold block text-slate-700">Vehículos & Equipos</span>
+            <span className="text-slate-500">Alerta de superposición en tiempo real</span>
+          </div>
+          <div className="bg-red-50 rounded-xl px-4 py-3 border border-red-100 text-red-800">
+            <span className="font-bold block text-red-900">Safety Dedicado</span>
+            <span className="text-red-700">⚠️ Bloqueo inmediato para evitar doble asignación</span>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
