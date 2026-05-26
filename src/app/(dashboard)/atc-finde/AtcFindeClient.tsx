@@ -286,8 +286,8 @@ export function AtcFindeClient({
   const canEditAuditImage = (act: Activity) => {
     if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
     if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
-    // Sup Operativo assigned to this activity
-    if (isUserSupOperativoForActivity(act.id)) return true;
+    // Sup Operativo assigned to this activity (any of the 3 sources)
+    if (isSupOperativoForActivity(act.id)) return true;
     return false;
   };
 
@@ -298,8 +298,23 @@ export function AtcFindeClient({
   };
 
   // Check if current user is assigned as Sup Operativo for an activity
-  const isUserSupOperativoForActivity = (actId: string) => {
-    return (userSafetyAssignments || []).some((x: any) => x.activityId === actId && x.userId === userId);
+  // Covers ALL 3 assignment sources:
+  //   1. Técnico Cruz Verde as SAFETY_DESIGNADO (match by name)
+  //   2. User as Safety Designado (WeekendUserSafetyAssignment, match by userId)
+  //   3. Safety Dedicado as DESIGNADO (match by name)
+  const isSupOperativoForActivity = (actId: string) => {
+    // Source 1: WeekendUserSafetyAssignment (userId match)
+    if ((userSafetyAssignments || []).some((x: any) => x.activityId === actId && x.userId === userId)) return true;
+
+    // Source 2: WeekendTechAssignment with role SAFETY_DESIGNADO (name match)
+    const techDesignados = techAssignments.filter(x => x.activityId === actId && x.role === 'SAFETY_DESIGNADO');
+    if (techDesignados.some(x => x.technician.name === userName)) return true;
+
+    // Source 3: WeekendSafetyAssignment with role DESIGNADO (name match)
+    const safetyDesignados = safetyAssignments.filter(x => x.activityId === actId && x.role === 'DESIGNADO');
+    if (safetyDesignados.some(x => x.safetyDedicado.name === userName)) return true;
+
+    return false;
   };
 
   // Odoo lookup state
@@ -362,7 +377,7 @@ export function AtcFindeClient({
     if (userRole === 'SUPERVISOR') return true;
     if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
     // Sup Operativo assigned to this activity
-    if (isUserSupOperativoForActivity(act.id)) return true;
+    if (isSupOperativoForActivity(act.id)) return true;
     return false;
   };
 
@@ -1852,7 +1867,8 @@ export function AtcFindeClient({
                         const entries = timeRegistries[act.id] || [];
                         const count = entries.length;
                         const canEditRegistry = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)
-                          || (userRole === 'INGENIERO' && act.user?.id === userId);
+                          || (userRole === 'INGENIERO' && act.user?.id === userId)
+                          || isSupOperativoForActivity(act.id);
                         return canEditRegistry ? (
                           <button
                             onClick={() => setTimeRegistryModal({ activityId: act.id, activityTitle: act.title })}

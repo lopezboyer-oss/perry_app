@@ -98,6 +98,8 @@ export function PlanesPasadosClient({
   const canEditAuditImage = (act: Activity) => {
     if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
     if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
+    // Sup Operativo assigned to this activity (any of the 3 sources)
+    if (isSupOperativoForActivity(act.id)) return true;
     return false;
   };
 
@@ -108,8 +110,23 @@ export function PlanesPasadosClient({
   };
 
   // Check if current user is assigned as Sup Operativo for an activity
-  const isUserSupOperativoForActivity = (actId: string) => {
-    return (userSafetyAssignments || []).some((x: any) => x.activityId === actId && x.userId === userId);
+  // Covers ALL 3 assignment sources:
+  //   1. User as Safety Designado (WeekendUserSafetyAssignment, match by userId)
+  //   2. Técnico Cruz Verde as SAFETY_DESIGNADO (match by name)
+  //   3. Safety Dedicado as DESIGNADO (match by name)
+  const isSupOperativoForActivity = (actId: string) => {
+    // Source 1: WeekendUserSafetyAssignment (userId match)
+    if ((userSafetyAssignments || []).some((x: any) => x.activityId === actId && x.userId === userId)) return true;
+
+    // Source 2: WeekendTechAssignment with role SAFETY_DESIGNADO (name match)
+    const techDesignados = techAssignments.filter((x: any) => x.activityId === actId && x.role === 'SAFETY_DESIGNADO');
+    if (techDesignados.some((x: any) => x.technician.name === userName)) return true;
+
+    // Source 3: WeekendSafetyAssignment with role DESIGNADO (name match)
+    const safetyDesignados = safetyAssignments.filter((x: any) => x.activityId === actId && x.role === 'DESIGNADO');
+    if (safetyDesignados.some((x: any) => x.safetyDedicado.name === userName)) return true;
+
+    return false;
   };
 
   const updateField = async (actId: string, field: string, value: any) => {

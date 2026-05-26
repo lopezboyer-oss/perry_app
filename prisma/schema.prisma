@@ -175,6 +175,7 @@ model Technician {
   contractor    Contractor? @relation(fields: [contractorId], references: [id])
   baseCompanyId String?
   baseCompany   Company?    @relation(fields: [baseCompanyId], references: [id])
+  linkedUserId  String?     // Vinculación con cuenta User de Perry (para permisos y control horario)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -198,6 +199,7 @@ model SafetyDedicado {
   isActive      Boolean  @default(true)
   baseCompanyId String?
   baseCompany   Company? @relation(fields: [baseCompanyId], references: [id])
+  linkedUserId  String?  // Vinculación con cuenta User de Perry (para permisos y control horario)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
