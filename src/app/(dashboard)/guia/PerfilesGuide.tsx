@@ -226,6 +226,7 @@ export function PerfilesGuide() {
               {[
                 { page: 'Dashboard & Analítica', values: [1, 1, 1, 1, 1] },
                 { page: 'Actividades (Listado & Crear)', values: [1, 1, 1, 1, 1] },
+                { page: 'Control de Asistencia', values: [1, 1, 1, 1, 1] },
                 { page: 'ATC Finde (Plan Finde)', values: [1, 1, 1, 1, 1] },
                 { page: 'Reg. Equipos (Checklist)', values: [1, 1, 1, 1, 1] },
                 { page: 'Planes Pasados (Historial)', values: [1, 1, 1, 1, 1] },
@@ -391,6 +392,82 @@ export function PerfilesGuide() {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Control de Asistencia Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-indigo-50 rounded-xl">
+            <ShieldCheck size={20} className="text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Permisos — Control de Asistencia</h2>
+            <p className="text-xs text-slate-500">Reglas de registro, visualización de logs e inicio/salida alternada</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className={th}>Acción en Asistencia</th>
+                <th className={`${th} text-center`}>🟣 Admin</th>
+                <th className={`${th} text-center`}>🔴 Admón</th>
+                <th className={`${th} text-center`}>🟡 Super</th>
+                <th className={`${th} text-center`}>🟢 Safety</th>
+                <th className={`${th} text-center`}>🔵 Ing.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              <tr>
+                <td className={tdl}>Registrar entrada/salida (GPS, Selfie o QR)</td>
+                <td className={td}><C /> Sí</td>
+                <td className={td}><C /> Sí</td>
+                <td className={td}><C /> Sí</td>
+                <td className={td}><C /> Sí</td>
+                <td className={td}><C /> Sí</td>
+              </tr>
+              <tr>
+                <td className={tdl}>Generar código QR dinámico</td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+                <td className={td}><C /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>Ver logs de asistencia de otros</td>
+                <td className={td}><C /> Todos</td>
+                <td className={td}><C /> Todos</td>
+                <td className={td}><C /> Todos</td>
+                <td className={td}><C /> Todos</td>
+                <td className={td}><Xx /></td>
+              </tr>
+              <tr>
+                <td className={tdl}>Ver mapa interactivo y foto de capturas</td>
+                <td className={td}><C /> Todos</td>
+                <td className={td}><C /> Todos</td>
+                <td className={td}><C /> Todos</td>
+                <td className={td}><C /> Todos</td>
+                <td className={td}><Sl /> Propias</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex gap-3 bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-xs text-indigo-800">
+          <Info size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold mb-1">Regla de Secuencia Alternada (Entrada ➔ Salida):</p>
+            <p className="mb-2">
+              El sistema obliga en frontend y backend a registrar estrictamente en orden alternado: <strong>Entrada ➔ Salida ➔ Entrada ➔ Salida</strong>. No se permiten registros duplicados consecutivos del mismo tipo.
+            </p>
+            <p className="font-semibold mb-1">Restricciones de Generación de QR:</p>
+            <p>
+              Solo usuarios con nivel de <strong>Ingeniero hacia arriba</strong> (Ingeniero, Supervisor, Safety & LP, Administración y Admin) pueden generar el código QR dinámico de validación. Técnicos y Safety Dedicado no poseen esta atribución.
+            </p>
+          </div>
         </div>
       </div>
 
