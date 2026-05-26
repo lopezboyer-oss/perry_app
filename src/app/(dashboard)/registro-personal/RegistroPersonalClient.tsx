@@ -1145,22 +1145,22 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                   <div className="p-1.5 bg-indigo-500 text-white rounded-lg">
                     <MapPin size={16} />
                   </div>
-                  <h4 className="text-xs font-extrabold text-indigo-900 uppercase tracking-wider">1. Registro por Ubicación (GPS)</h4>
+                  <h4 className="text-xs font-extrabold text-indigo-900 uppercase tracking-wider">1. Ubicación por GPS</h4>
                 </div>
                 <p className="text-xs text-indigo-950/80 leading-relaxed">
-                  Ideal para registrar asistencia en campo usando las coordenadas geográficas de tu teléfono.
+                  Registra asistencia en campo usando las coordenadas de tu teléfono.
                 </p>
-                <div className="text-xs space-y-1.5 text-indigo-950 bg-white/70 p-3 rounded-xl border border-indigo-100">
-                  <p className="flex gap-2">
-                    <span className="font-bold text-indigo-600">Paso A:</span> 
+                <div className="text-xs space-y-2 text-indigo-950 bg-white/70 p-3 rounded-xl border border-indigo-100">
+                  <p className="leading-relaxed">
+                    <strong className="text-indigo-600 mr-1.5">Paso A:</strong>
                     <span>Selecciona el método <strong>GPS</strong> e indica la actividad correspondiente.</span>
                   </p>
-                  <p className="flex gap-2">
-                    <span className="font-bold text-indigo-600">Paso B:</span> 
-                    <span>Presiona <strong>"Obtener GPS"</strong>. Verás un mapa interactivo en vivo con tu ubicación.</span>
+                  <p className="leading-relaxed border-t border-indigo-100/50 pt-1.5">
+                    <strong className="text-indigo-600 mr-1.5">Paso B:</strong>
+                    <span>Presiona <strong>"Obtener GPS"</strong>. Verás un mapa interactivo con tu ubicación.</span>
                   </p>
-                  <p className="flex gap-2">
-                    <span className="font-bold text-indigo-600">Paso C:</span> 
+                  <p className="leading-relaxed border-t border-indigo-100/50 pt-1.5">
+                    <strong className="text-indigo-600 mr-1.5">Paso C:</strong>
                     <span>Presiona <strong>"Registrar Entrada / Salida"</strong> para guardar.</span>
                   </p>
                 </div>
@@ -1172,23 +1172,23 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                   <div className="p-1.5 bg-pink-500 text-white rounded-lg">
                     <Camera size={16} />
                   </div>
-                  <h4 className="text-xs font-extrabold text-pink-900 uppercase tracking-wider">2. Validación Biométrica (Selfie)</h4>
+                  <h4 className="text-xs font-extrabold text-pink-900 uppercase tracking-wider">2. Foto Selfie</h4>
                 </div>
                 <p className="text-xs text-pink-950/80 leading-relaxed">
-                  Para acreditar tu presencia visualmente de forma rápida con la cámara frontal.
+                  Acredita tu presencia visualmente usando la cámara frontal.
                 </p>
-                <div className="text-xs space-y-1.5 text-pink-950 bg-white/70 p-3 rounded-xl border border-pink-100">
-                  <p className="flex gap-2">
-                    <span className="font-bold text-pink-600">Paso A:</span> 
-                    <span>Elige <strong>"Tomar Selfie"</strong>. Otorga los permisos de cámara en tu navegador.</span>
+                <div className="text-xs space-y-2 text-pink-950 bg-white/70 p-3 rounded-xl border border-pink-100">
+                  <p className="leading-relaxed">
+                    <strong className="text-pink-600 mr-1.5">Paso A:</strong>
+                    <span>Elige <strong>"Tomar Selfie"</strong> y otorga permisos de cámara en tu navegador.</span>
                   </p>
-                  <p className="flex gap-2">
-                    <span className="font-bold text-pink-600">Paso B:</span> 
+                  <p className="leading-relaxed border-t border-pink-100/50 pt-1.5">
+                    <strong className="text-pink-600 mr-1.5">Paso B:</strong>
                     <span>Encuadra tu rostro y presiona <strong>"Capturar Foto"</strong>.</span>
                   </p>
-                  <p className="flex gap-2">
-                    <span className="font-bold text-pink-600">Paso C:</span> 
-                    <span>Si la foto se ve bien, presiona <strong>"Confirmar y Guardar"</strong> (se comprime automáticamente).</span>
+                  <p className="leading-relaxed border-t border-pink-100/50 pt-1.5">
+                    <strong className="text-pink-600 mr-1.5">Paso C:</strong>
+                    <span>Presiona <strong>"Confirmar y Guardar"</strong> (la foto se comprime de forma automática).</span>
                   </p>
                 </div>
               </div>
@@ -1199,19 +1199,19 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                   <div className="p-1.5 bg-teal-500 text-white rounded-lg">
                     <QrCode size={16} />
                   </div>
-                  <h4 className="text-xs font-extrabold text-teal-900 uppercase tracking-wider">3. Código QR (Supervisor / Ingeniero)</h4>
+                  <h4 className="text-xs font-extrabold text-teal-900 uppercase tracking-wider">3. Código QR de Supervisor</h4>
                 </div>
                 <p className="text-xs text-teal-950/80 leading-relaxed">
-                  Perfecto para cuando estás físicamente al lado del supervisor o ingeniero a cargo.
+                  Ideal si te encuentras físicamente al lado del supervisor o ingeniero a cargo.
                 </p>
-                <div className="text-xs space-y-1.5 text-teal-950 bg-white/70 p-3 rounded-xl border border-teal-100">
-                  <p className="flex gap-2">
-                    <span className="font-bold text-teal-600">Para el Supervisor:</span> 
-                    <span>Genera un código QR dinámico desde la pestaña <strong>"Generar QR"</strong>. Este rotará cada 30 segundos.</span>
+                <div className="text-xs space-y-2 text-teal-950 bg-white/70 p-3 rounded-xl border border-teal-100">
+                  <p className="leading-relaxed">
+                    <strong className="text-teal-600 mr-1.5">Supervisor:</strong>
+                    <span>Genera un código QR dinámico desde la pestaña <strong>"Generar QR"</strong> (cambia cada 30 segundos).</span>
                   </p>
-                  <p className="flex gap-2">
-                    <span className="font-bold text-teal-600">Para el Técnico:</span> 
-                    <span>Elige <strong>"Escanear QR de Supervisor"</strong>, apunta tu cámara al QR en la pantalla del supervisor y listo.</span>
+                  <p className="leading-relaxed border-t border-teal-100/50 pt-1.5">
+                    <strong className="text-teal-600 mr-1.5">Colaborador:</strong>
+                    <span>Selecciona <strong>"Escanear QR"</strong> y apunta tu cámara al QR en la pantalla del supervisor.</span>
                   </p>
                 </div>
               </div>
