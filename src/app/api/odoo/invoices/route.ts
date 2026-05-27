@@ -19,6 +19,15 @@ export async function GET(req: NextRequest) {
       // ADMIN consolidated view — all companies except test (6)
       odooCompanyFilter = ['company_id', 'in', [1, 2, 3, 4, 5]];
     } else if (companyParam) {
+      // If not ADMIN, validate access to the requested company
+      if (role !== 'ADMIN') {
+        const hasAccess = await prisma.userCompany.findFirst({
+          where: { userId: session.user.id, companyId: companyParam },
+        });
+        if (!hasAccess) {
+          return NextResponse.json({ error: 'No tienes acceso a esta empresa' }, { status: 403 });
+        }
+      }
       // Specific company — look up its odooId
       const company = await prisma.company.findUnique({ where: { id: companyParam } });
       if (company) odooCompanyFilter = ['company_id', '=', company.odooId];

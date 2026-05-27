@@ -57,7 +57,7 @@ export function getCompanyWhereFilter(
  * For non-ADMIN with no cookie → resolves user's default/base company
  */
 export async function getCompanyFilterFromCookies(
-  role: string,
+  role?: string,
   userId?: string,
 ): Promise<{ companyId: string } | {}> {
   const cookieStore = cookies();
@@ -67,7 +67,20 @@ export async function getCompanyFilterFromCookies(
   if (cookieVal === 'ALL' && role === 'ADMIN') return {};
 
   // If a specific company is selected via cookie
-  if (cookieVal && cookieVal !== 'ALL') return { companyId: cookieVal };
+  if (cookieVal && cookieVal !== 'ALL') {
+    // If not ADMIN, validate user company access
+    if (role !== 'ADMIN' && userId) {
+      const hasAccess = await prisma.userCompany.findFirst({
+        where: { userId, companyId: cookieVal },
+      });
+      if (hasAccess) {
+        return { companyId: cookieVal };
+      }
+      // If they don't have access, ignore cookie and fall through to default company resolution
+    } else {
+      return { companyId: cookieVal };
+    }
+  }
 
   // No cookie set:
   // - ADMIN sees everything (consolidated view)

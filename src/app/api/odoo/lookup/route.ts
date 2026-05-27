@@ -2,10 +2,15 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { odooExecute, resetUid } from '@/lib/odoo';
 import { prisma } from '@/lib/prisma';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
-async function searchOrder(folio: string) {
+async function searchOrder(folio: string, odooCompanyId?: number) {
+  const domain: any[] = [['name', '=', folio]];
+  if (typeof odooCompanyId === 'number') {
+    domain.push(['company_id', '=', odooCompanyId]);
+  }
   return odooExecute('sale.order', 'search_read', [
-    [[[  'name', '=', folio]]],
+    [domain],
     { fields: ['name', 'x_studio_po_cliente_1', 'x_studio_proyecto', 'x_studio_empresa_relacionada', 'partner_id', 'state', 'company_id'], limit: 1 },
   ]);
 }
@@ -66,7 +71,20 @@ export async function GET(req: NextRequest) {
     const folio = req.nextUrl.searchParams.get('folio')?.trim().toUpperCase();
     if (!folio) return NextResponse.json({ error: 'Folio requerido' }, { status: 400 });
 
-    const orders = await searchOrder(folio);
+    const companyFilter = await getCompanyFilterFromCookies(session.user.role, session.user.id);
+    let odooCompanyId: number | undefined;
+
+    if ('companyId' in companyFilter && companyFilter.companyId) {
+      const company = await prisma.company.findUnique({
+        where: { id: companyFilter.companyId },
+        select: { odooId: true },
+      });
+      if (company) {
+        odooCompanyId = company.odooId;
+      }
+    }
+
+    const orders = await searchOrder(folio, odooCompanyId);
 
     if (!orders || orders.length === 0) {
       return NextResponse.json({ found: false, message: `No se encontró la orden "${folio}" en Odoo` });
@@ -96,10 +114,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Detect Perry company from Odoo company_id
-    const odooCompanyId = order.company_id ? order.company_id[0] : null;
+    const detectedOdooCompanyId = order.company_id ? order.company_id[0] : null;
     let perryCompanyId: string | null = null;
-    if (odooCompanyId) {
-      const perryCompany = await prisma.company.findUnique({ where: { odooId: odooCompanyId } });
+    if (detectedOdooCompanyId) {
+      const perryCompany = await prisma.company.findUnique({ where: { odooId: detectedOdooCompanyId } });
       if (perryCompany) perryCompanyId = perryCompany.id;
     }
 
@@ -114,7 +132,7 @@ export async function GET(req: NextRequest) {
       clientId,
       contactId,
       companyId: perryCompanyId,
-      odooCompanyId,
+      odooCompanyId: detectedOdooCompanyId,
       state: order.state,
       stateLabel: ({ draft: 'Borrador', sent: 'Enviada', sale: 'Confirmada', cancel: 'Cancelada' } as Record<string, string>)[order.state] || order.state,
     });

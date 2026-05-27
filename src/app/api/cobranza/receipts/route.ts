@@ -8,11 +8,33 @@ export async function GET(req: NextRequest) {
     const session = await auth();
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+    const role = session.user.role;
     const companyId = req.nextUrl.searchParams.get('companyId');
 
     const where: any = {};
-    if (companyId && companyId !== 'ALL') {
-      where.companyId = companyId;
+
+    if (role !== 'ADMIN') {
+      // Find all companies the user has access to
+      const allowedCompanies = await prisma.userCompany.findMany({
+        where: { userId: session.user.id },
+        select: { companyId: true },
+      });
+      const allowedIds = allowedCompanies.map((c) => c.companyId);
+
+      if (companyId && companyId !== 'ALL') {
+        if (!allowedIds.includes(companyId)) {
+          return NextResponse.json({ error: 'No tienes acceso a esta empresa' }, { status: 403 });
+        }
+        where.companyId = companyId;
+      } else {
+        // Enforce restriction to only allowed companies
+        where.companyId = { in: allowedIds };
+      }
+    } else {
+      // Admin user
+      if (companyId && companyId !== 'ALL') {
+        where.companyId = companyId;
+      }
     }
 
     const receipts = await prisma.invoiceReceipt.findMany({
@@ -41,6 +63,19 @@ export async function POST(req: NextRequest) {
 
     const { invoiceNumber, folio, po, notes, engineerName, companyId } = await req.json();
     if (!invoiceNumber) return NextResponse.json({ error: 'invoiceNumber requerido' }, { status: 400 });
+
+    // Validate that the user has access to the target company if they are not an ADMIN
+    if (role !== 'ADMIN') {
+      if (!companyId) {
+        return NextResponse.json({ error: 'companyId requerido' }, { status: 400 });
+      }
+      const hasAccess = await prisma.userCompany.findFirst({
+        where: { userId: session.user.id, companyId },
+      });
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'No tienes acceso a esta empresa' }, { status: 403 });
+      }
+    }
 
     // Upsert — allows re-confirming
     const receipt = await prisma.invoiceReceipt.upsert({
