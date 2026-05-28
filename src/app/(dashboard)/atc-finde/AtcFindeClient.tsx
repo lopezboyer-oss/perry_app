@@ -1785,7 +1785,7 @@ export function AtcFindeClient({
                   {d.equips.map(eq => (
                     <span key={eq.name} className="inline-flex items-center gap-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
                       {eq.name}
-                      <span className={`text-[8px] px-1 rounded-sm font-bold ${eq.ownership === 'PROPIO' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      <span className={`text-[8px] px-1 rounded-sm font-bold ${eq.ownership === 'PROPIO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-500 text-white'}`}>
                         {eq.ownership === 'PROPIO' ? 'P' : 'R'}
                       </span>
                     </span>
