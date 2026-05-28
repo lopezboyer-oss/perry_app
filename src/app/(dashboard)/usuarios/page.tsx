@@ -77,6 +77,30 @@ export default function UsuariosPage() {
 
   useEffect(() => { fetchAll(); }, []);
 
+  // Default to first visible tab if current tab is hidden
+  useEffect(() => {
+    if (!loading && userRole) {
+      const isAdmin = userRole === 'ADMIN' || userRole === 'ADMINISTRACION';
+      const canManageSafety = isAdmin || userRole === 'SUPERVISOR_SAFETY_LP' || sessionUser?.accessSafetyDedicado;
+      const canManageDrivers = isAdmin || userRole === 'SUPERVISOR_SAFETY_LP' || sessionUser?.accessDrivers;
+      const canManageVehicles = isAdmin || sessionUser?.accessVehicles;
+      const canManageEquips = isAdmin || sessionUser?.accessElevationEquip;
+
+      const allowedTabs: TabKey[] = [];
+      if (isAdmin) {
+        allowedTabs.push('users', 'techs', 'contractors');
+      }
+      if (canManageSafety) allowedTabs.push('safety');
+      if (canManageVehicles) allowedTabs.push('vehicles');
+      if (canManageDrivers) allowedTabs.push('drivers');
+      if (canManageEquips) allowedTabs.push('equips');
+
+      if (allowedTabs.length > 0 && !allowedTabs.includes(tab)) {
+        setTab(allowedTabs[0]);
+      }
+    }
+  }, [loading, userRole, sessionUser, tab]);
+
   const fetchAll = async () => {
     try {
       const [usersRes, techRes, safetyRes, vehicleRes, driverRes, equipRes, contractorRes, companyRes] = await Promise.all([
@@ -204,23 +228,7 @@ export default function UsuariosPage() {
   ];
   const visibleTabs = allTabs.filter((t) => t.visible);
 
-  // Default to first visible tab if current tab is hidden
-  useEffect(() => {
-    if (!loading && userRole) {
-      const allowedTabs: TabKey[] = [];
-      if (isAdmin) {
-        allowedTabs.push('users', 'techs', 'contractors');
-      }
-      if (canManageSafety) allowedTabs.push('safety');
-      if (canManageVehicles) allowedTabs.push('vehicles');
-      if (canManageDrivers) allowedTabs.push('drivers');
-      if (canManageEquips) allowedTabs.push('equips');
 
-      if (allowedTabs.length > 0 && !allowedTabs.includes(tab)) {
-        setTab(allowedTabs[0]);
-      }
-    }
-  }, [loading, userRole, sessionUser, tab]);
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto animate-fade-in">
