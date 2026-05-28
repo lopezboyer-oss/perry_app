@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     if (companyParam === 'ALL' && role === 'ADMIN') {
       // ADMIN consolidated view — all companies except test (6)
       odooCompanyFilter = ['company_id', 'in', [1, 2, 3, 4, 5]];
-    } else if (companyParam) {
+    } else if (companyParam && companyParam !== 'ALL') {
       // If not ADMIN, validate access to the requested company
       if (role !== 'ADMIN') {
         const hasAccess = await prisma.userCompany.findFirst({
