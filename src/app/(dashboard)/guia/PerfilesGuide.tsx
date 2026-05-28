@@ -73,6 +73,7 @@ const Xx = () => (
 const Ey = () => <span className="text-amber-600 font-semibold text-xs bg-amber-50 px-2 py-0.5 rounded border border-amber-100">👁️ Solo Ver</span>;
 const Tm = () => <span className="text-indigo-600 font-semibold text-xs bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">👥 Equipo</span>;
 const Sl = () => <span className="text-blue-600 font-semibold text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-100">👤 Propias</span>;
+const Config = () => <span className="inline-flex items-center gap-0.5 text-indigo-700 font-bold text-[10px] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200" title="Configurable por Administrador">⚙️ Habilitable</span>;
 
 const th = 'px-4 py-3 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider bg-slate-50 border-b border-slate-200';
 const td = 'px-4 py-3 border-b border-slate-100 text-center text-sm';
@@ -516,33 +517,33 @@ export function PerfilesGuide() {
                 <td className={tdl}>Safety Dedicado</td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
-                <td className={td}><Ey /></td>
+                <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
                 <td className={td}><C /></td>
-                <td className={td}><Ey /></td>
+                <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
               </tr>
               <tr>
                 <td className={tdl}>Vehículos</td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
-                <td className={td}><Ey /></td>
-                <td className={td}><Ey /></td>
-                <td className={td}><Xx /></td>
+                <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
+                <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
+                <td className={td}><Xx /> <div className="mt-1"><Config /></div></td>
               </tr>
               <tr>
                 <td className={tdl}>Choferes</td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
-                <td className={td}><Xx /></td>
+                <td className={td}><Xx /> <div className="mt-1"><Config /></div></td>
                 <td className={td}><C /></td>
-                <td className={td}><Xx /></td>
+                <td className={td}><Xx /> <div className="mt-1"><Config /></div></td>
               </tr>
               <tr>
                 <td className={tdl}>Equipos de Elevación</td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
-                <td className={td}><Ey /></td>
-                <td className={td}><Ey /></td>
-                <td className={td}><Xx /></td>
+                <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
+                <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
+                <td className={td}><Xx /> <div className="mt-1"><Config /></div></td>
               </tr>
               <tr>
                 <td className={tdl}>Contratistas</td>
@@ -554,6 +555,17 @@ export function PerfilesGuide() {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        {/* Note about overrideable/granular permissions */}
+        <div className="flex gap-3 bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-xs text-indigo-800 mt-4">
+          <Info size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold mb-1">Permisos Especiales de Gestión:</p>
+            <p>
+              Los administradores (Admin Maestro y Administración) pueden habilitar permisos individuales a cualquier perfil (excepto Técnico) mediante los checkboxes en su tarjeta personal en el catálogo de <strong>Usuarios</strong>. Habilitar uno de estos permisos otorga derechos completos de administración (Crear/Editar/Eliminar) sobre el catálogo correspondiente.
+            </p>
+          </div>
         </div>
       </div>
 

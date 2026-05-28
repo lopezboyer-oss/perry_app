@@ -1283,8 +1283,10 @@ export function AtcFindeClient({
 
     const dayEquips = equipAssignments
       .filter(x => dayActIds.has(x.activityId))
-      .map(x => x.equip.name);
-    const uniqueEquips = [...new Set(dayEquips)];
+      .map(x => ({ name: x.equip.name, ownership: x.equip.ownership }));
+    const uniqueEquipsMap = new Map<string, string>();
+    dayEquips.forEach(x => uniqueEquipsMap.set(x.name, x.ownership));
+    const uniqueEquips = Array.from(uniqueEquipsMap.entries()).map(([name, ownership]) => ({ name, ownership }));
 
     const dt = new Date(`${d.date}T12:00:00`);
     const dayLabel = d.isExtra
@@ -1575,63 +1577,64 @@ export function AtcFindeClient({
         </div>
       </div>
 
-      {/* ── SUP OPERATIVO SUMMARY CARDS ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Total Sup Operativo */}
-        <div className="bg-white rounded-xl border border-teal-200 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 text-sm">🛡️</span>
-            <p className="text-xs font-semibold text-teal-600 uppercase tracking-wider">Total Asignaciones Sup Operativo</p>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-teal-700">{totalSupOp}</span>
-            <span className="text-xs text-slate-400">en {activities.length} actividades</span>
-          </div>
-          {totalSupOp > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {dayStats.map(d => {
-                let dayCount = 0;
-                supOpMap.forEach(entry => { dayCount += entry.byDate.get(d.date) || 0; });
-                return dayCount > 0 ? (
-                  <span key={d.date} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${d.isExtra ? 'bg-amber-100 text-amber-700' : 'bg-teal-50 text-teal-600'}`}>
-                    {d.dayLabel} {dayCount}
-                  </span>
-                ) : null;
-              })}
-            </div>
-          )}
+      {/* ── SUP OPERATIVO SUMMARY CARD (MERGED) ── */}
+      <div className="bg-white rounded-xl border border-teal-200 p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 text-sm">🛡️</span>
+          <p className="text-xs font-semibold text-teal-600 uppercase tracking-wider">Supervisiones Operativas</p>
         </div>
-
-        {/* Sup Operativo por persona */}
-        <div className="bg-white rounded-xl border border-teal-200 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 text-sm"><HardHat size={14} /></span>
-            <p className="text-xs font-semibold text-teal-600 uppercase tracking-wider">Sup Operativo por Persona</p>
-          </div>
-          {supOpMap.size === 0 ? (
-            <p className="text-xs text-slate-400 mt-1">Sin asignaciones</p>
-          ) : (
-            <div className="flex flex-wrap gap-2 mt-1">
-              {Array.from(supOpMap.entries()).sort((a, b) => b[1].total - a[1].total).map(([name, data]) => (
-                <div key={name} className="px-2.5 py-1.5 rounded-lg bg-teal-50 border border-teal-100">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-teal-800 text-xs">{name}</span>
-                    <span className="bg-teal-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{data.total}</span>
-                  </div>
-                  <div className="flex gap-1 mt-1">
-                    {dayStats.map(d => {
-                      const dayCount = data.byDate.get(d.date) || 0;
-                      return dayCount > 0 ? (
-                        <span key={d.date} className={`text-[9px] font-bold px-1 py-0.5 rounded ${d.isExtra ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-600'}`}>
-                          {d.dayLabel} {dayCount}
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              ))}
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Left Column: Summary & Daily breakdown */}
+          <div className="md:col-span-1 md:border-r border-slate-100 md:pr-4">
+            <p className="text-xs text-slate-500 font-medium">Total Asignaciones</p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-3xl font-extrabold text-teal-700">{totalSupOp}</span>
+              <span className="text-xs text-slate-400">en {activities.length} actividades</span>
             </div>
-          )}
+            {totalSupOp > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1">
+                {dayStats.map(d => {
+                  let dayCount = 0;
+                  supOpMap.forEach(entry => { dayCount += entry.byDate.get(d.date) || 0; });
+                  return dayCount > 0 ? (
+                    <span key={d.date} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${d.isExtra ? 'bg-amber-100 text-amber-700' : 'bg-teal-50 text-teal-600'}`}>
+                      {d.dayLabel} {dayCount}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Breakdown by Person */}
+          <div className="md:col-span-2">
+            <p className="text-xs text-slate-500 font-medium mb-2">Desglose por Persona</p>
+            {supOpMap.size === 0 ? (
+              <p className="text-xs text-slate-400 mt-1">Sin asignaciones</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {Array.from(supOpMap.entries()).sort((a, b) => b[1].total - a[1].total).map(([name, data]) => (
+                  <div key={name} className="px-2.5 py-1.5 rounded-lg bg-teal-50 border border-teal-100 flex flex-col justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-teal-800 text-xs">{name}</span>
+                      <span className="bg-teal-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{data.total}</span>
+                    </div>
+                    <div className="flex gap-1 mt-1">
+                      {dayStats.map(d => {
+                        const dayCount = data.byDate.get(d.date) || 0;
+                        return dayCount > 0 ? (
+                          <span key={d.date} className={`text-[9px] font-bold px-1 py-0.5 rounded ${d.isExtra ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-600'}`}>
+                            {d.dayLabel} {dayCount}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1771,13 +1774,21 @@ export function AtcFindeClient({
           </div>
           {resourceDayStats.map(d => (
             <div key={d.date} className="mb-2 last:mb-0">
-              <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-orange-500'}`}>{d.dayLabel}</span>
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-orange-500'}`}>{d.dayLabel}</span>
+                <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">{d.equips.length} equipo{d.equips.length !== 1 ? 's' : ''}</span>
+              </div>
               {d.equips.length === 0 ? (
                 <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
               ) : (
                 <div className="flex flex-wrap gap-1 mt-0.5">
                   {d.equips.map(eq => (
-                    <span key={eq} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">{eq}</span>
+                    <span key={eq.name} className="inline-flex items-center gap-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
+                      {eq.name}
+                      <span className={`text-[8px] px-1 rounded-sm font-bold ${eq.ownership === 'PROPIO' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                        {eq.ownership === 'PROPIO' ? 'P' : 'R'}
+                      </span>
+                    </span>
                   ))}
                 </div>
               )}
