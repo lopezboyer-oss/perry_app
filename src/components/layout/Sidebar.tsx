@@ -99,7 +99,7 @@ export function Sidebar({ user }: SidebarProps) {
             );
           })}
           
-          {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION') && (
+          {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION' || (user as any).accessSafetyDedicado || (user as any).accessVehicles || (user as any).accessDrivers || (user as any).accessElevationEquip) && (
             <Link
               href="/usuarios"
               className={cn(

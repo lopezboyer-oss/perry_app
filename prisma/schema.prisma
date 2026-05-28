@@ -28,6 +28,10 @@ model User {
   isActive          Boolean   @default(true)
   isSafetyDesignado Boolean   @default(false)
   isSafetyAuditor   Boolean   @default(false)   // Enables editing Auditoría + TERA Auditor
+  accessSafetyDedicado Boolean @default(false)
+  accessVehicles       Boolean @default(false)
+  accessDrivers        Boolean @default(false)
+  accessElevationEquip Boolean @default(false)
   supervisorId      String?
   supervisor        User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
   team              User[]    @relation("SupervisorTeam")

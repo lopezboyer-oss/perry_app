@@ -5,8 +5,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await auth();
-    const role = session?.user?.role;
-    if (role !== 'ADMIN' && role !== 'ADMINISTRACION' && role !== 'SUPERVISOR_SAFETY_LP') {
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    const user = session.user as any;
+    const hasAccess = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(user.role) || user.accessSafetyDedicado;
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
 
@@ -29,8 +31,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await auth();
-    const role = session?.user?.role;
-    if (role !== 'ADMIN' && role !== 'ADMINISTRACION' && role !== 'SUPERVISOR_SAFETY_LP') {
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    const user = session.user as any;
+    const hasAccess = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(user.role) || user.accessSafetyDedicado;
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
     }
 

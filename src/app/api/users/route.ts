@@ -7,7 +7,16 @@ import { toTitleCase } from '@/lib/utils';
 export async function GET() {
   try {
     const session = await auth();
-    if (!session || !['ADMIN', 'ADMINISTRACION'].includes(session.user.role)) {
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const user = session.user as any;
+    const hasAnyAccess = ['ADMIN', 'ADMINISTRACION'].includes(user.role) ||
+      user.accessSafetyDedicado ||
+      user.accessVehicles ||
+      user.accessDrivers ||
+      user.accessElevationEquip;
+
+    if (!hasAnyAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -20,6 +29,10 @@ export async function GET() {
         role: true,
         isSafetyDesignado: true,
         isSafetyAuditor: true,
+        accessSafetyDedicado: true,
+        accessVehicles: true,
+        accessDrivers: true,
+        accessElevationEquip: true,
         supervisorId: true,
         baseCompanyId: true,
         supervisor: { select: { name: true } },
@@ -49,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -81,6 +94,10 @@ export async function POST(req: Request) {
         supervisorId: role === 'INGENIERO' ? supervisorId : null,
         isSafetyDesignado: isSafetyDesignado || false,
         isSafetyAuditor: isSafetyAuditor || false,
+        accessSafetyDedicado: accessSafetyDedicado || false,
+        accessVehicles: accessVehicles || false,
+        accessDrivers: accessDrivers || false,
+        accessElevationEquip: accessElevationEquip || false,
         baseCompanyId: baseCompanyId || null,
       },
       select: {

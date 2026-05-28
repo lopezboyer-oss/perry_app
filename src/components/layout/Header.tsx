@@ -126,8 +126,8 @@ export function Header({ user }: HeaderProps) {
                 );
               })}
               
-              {/* Only ADMIN and ADMINISTRACION see User Management */}
-              {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION') && (
+              {/* Only ADMIN, ADMINISTRACION or users with specific resource permissions see User Management */}
+              {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION' || (user as any).accessSafetyDedicado || (user as any).accessVehicles || (user as any).accessDrivers || (user as any).accessElevationEquip) && (
                 <Link
                   href="/usuarios"
                   onClick={() => setMobileMenuOpen(false)}

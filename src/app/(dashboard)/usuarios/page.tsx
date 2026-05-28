@@ -7,7 +7,23 @@ import { useRouter } from 'next/navigation';
 import { roleLabels, roleColors } from '@/lib/utils';
 
 interface SupervisorRef { id: string; name: string; }
-interface UserData { id: string; name: string; email: string; role: string; isSafetyDesignado: boolean; isSafetyAuditor: boolean; supervisorId: string | null; supervisor: { name: string } | null; isActive: boolean; baseCompanyId: string | null; companies: { companyId: string; isDefault: boolean; company: { id: string; name: string; shortName: string | null; color: string | null } }[]; }
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isSafetyDesignado: boolean;
+  isSafetyAuditor: boolean;
+  accessSafetyDedicado: boolean;
+  accessVehicles: boolean;
+  accessDrivers: boolean;
+  accessElevationEquip: boolean;
+  supervisorId: string | null;
+  supervisor: { name: string } | null;
+  isActive: boolean;
+  baseCompanyId: string | null;
+  companies: { companyId: string; isDefault: boolean; company: { id: string; name: string; shortName: string | null; color: string | null } }[];
+}
 interface TechnicianData { id: string; name: string; type: string; isCruzVerde: boolean; isActive: boolean; }
 interface SafetyData { id: string; name: string; isActive: boolean; }
 interface VehicleData { id: string; name: string; isAvailable: boolean; isActive: boolean; baseCompanyId: string | null; baseCompany?: { id: string; name: string; shortName: string | null; color: string | null } | null; }
@@ -30,6 +46,7 @@ export default function UsuariosPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Partial<UserFormData> & { id?: string } | undefined>(undefined);
   const [userRole, setUserRole] = useState('');
+  const [sessionUser, setSessionUser] = useState<any>(null);
   const [userFilterRole, setUserFilterRole] = useState('');
   const [userFilterEmpresa, setUserFilterEmpresa] = useState('');
   const router = useRouter();
@@ -82,8 +99,12 @@ export default function UsuariosPage() {
       const companyData = await companyRes.json();
       if (companyData.companies) setCompanyList(companyData.companies);
 
-      const sessionRes = await fetch('/api/auth/session');
-      if (sessionRes.ok) { const sess = await sessionRes.json(); setUserRole(sess?.user?.role || ''); }
+      const sessionRes = await fetch('/api/auth/me');
+      if (sessionRes.ok) {
+        const sess = await sessionRes.json();
+        setSessionUser(sess);
+        setUserRole(sess?.role || sess?.user?.role || '');
+      }
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
@@ -95,6 +116,10 @@ export default function UsuariosPage() {
       id: user.id, name: user.name, email: user.email, role: user.role,
       supervisorId: user.supervisorId, isSafetyDesignado: user.isSafetyDesignado,
       isSafetyAuditor: user.isSafetyAuditor,
+      accessSafetyDedicado: user.accessSafetyDedicado || false,
+      accessVehicles: user.accessVehicles || false,
+      accessDrivers: user.accessDrivers || false,
+      accessElevationEquip: user.accessElevationEquip || false,
       baseCompanyId: user.baseCompanyId,
       companyIds: user.companies?.map(c => c.companyId) || [],
       defaultCompanyId: defaultUC?.companyId || null,
@@ -162,22 +187,40 @@ export default function UsuariosPage() {
 
   const isAdmin = userRole === 'ADMIN' || userRole === 'ADMINISTRACION';
   const canManageTechs = isAdmin;
-  const canManageSafety = isAdmin || userRole === 'SUPERVISOR_SAFETY_LP';
-  const canManageDrivers = isAdmin || userRole === 'SUPERVISOR_SAFETY_LP';
-  const canManageVehicles = isAdmin;
-  const canManageEquips = isAdmin;
+  const canManageSafety = isAdmin || userRole === 'SUPERVISOR_SAFETY_LP' || sessionUser?.accessSafetyDedicado;
+  const canManageDrivers = isAdmin || userRole === 'SUPERVISOR_SAFETY_LP' || sessionUser?.accessDrivers;
+  const canManageVehicles = isAdmin || sessionUser?.accessVehicles;
+  const canManageEquips = isAdmin || sessionUser?.accessElevationEquip;
 
   // Build available tabs based on role
   const allTabs: { key: TabKey; label: string; icon: any; visible: boolean }[] = [
     { key: 'users', label: 'Usuarios', icon: User, visible: isAdmin },
-    { key: 'techs', label: 'Técnicos', icon: HardHat, visible: true },
-    { key: 'safety', label: 'Safety Dedicado', icon: Shield, visible: true },
-    { key: 'vehicles', label: 'Vehículos', icon: Truck, visible: true },
+    { key: 'techs', label: 'Técnicos', icon: HardHat, visible: isAdmin },
+    { key: 'safety', label: 'Safety Dedicado', icon: Shield, visible: canManageSafety },
+    { key: 'vehicles', label: 'Vehículos', icon: Truck, visible: canManageVehicles },
     { key: 'drivers', label: 'Choferes', icon: User, visible: canManageDrivers },
-    { key: 'equips', label: 'Eq. Elevación', icon: ChevronsUp, visible: true },
+    { key: 'equips', label: 'Eq. Elevación', icon: ChevronsUp, visible: canManageEquips },
     { key: 'contractors', label: 'Contratistas', icon: Building2, visible: isAdmin },
   ];
   const visibleTabs = allTabs.filter((t) => t.visible);
+
+  // Default to first visible tab if current tab is hidden
+  useEffect(() => {
+    if (!loading && userRole) {
+      const allowedTabs: TabKey[] = [];
+      if (isAdmin) {
+        allowedTabs.push('users', 'techs', 'contractors');
+      }
+      if (canManageSafety) allowedTabs.push('safety');
+      if (canManageVehicles) allowedTabs.push('vehicles');
+      if (canManageDrivers) allowedTabs.push('drivers');
+      if (canManageEquips) allowedTabs.push('equips');
+
+      if (allowedTabs.length > 0 && !allowedTabs.includes(tab)) {
+        setTab(allowedTabs[0]);
+      }
+    }
+  }, [loading, userRole, sessionUser, tab]);
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto animate-fade-in">

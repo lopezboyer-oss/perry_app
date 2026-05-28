@@ -4,8 +4,17 @@ import { canManageResources } from '@/lib/permissions';
 
 export default async function UsuariosLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
+  const user = session?.user as any;
 
-  if (!session?.user?.role || !canManageResources(session.user.role)) {
+  const hasAccess = user?.role && (
+    canManageResources(user.role) ||
+    user.accessSafetyDedicado ||
+    user.accessVehicles ||
+    user.accessDrivers ||
+    user.accessElevationEquip
+  );
+
+  if (!hasAccess) {
     redirect('/dashboard');
   }
 

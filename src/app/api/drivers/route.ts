@@ -21,7 +21,10 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session || !ALLOWED.includes(session.user.role))
+  if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
+  const user = session.user as any;
+  const hasAccess = ALLOWED.includes(user.role) || user.accessDrivers;
+  if (!hasAccess)
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
   const { name, type, contractorId, baseCompanyId } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 });

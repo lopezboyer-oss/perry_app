@@ -24,6 +24,10 @@ export const authConfig = {
               name: true,
               baseCompanyId: true,
               isSafetyAuditor: true,
+              accessSafetyDedicado: true,
+              accessVehicles: true,
+              accessDrivers: true,
+              accessElevationEquip: true,
               companies: {
                 select: {
                   companyId: true,
@@ -40,6 +44,10 @@ export const authConfig = {
             token.defaultCompanyId = freshUser.companies.find(c => c.isDefault)?.companyId
                                      || freshUser.baseCompanyId;
             token.isSafetyAuditor = freshUser.isSafetyAuditor || false;
+            token.accessSafetyDedicado = freshUser.accessSafetyDedicado || false;
+            token.accessVehicles = freshUser.accessVehicles || false;
+            token.accessDrivers = freshUser.accessDrivers || false;
+            token.accessElevationEquip = freshUser.accessElevationEquip || false;
           }
         } catch (e) {
           // If DB is unreachable, keep the cached values
@@ -57,6 +65,10 @@ export const authConfig = {
         (session.user as any).companyIds = token.companyIds || [];
         (session.user as any).defaultCompanyId = token.defaultCompanyId || null;
         (session.user as any).isSafetyAuditor = token.isSafetyAuditor || false;
+        (session.user as any).accessSafetyDedicado = token.accessSafetyDedicado || false;
+        (session.user as any).accessVehicles = token.accessVehicles || false;
+        (session.user as any).accessDrivers = token.accessDrivers || false;
+        (session.user as any).accessElevationEquip = token.accessElevationEquip || false;
       }
       return session;
     },

@@ -5,7 +5,10 @@ import { canManageResources } from '@/lib/permissions';
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session || !canManageResources(session.user.role))
+  if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
+  const user = session.user as any;
+  const hasAccess = canManageResources(user.role) || user.accessVehicles;
+  if (!hasAccess)
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
   const { name, isAvailable, isActive, baseCompanyId } = await req.json();
   const vehicle = await prisma.vehicle.update({
@@ -22,7 +25,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session || !canManageResources(session.user.role))
+  if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
+  const user = session.user as any;
+  const hasAccess = canManageResources(user.role) || user.accessVehicles;
+  if (!hasAccess)
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
   await prisma.vehicle.update({ where: { id: params.id }, data: { isActive: false } });
   return NextResponse.json({ ok: true });
