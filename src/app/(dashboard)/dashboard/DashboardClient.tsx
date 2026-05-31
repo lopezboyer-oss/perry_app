@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ClipboardList, Target, Clock, AlertTriangle, TrendingUp, Users,
   HardHat, FileSearch, Wrench, Calendar, Trophy, FileText, Receipt,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, X, Check
 } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -74,6 +75,16 @@ interface DashboardData {
   availableUsers?: { id: string; name: string }[];
   selectedUserId?: string | null;
   period: string;
+  pendingPreviousDaysCount: number;
+  pendingPreviousDaysActivities: {
+    id: string;
+    title: string;
+    type: string;
+    status: string;
+    date: string;
+    userName: string;
+    clientName: string;
+  }[];
 }
 
 const PERIOD_OPTIONS = [
@@ -85,6 +96,89 @@ const PERIOD_OPTIONS = [
 export function DashboardClient({ data }: { data: DashboardData }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [pastActivities, setPastActivities] = useState(data.pendingPreviousDaysActivities || []);
+  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
+  const [actionNotes, setActionNotes] = useState<Record<string, string>>({});
+  const [cancelReason, setCancelReason] = useState<Record<string, string>>({});
+  const [cancelHasCharges, setCancelHasCharges] = useState<Record<string, boolean>>({});
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Record<string, 'complete' | 'cancel'>>({});
+
+  useEffect(() => {
+    setPastActivities(data.pendingPreviousDaysActivities || []);
+  }, [data.pendingPreviousDaysActivities]);
+
+  const handleQuickComplete = async (activityId: string) => {
+    setLoadingId(activityId);
+    try {
+      const notes = actionNotes[activityId] || '';
+      const res = await fetch(`/api/activities/${activityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'COMPLETADA',
+          result: notes.trim() || 'Actividad completada desde Dashboard'
+        })
+      });
+      if (!res.ok) {
+        alert('Error al completar actividad');
+        return;
+      }
+      setPastActivities(prev => prev.filter(a => a.id !== activityId));
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      alert('Error de red');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleQuickCancel = async (activityId: string) => {
+    const reason = cancelReason[activityId] || 'OTRA';
+    const notes = actionNotes[activityId] || '';
+    const hasCharges = !!cancelHasCharges[activityId];
+
+    if (reason === 'OTRA' && !notes.trim()) {
+      alert('Debe especificar detalles en la nota si el motivo es "Otra"');
+      return;
+    }
+
+    setLoadingId(activityId);
+    try {
+      const res = await fetch(`/api/activities/${activityId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason, notes: notes.trim(), hasCharges })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Error al cancelar actividad');
+        return;
+      }
+      setPastActivities(prev => prev.filter(a => a.id !== activityId));
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      alert('Error de red');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const CANCEL_REASONS = [
+    { value: 'PERMISOLOGIA_INCOMPLETA', label: 'Permisología Incompleta' },
+    { value: 'AREA_NO_DESPEJADA', label: 'Área no despejada de equipos Cliente' },
+    { value: 'FALTO_PERSONAL_NUESTRO', label: 'Faltó Personal nuestro' },
+    { value: 'FALTO_PERSONAL_CLIENTE', label: 'Faltó personal Cliente' },
+    { value: 'FALTO_MATERIAL', label: 'Faltó Material' },
+    { value: 'MEDIDAS_NO_COINCIDEN', label: 'Medidas de fabricación/Instalación no coinciden' },
+    { value: 'ALCANCE_DISTINTO', label: 'Alcance distinto al considerado en plan' },
+    { value: 'OBSTRUCCION_OTRA_EMPRESA', label: 'Obstrucción con otra empresa' },
+    { value: 'OTRA', label: 'Otra' },
+  ];
 
   const typeChartData = data.activitiesByType.map((item) => ({
     name: activityTypeLabels[item.type] || item.type,
@@ -106,6 +200,178 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
   return (
     <div className="space-y-6 pb-20 md:pb-0 animate-fade-in">
+      {/* Alerta de Actividades Vencidas */}
+      {data.pendingPreviousDaysCount > 0 && (
+        <div className="bg-rose-50 border border-rose-200 border-l-4 border-l-rose-600 p-4 rounded-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-rose-100 rounded-lg text-rose-600">
+              <AlertTriangle className="w-5 h-5 animate-bounce" />
+            </div>
+            <div>
+              <h4 className="font-bold text-rose-900 text-sm">Actividades Vencidas Pendientes</h4>
+              <p className="text-xs text-rose-700">Hay {data.pendingPreviousDaysCount} actividades de días anteriores que aún no han sido completadas o canceladas.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setAlertModalOpen(true)}
+            className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm transition-all sm:self-center self-start"
+          >
+            Ver y Resolver
+          </button>
+        </div>
+      )}
+
+      <Dialog.Root open={alertModalOpen} onOpenChange={setAlertModalOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 animate-fade-in" />
+          <Dialog.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-white p-6 shadow-2xl animate-slide-in max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <Dialog.Title className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
+                Cierre Express de Actividades Vencidas
+              </Dialog.Title>
+              <Dialog.Close className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                <X size={18} />
+              </Dialog.Close>
+            </div>
+            
+            <p className="text-xs text-slate-500 mb-4">
+              Estas actividades están programadas para fechas pasadas y siguen pendientes. Por favor, complétalas o cancélalas para mantener el control financiero al día.
+            </p>
+
+            {pastActivities.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm">
+                🎉 ¡Excelente! No quedan actividades vencidas pendientes.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pastActivities.map((act) => {
+                  const isExpanded = expandedActivityId === act.id;
+                  const currentTab = activeTab[act.id] || 'complete';
+                  const isLoading = loadingId === act.id;
+
+                  return (
+                    <div key={act.id} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-slate-50/50">
+                      {/* Header block (clickable to expand) */}
+                      <div
+                        onClick={() => setExpandedActivityId(isExpanded ? null : act.id)}
+                        className="p-3.5 flex items-start justify-between gap-3 cursor-pointer hover:bg-slate-100/50 transition-colors"
+                      >
+                        <div className="space-y-1 min-w-0">
+                          <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
+                            {formatDate(act.date)} • {activityTypeLabels[act.type] || act.type}
+                          </p>
+                          <h5 className="font-bold text-slate-800 text-sm truncate">{act.title}</h5>
+                          <p className="text-xs text-slate-500 truncate">
+                            👤 {act.userName} | 🏢 {act.clientName}
+                          </p>
+                        </div>
+                        <span className="text-slate-400">
+                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </span>
+                      </div>
+
+                      {/* Expandable actions panel */}
+                      {isExpanded && (
+                        <div className="p-4 border-t border-slate-200 bg-white space-y-3 animate-fade-in">
+                          {/* Segmented control for Complete vs Cancel */}
+                          <div className="flex bg-slate-100 p-1 rounded-lg">
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab({ ...activeTab, [act.id]: 'complete' })}
+                              className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+                                currentTab === 'complete' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600'
+                              }`}
+                            >
+                              ✓ Completar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab({ ...activeTab, [act.id]: 'cancel' })}
+                              className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+                                currentTab === 'cancel' ? 'bg-white text-red-700 shadow-sm' : 'text-slate-600'
+                              }`}
+                            >
+                              ✗ Cancelar
+                            </button>
+                          </div>
+
+                          {currentTab === 'complete' ? (
+                            <div className="space-y-2">
+                              <label className="block text-[11px] font-semibold text-slate-500 uppercase">Notas de Cierre (Resultados)</label>
+                              <textarea
+                                value={actionNotes[act.id] || ''}
+                                onChange={(e) => setActionNotes({ ...actionNotes, [act.id]: e.target.value })}
+                                className="w-full text-xs rounded-lg border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 p-2 p-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                placeholder="Describa el resultado o avance de la actividad..."
+                                rows={2}
+                              />
+                              <button
+                                type="button"
+                                disabled={isLoading}
+                                onClick={() => handleQuickComplete(act.id)}
+                                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm"
+                              >
+                                {isLoading ? 'Guardando...' : 'Confirmar como Completada'}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2.5">
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Motivo de Cancelación</label>
+                                <select
+                                  value={cancelReason[act.id] || 'OTRA'}
+                                  onChange={(e) => setCancelReason({ ...cancelReason, [act.id]: e.target.value })}
+                                  className="w-full text-xs rounded-lg border-slate-200"
+                                >
+                                  {CANCEL_REASONS.map((o) => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Detalles / Justificación</label>
+                                <textarea
+                                  value={actionNotes[act.id] || ''}
+                                  onChange={(e) => setActionNotes({ ...actionNotes, [act.id]: e.target.value })}
+                                  className="w-full text-xs rounded-lg border-slate-200 focus:ring-red-500 focus:border-red-500 p-2 p-2 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                                  placeholder="Detalle el motivo de la cancelación..."
+                                  rows={2}
+                                />
+                              </div>
+
+                              <label className="flex items-center gap-2 cursor-pointer py-1">
+                                <input
+                                  type="checkbox"
+                                  checked={!!cancelHasCharges[act.id]}
+                                  onChange={(e) => setCancelHasCharges({ ...cancelHasCharges, [act.id]: e.target.checked })}
+                                  className="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                                />
+                                <span className="text-xs font-semibold text-slate-700">¿Aplicar cargos al cliente por fletes/tiempos?</span>
+                              </label>
+
+                              <button
+                                type="button"
+                                disabled={isLoading}
+                                onClick={() => handleQuickCancel(act.id)}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm"
+                              >
+                                {isLoading ? 'Guardando...' : 'Confirmar Cancelación'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
       {/* Title, Period Filters & User Filter */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

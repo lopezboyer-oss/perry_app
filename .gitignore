@@ -38,3 +38,5 @@ next-env.d.ts
 # local excel credentials and temp queries
 *.xlsx
 prisma/query_*.ts
+scratch/
+

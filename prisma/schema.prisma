@@ -37,6 +37,7 @@ model User {
   team              User[]    @relation("SupervisorTeam")
   baseCompanyId     String?
   baseCompany       Company?  @relation("UserBaseCompany", fields: [baseCompanyId], references: [id])
+  weeklySalary      Float?    @default(0) // Salario Semanal Bruto (MXN)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -184,6 +185,7 @@ model Technician {
   baseCompanyId String?
   baseCompany   Company?    @relation(fields: [baseCompanyId], references: [id])
   linkedUserId  String?     // Vinculación con cuenta User de Perry (para permisos y control horario)
+  hourlyRate    Float?      @default(0) // Tarifa Horaria (MXN) para técnicos externos
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -243,15 +245,29 @@ model Driver {
 }
 
 model ElevationEquip {
-  id        String   @id @default(cuid())
-  name      String
-  ownership String   @default("PROPIO") // PROPIO | RENTADO
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String             @id @default(cuid())
+  name        String
+  ownership   String             @default("PROPIO") // PROPIO | RENTADO
+  isActive    Boolean            @default(true)
+  costPerDay  Float?             @default(0)        // Costo por jornada (solo RENTADO)
+  freightCost Float?             @default(0)        // Costo por flete de traslado
+  supplierId  String?
+  supplier    EquipmentSupplier? @relation(fields: [supplierId], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   weekendAssignments WeekendEquipAssignment[]
   equipRecords       EquipRecord[]
+}
+
+// ─── PROVEEDORES DE EQUIPOS RENTADOS ────────────────────────────────
+model EquipmentSupplier {
+  id         String           @id @default(cuid())
+  name       String           @unique
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  equipments ElevationEquip[]
 }
 
 // ─── ASIGNACIONES FINDE ─────────────────────────────────────────

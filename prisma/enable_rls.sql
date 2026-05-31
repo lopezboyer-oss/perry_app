@@ -55,5 +55,8 @@ ALTER TABLE "UserCompany" ENABLE ROW LEVEL SECURITY;
 -- ── Equipment Records ──
 ALTER TABLE "EquipRecord" ENABLE ROW LEVEL SECURITY;
 
+-- ── Time Clock Personal ──
+ALTER TABLE "TimeClockEntry" ENABLE ROW LEVEL SECURITY;
+
 -- ── Prisma internal ──
 ALTER TABLE IF EXISTS "_prisma_migrations" ENABLE ROW LEVEL SECURITY;

@@ -111,7 +111,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   const receiptCompanyId = (companyFilter as any).companyId || null;
 
   // Fetch all data in parallel
+  const todayStr = getTijuanaToday();
+  const todayStart = new Date(`${todayStr}T00:00:00`);
+  const pendingPreviousDaysWhere = {
+    ...userFilter,
+    ...companyFilter,
+    date: { lt: todayStart },
+    status: { in: ['PENDIENTE', 'EN_PROGRESO'] },
+  };
+
   const [
+    pendingPreviousDaysCount,
+    pendingPreviousDaysActivitiesRaw,
     totalActivities,
     activitiesByType,
     activitiesByStatus,
@@ -126,6 +137,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     // Activities by user (for chart)
     activitiesByUser,
   ] = await Promise.all([
+    prisma.activity.count({ where: pendingPreviousDaysWhere }),
+    prisma.activity.findMany({
+      where: pendingPreviousDaysWhere,
+      include: { user: true, client: true },
+      orderBy: { date: 'desc' },
+    }),
     prisma.activity.count({ where: activityFilter }),
     prisma.activity.groupBy({
       by: ['type'],
@@ -336,6 +353,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     availableUsers,
     selectedUserId: isAuthorized ? targetUserId : null,
     period,
+    pendingPreviousDaysCount,
+    pendingPreviousDaysActivities: pendingPreviousDaysActivitiesRaw.map((a) => ({
+      id: a.id,
+      title: a.title,
+      type: a.type,
+      status: a.status,
+      date: a.date.toISOString(),
+      userName: a.user?.name || 'POR ASIGNAR',
+      clientName: a.client?.name || '-',
+    })),
   };
 
   return <DashboardClient data={data} />;

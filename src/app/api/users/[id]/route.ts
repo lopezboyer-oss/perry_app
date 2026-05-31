@@ -13,12 +13,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const { id } = params;
     const body = await req.json();
-    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip, weeklySalary } = body;
 
     // Only ADMIN MAESTRO can assign/keep the ADMIN role
     if (role === 'ADMIN' && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Solo un Admin Maestro puede asignar el rol Admin Maestro' }, { status: 403 });
     }
+
+    const isAdmin = ['ADMIN', 'ADMINISTRACION'].includes(session.user.role);
 
     const dataToUpdate: any = {
       name: toTitleCase(name),
@@ -32,6 +34,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       accessDrivers: accessDrivers || false,
       accessElevationEquip: accessElevationEquip || false,
       baseCompanyId: baseCompanyId || undefined,
+      ...(isAdmin && weeklySalary !== undefined && { weeklySalary: Number(weeklySalary) || 0 }),
     };
 
     if (password && password.trim() !== '') {
@@ -41,7 +44,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const updatedUser = await prisma.user.update({
       where: { id },
       data: dataToUpdate,
-      select: { id: true, name: true, email: true, role: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        ...(isAdmin && { weeklySalary: true }),
+      },
     });
 
     // Sync UserCompany access entries

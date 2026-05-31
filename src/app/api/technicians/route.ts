@@ -3,11 +3,50 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { canManageResources } from '@/lib/permissions';
 import { toTitleCase } from '@/lib/utils';
+import bcrypt from 'bcryptjs';
+
+// Deterministic digits generation based on email
+function getDeterministicDigits(email: string): string {
+  let hash = 0;
+  const cleanEmail = email.toLowerCase().trim();
+  for (let i = 0; i < cleanEmail.length; i++) {
+    hash = cleanEmail.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return String((Math.abs(hash) % 9000) + 1000); // 1000 to 9999
+}
+
+// Generate password matching: Firstname + 4 deterministic digits
+function getDeterministicPassword(name: string, email: string): string {
+  const firstName = name.trim().split(/\s+/)[0] || 'User';
+  const normalizedName = firstName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // Remove accents
+  const capitalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
+  
+  const digits = getDeterministicDigits(email);
+  return `${capitalizedName}${digits}`;
+}
+
+// Generate base email prefix
+function getBaseEmail(name: string): string {
+  const clean = name.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove accents
+    .replace(/[^a-z0-9\s]/g, '') // remove special chars
+    .trim()
+    .split(/\s+/);
+  
+  const first = clean[0] || 'user';
+  const last = clean[1] || 'tech';
+  return `${first}.${last}`;
+}
 
 export async function GET() {
   try {
     const session = await auth();
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+    const isAdmin = session.user?.role && ['ADMIN', 'ADMINISTRACION'].includes(session.user.role);
 
     const technicians = await prisma.technician.findMany({
       where: { isActive: true },
@@ -18,7 +57,16 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(technicians);
+    // Strip hourlyRate for non-admin users
+    const mapped = technicians.map(t => {
+      const { hourlyRate, ...rest } = t;
+      return {
+        ...rest,
+        ...(isAdmin ? { hourlyRate } : { hourlyRate: null })
+      };
+    });
+
+    return NextResponse.json(mapped);
   } catch (error) {
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
   }
@@ -31,25 +79,100 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Solo administradores' }, { status: 403 });
     }
 
-    const { name, type, isCruzVerde, contractorId, baseCompanyId, phone, email } = await req.json();
+    const { name, type, isCruzVerde, contractorId, baseCompanyId, phone, email, hourlyRate } = await req.json();
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 });
     }
 
-    const technician = await prisma.technician.create({
-      data: {
-        name: toTitleCase(name),
-        type: type || 'PROPIO',
-        isCruzVerde: isCruzVerde || false,
-        contractorId: type === 'EXTERNO' ? (contractorId || null) : null,
-        baseCompanyId: baseCompanyId || null,
-        phone: phone?.trim() || null,
-        email: email?.trim() || null,
-      },
+    const technician = await prisma.$transaction(async (tx) => {
+      // 1. Resolve / generate unique email for the User
+      let targetEmail = email?.trim();
+      if (!targetEmail) {
+        let emailIndex = 0;
+        const baseEmailPrefix = getBaseEmail(name);
+        targetEmail = `${baseEmailPrefix}@perryapp.com`;
+        let userExists = true;
+
+        while (userExists) {
+          const existing = await tx.user.findUnique({
+            where: { email: targetEmail },
+          });
+          if (existing) {
+            emailIndex++;
+            targetEmail = `${baseEmailPrefix}${emailIndex}@perryapp.com`;
+          } else {
+            userExists = false;
+          }
+        }
+      } else {
+        // If email was provided, check if it's already taken in User table
+        const existing = await tx.user.findUnique({
+          where: { email: targetEmail },
+        });
+        if (existing) {
+          throw new Error('EMAIL_TAKEN');
+        }
+      }
+
+      // 2. Generate deterministic password & hash it
+      const cleartextPassword = getDeterministicPassword(name, targetEmail);
+      const passwordHash = await bcrypt.hash(cleartextPassword, 10);
+
+      // 3. Resolve baseCompanyId (fetch a default CASME/first company if not provided)
+      let companyId = baseCompanyId;
+      if (!companyId) {
+        const defaultCompany = await tx.company.findFirst({
+          orderBy: { sortOrder: 'asc' },
+        });
+        companyId = defaultCompany?.id || null;
+      }
+
+      // 4. Create the User record with role TECNICO
+      const newUser = await tx.user.create({
+        data: {
+          name: toTitleCase(name),
+          email: targetEmail,
+          passwordHash,
+          role: 'TECNICO',
+          isActive: true,
+          baseCompanyId: companyId,
+        },
+      });
+
+      // 5. Create UserCompany entry
+      if (companyId) {
+        await tx.userCompany.create({
+          data: {
+            userId: newUser.id,
+            companyId,
+            isDefault: true,
+          },
+        });
+      }
+
+      // 6. Create the Technician record linked to User
+      const tech = await tx.technician.create({
+        data: {
+          name: toTitleCase(name),
+          type: type || 'PROPIO',
+          isCruzVerde: isCruzVerde || false,
+          contractorId: type === 'EXTERNO' ? (contractorId || null) : null,
+          baseCompanyId: baseCompanyId || null,
+          phone: phone?.trim() || null,
+          email: targetEmail,
+          linkedUserId: newUser.id,
+          hourlyRate: hourlyRate !== undefined ? Number(hourlyRate) || 0 : 0,
+        },
+      });
+
+      return tech;
     });
 
     return NextResponse.json(technician, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'EMAIL_TAKEN') {
+      return NextResponse.json({ error: 'El correo electrónico ya está en uso por otro usuario.' }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Error al crear técnico' }, { status: 500 });
   }
 }

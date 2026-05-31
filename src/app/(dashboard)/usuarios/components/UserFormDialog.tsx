@@ -21,6 +21,7 @@ export interface UserFormData {
   baseCompanyId?: string | null;
   companyIds?: string[];          // empresas a las que tiene acceso
   defaultCompanyId?: string | null; // empresa por defecto al login
+  weeklySalary?: number;
 }
 
 interface CompanyRef {
@@ -58,6 +59,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
     baseCompanyId: null,
     companyIds: [],
     defaultCompanyId: null,
+    weeklySalary: 0,
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -81,6 +83,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
           baseCompanyId: initialData.baseCompanyId || null,
           companyIds: initialData.companyIds || [],
           defaultCompanyId: initialData.defaultCompanyId || null,
+          weeklySalary: initialData.weeklySalary || 0,
         });
       } else {
         setFormData({
@@ -90,6 +93,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
           baseCompanyId: companies[0]?.id || null,
           companyIds: companies[0] ? [companies[0].id] : [],
           defaultCompanyId: companies[0]?.id || null,
+          weeklySalary: 0,
         });
       }
     }
@@ -202,6 +206,21 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
                     <option key={sup.id} value={sup.id}>{sup.name}</option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {(currentUserRole === 'ADMIN' || currentUserRole === 'ADMINISTRACION') && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Salario Semanal Bruto (MXN)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.weeklySalary || ''}
+                  onChange={(e) => setFormData({ ...formData, weeklySalary: parseFloat(e.target.value) || 0 })}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  placeholder="Ej. 5000"
+                />
               </div>
             )}
 

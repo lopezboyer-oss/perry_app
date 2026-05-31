@@ -20,6 +20,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
+    const isAdmin = ['ADMIN', 'ADMINISTRACION'].includes(user.role);
+
     const users = await prisma.user.findMany({
       where: { isActive: true },
       select: {
@@ -44,6 +46,7 @@ export async function GET() {
           },
         },
         isActive: true,
+        ...(isAdmin && { weeklySalary: true }), // Only return salary to admins
       },
       orderBy: { name: 'asc' },
     });
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip, weeklySalary } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -78,12 +81,12 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      // If it exists but is inactive, we could theoretically reactivate, but let's just error
       return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const normalizedName = toTitleCase(name);
+    const isAdmin = ['ADMIN', 'ADMINISTRACION'].includes(session.user.role);
 
     const newUser = await prisma.user.create({
       data: {
@@ -99,12 +102,14 @@ export async function POST(req: Request) {
         accessDrivers: accessDrivers || false,
         accessElevationEquip: accessElevationEquip || false,
         baseCompanyId: baseCompanyId || null,
+        ...(isAdmin && weeklySalary !== undefined && { weeklySalary: Number(weeklySalary) || 0 }),
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        ...(isAdmin && { weeklySalary: true }),
       },
     });
 

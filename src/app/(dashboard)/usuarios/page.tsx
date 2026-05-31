@@ -23,13 +23,24 @@ interface UserData {
   isActive: boolean;
   baseCompanyId: string | null;
   companies: { companyId: string; isDefault: boolean; company: { id: string; name: string; shortName: string | null; color: string | null } }[];
+  weeklySalary?: number | null;
 }
-interface TechnicianData { id: string; name: string; type: string; isCruzVerde: boolean; isActive: boolean; }
+interface TechnicianData { id: string; name: string; type: string; isCruzVerde: boolean; isActive: boolean; hourlyRate?: number | null; }
 interface SafetyData { id: string; name: string; isActive: boolean; }
 interface VehicleData { id: string; name: string; isAvailable: boolean; isActive: boolean; baseCompanyId: string | null; baseCompany?: { id: string; name: string; shortName: string | null; color: string | null } | null; }
 interface DriverData { id: string; name: string; isActive: boolean; }
-interface EquipData { id: string; name: string; ownership: string; isActive: boolean; }
+interface EquipData {
+  id: string;
+  name: string;
+  ownership: string;
+  isActive: boolean;
+  costPerDay?: number | null;
+  freightCost?: number | null;
+  supplierId?: string | null;
+  supplier?: { id: string; name: string } | null;
+}
 interface ContractorData { id: string; name: string; isActive: boolean; _count?: { technicians: number }; }
+interface EquipmentSupplier { id: string; name: string; isActive: boolean; }
 
 type TabKey = 'users' | 'techs' | 'safety' | 'vehicles' | 'drivers' | 'equips' | 'contractors';
 
@@ -42,6 +53,7 @@ export default function UsuariosPage() {
   const [vehicleList, setVehicleList] = useState<VehicleData[]>([]);
   const [driverList, setDriverList] = useState<DriverData[]>([]);
   const [equipList, setEquipList] = useState<EquipData[]>([]);
+  const [supplierList, setSupplierList] = useState<EquipmentSupplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Partial<UserFormData> & { id?: string } | undefined>(undefined);
@@ -53,7 +65,7 @@ export default function UsuariosPage() {
 
   // ── Form states ──
   const [techFormOpen, setTechFormOpen] = useState(false);
-  const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '', phone: '', email: '' });
+  const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '', phone: '', email: '', hourlyRate: 0 });
   const [techFilterType, setTechFilterType] = useState('');
   const [techFilterEmpresa, setTechFilterEmpresa] = useState('');
   const techFormRef = useRef<HTMLDivElement>(null);
@@ -67,7 +79,7 @@ export default function UsuariosPage() {
   const [driverFormData, setDriverFormData] = useState({ id: '', name: '', type: 'PROPIO', contractorId: '', baseCompanyId: '' });
   const driverFormRef = useRef<HTMLDivElement>(null);
   const [equipFormOpen, setEquipFormOpen] = useState(false);
-  const [equipFormData, setEquipFormData] = useState({ id: '', name: '', ownership: 'PROPIO' });
+  const [equipFormData, setEquipFormData] = useState({ id: '', name: '', ownership: 'PROPIO', costPerDay: 0, freightCost: 0, supplierId: '' });
   const equipFormRef = useRef<HTMLDivElement>(null);
   const [contractorList, setContractorList] = useState<ContractorData[]>([]);
   const [contractorFormOpen, setContractorFormOpen] = useState(false);
@@ -103,10 +115,10 @@ export default function UsuariosPage() {
 
   const fetchAll = async () => {
     try {
-      const [usersRes, techRes, safetyRes, vehicleRes, driverRes, equipRes, contractorRes, companyRes] = await Promise.all([
+      const [usersRes, techRes, safetyRes, vehicleRes, driverRes, equipRes, contractorRes, companyRes, supplierRes] = await Promise.all([
         fetch('/api/users'), fetch('/api/technicians'), fetch('/api/safety-dedicado'),
         fetch('/api/vehicles'), fetch('/api/drivers'), fetch('/api/elevation-equip'), fetch('/api/contractors'),
-        fetch('/api/company/mine'),
+        fetch('/api/company/mine'), fetch('/api/equipment-suppliers'),
       ]);
       if (usersRes.status === 403) { router.push('/dashboard'); return; }
 
@@ -119,6 +131,7 @@ export default function UsuariosPage() {
       setDriverList(await driverRes.json());
       setEquipList(await equipRes.json());
       setContractorList(await contractorRes.json());
+      if (supplierRes.ok) setSupplierList(await supplierRes.json());
 
       const companyData = await companyRes.json();
       if (companyData.companies) setCompanyList(companyData.companies);
@@ -137,7 +150,7 @@ export default function UsuariosPage() {
   const handleOpenEdit = (user: UserData) => {
     const defaultUC = user.companies?.find(c => c.isDefault);
     setEditingUser({
-      id: user.id, name: user.name, email: user.email, role: user.role,
+      id: user.id, name: user.name, email: user.email, role: user.role as any,
       supervisorId: user.supervisorId, isSafetyDesignado: user.isSafetyDesignado,
       isSafetyAuditor: user.isSafetyAuditor,
       accessSafetyDedicado: user.accessSafetyDedicado || false,
@@ -147,6 +160,7 @@ export default function UsuariosPage() {
       baseCompanyId: user.baseCompanyId,
       companyIds: user.companies?.map(c => c.companyId) || [],
       defaultCompanyId: defaultUC?.companyId || null,
+      weeklySalary: user.weeklySalary || 0,
     });
     setFormOpen(true);
   };
@@ -163,7 +177,7 @@ export default function UsuariosPage() {
     const url = techFormData.id ? `/api/technicians/${techFormData.id}` : '/api/technicians';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(techFormData) });
     if (!res.ok) { alert('Error al guardar técnico'); return; }
-    setTechFormOpen(false); setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '', phone: '', email: '' }); await fetchAll();
+    setTechFormOpen(false); setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '', phone: '', email: '', hourlyRate: 0 }); await fetchAll();
   };
   const handleDeleteTech = async (id: string, name: string) => { if (!window.confirm(`¿Desactivar a ${name}?`)) return; await fetch(`/api/technicians/${id}`, { method: 'DELETE' }); await fetchAll(); };
 
@@ -203,7 +217,7 @@ export default function UsuariosPage() {
     const url = equipFormData.id ? `/api/elevation-equip/${equipFormData.id}` : '/api/elevation-equip';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(equipFormData) });
     if (!res.ok) { alert('Error al guardar equipo'); return; }
-    setEquipFormOpen(false); setEquipFormData({ id: '', name: '', ownership: 'PROPIO' }); await fetchAll();
+    setEquipFormOpen(false); setEquipFormData({ id: '', name: '', ownership: 'PROPIO', costPerDay: 0, freightCost: 0, supplierId: '' }); await fetchAll();
   };
   const handleDeleteEquip = async (id: string, name: string) => { if (!window.confirm(`¿Desactivar ${name}?`)) return; await fetch(`/api/elevation-equip/${id}`, { method: 'DELETE' }); await fetchAll(); };
 
@@ -305,6 +319,7 @@ export default function UsuariosPage() {
                     <th className="px-6 py-4">Miembro del Equipo</th>
                     <th className="px-6 py-4">Rol & Permisos</th>
                     <th className="px-6 py-4">Empresa Base</th>
+                    <th className="px-6 py-4">Salario Semanal</th>
                     <th className="px-6 py-4">Reporta A</th>
                     <th className="px-6 py-4 text-right">Ajustes</th>
                   </tr>
@@ -329,6 +344,13 @@ export default function UsuariosPage() {
                       <td className="px-6 py-4">
                         {defCompany ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded" style={{ backgroundColor: defCompany.company.color || '#6366f1' }}>{defCompany.company.shortName || defCompany.company.name}</span> : <span className="text-slate-400 text-xs">—</span>}
                       </td>
+                      <td className="px-6 py-4 font-mono text-slate-700">
+                        {user.weeklySalary !== undefined && user.weeklySalary !== null ? (
+                          new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(user.weeklySalary)
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-slate-600">{user.supervisor?.name || <span className="text-slate-400 italic">-- Directivo --</span>}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
@@ -339,7 +361,7 @@ export default function UsuariosPage() {
                     </tr>
                     );
                   })}
-                  {filteredUsers.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">{users.length > 0 ? 'No hay usuarios con estos filtros.' : 'No hay usuarios registrados.'}</td></tr>}
+                  {filteredUsers.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">{users.length > 0 ? 'No hay usuarios con estos filtros.' : 'No hay usuarios registrados.'}</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -390,7 +412,7 @@ export default function UsuariosPage() {
         <>
           {canManageTechs && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: companyList[0]?.id || '', phone: '', email: '' }); setTechFormOpen(true); setTimeout(() => techFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
+              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: companyList[0]?.id || '', phone: '', email: '', hourlyRate: 0 }); setTechFormOpen(true); setTimeout(() => techFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
             </div>
           )}
           {techFormOpen && (
@@ -438,6 +460,12 @@ export default function UsuariosPage() {
                   <label className="block text-sm font-medium text-slate-700 mb-1">📧 Email</label>
                   <input type="email" value={techFormData.email} onChange={(e) => setTechFormData({ ...techFormData, email: e.target.value })} placeholder="correo@ejemplo.com" className="w-full" />
                 </div>
+                {techFormData.type === 'EXTERNO' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Tarifa Horaria (MXN)</label>
+                    <input type="number" min="0" step="0.01" value={techFormData.hourlyRate || ''} onChange={(e) => setTechFormData({ ...techFormData, hourlyRate: parseFloat(e.target.value) || 0 })} placeholder="Ej: 150" className="w-full" />
+                  </div>
+                )}
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveTech} className="btn-primary text-sm">Guardar</button>
@@ -468,7 +496,7 @@ export default function UsuariosPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
-                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Empresa</th><th className="px-6 py-4">Cruz Verde</th>{canManageTechs && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
+                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Empresa</th><th className="px-6 py-4">Tarifa Horaria</th><th className="px-6 py-4">Cruz Verde</th>{canManageTechs && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredTechs.map((t) => (
@@ -476,16 +504,23 @@ export default function UsuariosPage() {
                       <td className="px-6 py-4 font-semibold text-slate-800">{t.name}</td>
                       <td className="px-6 py-4"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${t.type === 'PROPIO' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{t.type === 'PROPIO' ? 'Propio' : 'Externo'}</span></td>
                       <td className="px-6 py-4">{t.type === 'EXTERNO' && (t as any).contractor ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded bg-orange-500">{(t as any).contractor.name}</span> : (t as any).baseCompany ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded" style={{ backgroundColor: (t as any).baseCompany.color || '#6366f1' }}>{(t as any).baseCompany.shortName || (t as any).baseCompany.name}</span> : <span className="text-slate-400 text-xs">—</span>}</td>
+                      <td className="px-6 py-4 font-mono text-slate-700">
+                        {t.type === 'EXTERNO' && t.hourlyRate !== undefined && t.hourlyRate !== null ? (
+                          new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(t.hourlyRate) + '/hr'
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4">{t.isCruzVerde ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700"><CheckSquare size={12} /> Acreditado</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       {canManageTechs && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '', baseCompanyId: (t as any).baseCompanyId || '', phone: (t as any).phone || '', email: (t as any).email || '' }); setTechFormOpen(true); scrollToForm(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '', baseCompanyId: (t as any).baseCompanyId || '', phone: (t as any).phone || '', email: (t as any).email || '', hourlyRate: t.hourlyRate || 0 }); setTechFormOpen(true); scrollToForm(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteTech(t.id, t.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
                     </tr>
                   ))}
-                  {filteredTechs.length === 0 && <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">{techs.length > 0 ? 'No hay técnicos con estos filtros.' : 'No hay técnicos registrados.'}</td></tr>}
+                  {filteredTechs.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">{techs.length > 0 ? 'No hay técnicos con estos filtros.' : 'No hay técnicos registrados.'}</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -683,7 +718,7 @@ export default function UsuariosPage() {
         <>
           {canManageEquips && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setEquipFormData({ id: '', name: '', ownership: 'PROPIO' }); setEquipFormOpen(true); setTimeout(() => equipFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Equipo</button>
+              <button onClick={() => { setEquipFormData({ id: '', name: '', ownership: 'PROPIO', costPerDay: 0, freightCost: 0, supplierId: '' }); setEquipFormOpen(true); setTimeout(() => equipFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Equipo</button>
             </div>
           )}
           {equipFormOpen && (
@@ -696,11 +731,60 @@ export default function UsuariosPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
-                  <select value={equipFormData.ownership} onChange={(e) => setEquipFormData({ ...equipFormData, ownership: e.target.value })} className="w-full">
+                  <select value={equipFormData.ownership} onChange={(e) => setEquipFormData({ ...equipFormData, ownership: e.target.value, supplierId: e.target.value === 'PROPIO' ? '' : equipFormData.supplierId, costPerDay: e.target.value === 'PROPIO' ? 0 : equipFormData.costPerDay, freightCost: e.target.value === 'PROPIO' ? 0 : equipFormData.freightCost })} className="w-full">
                     <option value="PROPIO">Propio</option>
                     <option value="RENTADO">Rentado</option>
                   </select>
                 </div>
+                {equipFormData.ownership === 'RENTADO' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Costo por Jornada (MXN)</label>
+                      <input type="number" min="0" step="0.01" value={equipFormData.costPerDay || ''} onChange={(e) => setEquipFormData({ ...equipFormData, costPerDay: parseFloat(e.target.value) || 0 })} className="w-full" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Costo por Flete (MXN)</label>
+                      <input type="number" min="0" step="0.01" value={equipFormData.freightCost || ''} onChange={(e) => setEquipFormData({ ...equipFormData, freightCost: parseFloat(e.target.value) || 0 })} className="w-full" />
+                    </div>
+                    <div className="md:col-span-2 flex items-end gap-2">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Proveedor de Renta</label>
+                        <select value={equipFormData.supplierId || ''} onChange={(e) => setEquipFormData({ ...equipFormData, supplierId: e.target.value })} className="w-full">
+                          <option value="">— Seleccionar Proveedor —</option>
+                          {supplierList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const name = window.prompt('Nombre del nuevo proveedor de renta:');
+                          if (!name?.trim()) return;
+                          try {
+                            const res = await fetch('/api/equipment-suppliers', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ name: name.trim() })
+                            });
+                            if (!res.ok) {
+                              const err = await res.json();
+                              alert(err.error || 'Error al crear proveedor');
+                              return;
+                            }
+                            const newSupplier = await res.json();
+                            setSupplierList(prev => [...prev, newSupplier].sort((a, b) => a.name.localeCompare(b.name)));
+                            setEquipFormData(prev => ({ ...prev, supplierId: newSupplier.id }));
+                          } catch (error) {
+                            console.error(error);
+                            alert('Error de red al crear proveedor');
+                          }
+                        }}
+                        className="btn-secondary py-2 px-3 text-sm h-[38px] flex items-center justify-center font-medium"
+                      >
+                        + Nuevo
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveEquip} className="btn-primary text-sm">Guardar</button>
@@ -712,22 +796,50 @@ export default function UsuariosPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
-                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th>{canManageEquips && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
+                  <tr>
+                    <th className="px-6 py-4">Nombre</th>
+                    <th className="px-6 py-4">Tipo</th>
+                    <th className="px-6 py-4">Proveedor</th>
+                    <th className="px-6 py-4">Costo por Jornada</th>
+                    <th className="px-6 py-4">Costo por Flete</th>
+                    {canManageEquips && <th className="px-6 py-4 text-right">Acciones</th>}
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {equipList.map((eq) => (
                     <tr key={eq.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-semibold text-slate-800">{eq.name}</td>
                       <td className="px-6 py-4"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${eq.ownership === 'PROPIO' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{eq.ownership === 'PROPIO' ? 'Propio' : 'Rentado'}</span></td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {eq.ownership === 'RENTADO' && eq.supplier ? (
+                          <span className="text-xs font-medium text-white px-2 py-0.5 rounded bg-amber-600">{eq.supplier.name}</span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-slate-700">
+                        {eq.ownership === 'RENTADO' && eq.costPerDay !== undefined && eq.costPerDay !== null ? (
+                          new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(eq.costPerDay)
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-slate-700">
+                        {eq.ownership === 'RENTADO' && eq.freightCost !== undefined && eq.freightCost !== null ? (
+                          new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(eq.freightCost)
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
                       {canManageEquips && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setEquipFormData({ id: eq.id, name: eq.name, ownership: eq.ownership }); setEquipFormOpen(true); setTimeout(() => equipFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setEquipFormData({ id: eq.id, name: eq.name, ownership: eq.ownership, costPerDay: eq.costPerDay || 0, freightCost: eq.freightCost || 0, supplierId: eq.supplierId || '' }); setEquipFormOpen(true); setTimeout(() => equipFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteEquip(eq.id, eq.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
                     </tr>
                   ))}
-                  {equipList.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No hay equipos de elevación registrados.</td></tr>}
+                  {equipList.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">No hay equipos de elevación registrados.</td></tr>}
                 </tbody>
               </table>
             </div>

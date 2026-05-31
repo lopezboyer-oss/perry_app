@@ -15,6 +15,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body.weekendNotes !== undefined) allowedFields.weekendNotes = body.weekendNotes || null;
   if (body.actualStartTime !== undefined) allowedFields.actualStartTime = body.actualStartTime || null;
   if (body.actualEndTime !== undefined) allowedFields.actualEndTime = body.actualEndTime || null;
+  if (body.status !== undefined) {
+    if (!['PENDIENTE', 'EN_PROGRESO', 'COMPLETADA', 'CANCELADA'].includes(body.status)) {
+      return NextResponse.json({ error: 'Estado inválido' }, { status: 400 });
+    }
+    allowedFields.status = body.status;
+  }
+  if (body.result !== undefined) allowedFields.result = body.result || null;
 
   // Audit notes: only SUPERVISOR_SAFETY_LP or isSafetyAuditor can edit
   if (body.auditNotes !== undefined) {
