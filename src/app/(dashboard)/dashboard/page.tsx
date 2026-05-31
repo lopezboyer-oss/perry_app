@@ -113,10 +113,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   // Fetch all data in parallel
   const todayStr = getTijuanaToday();
   const todayStart = new Date(`${todayStr}T00:00:00`);
+  const fiveDaysAgo = new Date(todayStart);
+  fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
   const pendingPreviousDaysWhere = {
     ...userFilter,
     ...companyFilter,
-    date: { lt: todayStart },
+    date: { gte: fiveDaysAgo, lt: todayStart },
     status: { in: ['PENDIENTE', 'EN_PROGRESO'] },
   };
 
