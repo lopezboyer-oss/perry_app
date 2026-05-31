@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Reporte Sesión 31 Mayo 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --emerald: #059669;
+      --emerald-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --violet: #7c3aed;
+      --violet-light: #ede9fe;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #f8fafc;
+      color: var(--slate-800);
+      line-height: 1.6;
+      font-size: 11pt;
+      padding: 40px 20px;
+    }
+
+    @page {
+      size: letter;
+      margin: 1.5cm 2cm;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none !important; }
+      .container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; background: white !important; border: none !important; }
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 50px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--slate-200);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding-bottom: 24px;
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .header img {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 2px solid var(--primary-light);
+    }
+
+    .header-text h1 {
+      font-size: 24pt;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.75px;
+      line-height: 1.1;
+    }
+
+    .header-text .subtitle {
+      font-size: 12pt;
+      color: var(--slate-500);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .header-text .date-badge {
+      display: inline-block;
+      margin-top: 8px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 35px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .stat-card .stat-value {
+      font-size: 24pt;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.2;
+    }
+
+    .stat-card .stat-label {
+      font-size: 8.5pt;
+      font-weight: 600;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    .stat-card.emerald .stat-value { color: var(--emerald); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue .stat-value { color: var(--blue); }
+    .stat-card.violet .stat-value { color: var(--violet); }
+    .stat-card.red .stat-value { color: var(--red); }
+    .stat-card.teal .stat-value { color: var(--teal); }
+
+    /* Section titles */
+    h2 {
+      font-size: 15pt;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-top: 35px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--slate-200);
+      padding-bottom: 8px;
+    }
+
+    h2 .icon {
+      font-size: 16pt;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 25px;
+      font-size: 9.5pt;
+    }
+
+    thead th {
+      background: var(--slate-800);
+      color: white;
+      font-weight: 600;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    thead th:first-child { border-radius: 6px 0 0 0; }
+    thead th:last-child { border-radius: 0 6px 0 0; }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: middle;
+      color: var(--slate-700);
+    }
+
+    tbody tr:nth-child(even) { background: var(--slate-50); }
+    tbody tr:hover { background: #f5f3ff; }
+
+    .commit-hash {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      text-align: center;
+    }
+
+    .badge.feature { background: var(--emerald-light); color: var(--emerald); }
+    .badge.bugfix { background: var(--amber-light); color: var(--amber); }
+    .badge.style { background: var(--blue-light); color: var(--blue); }
+    .badge.scaffold { background: var(--teal-light); color: var(--teal); }
+    .badge.security { background: var(--red-light); color: var(--red); }
+    .badge.wip { background: var(--violet-light); color: var(--violet); }
+    .badge.docs { background: var(--violet-light); color: var(--violet); }
+
+    /* Category summary */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 25px;
+    }
+
+    .category-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 18px;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .category-card h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--slate-900);
+    }
+
+    .category-card ul {
+      list-style: none;
+      font-size: 9pt;
+      color: var(--slate-600);
+    }
+
+    .category-card li {
+      padding: 4px 0;
+      padding-left: 18px;
+      position: relative;
+      line-height: 1.4;
+    }
+
+    .category-card li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--emerald);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      font-size: 8.5pt;
+      color: var(--slate-500);
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 11pt;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5);
+    }
+
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      background: var(--slate-100);
+      padding: 2px 4px;
+      border-radius: 4px;
+      color: var(--slate-800);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Perry App</h1>
+        <div class="subtitle">Reporte de Cambios y Nuevas Implementaciones — Control de Asistencia y Finanzas</div>
+        <span class="date-badge">📅 31 de Mayo, 2026</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">21</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-value">10</div>
+        <div class="stat-label">Features</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">11</div>
+        <div class="stat-label">Bug Fixes</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-value">+2305</div>
+        <div class="stat-label">Líneas Agregadas</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-value">-297</div>
+        <div class="stat-label">Líneas Removidas</div>
+      </div>
+    </div>
+
+    <!-- Introduction / Summary of Focus -->
+    <div style="background: var(--primary-light); border-left: 4px solid var(--primary); padding: 16px; border-radius: 8px; margin-bottom: 30px; font-size: 9.5pt; color: var(--slate-800);">
+      <strong>Resumen Ejecutivo:</strong> Durante esta sesión de desarrollo (25 - 31 de mayo de 2026), el esfuerzo técnico se enfocó en dos pilares principales: (1) <strong>Estructuración Financiera de Costos</strong>, implementando salarios confidenciales para personal y costos detallados (jornada/fletes) para equipos de elevación con control de roles estricto en las 5 empresas, y (2) <strong>Maduración del Módulo de Asistencia & Personal</strong>, incorporando al rol de Técnicos, automatización de credenciales masivas y compartición vía WhatsApp, alertas dinámicas controladas a 5 días y protección contra sobreescritura de notas en Cierre Express.
+    </div>
+
+    <!-- Category Summary -->
+    <h2><span class="icon">📁</span> Cambios Estructurados por Categoría</h2>
+    <div class="category-grid">
+      <div class="category-card" style="border-left: 4px solid var(--emerald);">
+        <h3>💰 Finanzas, Costos & Privacidad</h3>
+        <ul>
+          <li><strong>Salario Confidencial</strong>: Se añadieron campos de salario semanal (para personal interno) y tarifa horaria (para técnicos externos contratistas) en los formularios correspondientes.</li>
+          <li><strong>Control de Permisos Financieros</strong>: La visibilidad y edición de salarios queda estrictamente restringida a los roles de <code>ADMINISTRACION</code> y <code>ADMIN MAESTROS</code>, únicamente dentro de las empresas asignadas. Los supervisores no tienen acceso.</li>
+          <li><strong>Equipos de Elevación Rentados</strong>: Habilitación de campos para registrar el costo por jornada y fletes (envío y retorno) al crear/editar equipos.</li>
+          <li><strong>Catálogo de Proveedores</strong>: Nuevo modelo y vistas de <code>EquipmentSupplier</code> para dar de alta proveedores y asociarlos directamente a los equipos rentados.</li>
+        </ul>
+      </div>
+
+      <div class="category-card" style="border-left: 4px solid var(--blue);">
+        <h3>📋 Asistencia, Técnicos & Integración</h3>
+        <ul>
+          <li><strong>Rol Técnico Autónomo</strong>: Soporte nativo para el rol <code>TECNICO</code> con navegación simplificada y rutas restringidas.</li>
+          <li><strong>Excel de Credenciales</strong>: Generación automática de archivo Excel (<code>Credenciales_Tecnicos.xlsx</code>) con accesos únicos para 56 técnicos de campo.</li>
+          <li><strong>Compartir por WhatsApp</strong>: Botón integrado en la bitácora y listados para enviar instantáneamente las credenciales generadas a cada técnico a través de WhatsApp Web.</li>
+          <li><strong>Auditoría de Emisión</strong>: La bitácora de asistencia ahora registra y muestra el nombre del supervisor emisor del código QR utilizado para el marcaje.</li>
+          <li><strong>Búsqueda & Filtros</strong>: Filtro dinámico en bitácora por empleado y tipo de registro (Entrada/Salida).</li>
+        </ul>
+      </div>
+
+      <div class="category-card" style="border-left: 4px solid var(--amber);">
+        <h3>⚡ Cierre Express & Alertas Inteligentes</h3>
+        <ul>
+          <li><strong>Alertas de Cierre Optimizadas</strong>: El indicador visual en el Dashboard sobre actividades pendientes de cierre ahora cuenta únicamente los registros de los <strong>últimos 5 días</strong>, evitando la saturación con históricos antiguos.</li>
+          <li><strong>Preservación de Resultados</strong>: La ventana de Cierre Express ahora concatena las notas del supervisor al resultado previo de forma inteligente, en el formato <code>[Cierre Supervisor]: [notas]</code>.</li>
+          <li><strong>Integridad de Datos</strong>: Se previene la pérdida de resultados históricos si el supervisor deja el campo de notas vacío durante la confirmación express.</li>
+        </ul>
+      </div>
+
+      <div class="category-card" style="border-left: 4px solid var(--red);">
+        <h3>🔒 Seguridad, Safari & Middleware</h3>
+        <ul>
+          <li><strong>Multi-Compañía Rigurosa</strong>: Validación de <code>companyId</code> en los endpoints de cobranza, recibos y consultas Odoo para bloquear filtraciones accidentales entre las 5 empresas.</li>
+          <li><strong>Safari Cache Bypass</strong>: Configuración de directivas de caché rígidas (<code>Cache-Control: no-store</code>) en logins y llamadas API para erradicar el solapamiento de sesiones de distintos usuarios en el navegador Safari.</li>
+          <li><strong>Validación de Cookies Obsoletas</strong>: Control en endpoints de validación QR para manejar cookies de sesión caducadas sin generar caídas de servidor (500).</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Full commit table -->
+    <h2><span class="icon">📜</span> Detalle de Cambios (Commits)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:35px">#</th>
+          <th style="width:75px">Commit</th>
+          <th>Descripción Técnica del Cambio</th>
+          <th style="width:100px">Categoría</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="commit-hash">2e1eb5b</span></td>
+          <td><strong>Cierre Express</strong>: Concatenación inteligente de notas en formato <code>[Cierre Supervisor]: [notas]</code> para evitar sobreescritura de resultados.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><span class="commit-hash">47a9d25</span></td>
+          <td><strong>Dashboard</strong>: Restricción de alerta visual de actividades pendientes a los últimos 5 días.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><span class="commit-hash">4695d33</span></td>
+          <td><strong>Finanzas</strong>: Salary tracking, tarifas por flete/jornada en equipos de elevación, y catálogo de proveedores.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><span class="commit-hash">f0dc2b6</span></td>
+          <td><strong>Estilo</strong>: Ajuste de contraste para el badge de equipos rentados (fondo rojo con letras blancas).</td>
+          <td><span class="badge style">Style</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">fba3b2e</span></td>
+          <td><strong>ATC Finde</strong>: Actualización de tarjetas resumen con desglose de propiedad de equipos y permisos actualizados.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">987cab3</span></td>
+          <td><strong>Seguridad</strong>: Validación de ID de compañía para accesos en sección Recibos para roles no-admin.</td>
+          <td><span class="badge security">Security</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">ef0105b</span></td>
+          <td><strong>Refactor</strong>: Corrección de violación de Rules of Hooks en componente de gestión de usuarios.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><span class="commit-hash">8bf387e</span></td>
+          <td><strong>Accesos</strong>: Panel de checkboxes de control de recursos granular para roles de Ingeniero y superiores.</td>
+          <td><span class="badge security">Security</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><span class="commit-hash">338b94f</span></td>
+          <td><strong>Cobranza</strong>: Enmascaramiento y validación multi-compañía para búsquedas de facturación Odoo y eliminación de recibo incorrecto.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><span class="commit-hash">6aa8dac</span></td>
+          <td><strong>Config</strong>: Actualización del dominio de la aplicación Netlify en plantilla de mensajes automatizados.</td>
+          <td><span class="badge style">Style</span></td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td><span class="commit-hash">983645e</span></td>
+          <td><strong>Usuarios</strong>: Soporte a Técnicos, Excel de credenciales masivo y botón WhatsApp de envío de accesos.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td><span class="commit-hash">be8a733</span></td>
+          <td><strong>Asistencia</strong>: Filtros de búsqueda avanzados en bitácora de asistencia por empleado y entrada/salida.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td><span class="commit-hash">ec4adf8</span></td>
+          <td><strong>Auditoría</strong>: Captura y visualización en logs del supervisor validador del código QR.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td><span class="commit-hash">a8ddc7f</span></td>
+          <td><strong>Cleanup</strong>: Limpieza de archivos temporales y scripts obsoletos de depuración.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>15</td>
+          <td><span class="commit-hash">29f4a9e</span></td>
+          <td><strong>Rendimiento</strong>: Prevención de almacenamiento en caché en Safari para evitar problemas de solapamiento de sesión.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>16</td>
+          <td><span class="commit-hash">8b4eba1</span></td>
+          <td><strong>Robustez</strong>: Validación contra cookies obsoletas en endpoints verificadores de marcas horarias.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>17</td>
+          <td><span class="commit-hash">fc8e3d3</span></td>
+          <td><strong>Debug</strong>: Mejora de logs detallados en catch block de validación QR.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>18</td>
+          <td><span class="commit-hash">682b677</span></td>
+          <td><strong>Robustez</strong>: Solución a caídas 500 del servidor al escanear códigos sin ID de actividad definida.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>19</td>
+          <td><span class="commit-hash">2fa494c</span></td>
+          <td><strong>Asistencia</strong>: Flexibilización del marcaje haciendo opcional la selección de actividad para el QR.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>20</td>
+          <td><span class="commit-hash">e031173</span></td>
+          <td><strong>Móvil</strong>: Scroll interno en el menú lateral responsive en dispositivos móviles de pantalla pequeña.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>21</td>
+          <td><span class="commit-hash">3d57da8</span></td>
+          <td><strong>Diseño</strong>: Integración de flyer informativo oficial sobre el uso del Control de Asistencia.</td>
+          <td><span class="badge docs">Docs</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Files modified -->
+    <h2><span class="icon">🛠️</span> Archivos Principales Afectados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Ruta del Archivo</th>
+          <th>Propósito de la Modificación</th>
+          <th style="text-align:right;width:120px">Líneas Afectadas</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>prisma/schema.prisma</code></td>
+          <td>Modelos <code>EquipmentSupplier</code>, campos financieros (salarios, fletes) y roles de acceso adicionales.</td>
+          <td style="text-align:right">+32 / -4</td>
+        </tr>
+        <tr>
+          <td><code>src/app/(dashboard)/dashboard/DashboardClient.tsx</code></td>
+          <td>Lógica de conteo de alertas de cierre limitado a 5 días y sección en panel principal.</td>
+          <td style="text-align:right">+270 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/(dashboard)/usuarios/page.tsx</code></td>
+          <td>Edición de salarios, accesos financieros restringidos, y checkboxes granulares para Ingenieros.</td>
+          <td style="text-align:right">+223 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/(dashboard)/registro-personal/RegistroPersonalClient.tsx</code></td>
+          <td>Filtros de bitácora, envío de credenciales a WhatsApp e información del supervisor emisor.</td>
+          <td style="text-align:right">+238 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/technicians/[id]/route.ts</code> y <code>/route.ts</code></td>
+          <td>Endpoints para manejo de salario/costos de contratistas, con restricciones de seguridad de roles.</td>
+          <td style="text-align:right">+339 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/elevation-equip/[id]/route.ts</code> y <code>/route.ts</code></td>
+          <td>Endpoints para equipamientos de elevación que incorporan costos diarios y fletes por proveedor.</td>
+          <td style="text-align:right">+119 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/activities/[id]/route.ts</code></td>
+          <td>Refactorización de Cierre Express para concatenar notas de supervisor sin sobreescribir.</td>
+          <td style="text-align:right">+55 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/components/layout/Header.tsx</code></td>
+          <td>Corrección estética del menú móvil scrollable y responsive.</td>
+          <td style="text-align:right">+62 líneas</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Perry App v2.x — Desarrollado por CHIGÜIRE LABS & Antigravity (Google DeepMind)</span>
+      <span>Generado: 31 de Mayo, 2026 · Tijuana, BC</span>
+    </div>
+
+  </div>
+
+  <!-- Print button (hidden on print) -->
+  <button class="print-btn no-print" onclick="window.print()">
+    <span style="font-size: 14pt;">📄</span> Guardar como PDF
+  </button>
+
+</body>
+</html>
