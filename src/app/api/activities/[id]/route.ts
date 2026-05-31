@@ -15,13 +15,27 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 });
   }
 
+  const body = await req.json();
+
   const role = session.user.role;
   const isSupervisorOrAbove = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role);
   if (!isSupervisorOrAbove && activity.userId !== session.user.id) {
-    return NextResponse.json({ error: 'No autorizado para modificar esta actividad' }, { status: 403 });
+    const isSafetyAuditor = (session.user as any).isSafetyAuditor || false;
+    const updatedFields = Object.keys(body);
+    const safetyAuditFields = [
+      'auditNotes',
+      'teraAuditorFolio',
+      'teraAuditorUploadedAt',
+      'teraAuditorUploadedBy',
+      'teraAuditorImage'
+    ];
+    const isOnlyUpdatingSafetyAudit = updatedFields.every(field => safetyAuditFields.includes(field));
+
+    if (!isSafetyAuditor || !isOnlyUpdatingSafetyAudit) {
+      return NextResponse.json({ error: 'No autorizado para modificar esta actividad' }, { status: 403 });
+    }
   }
 
-  const body = await req.json();
   const allowedFields: Record<string, any> = {};
 
   if (body.loto !== undefined) allowedFields.loto = Boolean(body.loto);
