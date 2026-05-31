@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 
 export const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/actividades', label: 'Actividades', icon: ClipboardList },
   { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },
   { href: '/planes-pasados', label: 'Planes Pasados', icon: Clock },
@@ -34,10 +35,9 @@ export const navItems = [
   { href: '/registro-equipos', label: 'Reg. Equipos', icon: Forklift },
   { href: '/registro-personal', label: 'Asistencia', icon: Timer },
   { href: '/cobranza', label: 'Recibos', icon: DollarSign },
-  { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
-  { href: '/oportunidades', label: 'Oportunidades', icon: Target },
-  { href: '/analitica', label: 'Analítica', icon: BarChart3 },
+  { href: '/oportunidades', label: 'Oportunidades', icon: Target, disabled: true },
+  { href: '/analitica', label: 'Analítica', icon: BarChart3, disabled: true },
   { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
 ];
 
@@ -79,6 +79,19 @@ export function Sidebar({ user }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
           {visibleNavItems.map((item) => {
+            if (item.disabled) {
+              return (
+                <div
+                  key={item.href}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 cursor-not-allowed opacity-40 text-sm font-medium"
+                  title={collapsed ? `${item.label} (Deshabilitado)` : undefined}
+                >
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  {!collapsed && item.label}
+                </div>
+              );
+            }
+
             const isActive = pathname === item.href || 
               (item.href !== '/dashboard' && pathname.startsWith(item.href));
             return (
@@ -173,6 +186,18 @@ export function Sidebar({ user }: SidebarProps) {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
         <nav className="flex justify-around py-2 px-1">
           {(user.role === 'TECNICO' ? visibleNavItems : navItems.slice(0, 5)).map((item) => {
+            if (item.disabled) {
+              return (
+                <div
+                  key={item.href}
+                  className="flex flex-col items-center gap-0.5 px-2 py-1 text-slate-300 cursor-not-allowed text-xs"
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="truncate max-w-[60px]">{item.label.split(' ')[0]}</span>
+                </div>
+              );
+            }
+
             const isActive = pathname === item.href || 
               (item.href !== '/dashboard' && pathname.startsWith(item.href));
             return (
