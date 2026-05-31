@@ -6,6 +6,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
 
+  const activity = await prisma.activity.findUnique({
+    where: { id: params.id },
+    select: { userId: true, result: true }
+  });
+
+  if (!activity) {
+    return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 });
+  }
+
+  const role = session.user.role;
+  const isSupervisorOrAbove = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role);
+  if (!isSupervisorOrAbove && activity.userId !== session.user.id) {
+    return NextResponse.json({ error: 'No autorizado para modificar esta actividad' }, { status: 403 });
+  }
+
   const body = await req.json();
   const allowedFields: Record<string, any> = {};
 
@@ -21,11 +36,23 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
     allowedFields.status = body.status;
   }
-  if (body.result !== undefined) allowedFields.result = body.result || null;
+  
+  if (body.result !== undefined) {
+    const newNotes = body.result?.trim() || '';
+    const oldResult = activity.result?.trim() || '';
+    if (newNotes) {
+      if (oldResult) {
+        allowedFields.result = `${oldResult}\n\n[Cierre Supervisor]: ${newNotes}`;
+      } else {
+        allowedFields.result = newNotes;
+      }
+    } else {
+      allowedFields.result = oldResult || 'Actividad completada desde Dashboard';
+    }
+  }
 
   // Audit notes: only SUPERVISOR_SAFETY_LP or isSafetyAuditor can edit
   if (body.auditNotes !== undefined) {
-    const role = session.user.role;
     const isSafetyAuditor = (session.user as any).isSafetyAuditor || false;
     if (role !== 'SUPERVISOR_SAFETY_LP' && !isSafetyAuditor) {
       return NextResponse.json({ error: 'Sin permisos para notas de auditoría' }, { status: 403 });
@@ -35,25 +62,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Alert notes: only SUPERVISOR_SAFETY_LP can edit
   if (body.alertNotes !== undefined) {
-    const role = session.user.role;
     if (role !== 'SUPERVISOR_SAFETY_LP') {
       return NextResponse.json({ error: 'Sin permisos para notas de alerta' }, { status: 403 });
     }
     allowedFields.alertNotes = body.alertNotes || null;
   }
 
-  // Safety audit image: ADMIN, SUPERVISOR_SAFETY_LP, or the activity's own engineer
+  // Safety audit image
   if (body.safetyAuditImage !== undefined) {
-    const role = session.user.role;
-    if (role === 'ADMIN' || role === 'ADMINISTRACION' || role === 'SUPERVISOR_SAFETY_LP' || role === 'SUPERVISOR') {
-      // Admin/Sup can always edit
-    } else {
-      // Engineer can only edit their own activity
-      const activity = await prisma.activity.findUnique({ where: { id: params.id }, select: { userId: true } });
-      if (!activity || activity.userId !== session.user.id) {
-        return NextResponse.json({ error: 'Solo puedes subir auditoría a tus propias actividades' }, { status: 403 });
-      }
-    }
     // Validate size (2MB max for base64 string ~2.7MB)
     if (body.safetyAuditImage && body.safetyAuditImage.length > 2_800_000) {
       return NextResponse.json({ error: 'Imagen demasiado grande (máx. 2MB)' }, { status: 400 });
@@ -69,7 +85,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
-  // TERA folio: same permissions as safetyAuditImage
+  // TERA folio
   if (body.teraFolio !== undefined) {
     if (body.teraFolio) {
       const folio = String(body.teraFolio).trim().toUpperCase();
@@ -107,10 +123,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 });
   }
 
-  const activity = await prisma.activity.update({
+  const updatedActivity = await prisma.activity.update({
     where: { id: params.id },
     data: allowedFields,
   });
 
-  return NextResponse.json(activity);
+  return NextResponse.json(updatedActivity);
 }

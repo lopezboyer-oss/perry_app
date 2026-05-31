@@ -119,7 +119,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'COMPLETADA',
-          result: notes.trim() || 'Actividad completada desde Dashboard'
+          result: notes.trim()
         })
       });
       if (!res.ok) {
