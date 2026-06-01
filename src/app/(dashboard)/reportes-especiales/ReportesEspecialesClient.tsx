@@ -576,6 +576,57 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
 
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          /* Reset root layout scroll and height blocks */
+          html, body, #__next, main, div, section, article {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+          
+          /* Hide main app container components not needed for print */
+          .sidebar-desktop,
+          aside,
+          header,
+          .print\\:hidden {
+            display: none !important;
+          }
+          
+          /* Remove scroll-container wrappers flex limitations */
+          .flex {
+            display: block !important;
+          }
+          
+          /* Set standard margins */
+          @page {
+            size: letter;
+            margin: 1.5cm;
+          }
+          
+          body {
+            background: white !important;
+            color: #1e293b !important;
+          }
+          
+          /* Page break controls */
+          .print-avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          .print-break-before {
+            page-break-before: always !important;
+            break-before: page !important;
+          }
+          
+          tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}} />
       <div className="space-y-6 pb-20 md:pb-0 print:hidden">
       {/* Cabecera de Página */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1459,13 +1510,13 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
         </table>
       </div>
 
-      <div className="print:break-before-page pt-4" />
+      <div className="print-break-before pt-4" />
 
       {/* Horario Semanal si aplica */}
       {activeWeek && weekDaysData.length > 0 && (
-        <div className="space-y-4">
+        <div className="print-avoid-break space-y-4">
           <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Horario Semanal de la Semana Activa ({activeWeek})</h3>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.5rem' }}>
             {weekDaysData.map(wd => (
               <div key={wd.dateStr} className="border border-slate-200 rounded p-2 min-h-[160px] bg-slate-50/50">
                 <p className="font-bold text-[9px] text-slate-600 uppercase text-center border-b border-slate-200 pb-1">{wd.dayName.substring(0, 3)} {wd.label}</p>
@@ -1485,7 +1536,7 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
         </div>
       )}
 
-      <div className="print:break-before-page pt-4" />
+      <div className="print-break-before pt-4" />
 
       {/* Detalle Completo de Actividades */}
       <div className="space-y-2">
