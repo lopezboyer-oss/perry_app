@@ -91,7 +91,7 @@ export function Header({ user }: HeaderProps) {
         </div>
       </header>      {/* Mobile menu overlay */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)}>
+        <div className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm print:hidden" onClick={() => setMobileMenuOpen(false)}>
           <div
             className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl animate-slide-in flex flex-col"
             onClick={(e) => e.stopPropagation()}

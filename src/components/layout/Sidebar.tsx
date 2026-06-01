@@ -193,7 +193,7 @@ export function Sidebar({ user }: SidebarProps) {
       </aside>
 
       {/* Mobile bottom nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-lg print:hidden">
         <nav className="flex justify-around py-2 px-1">
           {(user.role === 'TECNICO' ? visibleNavItems : navItems.slice(0, 5)).map((item) => {
             if (item.disabled) {

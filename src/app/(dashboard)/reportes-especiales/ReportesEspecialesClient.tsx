@@ -578,12 +578,13 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
     <>
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* Reset root layout scroll and height blocks */
-          html, body, #__next, main, div, section, article {
+          /* Reset root layout scroll and height blocks for printing */
+          html, body, #__next, main, div.flex.h-screen, div.flex-1.flex.flex-col {
             height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
             overflow: visible !important;
+            display: block !important;
           }
           
           /* Hide main app container components not needed for print */
@@ -592,11 +593,6 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
           header,
           .print\\:hidden {
             display: none !important;
-          }
-          
-          /* Remove scroll-container wrappers flex limitations */
-          .flex {
-            display: block !important;
           }
           
           /* Set standard margins */
@@ -1452,23 +1448,90 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-5 gap-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '1rem' }}>
         <div className="border border-slate-200 rounded-xl p-4 text-center">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Horas Totales</span>
-          <span className="text-2xl font-bold text-slate-800 mt-1 block">{Math.round(kpis.totalHours * 10) / 10} hrs</span>
+          <span className="text-xl font-bold text-slate-800 mt-1 block">{Math.round(kpis.totalHours * 10) / 10} hrs</span>
           <span className="text-[9px] text-slate-400 block mt-1">{Math.round(kpis.weekdayHours * 10) / 10} L-V | {Math.round(kpis.weekendHours * 10) / 10} S-D</span>
         </div>
         <div className="border border-slate-200 rounded-xl p-4 text-center">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Monto a Pagar</span>
-          <span className="text-2xl font-bold text-emerald-600 mt-1 block">${kpis.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="text-xl font-bold text-emerald-600 mt-1 block">${kpis.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           <span className="text-[9px] text-slate-400 block mt-1">Precalculado</span>
         </div>
         <div className="border border-slate-200 rounded-xl p-4 text-center">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Empresa Principal</span>
-          <span className="text-sm font-bold text-slate-700 mt-2 block truncate">{kpis.topCompany}</span>
-          <span className="text-[9px] text-slate-400 block mt-1">Mayor inversión de tiempo</span>
+          <span className="text-xs font-bold text-slate-700 mt-2 block truncate" title={kpis.topCompany}>{kpis.topCompany}</span>
+          <span className="text-[9px] text-slate-400 block mt-1">Mayor inversión</span>
+        </div>
+        <div className="border border-slate-200 rounded-xl p-4 text-center">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Actividad Común</span>
+          <span className="text-xs font-bold text-slate-700 mt-2 block truncate" title={kpis.topType}>{kpis.topType}</span>
+          <span className="text-[9px] text-slate-400 block mt-1">Tipo más recurrente</span>
+        </div>
+        <div className="border border-slate-200 rounded-xl p-4 text-center">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Actividad Mayor</span>
+          <span className="text-xs font-bold text-slate-700 mt-2 block truncate" title={kpis.topActivity}>{kpis.topActivity}</span>
+          <span className="text-[9px] text-slate-400 block mt-1">Sesión más larga</span>
         </div>
       </div>
+
+      {/* Gráficos del Período */}
+      {chartData.byCompany.length > 0 && (
+        <div className="print-avoid-break space-y-4">
+          <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Gráficos y Estadísticas del Período</h3>
+          <div className="grid grid-cols-2 gap-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem' }}>
+            {/* Horas Totales por Empresa */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col items-center">
+              <h4 className="text-xs font-bold text-slate-700 mb-3 text-center">Horas Totales por Empresa</h4>
+              <BarChart width={320} height={200} data={chartData.byCompany} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                <YAxis tick={{ fontSize: 9 }} />
+                <Bar dataKey="horas" fill="#6366f1" radius={[4, 4, 0, 0]}>
+                  {chartData.byCompany.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </div>
+
+            {/* Distribución de Tiempo */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col items-center">
+              <h4 className="text-xs font-bold text-slate-700 mb-3 text-center">Distribución de Tiempo</h4>
+              <div className="flex items-center justify-between w-full gap-2" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                <PieChart width={140} height={140}>
+                  <Pie
+                    data={chartData.byCompany}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={35}
+                    outerRadius={55}
+                    paddingAngle={3}
+                    dataKey="horas"
+                  >
+                    {chartData.byCompany.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+                <div className="flex flex-col gap-1.5 flex-1 max-w-[140px]" style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                  {chartData.byCompany.map(c => {
+                    const percent = kpis.totalHours > 0 ? ((c.horas / kpis.totalHours) * 100).toFixed(1) : '0';
+                    return (
+                      <div key={c.name} className="flex items-center gap-1.5 text-[9px] w-full" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                        <span className="font-bold text-slate-700 truncate max-w-[40px]">{c.name}</span>
+                        <span className="ml-auto font-semibold text-slate-500">{percent}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabla de Resumen por Empresa */}
       <div className="space-y-2">
@@ -1533,6 +1596,33 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
               </div>
             ))}
           </div>
+
+          {/* Gráfico semanal rápido bajo la agenda en impresión */}
+          {chartData.scheduleChart.some(d => Object.keys(d).length > 1) && (
+            <div className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col items-center mt-4">
+              <h4 className="text-xs font-bold text-slate-700 mb-3 text-center">Horas Invertidas por Día en esta Semana</h4>
+              <BarChart width={680} height={180} data={chartData.scheduleChart} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                <YAxis tick={{ fontSize: 9 }} />
+                {companies.map(co => (
+                  <Bar
+                    key={co.id}
+                    dataKey={co.shortName}
+                    stackId="a"
+                    fill={co.color}
+                    name={co.name}
+                  />
+                ))}
+                <Bar
+                  dataKey="S/E"
+                  stackId="a"
+                  fill="#64748b"
+                  name="Sin Empresa"
+                />
+              </BarChart>
+            </div>
+          )}
         </div>
       )}
 
