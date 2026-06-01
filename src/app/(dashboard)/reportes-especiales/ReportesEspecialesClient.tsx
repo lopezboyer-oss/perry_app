@@ -1519,9 +1519,49 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
         </div>
       </div>
 
+      {/* Tabla de Resumen por Empresa */}
+      <div className="space-y-2">
+        <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Resumen de Cobro por Empresa</h3>
+        <table className="w-full text-xs text-left border-collapse border border-slate-200">
+          <thead>
+            <tr className="bg-slate-100 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
+              <th className="px-4 py-2 border-r border-slate-200">Empresa</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Horas L-V</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Subtotal L-V</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Horas S-D</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Subtotal S-D</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Total Horas</th>
+              <th className="px-4 py-2 text-right">Total a Facturar</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {companySummary.map(c => (
+              <tr key={c.id}>
+                <td className="px-4 py-2 border-r border-slate-200 font-semibold">{c.name}</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(c.weekdayHours * 10) / 10} h</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200">${c.weekdayCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(c.weekendHours * 10) / 10} h</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200">${c.weekendCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200 font-bold">{Math.round(c.totalHours * 10) / 10} h</td>
+                <td className="px-4 py-2 text-right font-bold text-indigo-600">${c.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+              </tr>
+            ))}
+            <tr className="bg-slate-50 font-bold border-t border-slate-300">
+              <td className="px-4 py-2 border-r border-slate-200">TOTAL GENERAL</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.weekdayHours * 10) / 10} h</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">${companySummary.reduce((acc, c) => acc + c.weekdayCost, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.weekendHours * 10) / 10} h</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">${companySummary.reduce((acc, c) => acc + c.weekendCost, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.totalHours * 10) / 10} h</td>
+              <td className="px-4 py-2 text-right text-indigo-700">${kpis.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       {/* Gráficos del Período */}
       {chartData.byCompany.length > 0 && (
-        <div className="print-avoid-break space-y-4">
+        <div className="print-break-before space-y-4 pt-4">
           <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Gráficos y Estadísticas del Período</h3>
           <div className="grid grid-cols-2 gap-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem' }}>
             {/* Horas Totales por Empresa */}
@@ -1575,46 +1615,6 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
           </div>
         </div>
       )}
-
-      {/* Tabla de Resumen por Empresa */}
-      <div className="space-y-2">
-        <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Resumen de Cobro por Empresa</h3>
-        <table className="w-full text-xs text-left border-collapse border border-slate-200">
-          <thead>
-            <tr className="bg-slate-100 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
-              <th className="px-4 py-2 border-r border-slate-200">Empresa</th>
-              <th className="px-4 py-2 text-right border-r border-slate-200">Horas L-V</th>
-              <th className="px-4 py-2 text-right border-r border-slate-200">Subtotal L-V</th>
-              <th className="px-4 py-2 text-right border-r border-slate-200">Horas S-D</th>
-              <th className="px-4 py-2 text-right border-r border-slate-200">Subtotal S-D</th>
-              <th className="px-4 py-2 text-right border-r border-slate-200">Total Horas</th>
-              <th className="px-4 py-2 text-right">Total a Facturar</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {companySummary.map(c => (
-              <tr key={c.id}>
-                <td className="px-4 py-2 border-r border-slate-200 font-semibold">{c.name}</td>
-                <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(c.weekdayHours * 10) / 10} h</td>
-                <td className="px-4 py-2 text-right border-r border-slate-200">${c.weekdayCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(c.weekendHours * 10) / 10} h</td>
-                <td className="px-4 py-2 text-right border-r border-slate-200">${c.weekendCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                <td className="px-4 py-2 text-right border-r border-slate-200 font-bold">{Math.round(c.totalHours * 10) / 10} h</td>
-                <td className="px-4 py-2 text-right font-bold text-indigo-600">${c.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-              </tr>
-            ))}
-            <tr className="bg-slate-50 font-bold border-t border-slate-300">
-              <td className="px-4 py-2 border-r border-slate-200">TOTAL GENERAL</td>
-              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.weekdayHours * 10) / 10} h</td>
-              <td className="px-4 py-2 text-right border-r border-slate-200">${companySummary.reduce((acc, c) => acc + c.weekdayCost, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.weekendHours * 10) / 10} h</td>
-              <td className="px-4 py-2 text-right border-r border-slate-200">${companySummary.reduce((acc, c) => acc + c.weekendCost, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.totalHours * 10) / 10} h</td>
-              <td className="px-4 py-2 text-right text-indigo-700">${kpis.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
       {/* Horarios Semanales del Periodo */}
       {uniqueWeeks.map((weekMonday) => {
