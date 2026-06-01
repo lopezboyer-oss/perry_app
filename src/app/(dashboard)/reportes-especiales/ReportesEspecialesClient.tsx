@@ -19,7 +19,8 @@ import {
   AlertCircle,
   RefreshCw,
   Search,
-  ChevronDown
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 import { activityTypeLabels, getLocalToday } from '@/lib/utils';
 import * as XLSX from 'xlsx';
@@ -569,8 +570,13 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
     XLSX.writeFile(wb, `Reporte_Especial_Carlos_Lopez_${startDate}_al_${endDate}.xlsx`);
   };
 
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   return (
-    <div className="space-y-6 pb-20 md:pb-0">
+    <>
+      <div className="space-y-6 pb-20 md:pb-0 print:hidden">
       {/* Cabecera de Página */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -835,14 +841,24 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
               </button>
             </div>
 
-            <button
-              onClick={handleExportExcel}
-              disabled={processedActivities.length === 0}
-              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition-all w-full sm:w-auto"
-            >
-              <Download className="w-4 h-4" />
-              Exportar a Excel
-            </button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                onClick={handleExportPDF}
+                disabled={processedActivities.length === 0}
+                className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition-all w-full sm:w-auto"
+              >
+                <FileText className="w-4 h-4" />
+                Exportar a PDF
+              </button>
+              <button
+                onClick={handleExportExcel}
+                disabled={processedActivities.length === 0}
+                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition-all w-full sm:w-auto"
+              >
+                <Download className="w-4 h-4" />
+                Exportar a Excel
+              </button>
+            </div>
           </div>
 
           {/* Renderizado de Vistas según Pestaña Activa */}
@@ -1355,7 +1371,153 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
         </div>
       )}
     </div>
-  );
+
+    {/* Layout de Impresión (PDF) */}
+    <div className="hidden print:block space-y-8 p-6 text-slate-800 bg-white">
+      {/* Cabecera del Reporte */}
+      <div className="border-b-2 border-slate-300 pb-4 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">PERRY APP — REPORTE ESPECIAL</h1>
+          <p className="text-xs text-slate-500 mt-1">Conciliación de Horas y Precalculo de Costos</p>
+        </div>
+        <div className="text-right text-xs text-slate-500">
+          <p><strong>Colaborador:</strong> {carlosUser?.name || 'Carlos López'}</p>
+          <p><strong>Correo:</strong> {carlosUser?.email || 'carlos.lopez@gsingenieria.mx'}</p>
+          <p><strong>Período:</strong> {startDate} al {endDate}</p>
+          <p><strong>Generado:</strong> {new Date().toLocaleDateString('es-MX')}</p>
+        </div>
+      </div>
+
+      {/* Tarifas */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Tarifa Entre Semana (L-V)</span>
+          <span className="text-lg font-bold text-slate-700">${rateWeekday}.00 MXN/hr</span>
+        </div>
+        <div>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Tarifa Fin de Semana (S-D)</span>
+          <span className="text-lg font-bold text-slate-700">${rateWeekend}.00 MXN/hr</span>
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="border border-slate-200 rounded-xl p-4 text-center">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Horas Totales</span>
+          <span className="text-2xl font-bold text-slate-800 mt-1 block">{Math.round(kpis.totalHours * 10) / 10} hrs</span>
+          <span className="text-[9px] text-slate-400 block mt-1">{Math.round(kpis.weekdayHours * 10) / 10} L-V | {Math.round(kpis.weekendHours * 10) / 10} S-D</span>
+        </div>
+        <div className="border border-slate-200 rounded-xl p-4 text-center">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Monto a Pagar</span>
+          <span className="text-2xl font-bold text-emerald-600 mt-1 block">${kpis.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="text-[9px] text-slate-400 block mt-1">Precalculado</span>
+        </div>
+        <div className="border border-slate-200 rounded-xl p-4 text-center">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Empresa Principal</span>
+          <span className="text-sm font-bold text-slate-700 mt-2 block truncate">{kpis.topCompany}</span>
+          <span className="text-[9px] text-slate-400 block mt-1">Mayor inversión de tiempo</span>
+        </div>
+      </div>
+
+      {/* Tabla de Resumen por Empresa */}
+      <div className="space-y-2">
+        <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Resumen de Cobro por Empresa</h3>
+        <table className="w-full text-xs text-left border-collapse border border-slate-200">
+          <thead>
+            <tr className="bg-slate-100 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
+              <th className="px-4 py-2 border-r border-slate-200">Empresa</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Horas L-V</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Subtotal L-V</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Horas S-D</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Subtotal S-D</th>
+              <th className="px-4 py-2 text-right border-r border-slate-200">Total Horas</th>
+              <th className="px-4 py-2 text-right">Total a Facturar</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {companySummary.map(c => (
+              <tr key={c.id}>
+                <td className="px-4 py-2 border-r border-slate-200 font-semibold">{c.name}</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(c.weekdayHours * 10) / 10} h</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200">${c.weekdayCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(c.weekendHours * 10) / 10} h</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200">${c.weekendCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                <td className="px-4 py-2 text-right border-r border-slate-200 font-bold">{Math.round(c.totalHours * 10) / 10} h</td>
+                <td className="px-4 py-2 text-right font-bold text-indigo-600">${c.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+              </tr>
+            ))}
+            <tr className="bg-slate-50 font-bold border-t border-slate-300">
+              <td className="px-4 py-2 border-r border-slate-200">TOTAL GENERAL</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.weekdayHours * 10) / 10} h</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">${companySummary.reduce((acc, c) => acc + c.weekdayCost, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.weekendHours * 10) / 10} h</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">${companySummary.reduce((acc, c) => acc + c.weekendCost, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+              <td className="px-4 py-2 text-right border-r border-slate-200">{Math.round(kpis.totalHours * 10) / 10} h</td>
+              <td className="px-4 py-2 text-right text-indigo-700">${kpis.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="print:break-before-page pt-4" />
+
+      {/* Horario Semanal si aplica */}
+      {activeWeek && weekDaysData.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Horario Semanal de la Semana Activa ({activeWeek})</h3>
+          <div className="grid grid-cols-7 gap-2">
+            {weekDaysData.map(wd => (
+              <div key={wd.dateStr} className="border border-slate-200 rounded p-2 min-h-[160px] bg-slate-50/50">
+                <p className="font-bold text-[9px] text-slate-600 uppercase text-center border-b border-slate-200 pb-1">{wd.dayName.substring(0, 3)} {wd.label}</p>
+                <div className="mt-1 space-y-1">
+                  {wd.activities.map(act => (
+                    <div key={act.id} className="p-1 rounded text-[8px] bg-white border border-slate-100 leading-snug">
+                      <span className="font-bold text-[7px] block" style={{ color: act.company?.color || '#64748b' }}>
+                        {act.company?.shortName || 'S/E'} ({act.hours}h)
+                      </span>
+                      <p className="font-medium text-slate-700 line-clamp-2">{act.title}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="print:break-before-page pt-4" />
+
+      {/* Detalle Completo de Actividades */}
+      <div className="space-y-2">
+        <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Detalle de Actividades Ejecutadas</h3>
+        <table className="w-full text-[9px] text-left border-collapse border border-slate-200">
+          <thead>
+            <tr className="bg-slate-100 border-b border-slate-200 font-bold uppercase text-slate-500">
+              <th className="px-3 py-1.5 border-r border-slate-200">Fecha</th>
+              <th className="px-3 py-1.5 border-r border-slate-200">Empresa</th>
+              <th className="px-3 py-1.5 border-r border-slate-200">Cliente</th>
+              <th className="px-3 py-1.5 border-r border-slate-200">Descripción de Actividad</th>
+              <th className="px-3 py-1.5 border-r border-slate-200">Horas</th>
+              <th className="px-3 py-1.5">Importe</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {processedActivities.map(a => (
+              <tr key={a.id}>
+                <td className="px-3 py-1.5 border-r border-slate-200 whitespace-nowrap">{a.localDateStr}</td>
+                <td className="px-3 py-1.5 border-r border-slate-200 font-semibold">{a.company?.shortName || 'S/E'}</td>
+                <td className="px-3 py-1.5 border-r border-slate-200 font-medium truncate max-w-[100px]">{a.client?.name || '—'}</td>
+                <td className="px-3 py-1.5 border-r border-slate-200 leading-normal">{a.title}</td>
+                <td className="px-3 py-1.5 border-r border-slate-200 text-right whitespace-nowrap font-medium">{a.hours} h</td>
+                <td className="px-3 py-1.5 text-right whitespace-nowrap font-bold">${a.cost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </>
+);
 }
 
 // Icono auxiliar dinámico
