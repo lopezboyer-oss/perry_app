@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { auth } from '@/lib/auth';
 import { toTitleCase } from '@/lib/utils';
+import { cookies } from 'next/headers';
 
 export async function GET() {
   try {
@@ -20,26 +21,45 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const isAdmin = ['ADMIN', 'ADMINISTRACION'].includes(user.role);
-    const isAdministracion = user.role === 'ADMINISTRACION';
+    const isAdmin = user.role === 'ADMIN';
+    const isSessionAdmin = ['ADMIN', 'ADMINISTRACION'].includes(user.role);
 
     const whereFilter: any = { isActive: true };
 
-    // Apply company filtration for ADMINISTRACION role
-    if (isAdministracion) {
+    const cookieStore = cookies();
+    const cookieVal = cookieStore.get('perry_active_company')?.value;
+
+    if (isAdmin) {
+      if (cookieVal && cookieVal !== 'ALL') {
+        whereFilter.companies = {
+          some: {
+            companyId: cookieVal
+          }
+        };
+      }
+    } else {
+      // Non-admins only see users sharing companies they have access to
       const currentUser = await prisma.user.findUnique({
         where: { id: user.id },
         include: { companies: true }
       });
       const allowedCompanyIds = currentUser?.companies.map(c => c.companyId) || [];
-      
-      whereFilter.companies = {
-        some: {
-          companyId: {
-            in: allowedCompanyIds
+
+      if (cookieVal && cookieVal !== 'ALL' && allowedCompanyIds.includes(cookieVal)) {
+        whereFilter.companies = {
+          some: {
+            companyId: cookieVal
           }
-        }
-      };
+        };
+      } else {
+        whereFilter.companies = {
+          some: {
+            companyId: {
+              in: allowedCompanyIds
+            }
+          }
+        };
+      }
     }
 
     const users = await prisma.user.findMany({
@@ -66,7 +86,7 @@ export async function GET() {
           },
         },
         isActive: true,
-        ...(isAdmin && { weeklySalary: true }), // Only return salary to admins
+        ...(isSessionAdmin && { weeklySalary: true }), // Only return salary to admins
       },
       orderBy: { name: 'asc' },
     });
