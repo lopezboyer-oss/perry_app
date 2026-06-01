@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   ClipboardList, Target, Clock, AlertTriangle, TrendingUp, Users,
   HardHat, FileSearch, Wrench, Calendar, Trophy, FileText, Receipt,
-  ChevronDown, ChevronUp, X, Check
+  ChevronDown, ChevronUp, X, Check, Copy, MessageCircle
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
@@ -105,6 +105,45 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const [cancelHasCharges, setCancelHasCharges] = useState<Record<string, boolean>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Record<string, 'complete' | 'cancel'>>({});
+  const [summaryCopied, setSummaryCopied] = useState(false);
+
+  const generateWhatsappSummary = (): string => {
+    if (pastActivities.length === 0) return '✅ No hay actividades vencidas pendientes.';
+    
+    // Group activities by engineer (user)
+    const byUser = new Map<string, typeof pastActivities>();
+    for (const act of pastActivities) {
+      const key = act.userName || 'Por Asignar';
+      if (!byUser.has(key)) byUser.set(key, []);
+      byUser.get(key)!.push(act);
+    }
+    
+    let text = `⏰ *RECORDATORIO DE ACTIVIDADES PENDIENTES DE CIERRE*\n\n`;
+    text += `Estimados ingenieros, se solicita de la manera más atenta proceder con el cierre o aclaración de las siguientes actividades pendientes en *Perry App*:\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    
+    byUser.forEach((acts, engineerName) => {
+      text += `\n👤 *${engineerName}* (${acts.length} pendiente${acts.length !== 1 ? 'es' : ''})\n`;
+      acts.forEach((act) => {
+        const dateObj = new Date(act.date);
+        const day = String(dateObj.getUTCDate()).padStart(2, '0');
+        const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const month = monthNames[dateObj.getUTCMonth()];
+        const dateFormatted = `${day}/${month}`;
+        
+        const statusLabel = act.status === 'EN_PROGRESO' ? '⏳ EN PROGRESO' : '❌ PENDIENTE';
+        
+        text += `  • [${dateFormatted}] *${act.title}*\n`;
+        text += `    🏢 Cliente: ${act.clientName} | ${statusLabel}\n`;
+      });
+      text += `\n━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    });
+    
+    text += `\nFavor de ingresar a la brevedad para realizar el cierre:\n`;
+    text += `🌐 Enlace: https://perryapp.netlify.app\n`;
+    text += `\n_Mensaje de Perry App_`;
+    return text;
+  };
 
   useEffect(() => {
     setPastActivities(data.pendingPreviousDaysActivities || []);
@@ -238,6 +277,43 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             <p className="text-xs text-slate-500 mb-4">
               Estas actividades están programadas para fechas pasadas y siguen pendientes. Por favor, complétalas o cancélalas para mantener el control financiero al día.
             </p>
+
+            {pastActivities.length > 0 && (
+              <div className="flex gap-2 mb-4 bg-slate-50 border border-slate-200/60 p-2.5 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generateWhatsappSummary());
+                    setSummaryCopied(true);
+                    setTimeout(() => setSummaryCopied(false), 2000);
+                  }}
+                  className="flex-1 bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-800 text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  {summaryCopied ? (
+                    <>
+                      <Check size={14} className="text-emerald-600" />
+                      ¡Resumen Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={14} />
+                      Copiar Resumen (Por Ing.)
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = generateWhatsappSummary();
+                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                  }}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <MessageCircle size={14} />
+                  Compartir WhatsApp
+                </button>
+              </div>
+            )}
 
             {pastActivities.length === 0 ? (
               <div className="text-center py-8 text-slate-500 text-sm">
