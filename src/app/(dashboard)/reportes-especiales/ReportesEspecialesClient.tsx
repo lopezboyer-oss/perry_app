@@ -451,6 +451,49 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
     };
   }, [companySummary, weekDaysData, companies]);
 
+  // Helper to calculate weekly grid and chart for any given week (used for multi-week print)
+  const getWeekDaysDataForWeek = (weekMonday: string) => {
+    const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const [y, m, d] = weekMonday.split('-').map(Number);
+    const monday = new Date(y, m - 1, d, 12, 0, 0);
+
+    const weekActivities = processedActivities.filter(a => a.weekMonday === weekMonday);
+
+    return dayNames.map((name, index) => {
+      const current = new Date(monday);
+      current.setDate(monday.getDate() + index);
+      const dateStr = current.toISOString().split('T')[0];
+      const label = current.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+      const dayActs = weekActivities.filter(a => a.localDateStr === dateStr);
+
+      return {
+        dayName: name,
+        dateStr,
+        label,
+        activities: dayActs,
+      };
+    });
+  };
+
+  const getScheduleChartDataForWeek = (weekDays: ReturnType<typeof getWeekDaysDataForWeek>) => {
+    return weekDays.map(wd => {
+      const dataPoint: any = { name: wd.dayName.substring(0, 3) };
+      companies.forEach(co => {
+        const sum = wd.activities
+          .filter(a => a.company?.id === co.id)
+          .reduce((acc, curr) => acc + curr.hours, 0);
+        dataPoint[co.shortName] = Math.round(sum * 10) / 10;
+      });
+
+      const sumNoCo = wd.activities
+        .filter(a => !a.company)
+        .reduce((acc, curr) => acc + curr.hours, 0);
+      dataPoint['S/E'] = Math.round(sumNoCo * 10) / 10;
+
+      return dataPoint;
+    });
+  };
+
   // Exportar reporte a Excel
   const handleExportExcel = () => {
     if (processedActivities.length === 0) return;
@@ -1573,58 +1616,74 @@ export function ReportesEspecialesClient({ companies, currentUserEmail }: Client
         </table>
       </div>
 
-      <div className="print-break-before pt-4" />
+      {/* Horarios Semanales del Periodo */}
+      {uniqueWeeks.map((weekMonday) => {
+        const weekDays = getWeekDaysDataForWeek(weekMonday);
+        const weekChartData = getScheduleChartDataForWeek(weekDays);
+        const hasChartData = weekChartData.some(d => Object.keys(d).length > 1);
 
-      {/* Horario Semanal si aplica */}
-      {activeWeek && weekDaysData.length > 0 && (
-        <div className="print-avoid-break space-y-4">
-          <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">Horario Semanal de la Semana Activa ({activeWeek})</h3>
-          <div className="grid grid-cols-7 gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.5rem' }}>
-            {weekDaysData.map(wd => (
-              <div key={wd.dateStr} className="border border-slate-200 rounded p-2 min-h-[160px] bg-slate-50/50">
-                <p className="font-bold text-[9px] text-slate-600 uppercase text-center border-b border-slate-200 pb-1">{wd.dayName.substring(0, 3)} {wd.label}</p>
-                <div className="mt-1 space-y-1">
-                  {wd.activities.map(act => (
-                    <div key={act.id} className="p-1 rounded text-[8px] bg-white border border-slate-100 leading-snug">
-                      <span className="font-bold text-[7px] block" style={{ color: act.company?.color || '#64748b' }}>
-                        {act.company?.shortName || 'S/E'} ({act.hours}h)
-                      </span>
-                      <p className="font-medium text-slate-700 line-clamp-2">{act.title}</p>
-                    </div>
-                  ))}
+        // Formatear etiqueta de la semana
+        const [y, m, d] = weekMonday.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d, 12, 0, 0);
+        const sunday = new Date(dateObj);
+        sunday.setDate(dateObj.getDate() + 6);
+        const startFmt = dateObj.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+        const endFmt = sunday.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        return (
+          <div key={weekMonday} className="print-break-before space-y-4 pt-4">
+            <h3 className="font-bold text-sm text-slate-800 border-b border-slate-200 pb-1">
+              Horario Semanal: {startFmt} — {endFmt}
+            </h3>
+            
+            {/* Grid de 7 días */}
+            <div className="grid grid-cols-7 gap-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.5rem' }}>
+              {weekDays.map(wd => (
+                <div key={wd.dateStr} className="border border-slate-200 rounded p-2 min-h-[160px] bg-slate-50/50">
+                  <p className="font-bold text-[9px] text-slate-600 uppercase text-center border-b border-slate-200 pb-1">{wd.dayName.substring(0, 3)} {wd.label}</p>
+                  <div className="mt-1 space-y-1">
+                    {wd.activities.map(act => (
+                      <div key={act.id} className="p-1 rounded text-[8px] bg-white border border-slate-100 leading-snug">
+                        <span className="font-bold text-[7px] block" style={{ color: act.company?.color || '#64748b' }}>
+                          {act.company?.shortName || 'S/E'} ({act.hours}h)
+                        </span>
+                        <p className="font-medium text-slate-700 line-clamp-2">{act.title}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Gráfico semanal rápido bajo la agenda en impresión */}
-          {chartData.scheduleChart.some(d => Object.keys(d).length > 1) && (
-            <div className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col items-center mt-4">
-              <h4 className="text-xs font-bold text-slate-700 mb-3 text-center">Horas Invertidas por Día en esta Semana</h4>
-              <BarChart width={680} height={180} data={chartData.scheduleChart} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                <YAxis tick={{ fontSize: 9 }} />
-                {companies.map(co => (
-                  <Bar
-                    key={co.id}
-                    dataKey={co.shortName}
-                    stackId="a"
-                    fill={co.color}
-                    name={co.name}
-                  />
-                ))}
-                <Bar
-                  dataKey="S/E"
-                  stackId="a"
-                  fill="#64748b"
-                  name="Sin Empresa"
-                />
-              </BarChart>
+              ))}
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Gráfico semanal rápido bajo la agenda en impresión */}
+            {hasChartData && (
+              <div className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col items-center mt-4">
+                <h4 className="text-xs font-bold text-slate-700 mb-3 text-center">Horas Invertidas por Día — Semana {startFmt} a {endFmt}</h4>
+                <BarChart width={680} height={180} data={weekChartData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                  <YAxis tick={{ fontSize: 9 }} />
+                  {companies.map(co => (
+                    <Bar
+                      key={co.id}
+                      dataKey={co.shortName}
+                      stackId="a"
+                      fill={co.color}
+                      name={co.name}
+                    />
+                  ))}
+                  <Bar
+                    dataKey="S/E"
+                    stackId="a"
+                    fill="#64748b"
+                    name="Sin Empresa"
+                  />
+                </BarChart>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       <div className="print-break-before pt-4" />
 
