@@ -1,0 +1,1385 @@
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
+import {
+  PieChart as PieIcon,
+  BarChart3,
+  Download,
+  DollarSign,
+  TrendingUp,
+  Award,
+  Clock,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  RefreshCw,
+  Search,
+  ChevronDown
+} from 'lucide-react';
+import { activityTypeLabels, getLocalToday } from '@/lib/utils';
+import * as XLSX from 'xlsx';
+
+// Tipos de datos
+interface CompanyInfo {
+  id: string;
+  name: string;
+  shortName: string;
+  color: string;
+}
+
+interface ActivityItem {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  type: string;
+  durationMinutes: number | null;
+  startTime: string | null;
+  endTime: string | null;
+  actualStartTime: string | null;
+  actualEndTime: string | null;
+  workOrderFolio: string | null;
+  company: {
+    id: string;
+    name: string;
+    shortName: string | null;
+    color: string | null;
+  } | null;
+  client: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+interface ClientProps {
+  companies: CompanyInfo[];
+  currentUserEmail: string;
+}
+
+export function ReportesEspecialesClient({ companies, currentUserEmail }: ClientProps) {
+  // Rango de fechas por defecto: primer día del mes actual hasta hoy
+  const todayStr = getLocalToday();
+  const firstDayOfMonthStr = todayStr.substring(0, 8) + '01';
+
+  const [startDate, setStartDate] = useState(firstDayOfMonthStr);
+  const [endDate, setEndDate] = useState(todayStr);
+
+  // Costos por hora de Carlos López (con persistencia en localStorage)
+  const [rateWeekday, setRateWeekday] = useState(250);
+  const [rateWeekend, setRateWeekend] = useState(350);
+
+  // Estados de datos
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [carlosUser, setCarlosUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Control de vista activa y modal de detalle
+  const [activeTab, setActiveTab] = useState<'schedule' | 'charts' | 'table'>('schedule');
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+
+  // Cargar tarifas del localStorage
+  useEffect(() => {
+    const savedW = localStorage.getItem('carlos_rate_weekday');
+    const savedE = localStorage.getItem('carlos_rate_weekend');
+    if (savedW) setRateWeekday(Number(savedW));
+    if (savedE) setRateWeekend(Number(savedE));
+  }, []);
+
+  // Consultar actividades
+  const fetchActivities = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/reportes-especiales/carlos?startDate=${startDate}&endDate=${endDate}`);
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Error al obtener datos');
+      }
+      const data = await res.json();
+      setActivities(data.activities);
+      setCarlosUser(data.carlos);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Error al consultar las actividades');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar datos al cambiar el rango de fechas
+  useEffect(() => {
+    fetchActivities();
+  }, [startDate, endDate]);
+
+  // Actualizar tarifas y guardar en localStorage
+  const handleRateWeekdayChange = (val: number) => {
+    setRateWeekday(val);
+    localStorage.setItem('carlos_rate_weekday', val.toString());
+  };
+
+  const handleRateWeekendChange = (val: number) => {
+    setRateWeekend(val);
+    localStorage.setItem('carlos_rate_weekend', val.toString());
+  };
+
+  // Ajustes de atajos de fecha rápidos
+  const setQuickRange = (rangeType: 'this-week' | 'last-week' | 'this-month' | 'last-month') => {
+    const today = new Date(todayStr + 'T12:00:00');
+    let start = new Date(today);
+    let end = new Date(today);
+
+    if (rangeType === 'this-week') {
+      const dow = today.getDay(); // 0 Dom, 1 Lun, etc.
+      const diffToMon = dow === 0 ? -6 : 1 - dow;
+      start.setDate(today.getDate() + diffToMon);
+      end.setDate(start.getDate() + 6);
+    } else if (rangeType === 'last-week') {
+      const dow = today.getDay();
+      const diffToMon = (dow === 0 ? -6 : 1 - dow) - 7;
+      start.setDate(today.getDate() + diffToMon);
+      end.setDate(start.getDate() + 6);
+    } else if (rangeType === 'this-month') {
+      start = new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 12, 0, 0);
+    } else if (rangeType === 'last-month') {
+      start = new Date(today.getFullYear(), today.getMonth() - 1, 1, 12, 0, 0);
+      end = new Date(today.getFullYear(), today.getMonth(), 0, 12, 0, 0);
+    }
+
+    const fmt = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    setStartDate(fmt(start));
+    setEndDate(fmt(end));
+  };
+
+  // Obtener día de la semana según Tijuana (0=Dom, 6=Sáb)
+  const getLocalDayOfWeek = (dateStr: string): number => {
+    const d = new Date(dateStr);
+    const dayStr = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Tijuana',
+      weekday: 'short',
+    }).format(d);
+    const map: Record<string, number> = {
+      Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+    };
+    return map[dayStr] ?? d.getDay();
+  };
+
+  // Obtener el lunes de la semana correspondiente a una fecha
+  const getMondayOfWeek = (dateStr: string): string => {
+    const d = new Date(dateStr);
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Tijuana',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const parts = formatter.formatToParts(d);
+    const m = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    const y = parts.find(p => p.type === 'year')?.value;
+    
+    const localDate = new Date(`${y}-${m}-${day}T12:00:00`);
+    const dayOfWeek = localDate.getDay();
+    const diff = localDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const monday = new Date(localDate);
+    monday.setDate(diff);
+    return monday.toISOString().split('T')[0];
+  };
+
+  // Mapeo local de Tijuana YYYY-MM-DD para agrupar
+  const getTijuanaLocalDateStr = (dateStr: string): string => {
+    const d = new Date(dateStr);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Tijuana',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(d);
+  };
+
+  // Procesamiento y cálculo de actividades
+  const processedActivities = useMemo(() => {
+    return activities.map(a => {
+      const dow = getLocalDayOfWeek(a.date);
+      const isWeekend = dow === 0 || dow === 6;
+      const hours = (a.durationMinutes || 0) / 60;
+      const rate = isWeekend ? rateWeekend : rateWeekday;
+      const cost = hours * rate;
+      const localDateStr = getTijuanaLocalDateStr(a.date);
+      const weekMonday = getMondayOfWeek(a.date);
+
+      return {
+        ...a,
+        localDateStr,
+        weekMonday,
+        isWeekend,
+        hours,
+        rate,
+        cost,
+        dow,
+      };
+    });
+  }, [activities, rateWeekday, rateWeekend]);
+
+  // Lista de semanas únicas para el selector de horario
+  const uniqueWeeks = useMemo(() => {
+    const w = Array.from(new Set(processedActivities.map(a => a.weekMonday)));
+    w.sort((a, b) => b.localeCompare(a));
+    return w;
+  }, [processedActivities]);
+
+  // Semana activa del horario (default: la primera disponible, o la actual)
+  const [activeWeek, setActiveWeek] = useState<string>('');
+
+  useEffect(() => {
+    if (uniqueWeeks.length > 0) {
+      if (!activeWeek || !uniqueWeeks.includes(activeWeek)) {
+        setActiveWeek(uniqueWeeks[0]);
+      }
+    } else {
+      setActiveWeek('');
+    }
+  }, [uniqueWeeks, activeWeek]);
+
+  // Resumen agrupado por empresa
+  const companySummary = useMemo(() => {
+    const summaryMap: Record<string, {
+      id: string;
+      name: string;
+      shortName: string;
+      color: string;
+      weekdayHours: number;
+      weekendHours: number;
+      weekdayCost: number;
+      weekendCost: number;
+      totalHours: number;
+      totalCost: number;
+    }> = {};
+
+    // Inicializar empresas del grupo
+    companies.forEach(co => {
+      summaryMap[co.id] = {
+        id: co.id,
+        name: co.name,
+        shortName: co.shortName,
+        color: co.color,
+        weekdayHours: 0,
+        weekendHours: 0,
+        weekdayCost: 0,
+        weekendCost: 0,
+        totalHours: 0,
+        totalCost: 0,
+      };
+    });
+
+    // Empresa fallback (si no está asociada)
+    const fallbackId = 'sin-empresa';
+    summaryMap[fallbackId] = {
+      id: fallbackId,
+      name: 'Sin Empresa Asignada',
+      shortName: 'S/E',
+      color: '#64748b', // Slate
+      weekdayHours: 0,
+      weekendHours: 0,
+      weekdayCost: 0,
+      weekendCost: 0,
+      totalHours: 0,
+      totalCost: 0,
+    };
+
+    // Acumular
+    processedActivities.forEach(a => {
+      const coId = a.company?.id || fallbackId;
+      const target = summaryMap[coId] || summaryMap[fallbackId];
+
+      if (a.isWeekend) {
+        target.weekendHours += a.hours;
+        target.weekendCost += a.cost;
+      } else {
+        target.weekdayHours += a.hours;
+        target.weekdayCost += a.cost;
+      }
+      target.totalHours += a.hours;
+      target.totalCost += a.cost;
+    });
+
+    // Retornar lista filtrando las que tengan 0 horas (excepto si están en DB, aunque es mejor filtrar las de 0 horas de consorcio para limpieza)
+    return Object.values(summaryMap).filter(item => item.totalHours > 0 || item.id !== fallbackId);
+  }, [processedActivities, companies]);
+
+  // KPIs
+  const kpis = useMemo(() => {
+    let totalHours = 0;
+    let weekdayHours = 0;
+    let weekendHours = 0;
+    let totalCost = 0;
+
+    processedActivities.forEach(a => {
+      totalHours += a.hours;
+      if (a.isWeekend) {
+        weekendHours += a.hours;
+      } else {
+        weekdayHours += a.hours;
+      }
+      totalCost += a.cost;
+    });
+
+    // Empresa donde más invierte tiempo
+    let topCompany = 'Ninguna';
+    let topCompanyHours = 0;
+    companySummary.forEach(c => {
+      if (c.totalHours > topCompanyHours) {
+        topCompanyHours = c.totalHours;
+        topCompany = c.name;
+      }
+    });
+    const topCompanyPercent = totalHours > 0 ? Math.round((topCompanyHours / totalHours) * 100) : 0;
+
+    // Tipo de actividad más frecuente
+    const typeCount: Record<string, number> = {};
+    processedActivities.forEach(a => {
+      typeCount[a.type] = (typeCount[a.type] || 0) + 1;
+    });
+    let topType = 'Ninguna';
+    let topTypeVal = 0;
+    Object.entries(typeCount).forEach(([type, count]) => {
+      if (count > topTypeVal) {
+        topTypeVal = count;
+        topType = activityTypeLabels[type] || type;
+      }
+    });
+    const topTypePercent = processedActivities.length > 0 ? Math.round((topTypeVal / processedActivities.length) * 100) : 0;
+
+    // Actividad en la que más ha trabajado
+    let topActivityTitle = 'Ninguna';
+    let topActivityHours = 0;
+    processedActivities.forEach(a => {
+      if (a.hours > topActivityHours) {
+        topActivityHours = a.hours;
+        topActivityTitle = a.title;
+      }
+    });
+
+    return {
+      totalHours,
+      weekdayHours,
+      weekendHours,
+      totalCost,
+      topCompany: topCompanyHours > 0 ? `${topCompany} (${topCompanyPercent}%)` : 'Ninguna',
+      topType: topTypeVal > 0 ? `${topType} (${topTypePercent}%)` : 'Ninguna',
+      topActivity: topActivityHours > 0 ? `${topActivityTitle.substring(0, 35)}${topActivityTitle.length > 35 ? '...' : ''} (${topActivityHours} hrs)` : 'Ninguna',
+    };
+  }, [processedActivities, companySummary]);
+
+  // Actividades filtradas para la semana seleccionada
+  const weekDaysData = useMemo(() => {
+    if (!activeWeek) return [];
+    
+    // Generar los 7 días de la semana seleccionada (Lunes a Domingo)
+    const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const [y, m, d] = activeWeek.split('-').map(Number);
+    const monday = new Date(y, m - 1, d, 12, 0, 0);
+
+    const weekActivities = processedActivities.filter(a => a.weekMonday === activeWeek);
+
+    return dayNames.map((name, index) => {
+      const current = new Date(monday);
+      current.setDate(monday.getDate() + index);
+      const dateStr = current.toISOString().split('T')[0];
+      const label = current.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+
+      // Filtrar actividades para este día específico
+      const dayActs = weekActivities.filter(a => a.localDateStr === dateStr);
+
+      return {
+        dayName: name,
+        dateStr,
+        label,
+        activities: dayActs,
+      };
+    });
+  }, [activeWeek, processedActivities]);
+
+  // Datos para los gráficos
+  const chartData = useMemo(() => {
+    // 1. Horas por Empresa (BarChart)
+    const byCompany = companySummary
+      .filter(c => c.totalHours > 0)
+      .map(c => ({
+        name: c.shortName,
+        fullName: c.name,
+        horas: Math.round(c.totalHours * 10) / 10,
+        color: c.color,
+      }));
+
+    // 2. Gráfico por semana y día para la semana activa
+    const scheduleChart = weekDaysData.map(wd => {
+      const dataPoint: any = { name: wd.dayName.substring(0, 3) };
+      // Agregar horas por empresa para este día
+      companies.forEach(co => {
+        const sum = wd.activities
+          .filter(a => a.company?.id === co.id)
+          .reduce((acc, curr) => acc + curr.hours, 0);
+        dataPoint[co.shortName] = Math.round(sum * 10) / 10;
+      });
+
+      // Suma sin empresa
+      const sumNoCo = wd.activities
+        .filter(a => !a.company)
+        .reduce((acc, curr) => acc + curr.hours, 0);
+      dataPoint['S/E'] = Math.round(sumNoCo * 10) / 10;
+
+      return dataPoint;
+    });
+
+    return {
+      byCompany,
+      scheduleChart,
+    };
+  }, [companySummary, weekDaysData, companies]);
+
+  // Exportar reporte a Excel
+  const handleExportExcel = () => {
+    if (processedActivities.length === 0) return;
+
+    const wb = XLSX.utils.book_new();
+
+    // --- Pestaña 1: Resumen General ---
+    const summaryRows: any[][] = [
+      ['PERRY APP - REPORTES ESPECIALES'],
+      ['REPORTE DE HORAS Y PRECALCULO DE COSTOS'],
+      [],
+      ['Colaborador:', carlosUser?.name || 'Carlos López'],
+      ['Correo:', carlosUser?.email || 'carlos.lopez@gsingenieria.mx'],
+      ['Período:', `${startDate} al ${endDate}`],
+      ['Generado el:', new Date().toLocaleDateString('es-MX', { hour12: false })],
+      [],
+      ['TARIFAS ESTABLECIDAS'],
+      ['Tarifa Lunes a Viernes (MXN):', `$${rateWeekday}.00 / hora`],
+      ['Tarifa Sábado y Domingo (MXN):', `$${rateWeekend}.00 / hora`],
+      [],
+      [
+        'Empresa',
+        'Horas Entre Semana (Lun-Vie)',
+        'Subtotal Entre Semana (MXN)',
+        'Horas Fin de Semana (Sáb-Dom)',
+        'Subtotal Fin de Semana (MXN)',
+        'Total Horas',
+        'Total a Pagar (MXN)'
+      ]
+    ];
+
+    let totalWdHrs = 0;
+    let totalWdVal = 0;
+    let totalWeHrs = 0;
+    let totalWeVal = 0;
+    let grandHrs = 0;
+    let grandVal = 0;
+
+    companySummary.forEach(c => {
+      summaryRows.push([
+        c.name,
+        c.weekdayHours,
+        c.weekdayCost,
+        c.weekendHours,
+        c.weekendCost,
+        c.totalHours,
+        c.totalCost
+      ]);
+      totalWdHrs += c.weekdayHours;
+      totalWdVal += c.weekdayCost;
+      totalWeHrs += c.weekendHours;
+      totalWeVal += c.weekendCost;
+      grandHrs += c.totalHours;
+      grandVal += c.totalCost;
+    });
+
+    summaryRows.push([
+      'TOTAL GENERAL',
+      totalWdHrs,
+      totalWdVal,
+      totalWeHrs,
+      totalWeVal,
+      grandHrs,
+      grandVal
+    ]);
+
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Resumen General");
+
+    // --- Pestaña 2: Detalle de Actividades ---
+    const detailRows: any[][] = [
+      ['DETALLE DE ACTIVIDADES - CARLOS LÓPEZ'],
+      ['Período del:', `${startDate} al ${endDate}`],
+      [],
+      [
+        'Fecha',
+        'Día',
+        'Empresa',
+        'Cliente',
+        'Actividad / Tarea',
+        'Tipo Actividad',
+        'Estatus',
+        'Horario',
+        'Horas Invertidas',
+        'Tipo de Tarifa',
+        'Tarifa Aplicada (MXN)',
+        'Subtotal (MXN)'
+      ]
+    ];
+
+    processedActivities.forEach(a => {
+      const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const dowName = days[a.dow];
+      const timeRange = a.startTime && a.endTime ? `${a.startTime} - ${a.endTime}` : '—';
+      const typeLabel = activityTypeLabels[a.type] || a.type;
+
+      detailRows.push([
+        a.localDateStr,
+        dowName,
+        a.company?.name || 'Sin Empresa',
+        a.client?.name || '—',
+        a.title,
+        typeLabel,
+        a.status,
+        timeRange,
+        a.hours,
+        a.isWeekend ? 'Fin de Semana' : 'Entre Semana',
+        a.rate,
+        a.cost
+      ]);
+    });
+
+    const wsDetail = XLSX.utils.aoa_to_sheet(detailRows);
+    XLSX.utils.book_append_sheet(wb, wsDetail, "Detalle de Actividades");
+
+    // Descargar archivo
+    XLSX.writeFile(wb, `Reporte_Especial_Carlos_Lopez_${startDate}_al_${endDate}.xlsx`);
+  };
+
+  return (
+    <div className="space-y-6 pb-20 md:pb-0">
+      {/* Cabecera de Página */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-2">
+            <PieIcon className="w-8 h-8 text-indigo-600" />
+            Reportes Especiales
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Consulta y conciliación de horas de soporte y precalculos de costos.
+          </p>
+        </div>
+
+        {/* Dropdown Report Selector (Extensible) */}
+        <div className="relative min-w-[260px]">
+          <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Tipo de Reporte</label>
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium shadow-sm hover:border-slate-300 cursor-pointer">
+            <span className="flex-1 text-sm">Reporte de Horas — Carlos López</span>
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* Contenedor de Filtros y Configuración de Tarifas */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Panel de Filtros */}
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-indigo-500" />
+              Rango de Fechas
+            </h3>
+            {/* Quick selections */}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setQuickRange('this-week')}
+                className="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"
+              >
+                Esta Sem.
+              </button>
+              <button
+                onClick={() => setQuickRange('last-week')}
+                className="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"
+              >
+                Sem. Pasada
+              </button>
+              <button
+                onClick={() => setQuickRange('this-month')}
+                className="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"
+              >
+                Este Mes
+              </button>
+              <button
+                onClick={() => setQuickRange('last-month')}
+                className="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"
+              >
+                Mes Pasado
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Fecha de Inicio</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Fecha Fin</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Panel de Configuración de Costo Horario */}
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-5 space-y-4">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <DollarSign className="w-4 h-4 text-indigo-500" />
+            Costos Horarios (MXN)
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1" title="Lunes a Viernes">
+                Entre Semana (L-V)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-slate-400 text-sm">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={rateWeekday}
+                  onChange={(e) => handleRateWeekdayChange(Number(e.target.value))}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-7 pr-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-700"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1" title="Sábado y Domingo">
+                Fin de Semana (S-D)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-slate-400 text-sm">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={rateWeekend}
+                  onChange={(e) => handleRateWeekendChange(Number(e.target.value))}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-7 pr-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-700"
+                />
+              </div>
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-400 italic mt-1 leading-normal">
+            * Guardado automático local en tu navegador.
+          </p>
+        </div>
+      </div>
+
+      {/* Spinner de Carga o Mensaje de Error */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm gap-3">
+          <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
+          <p className="text-slate-500 font-medium text-sm">Consultando actividades...</p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 gap-3">
+          <AlertCircle className="w-12 h-12 text-rose-500" />
+          <h3 className="font-semibold text-slate-800 text-lg">Error de Consulta</h3>
+          <p className="text-slate-500 text-sm text-center max-w-md">{error}</p>
+        </div>
+      ) : (
+        <>
+          {/* Fila de KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-indigo-50">
+                  <Clock className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Horas Totales</p>
+                  <p className="text-2xl font-bold text-slate-800 mt-1">
+                    {Math.round(kpis.totalHours * 10) / 10}
+                    <span className="text-sm font-normal text-slate-400 ml-1">hrs</span>
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-none">
+                    {Math.round(kpis.weekdayHours * 10) / 10} L-V | {Math.round(kpis.weekendHours * 10) / 10} S-D
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-emerald-50">
+                  <DollarSign className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Monto Calculado</p>
+                  <p className="text-2xl font-bold text-slate-800 mt-1">
+                    ${kpis.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-none">
+                    Estimación para pago
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-sky-50">
+                  <Building2Icon className="w-5 h-5 text-sky-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Empresa Principal</p>
+                  <p className="text-sm font-bold text-slate-700 mt-1.5 truncate max-w-[160px]" title={kpis.topCompany}>
+                    {kpis.topCompany}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-none">
+                    Mayor inversión de tiempo
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-purple-50">
+                  <TrendingUp className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Actividad Común</p>
+                  <p className="text-sm font-bold text-slate-700 mt-1.5 truncate max-w-[160px]" title={kpis.topType}>
+                    {kpis.topType}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-none">
+                    Tipo más recurrente
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-amber-50">
+                  <Award className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Actividad Mayor</p>
+                  <p className="text-sm font-bold text-slate-700 mt-1.5 truncate max-w-[160px]" title={kpis.topActivity}>
+                    {kpis.topActivity}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-none">
+                    Sesión continua más larga
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Menú de Pestañas y Botón de Excel */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 gap-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('schedule')}
+                className={`py-3 px-4 text-sm font-medium border-b-2 transition-all ${
+                  activeTab === 'schedule'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                Horario Semanal
+              </button>
+              <button
+                onClick={() => setActiveTab('charts')}
+                className={`py-3 px-4 text-sm font-medium border-b-2 transition-all ${
+                  activeTab === 'charts'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                Gráficos y Estadísticas
+              </button>
+              <button
+                onClick={() => setActiveTab('table')}
+                className={`py-3 px-4 text-sm font-medium border-b-2 transition-all ${
+                  activeTab === 'table'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                Tablas y Conciliación
+              </button>
+            </div>
+
+            <button
+              onClick={handleExportExcel}
+              disabled={processedActivities.length === 0}
+              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-sm transition-all w-full sm:w-auto"
+            >
+              <Download className="w-4 h-4" />
+              Exportar a Excel
+            </button>
+          </div>
+
+          {/* Renderizado de Vistas según Pestaña Activa */}
+          <div className="space-y-6">
+            {activeTab === 'schedule' && (
+              <div className="space-y-6">
+                {/* Selector de Semana en Horario */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-indigo-500" />
+                    <span className="font-semibold text-slate-800 text-sm">Visualizar Horario por Semana:</span>
+                  </div>
+
+                  {uniqueWeeks.length > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={activeWeek}
+                        onChange={(e) => setActiveWeek(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      >
+                        {uniqueWeeks.map(w => {
+                          // Generar una etiqueta amigable "Lun DD a Dom DD de Mes"
+                          const [y, m, d] = w.split('-').map(Number);
+                          const dateObj = new Date(y, m - 1, d, 12, 0, 0);
+                          const sunday = new Date(dateObj);
+                          sunday.setDate(dateObj.getDate() + 6);
+                          
+                          const startFmt = dateObj.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+                          const endFmt = sunday.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                          return (
+                            <option key={w} value={w}>
+                              Semana: {startFmt} — {endFmt}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400 text-sm italic">No hay actividades registradas en el período.</span>
+                  )}
+                </div>
+
+                {/* Grid Semanal */}
+                {activeWeek && weekDaysData.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                    {weekDaysData.map(wd => {
+                      const isWeekendDay = wd.dayName === 'Sábado' || wd.dayName === 'Domingo';
+                      return (
+                        <div
+                          key={wd.dateStr}
+                          className={`rounded-xl border shadow-sm flex flex-col min-h-[300px] overflow-hidden ${
+                            isWeekendDay
+                              ? 'bg-slate-50/70 border-slate-200'
+                              : 'bg-white border-slate-200'
+                          }`}
+                        >
+                          {/* Cabecera del Día */}
+                          <div className={`p-3 border-b text-center ${
+                            isWeekendDay 
+                              ? 'bg-slate-100/80 border-slate-200 text-slate-600' 
+                              : 'bg-indigo-50/30 border-slate-100 text-slate-800'
+                          }`}>
+                            <p className="font-bold text-xs uppercase tracking-wider">{wd.dayName}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{wd.label}</p>
+                          </div>
+
+                          {/* Listado de Actividades del Día */}
+                          <div className="p-2.5 flex-1 space-y-2 overflow-y-auto">
+                            {wd.activities.length > 0 ? (
+                              wd.activities.map(act => {
+                                const companyColor = act.company?.color || '#64748b';
+                                return (
+                                  <div
+                                    key={act.id}
+                                    onClick={() => setSelectedActivity(act)}
+                                    style={{
+                                      borderLeft: `4px solid ${companyColor}`,
+                                      backgroundColor: `${companyColor}0B`
+                                    }}
+                                    className="p-2 rounded border border-slate-100 hover:shadow-md hover:border-slate-200 transition-all cursor-pointer text-left"
+                                    title="Haz clic para ver más detalles"
+                                  >
+                                    <div className="flex justify-between items-start gap-1">
+                                      <span
+                                        style={{ color: companyColor }}
+                                        className="text-[9px] font-bold uppercase tracking-wide"
+                                      >
+                                        {act.company?.shortName || 'S/E'}
+                                      </span>
+                                      <span className="text-[9px] font-bold text-slate-500 whitespace-nowrap bg-white px-1 py-0.5 rounded border border-slate-100 shadow-sm flex items-center gap-0.5">
+                                        <Clock className="w-2.5 h-2.5" />
+                                        {act.hours}h
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] font-semibold text-slate-700 mt-1 leading-snug line-clamp-2">
+                                      {act.title}
+                                    </p>
+                                    {act.client && (
+                                      <p className="text-[9px] font-medium text-slate-400 mt-1 bg-white border border-slate-100 w-fit px-1 rounded truncate max-w-full">
+                                        🏢 {act.client.name}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="h-full flex items-center justify-center py-10">
+                                <p className="text-[10px] text-slate-300 italic text-center leading-normal">
+                                  Sin soporte
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
+                    <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <h3 className="font-semibold text-slate-700">Sin Datos de Horario</h3>
+                    <p className="text-slate-400 text-sm mt-1 max-w-md mx-auto">
+                      No se encontraron actividades registradas para Carlos en las semanas comprendidas en este rango de fechas.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Gráfico semanal rápido bajo la agenda */}
+                {activeWeek && chartData.scheduleChart.some(d => Object.keys(d).length > 1) && (
+                  <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                    <h3 className="font-semibold text-slate-800 text-sm mb-4">
+                      Horas Invertidas por Día en esta Semana
+                    </h3>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData.scheduleChart}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip contentStyle={{ borderRadius: '8px', fontSize: 12 }} />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          {companies.map(co => (
+                            <Bar
+                              key={co.id}
+                              dataKey={co.shortName}
+                              stackId="a"
+                              fill={co.color}
+                              name={co.name}
+                            />
+                          ))}
+                          <Bar
+                            dataKey="S/E"
+                            stackId="a"
+                            fill="#64748b"
+                            name="Sin Empresa"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'charts' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Horas Totales por Empresa */}
+                <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                  <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-indigo-500" />
+                    Horas Totales por Empresa
+                  </h3>
+                  {chartData.byCompany.length > 0 ? (
+                    <div className="h-72">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData.byCompany}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 12 }} />
+                          <Tooltip
+                            formatter={(value: any, name: any, props: any) => [`${value} hrs`, props.payload.fullName]}
+                            contentStyle={{ borderRadius: '8px' }}
+                          />
+                          <Bar dataKey="horas" fill="#6366f1" radius={[4, 4, 0, 0]}>
+                            {chartData.byCompany.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-72 flex items-center justify-center">
+                      <p className="text-slate-400 text-sm italic">Sin datos disponibles</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Porcentaje de Tiempo por Empresa */}
+                <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                  <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                    <PieIcon className="w-4 h-4 text-indigo-500" />
+                    Porcentaje de Distribución de Tiempo
+                  </h3>
+                  {chartData.byCompany.length > 0 ? (
+                    <div className="h-72 flex flex-col md:flex-row items-center justify-center">
+                      <div className="w-full md:w-1/2 h-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={chartData.byCompany}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={90}
+                              paddingAngle={3}
+                              dataKey="horas"
+                            >
+                              {chartData.byCompany.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => `${value} hrs`} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      {/* Leyendas personalizadas */}
+                      <div className="w-full md:w-1/2 flex flex-col gap-2 mt-4 md:mt-0">
+                        {chartData.byCompany.map(c => {
+                          const percent = kpis.totalHours > 0 ? ((c.horas / kpis.totalHours) * 100).toFixed(1) : '0';
+                          return (
+                            <div key={c.name} className="flex items-center gap-2 text-xs">
+                              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                              <span className="font-bold text-slate-700 min-w-[30px]">{c.name}</span>
+                              <span className="text-slate-400 truncate max-w-[120px]">{c.fullName}</span>
+                              <span className="ml-auto font-semibold text-slate-600">{percent}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-72 flex items-center justify-center">
+                      <p className="text-slate-400 text-sm italic">Sin datos disponibles</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'table' && (
+              <div className="space-y-6">
+                {/* 1. Tabla de Conciliación por Empresa */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                    <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                      <DollarSign className="w-4.5 h-4.5 text-indigo-500" />
+                      Resumen de Cobro y Horas por Empresa del Grupo
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Montos calculados aplicando tarifa de entre semana (${rateWeekday}/hr) y fin de semana (${rateWeekend}/hr).
+                    </p>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-100/50 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                          <th className="px-5 py-3">Empresa</th>
+                          <th className="px-5 py-3 text-right">Horas L-V</th>
+                          <th className="px-5 py-3 text-right">Subtotal L-V</th>
+                          <th className="px-5 py-3 text-right">Horas S-D</th>
+                          <th className="px-5 py-3 text-right">Subtotal S-D</th>
+                          <th className="px-5 py-3 text-right">Total Horas</th>
+                          <th className="px-5 py-3 text-right text-indigo-600 bg-indigo-50/30">Total a Facturar</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs">
+                        {companySummary.map(c => (
+                          <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-5 py-3 font-semibold text-slate-800 flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                              {c.name}
+                            </td>
+                            <td className="px-5 py-3 text-right text-slate-600 font-medium">
+                              {Math.round(c.weekdayHours * 10) / 10} h
+                            </td>
+                            <td className="px-5 py-3 text-right text-slate-500">
+                              ${c.weekdayCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-5 py-3 text-right text-slate-600 font-medium">
+                              {Math.round(c.weekendHours * 10) / 10} h
+                            </td>
+                            <td className="px-5 py-3 text-right text-slate-500">
+                              ${c.weekendCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-5 py-3 text-right text-slate-700 font-bold">
+                              {Math.round(c.totalHours * 10) / 10} h
+                            </td>
+                            <td className="px-5 py-3 text-right font-bold text-indigo-600 bg-indigo-50/10">
+                              ${c.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Fila de Totales Generales */}
+                        <tr className="bg-indigo-50/20 font-bold border-t-2 border-slate-200">
+                          <td className="px-5 py-4 text-slate-800">TOTAL GENERAL</td>
+                          <td className="px-5 py-4 text-right text-slate-800">
+                            {Math.round(kpis.weekdayHours * 10) / 10} h
+                          </td>
+                          <td className="px-5 py-4 text-right text-slate-800">
+                            ${companySummary.reduce((acc, c) => acc + c.weekdayCost, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-5 py-4 text-right text-slate-800">
+                            {Math.round(kpis.weekendHours * 10) / 10} h
+                          </td>
+                          <td className="px-5 py-4 text-right text-slate-800">
+                            ${companySummary.reduce((acc, c) => acc + c.weekendCost, 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-5 py-4 text-right text-slate-800">
+                            {Math.round(kpis.totalHours * 10) / 10} h
+                          </td>
+                          <td className="px-5 py-4 text-right text-indigo-700 text-sm">
+                            ${kpis.totalCost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 2. Tabla de Detalle Actividades */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-semibold text-slate-800">Detalle Completo de Actividades</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Lista de tareas realizadas por Carlos en el período, ordenadas cronológicamente.
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold text-slate-500 bg-slate-100 border px-2.5 py-1 rounded-full shadow-sm">
+                      {processedActivities.length} actividades
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-100/50 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                          <th className="px-5 py-3">Fecha</th>
+                          <th className="px-5 py-3">Empresa</th>
+                          <th className="px-5 py-3">Cliente</th>
+                          <th className="px-5 py-3">Descripción</th>
+                          <th className="px-5 py-3">Tipo</th>
+                          <th className="px-5 py-3">Horario</th>
+                          <th className="px-5 py-3 text-right">Horas</th>
+                          <th className="px-5 py-3 text-right">Costo</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs">
+                        {processedActivities.map(a => {
+                          const dowNames = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+                          const dowLabel = dowNames[a.dow];
+                          const typeLabel = activityTypeLabels[a.type] || a.type;
+                          const companyColor = a.company?.color || '#64748b';
+
+                          return (
+                            <tr key={a.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => setSelectedActivity(a)}>
+                              <td className="px-5 py-3 whitespace-nowrap text-slate-500 font-medium">
+                                {a.localDateStr} <span className="text-[10px] text-slate-400">({dowLabel})</span>
+                              </td>
+                              <td className="px-5 py-3 whitespace-nowrap">
+                                <span
+                                  style={{
+                                    border: `1px solid ${companyColor}`,
+                                    color: companyColor,
+                                    backgroundColor: `${companyColor}0F`
+                                  }}
+                                  className="px-2 py-0.5 rounded text-[10px] font-bold"
+                                >
+                                  {a.company?.shortName || 'S/E'}
+                                </span>
+                              </td>
+                              <td className="px-5 py-3 font-semibold text-slate-700 max-w-[140px] truncate">
+                                {a.client?.name || '—'}
+                              </td>
+                              <td className="px-5 py-3 text-slate-600 max-w-[240px] truncate" title={a.title}>
+                                {a.title}
+                              </td>
+                              <td className="px-5 py-3 whitespace-nowrap text-slate-500">
+                                {typeLabel}
+                              </td>
+                              <td className="px-5 py-3 whitespace-nowrap text-slate-400">
+                                {a.startTime && a.endTime ? `${a.startTime} - ${a.endTime}` : '—'}
+                              </td>
+                              <td className="px-5 py-3 text-right font-semibold text-slate-600">
+                                {a.hours} h
+                              </td>
+                              <td className="px-5 py-3 text-right font-bold text-slate-800">
+                                ${a.cost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Modal de Detalle de Actividad */}
+      {selectedActivity && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
+            <div
+              className="p-5 text-white flex justify-between items-start"
+              style={{
+                backgroundColor: selectedActivity.company?.color || '#4F46E5',
+              }}
+            >
+              <div>
+                <span className="text-[10px] uppercase font-bold bg-white/20 px-2 py-0.5 rounded">
+                  {selectedActivity.company?.name || 'Sin Empresa'}
+                </span>
+                <h3 className="font-bold text-lg mt-1 leading-snug">Detalle de Actividad</h3>
+              </div>
+              <button
+                onClick={() => setSelectedActivity(null)}
+                className="text-white/80 hover:text-white bg-black/10 hover:bg-black/20 rounded-full w-7 h-7 flex items-center justify-center font-bold transition-all"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-left">
+              <div>
+                <label className="text-[10px] uppercase font-bold text-slate-400">Descripción / Tarea</label>
+                <p className="text-sm font-semibold text-slate-700 mt-1 leading-relaxed">
+                  {selectedActivity.title}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-slate-400">Fecha</label>
+                  <p className="text-sm font-medium text-slate-600 mt-0.5">
+                    {getTijuanaLocalDateStr(selectedActivity.date)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-slate-400">Cliente</label>
+                  <p className="text-sm font-medium text-slate-600 mt-0.5">
+                    🏢 {selectedActivity.client?.name || '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-slate-400">Tipo de Soporte</label>
+                  <p className="text-sm font-medium text-slate-600 mt-0.5">
+                    {activityTypeLabels[selectedActivity.type] || selectedActivity.type}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-slate-400">Horas Invertidas</label>
+                  <p className="text-sm font-bold text-indigo-600 mt-0.5">
+                    {((selectedActivity.durationMinutes || 0) / 60)} hrs
+                    <span className="text-xs font-normal text-slate-400 ml-1">
+                      ({selectedActivity.durationMinutes || 0} min)
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-slate-400">Horario Registrado</label>
+                  <p className="text-sm font-medium text-slate-600 mt-0.5">
+                    ⏰ {selectedActivity.startTime && selectedActivity.endTime
+                      ? `${selectedActivity.startTime} a ${selectedActivity.endTime}`
+                      : 'Sin horario registrado'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase font-bold text-slate-400">Folio Odoo / OT</label>
+                  <p className="text-sm font-mono text-slate-600 mt-0.5">
+                    {selectedActivity.workOrderFolio || '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-100 text-right">
+              <button
+                onClick={() => setSelectedActivity(null)}
+                className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs px-4 py-2 rounded-lg transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Icono auxiliar dinámico
+function Building2Icon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18" />
+      <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+      <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+      <path d="M10 6h4" />
+      <path d="M10 10h4" />
+      <path d="M10 14h4" />
+      <path d="M10 18h4" />
+    </svg>
+  );
+}

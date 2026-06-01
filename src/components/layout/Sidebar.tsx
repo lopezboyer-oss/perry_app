@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Forklift,
   Timer,
+  PieChart,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ export const navItems = [
   { href: '/registro-personal', label: 'Asistencia', icon: Timer },
   { href: '/cobranza', label: 'Recibos', icon: DollarSign },
   { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
+  { href: '/reportes-especiales', label: 'Rep. Especiales', icon: PieChart },
   { href: '/oportunidades', label: 'Oportunidades', icon: Target, disabled: true },
   { href: '/analitica', label: 'Analítica', icon: BarChart3, disabled: true },
   { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
@@ -49,9 +51,17 @@ export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  const visibleNavItems = user.role === 'TECNICO'
-    ? navItems.filter(item => item.href === '/registro-personal')
-    : navItems;
+  const hasSpecialReportsAccess = ['ADMIN', 'ADMINISTRACION'].includes(user.role) || user.email === 'carlos.lopez@gsingenieria.mx';
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.href === '/reportes-especiales') {
+      return hasSpecialReportsAccess;
+    }
+    if (user.role === 'TECNICO') {
+      return item.href === '/registro-personal';
+    }
+    return true;
+  });
 
   return (
     <>
