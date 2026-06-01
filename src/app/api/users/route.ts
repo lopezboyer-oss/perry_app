@@ -21,9 +21,29 @@ export async function GET() {
     }
 
     const isAdmin = ['ADMIN', 'ADMINISTRACION'].includes(user.role);
+    const isAdministracion = user.role === 'ADMINISTRACION';
+
+    const whereFilter: any = { isActive: true };
+
+    // Apply company filtration for ADMINISTRACION role
+    if (isAdministracion) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { companies: true }
+      });
+      const allowedCompanyIds = currentUser?.companies.map(c => c.companyId) || [];
+      
+      whereFilter.companies = {
+        some: {
+          companyId: {
+            in: allowedCompanyIds
+          }
+        }
+      };
+    }
 
     const users = await prisma.user.findMany({
-      where: { isActive: true },
+      where: whereFilter,
       select: {
         id: true,
         name: true,
@@ -74,6 +94,22 @@ export async function POST(req: Request) {
     // Only ADMIN MAESTRO can create another ADMIN MAESTRO
     if (role === 'ADMIN' && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Solo un Admin Maestro puede crear otro Admin Maestro' }, { status: 403 });
+    }
+
+    // Validate company scope for ADMINISTRACION role
+    if (session.user.role === 'ADMINISTRACION') {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { companies: true }
+      });
+      const allowedCompanyIds = currentUser?.companies.map(c => c.companyId) || [];
+
+      // Check if all assigned companyIds are within allowed ones
+      const targetCompanyIds = companyIds || [];
+      const invalidCompanies = targetCompanyIds.filter((cId: string) => !allowedCompanyIds.includes(cId));
+      if (invalidCompanies.length > 0) {
+        return NextResponse.json({ error: 'No tienes permiso para asignar estas empresas' }, { status: 403 });
+      }
     }
 
     const existingUser = await prisma.user.findUnique({

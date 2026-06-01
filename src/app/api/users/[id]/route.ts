@@ -20,6 +20,38 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       return NextResponse.json({ error: 'Solo un Admin Maestro puede asignar el rol Admin Maestro' }, { status: 403 });
     }
 
+    // Validate scope and permissions for ADMINISTRACION role
+    if (session.user.role === 'ADMINISTRACION') {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { companies: true }
+      });
+      const allowedCompanyIds = currentUser?.companies.map(c => c.companyId) || [];
+
+      // Verify target user shares at least one company in common
+      const targetUser = await prisma.user.findUnique({
+        where: { id },
+        include: { companies: true }
+      });
+
+      if (!targetUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      const hasCommonCompany = targetUser.companies.some(tc => allowedCompanyIds.includes(tc.companyId));
+      if (!hasCommonCompany) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+
+      // Verify that all companyIds being updated belong to the allowed ones of the admin
+      if (companyIds && Array.isArray(companyIds)) {
+        const invalidCompanies = companyIds.filter((cId: string) => !allowedCompanyIds.includes(cId));
+        if (invalidCompanies.length > 0) {
+          return NextResponse.json({ error: 'No tienes permiso para asignar estas empresas' }, { status: 403 });
+        }
+      }
+    }
+
     const isAdmin = ['ADMIN', 'ADMINISTRACION'].includes(session.user.role);
 
     const dataToUpdate: any = {
@@ -84,6 +116,30 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     }
 
     const { id } = params;
+
+    // Validate scope for ADMINISTRACION role
+    if (session.user.role === 'ADMINISTRACION') {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        include: { companies: true }
+      });
+      const allowedCompanyIds = currentUser?.companies.map(c => c.companyId) || [];
+
+      // Verify target user shares at least one company in common
+      const targetUser = await prisma.user.findUnique({
+        where: { id },
+        include: { companies: true }
+      });
+
+      if (!targetUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      const hasCommonCompany = targetUser.companies.some(tc => allowedCompanyIds.includes(tc.companyId));
+      if (!hasCommonCompany) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+    }
 
     // Soft delete user
     await prisma.user.update({
