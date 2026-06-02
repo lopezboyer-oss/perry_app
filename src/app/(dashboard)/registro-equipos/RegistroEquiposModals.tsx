@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, CheckCircle, XCircle, Camera, Save, Loader2, Trash2, Copy, Download, Check } from 'lucide-react';
 import { CHECKLIST_ITEMS, type EquipRecordData, type FolioReportRow, type REActivity } from './registro-equipos-types';
 import { formatDate } from '@/lib/utils';
@@ -308,29 +308,50 @@ interface EquipmentReportModalProps {
 
 export function EquipmentReportModal({ activities, selectedWeekend, onClose }: EquipmentReportModalProps) {
   const [copied, setCopied] = useState(false);
+  const [filterOwnership, setFilterOwnership] = useState('');
+  const [filterFolio, setFilterFolio] = useState('');
 
   // Extract all equipment usage rows
-  const reportData = activities.flatMap(act => {
-    const dateStr = act.date.substring(0, 10);
-    return act.equips.map(eq => ({
-      equipName: eq.equipName,
-      equipOwnership: eq.equipOwnership || '—',
-      date: dateStr,
-      folio: act.workOrderFolio || '—',
-      engineer: act.user?.name || '—',
-      title: act.title,
-    }));
-  });
+  const reportData = useMemo(() => {
+    return activities.flatMap(act => {
+      const dateStr = act.date.substring(0, 10);
+      return act.equips.map(eq => ({
+        equipName: eq.equipName,
+        equipOwnership: eq.equipOwnership || '—',
+        date: dateStr,
+        folio: act.workOrderFolio || '—',
+        engineer: act.user?.name || '—',
+        title: act.title,
+      }));
+    });
+  }, [activities]);
+
+  // Unique folios for filter
+  const uniqueFolios = useMemo(() => {
+    const list = reportData.map(r => r.folio).filter(f => f && f !== '—');
+    return [...new Set(list)].sort();
+  }, [reportData]);
+
+  // Filtered data
+  const filteredData = useMemo(() => {
+    return reportData.filter(row => {
+      if (filterOwnership && row.equipOwnership !== filterOwnership) return false;
+      if (filterFolio && row.folio !== filterFolio) return false;
+      return true;
+    });
+  }, [reportData, filterOwnership, filterFolio]);
 
   const getWhatsAppText = () => {
     let text = `*REPORTE DE USO DE EQUIPOS DE ELEVACIÓN*\n`;
     text += `*Fin de Semana:* ${selectedWeekend}\n`;
+    if (filterOwnership) text += `*Propiedad:* ${filterOwnership}\n`;
+    if (filterFolio) text += `*Folio Odoo:* ${filterFolio}\n`;
     text += `-------------------------------------------\n\n`;
     
-    if (reportData.length === 0) {
-      text += `No hay equipos asignados para este fin de semana.\n`;
+    if (filteredData.length === 0) {
+      text += `No hay equipos asignados con los filtros seleccionados.\n`;
     } else {
-      reportData.forEach(row => {
+      filteredData.forEach(row => {
         text += `🔧 *Equipo:* ${row.equipName} (${row.equipOwnership})\n`;
         text += `📅 *Fecha:* ${row.date}\n`;
         text += `📋 *Folio Odoo:* ${row.folio}\n`;
@@ -350,7 +371,7 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
 
   const handleExportExcel = () => {
     const headers = ['Nombre del Equipo', 'Propiedad', 'Fecha', 'Folio Odoo', 'Ingeniero Responsable', 'Título de la Actividad'];
-    const rows = reportData.map(row => [
+    const rows = filteredData.map(row => [
       row.equipName,
       row.equipOwnership,
       row.date,
@@ -376,28 +397,59 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg"><X size={20} /></button>
         </div>
         
-        {/* Buttons */}
-        <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex flex-wrap gap-2">
-          <button
-            onClick={handleCopyWhatsApp}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? '¡Copiado!' : 'Copiar para WhatsApp'}
-          </button>
-          <button
-            onClick={handleExportExcel}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-          >
-            <Download size={14} />
-            Descargar Excel
-          </button>
+        {/* Buttons & Filters */}
+        <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleCopyWhatsApp}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied ? '¡Copiado!' : 'Copiar para WhatsApp'}
+            </button>
+            <button
+              onClick={handleExportExcel}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+            >
+              <Download size={14} />
+              Descargar Excel
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-semibold text-slate-500">Filtros:</span>
+            <select
+              value={filterOwnership}
+              onChange={e => setFilterOwnership(e.target.value)}
+              className="border border-slate-300 rounded-lg px-2.5 py-1 text-slate-700 bg-white"
+            >
+              <option value="">Todas las propiedades</option>
+              <option value="PROPIA">Propia (PROPIA)</option>
+              <option value="RENTADA">Rentada (RENTADA)</option>
+            </select>
+            <select
+              value={filterFolio}
+              onChange={e => setFilterFolio(e.target.value)}
+              className="border border-slate-300 rounded-lg px-2.5 py-1 text-slate-700 bg-white"
+            >
+              <option value="">Todos los folios</option>
+              {uniqueFolios.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+            {(filterOwnership || filterFolio) && (
+              <button
+                onClick={() => { setFilterOwnership(''); setFilterFolio(''); }}
+                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto p-5">
-          {reportData.length === 0 ? (
+          {filteredData.length === 0 ? (
             <div className="text-center py-12 text-slate-400">
-              <p className="font-medium">No hay datos de uso de equipos para este fin de semana</p>
+              <p className="font-medium">No hay datos de uso de equipos con los filtros seleccionados</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -413,7 +465,7 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
                   </tr>
                 </thead>
                 <tbody>
-                  {reportData.map((row, idx) => (
+                  {filteredData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50">
                       <td className="text-xs font-semibold text-slate-800">{row.equipName}</td>
                       <td className="text-xs">
@@ -434,11 +486,12 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
         </div>
 
         <div className="px-5 py-3 border-t border-slate-200 flex justify-between items-center bg-slate-50">
-          <p className="text-xs text-slate-500">{reportData.length} asignaciones de equipo(s)</p>
+          <p className="text-xs text-slate-500">{filteredData.length} asignaciones de equipo(s)</p>
           <button onClick={onClose} className="btn-secondary text-sm">Cerrar</button>
         </div>
       </div>
     </div>
   );
 }
+
 
