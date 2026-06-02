@@ -10,13 +10,19 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const hasAccess = canManageResources(user.role) || user.accessElevationEquip;
   if (!hasAccess)
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
-  const { name, ownership, isActive } = await req.json();
+  const { name, ownership, isActive, costPerDay, freightCost, supplierId } = await req.json();
   const equip = await prisma.elevationEquip.update({
     where: { id: params.id },
     data: {
-      ...(name && { name: name.trim() }),
-      ...(ownership && { ownership }),
+      ...(name !== undefined && { name: name.trim() }),
+      ...(ownership !== undefined && { ownership }),
       ...(isActive !== undefined && { isActive }),
+      ...(costPerDay !== undefined && { costPerDay: Number(costPerDay) || 0 }),
+      ...(freightCost !== undefined && { freightCost: Number(freightCost) || 0 }),
+      supplierId: supplierId !== undefined ? (supplierId || null) : undefined,
+    },
+    include: {
+      supplier: { select: { id: true, name: true } },
     },
   });
   return NextResponse.json(equip);
