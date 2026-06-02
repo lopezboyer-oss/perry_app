@@ -5,6 +5,7 @@ export interface EquipAssignment {
   equipId: string;
   equipName: string;
   equipOwnership: string | null;
+  supplierName?: string | null;
 }
 
 export interface TechAssignment {

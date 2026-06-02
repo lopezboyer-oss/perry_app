@@ -310,6 +310,7 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
   const [copied, setCopied] = useState(false);
   const [filterOwnership, setFilterOwnership] = useState('');
   const [filterFolio, setFilterFolio] = useState('');
+  const [filterSupplier, setFilterSupplier] = useState('');
 
   // Extract all equipment usage rows
   const reportData = useMemo(() => {
@@ -318,6 +319,7 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
       return act.equips.map(eq => ({
         equipName: eq.equipName,
         equipOwnership: eq.equipOwnership || '—',
+        supplierName: eq.supplierName || null,
         date: dateStr,
         folio: act.workOrderFolio || '—',
         engineer: act.user?.name || '—',
@@ -332,19 +334,27 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
     return [...new Set(list)].sort();
   }, [reportData]);
 
+  // Unique suppliers for filter
+  const uniqueSuppliers = useMemo(() => {
+    const list = reportData.map(r => r.supplierName).filter(Boolean) as string[];
+    return [...new Set(list)].sort();
+  }, [reportData]);
+
   // Filtered data
   const filteredData = useMemo(() => {
     return reportData.filter(row => {
       if (filterOwnership && row.equipOwnership !== filterOwnership) return false;
       if (filterFolio && row.folio !== filterFolio) return false;
+      if (filterSupplier && row.supplierName !== filterSupplier) return false;
       return true;
     });
-  }, [reportData, filterOwnership, filterFolio]);
+  }, [reportData, filterOwnership, filterFolio, filterSupplier]);
 
   const getWhatsAppText = () => {
     let text = `*REPORTE DE USO DE EQUIPOS DE ELEVACIÓN*\n`;
     text += `*Fin de Semana:* ${selectedWeekend}\n`;
     if (filterOwnership) text += `*Propiedad:* ${filterOwnership}\n`;
+    if (filterSupplier) text += `*Proveedor:* ${filterSupplier}\n`;
     if (filterFolio) text += `*Folio Odoo:* ${filterFolio}\n`;
     text += `-------------------------------------------\n\n`;
     
@@ -352,7 +362,8 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
       text += `No hay equipos asignados con los filtros seleccionados.\n`;
     } else {
       filteredData.forEach(row => {
-        text += `🔧 *Equipo:* ${row.equipName} (${row.equipOwnership})\n`;
+        const ownershipDesc = row.equipOwnership === 'PROPIO' ? 'PROPIO' : `RENTADO${row.supplierName ? ` - Prov: ${row.supplierName}` : ''}`;
+        text += `🔧 *Equipo:* ${row.equipName} (${ownershipDesc})\n`;
         text += `📅 *Fecha:* ${row.date}\n`;
         text += `📋 *Folio Odoo:* ${row.folio}\n`;
         text += `👤 *Responsable:* ${row.engineer}\n`;
@@ -370,10 +381,11 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
   };
 
   const handleExportExcel = () => {
-    const headers = ['Nombre del Equipo', 'Propiedad', 'Fecha', 'Folio Odoo', 'Ingeniero Responsable', 'Título de la Actividad'];
+    const headers = ['Nombre del Equipo', 'Propiedad', 'Proveedor', 'Fecha', 'Folio Odoo', 'Ingeniero Responsable', 'Título de la Actividad'];
     const rows = filteredData.map(row => [
       row.equipName,
       row.equipOwnership,
+      row.supplierName || '—',
       row.date,
       row.folio,
       row.engineer,
@@ -424,8 +436,16 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
               className="border border-slate-300 rounded-lg px-2.5 py-1 text-slate-700 bg-white"
             >
               <option value="">Todas las propiedades</option>
-              <option value="PROPIA">Propia (PROPIA)</option>
-              <option value="RENTADA">Rentada (RENTADA)</option>
+              <option value="PROPIO">Propio (PROPIO)</option>
+              <option value="RENTADO">Rentado (RENTADO)</option>
+            </select>
+            <select
+              value={filterSupplier}
+              onChange={e => setFilterSupplier(e.target.value)}
+              className="border border-slate-300 rounded-lg px-2.5 py-1 text-slate-700 bg-white"
+            >
+              <option value="">Todos los proveedores</option>
+              {uniqueSuppliers.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <select
               value={filterFolio}
@@ -435,9 +455,9 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
               <option value="">Todos los folios</option>
               {uniqueFolios.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
-            {(filterOwnership || filterFolio) && (
+            {(filterOwnership || filterFolio || filterSupplier) && (
               <button
-                onClick={() => { setFilterOwnership(''); setFilterFolio(''); }}
+                onClick={() => { setFilterOwnership(''); setFilterFolio(''); setFilterSupplier(''); }}
                 className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold"
               >
                 Limpiar
@@ -467,9 +487,14 @@ export function EquipmentReportModal({ activities, selectedWeekend, onClose }: E
                 <tbody>
                   {filteredData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50">
-                      <td className="text-xs font-semibold text-slate-800">{row.equipName}</td>
+                      <td className="text-xs font-semibold text-slate-800">
+                        <div>{row.equipName}</div>
+                        {row.equipOwnership === 'RENTADO' && row.supplierName && (
+                          <div className="text-[10px] text-slate-400 font-normal">Prov: {row.supplierName}</div>
+                        )}
+                      </td>
                       <td className="text-xs">
-                        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded ${row.equipOwnership === 'PROPIA' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded ${row.equipOwnership === 'PROPIO' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                           {row.equipOwnership}
                         </span>
                       </td>

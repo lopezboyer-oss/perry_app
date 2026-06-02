@@ -9,6 +9,11 @@ export async function GET() {
 
     const suppliers = await prisma.equipmentSupplier.findMany({
       where: { isActive: true },
+      include: {
+        _count: {
+          select: { equipments: true }
+        }
+      },
       orderBy: { name: 'asc' },
     });
 

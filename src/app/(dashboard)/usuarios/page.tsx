@@ -40,9 +40,9 @@ interface EquipData {
   supplier?: { id: string; name: string } | null;
 }
 interface ContractorData { id: string; name: string; isActive: boolean; _count?: { technicians: number }; }
-interface EquipmentSupplier { id: string; name: string; isActive: boolean; }
+interface EquipmentSupplier { id: string; name: string; isActive: boolean; _count?: { equipments: number }; }
 
-type TabKey = 'users' | 'techs' | 'safety' | 'vehicles' | 'drivers' | 'equips' | 'contractors';
+type TabKey = 'users' | 'techs' | 'safety' | 'vehicles' | 'drivers' | 'equips' | 'contractors' | 'suppliers';
 
 export default function UsuariosPage() {
   const [tab, setTab] = useState<TabKey>('techs');
@@ -85,6 +85,9 @@ export default function UsuariosPage() {
   const [contractorFormOpen, setContractorFormOpen] = useState(false);
   const [contractorFormData, setContractorFormData] = useState({ id: '', name: '' });
   const contractorFormRef = useRef<HTMLDivElement>(null);
+  const [supplierFormOpen, setSupplierFormOpen] = useState(false);
+  const [supplierFormData, setSupplierFormData] = useState({ id: '', name: '' });
+  const supplierFormRef = useRef<HTMLDivElement>(null);
   const [companyList, setCompanyList] = useState<{ id: string; name: string; shortName: string | null; color: string | null }[]>([]);
 
   useEffect(() => { fetchAll(); }, []);
@@ -105,7 +108,10 @@ export default function UsuariosPage() {
       if (canManageSafety) allowedTabs.push('safety');
       if (canManageVehicles) allowedTabs.push('vehicles');
       if (canManageDrivers) allowedTabs.push('drivers');
-      if (canManageEquips) allowedTabs.push('equips');
+      if (canManageEquips) {
+        allowedTabs.push('equips');
+        allowedTabs.push('suppliers');
+      }
 
       if (allowedTabs.length > 0 && !allowedTabs.includes(tab)) {
         setTab(allowedTabs[0]);
@@ -239,6 +245,7 @@ export default function UsuariosPage() {
     { key: 'drivers', label: 'Choferes', icon: User, visible: canManageDrivers },
     { key: 'equips', label: 'Eq. Elevación', icon: ChevronsUp, visible: canManageEquips },
     { key: 'contractors', label: 'Contratistas', icon: Building2, visible: isAdmin },
+    { key: 'suppliers', label: 'Prov. Maquinaria', icon: Building2, visible: canManageEquips },
   ];
   const visibleTabs = allTabs.filter((t) => t.visible);
 
@@ -897,6 +904,63 @@ export default function UsuariosPage() {
                     </tr>
                   ))}
                   {contractorList.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No hay contratistas registrados. Añade uno para asignar a técnicos externos.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── TAB: PROVEEDORES DE MAQUINARIA ── */}
+      {tab === 'suppliers' && canManageEquips && (
+        <>
+          <div className="flex justify-end mb-4">
+            <button onClick={() => { setSupplierFormData({ id: '', name: '' }); setSupplierFormOpen(true); setTimeout(() => supplierFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Proveedor</button>
+          </div>
+          {supplierFormOpen && (
+            <div ref={supplierFormRef} className="card p-6 mb-4 border-l-4 border-l-indigo-500">
+              <h3 className="font-semibold text-slate-800 mb-4">{supplierFormData.id ? 'Editar' : 'Nuevo'} Proveedor de Renta</h3>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Proveedor *</label>
+                <input type="text" value={supplierFormData.name} onChange={(e) => setSupplierFormData({ ...supplierFormData, name: e.target.value })} className="w-full max-w-md" placeholder="Ej: MAQUINARIA DEL NORTE" />
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button onClick={async () => {
+                  const method = supplierFormData.id ? 'PUT' : 'POST';
+                  const url = supplierFormData.id ? `/api/equipment-suppliers/${supplierFormData.id}` : '/api/equipment-suppliers';
+                  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: supplierFormData.name }) });
+                  if (!res.ok) { const err = await res.json(); alert(err.error || 'Error'); return; }
+                  setSupplierFormOpen(false); setSupplierFormData({ id: '', name: '' }); await fetchAll();
+                }} className="btn-primary text-sm">Guardar</button>
+                <button onClick={() => setSupplierFormOpen(false)} className="btn-secondary text-sm">Cancelar</button>
+              </div>
+            </div>
+          )}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
+                  <tr><th className="px-6 py-4">Proveedor</th><th className="px-6 py-4">Equipos Registrados</th><th className="px-6 py-4 text-right">Acciones</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {supplierList.map((s) => (
+                    <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-6 py-4 font-semibold text-slate-800">
+                        <div className="flex items-center gap-2">
+                          <Building2 size={16} className="text-indigo-500" />
+                          {s.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{s._count?.equipments || 0}</span>
+                      </td>
+                      <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
+                        <button onClick={() => { setSupplierFormData({ id: s.id, name: s.name }); setSupplierFormOpen(true); setTimeout(() => supplierFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                        <button onClick={async () => { if (!window.confirm(`¿Desactivar ${s.name}?`)) return; await fetch(`/api/equipment-suppliers/${s.id}`, { method: 'DELETE' }); await fetchAll(); }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                      </div></td>
+                    </tr>
+                  ))}
+                  {supplierList.length === 0 && <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">No hay proveedores registrados. Añade uno para asignar a equipos de elevación rentados.</td></tr>}
                 </tbody>
               </table>
             </div>

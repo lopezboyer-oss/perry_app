@@ -97,7 +97,14 @@ export default async function RegistroEquiposPage({
             select: {
               id: true,
               equipId: true,
-              equip: { select: { id: true, name: true, ownership: true } },
+              equip: {
+                select: {
+                  id: true,
+                  name: true,
+                  ownership: true,
+                  supplier: { select: { name: true } },
+                },
+              },
             },
           },
           weekendTechAssignments: {
@@ -150,6 +157,7 @@ export default async function RegistroEquiposPage({
       equipId: e.equipId,
       equipName: e.equip.name,
       equipOwnership: e.equip.ownership,
+      supplierName: e.equip.supplier?.name || null,
     })),
     techs: a.weekendTechAssignments.map(t => ({
       technicianId: t.technicianId,
