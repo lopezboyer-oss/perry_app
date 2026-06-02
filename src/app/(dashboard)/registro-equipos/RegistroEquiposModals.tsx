@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { X, CheckCircle, XCircle, Camera, Save, Loader2, Trash2 } from 'lucide-react';
-import { CHECKLIST_ITEMS, type EquipRecordData, type FolioReportRow } from './registro-equipos-types';
+import { X, CheckCircle, XCircle, Camera, Save, Loader2, Trash2, Copy, Download, Check } from 'lucide-react';
+import { CHECKLIST_ITEMS, type EquipRecordData, type FolioReportRow, type REActivity } from './registro-equipos-types';
 import { formatDate } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 /* ── CHECKLIST MODAL ── */
 interface ChecklistModalProps {
@@ -297,3 +298,147 @@ export function NotesModal({ record, equipName, canEdit, onClose, onSave }: Note
     </div>
   );
 }
+
+/* ── EQUIPMENT REPORT MODAL ── */
+interface EquipmentReportModalProps {
+  activities: REActivity[];
+  selectedWeekend: string;
+  onClose: () => void;
+}
+
+export function EquipmentReportModal({ activities, selectedWeekend, onClose }: EquipmentReportModalProps) {
+  const [copied, setCopied] = useState(false);
+
+  // Extract all equipment usage rows
+  const reportData = activities.flatMap(act => {
+    const dateStr = act.date.substring(0, 10);
+    return act.equips.map(eq => ({
+      equipName: eq.equipName,
+      equipOwnership: eq.equipOwnership || '—',
+      date: dateStr,
+      folio: act.workOrderFolio || '—',
+      engineer: act.user?.name || '—',
+      title: act.title,
+    }));
+  });
+
+  const getWhatsAppText = () => {
+    let text = `*REPORTE DE USO DE EQUIPOS DE ELEVACIÓN*\n`;
+    text += `*Fin de Semana:* ${selectedWeekend}\n`;
+    text += `-------------------------------------------\n\n`;
+    
+    if (reportData.length === 0) {
+      text += `No hay equipos asignados para este fin de semana.\n`;
+    } else {
+      reportData.forEach(row => {
+        text += `🔧 *Equipo:* ${row.equipName} (${row.equipOwnership})\n`;
+        text += `📅 *Fecha:* ${row.date}\n`;
+        text += `📋 *Folio Odoo:* ${row.folio}\n`;
+        text += `👤 *Responsable:* ${row.engineer}\n`;
+        text += `📝 *Actividad:* ${row.title}\n`;
+        text += `-------------------------------------------\n\n`;
+      });
+    }
+    return text;
+  };
+
+  const handleCopyWhatsApp = () => {
+    navigator.clipboard.writeText(getWhatsAppText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportExcel = () => {
+    const headers = ['Nombre del Equipo', 'Propiedad', 'Fecha', 'Folio Odoo', 'Ingeniero Responsable', 'Título de la Actividad'];
+    const rows = reportData.map(row => [
+      row.equipName,
+      row.equipOwnership,
+      row.date,
+      row.folio,
+      row.engineer,
+      row.title
+    ]);
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    XLSX.utils.book_append_sheet(wb, ws, "Uso de Equipos");
+    XLSX.writeFile(wb, `Reporte_Uso_Equipos_${selectedWeekend}.xlsx`);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">📊 Reporte de Uso de Equipos</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Fin de Semana: <span className="font-mono font-bold text-teal-600">{selectedWeekend}</span></p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg"><X size={20} /></button>
+        </div>
+        
+        {/* Buttons */}
+        <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex flex-wrap gap-2">
+          <button
+            onClick={handleCopyWhatsApp}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? '¡Copiado!' : 'Copiar para WhatsApp'}
+          </button>
+          <button
+            onClick={handleExportExcel}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <Download size={14} />
+            Descargar Excel
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-5">
+          {reportData.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <p className="font-medium">No hay datos de uso de equipos para este fin de semana</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="font-semibold text-xs">Nombre del Equipo</th>
+                    <th className="font-semibold text-xs">Propiedad</th>
+                    <th className="font-semibold text-xs">Fecha</th>
+                    <th className="font-semibold text-xs">Folio Odoo</th>
+                    <th className="font-semibold text-xs">Ingeniero Responsable</th>
+                    <th className="font-semibold text-xs">Título de la Actividad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="text-xs font-semibold text-slate-800">{row.equipName}</td>
+                      <td className="text-xs">
+                        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded ${row.equipOwnership === 'PROPIA' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {row.equipOwnership}
+                        </span>
+                      </td>
+                      <td className="text-xs whitespace-nowrap">{row.date}</td>
+                      <td className="text-xs font-mono font-bold text-slate-600">{row.folio}</td>
+                      <td className="text-xs font-medium text-slate-700">{row.engineer}</td>
+                      <td className="text-xs text-slate-600 max-w-[200px] truncate" title={row.title}>{row.title}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-slate-200 flex justify-between items-center bg-slate-50">
+          <p className="text-xs text-slate-500">{reportData.length} asignaciones de equipo(s)</p>
+          <button onClick={onClose} className="btn-secondary text-sm">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

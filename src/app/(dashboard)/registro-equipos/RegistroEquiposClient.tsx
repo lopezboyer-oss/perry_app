@@ -8,7 +8,7 @@ import {
   type Props, type REActivity, type EquipRecordData,
   DAY_NAMES, getChecklistScore, canEditActivity, canViewFolioReport,
 } from './registro-equipos-types';
-import { ChecklistModal, EvidenciasModal, FolioReportModal, NotesModal } from './RegistroEquiposModals';
+import { ChecklistModal, EvidenciasModal, FolioReportModal, NotesModal, EquipmentReportModal } from './RegistroEquiposModals';
 
 type ModalState =
   | { type: 'checklist'; record: EquipRecordData; equipName: string; actTitle: string; editable: boolean }
@@ -16,6 +16,7 @@ type ModalState =
   | { type: 'notes'; record: EquipRecordData; equipName: string; editable: boolean }
   | { type: 'folio'; folio: string }
   | { type: 'operator'; record: EquipRecordData; equipName: string; techs: { technicianId: string; technicianName: string }[] }
+  | { type: 'equipReport' }
   | null;
 
 export function RegistroEquiposClient({ activities: initialActivities, weekendDates, selectedWeekend, userRole, userName, userId }: Props) {
@@ -163,9 +164,18 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
             <p className="text-sm text-slate-500">Checklist de seguridad y evidencias por equipo</p>
           </div>
         </div>
-        <select className="text-sm border border-slate-300 rounded-lg px-3 py-2" value={selectedWeekend} onChange={e => router.push(`/registro-equipos?weekend=${e.target.value}`)}>
-          {weekendDates.map(d => <option key={d} value={d}>Fin de Semana: {d}</option>)}
-        </select>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setModal({ type: 'equipReport' })}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-xs font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all shadow-md shadow-indigo-500/10"
+          >
+            <FileText className="w-4 h-4" />
+            Reporte de Uso
+          </button>
+          <select className="text-sm border border-slate-300 rounded-lg px-3 py-2" value={selectedWeekend} onChange={e => router.push(`/registro-equipos?weekend=${e.target.value}`)}>
+            {weekendDates.map(d => <option key={d} value={d}>Fin de Semana: {d}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -371,6 +381,13 @@ export function RegistroEquiposClient({ activities: initialActivities, weekendDa
           techs={modal.techs}
           onClose={() => setModal(null)}
           onSave={handleSaveOperator}
+        />
+      )}
+      {modal?.type === 'equipReport' && (
+        <EquipmentReportModal
+          activities={activities}
+          selectedWeekend={selectedWeekend}
+          onClose={() => setModal(null)}
         />
       )}
     </div>
