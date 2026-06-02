@@ -121,10 +121,11 @@ export default function UsuariosPage() {
 
   const fetchAll = async () => {
     try {
+      const cacheBuster = `?t=${Date.now()}`;
       const [usersRes, techRes, safetyRes, vehicleRes, driverRes, equipRes, contractorRes, companyRes, supplierRes] = await Promise.all([
-        fetch('/api/users'), fetch('/api/technicians'), fetch('/api/safety-dedicado'),
-        fetch('/api/vehicles'), fetch('/api/drivers'), fetch('/api/elevation-equip'), fetch('/api/contractors'),
-        fetch('/api/company/mine'), fetch('/api/equipment-suppliers'),
+        fetch(`/api/users${cacheBuster}`), fetch(`/api/technicians${cacheBuster}`), fetch(`/api/safety-dedicado${cacheBuster}`),
+        fetch(`/api/vehicles${cacheBuster}`), fetch(`/api/drivers${cacheBuster}`), fetch(`/api/elevation-equip${cacheBuster}`), fetch(`/api/contractors${cacheBuster}`),
+        fetch(`/api/company/mine${cacheBuster}`), fetch(`/api/equipment-suppliers${cacheBuster}`),
       ]);
       if (usersRes.status === 403) { router.push('/dashboard'); return; }
 

@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { canManageResources } from '@/lib/permissions';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
