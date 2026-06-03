@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Perry App — Reporte Sesión 02 Junio 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --emerald: #059669;
+      --emerald-light: #d1fae5;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --violet: #7c3aed;
+      --violet-light: #ede9fe;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #f8fafc;
+      color: var(--slate-800);
+      line-height: 1.6;
+      font-size: 11pt;
+      padding: 40px 20px;
+    }
+
+    @page {
+      size: letter;
+      margin: 1.5cm 2cm;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .page-break { page-break-before: always; }
+      .no-print { display: none !important; }
+      .container { box-shadow: none !important; padding: 0 !important; max-width: 100% !important; background: white !important; border: none !important; }
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 50px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--slate-200);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding-bottom: 24px;
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .header img {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 2px solid var(--primary-light);
+    }
+
+    .header-text h1 {
+      font-size: 24pt;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.75px;
+      line-height: 1.1;
+    }
+
+    .header-text .subtitle {
+      font-size: 12pt;
+      color: var(--slate-500);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .header-text .date-badge {
+      display: inline-block;
+      margin-top: 8px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 35px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .stat-card .stat-value {
+      font-size: 24pt;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.2;
+    }
+
+    .stat-card .stat-label {
+      font-size: 8.5pt;
+      font-weight: 600;
+      color: var(--slate-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    .stat-card.emerald .stat-value { color: var(--emerald); }
+    .stat-card.amber .stat-value { color: var(--amber); }
+    .stat-card.blue .stat-value { color: var(--blue); }
+    .stat-card.violet .stat-value { color: var(--violet); }
+    .stat-card.red .stat-value { color: var(--red); }
+    .stat-card.teal .stat-value { color: var(--teal); }
+
+    /* Section titles */
+    h2 {
+      font-size: 15pt;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-top: 35px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--slate-200);
+      padding-bottom: 8px;
+    }
+
+    h2 .icon {
+      font-size: 16pt;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 25px;
+      font-size: 9.5pt;
+    }
+
+    thead th {
+      background: var(--slate-800);
+      color: white;
+      font-weight: 600;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    thead th:first-child { border-radius: 6px 0 0 0; }
+    thead th:last-child { border-radius: 0 6px 0 0; }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--slate-100);
+      vertical-align: middle;
+      color: var(--slate-700);
+    }
+
+    tbody tr:nth-child(even) { background: var(--slate-50); }
+    tbody tr:hover { background: #f5f3ff; }
+
+    .commit-hash {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      text-align: center;
+    }
+
+    .badge.feature { background: var(--emerald-light); color: var(--emerald); }
+    .badge.bugfix { background: var(--amber-light); color: var(--amber); }
+    .badge.style { background: var(--blue-light); color: var(--blue); }
+    .badge.scaffold { background: var(--teal-light); color: var(--teal); }
+    .badge.security { background: var(--red-light); color: var(--red); }
+    .badge.wip { background: var(--violet-light); color: var(--violet); }
+    .badge.docs { background: var(--violet-light); color: var(--violet); }
+
+    /* Category summary */
+    .category-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 25px;
+    }
+
+    .category-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 18px;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .category-card h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--slate-900);
+    }
+
+    .category-card ul {
+      list-style: none;
+      font-size: 9pt;
+      color: var(--slate-600);
+    }
+
+    .category-card li {
+      padding: 4px 0;
+      padding-left: 18px;
+      position: relative;
+      line-height: 1.4;
+    }
+
+    .category-card li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--emerald);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      font-size: 8.5pt;
+      color: var(--slate-500);
+    }
+
+    /* Print button */
+    .print-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 11pt;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5);
+    }
+
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 8.5pt;
+      background: var(--slate-100);
+      padding: 2px 4px;
+      border-radius: 4px;
+      color: var(--slate-800);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <img src="public/perry-logo.jpg" alt="Perry App" onerror="this.style.display='none'">
+      <div class="header-text">
+        <h1>Perry App</h1>
+        <div class="subtitle">Reporte de Cambios y Nuevas Implementaciones — Reportes Especiales, Filtros y Proveedores</div>
+        <span class="date-badge">📅 02 de Junio, 2026</span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">19</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card emerald">
+        <div class="stat-value">14</div>
+        <div class="stat-label">Features</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">5</div>
+        <div class="stat-label">Bug Fixes</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-value">+2579</div>
+        <div class="stat-label">Líneas Agregadas</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-value">-90</div>
+        <div class="stat-label">Líneas Removidas</div>
+      </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div style="background: var(--primary-light); border-left: 4px solid var(--primary); padding: 16px; border-radius: 8px; margin-bottom: 30px; font-size: 9.5pt; color: var(--slate-800);">
+      <strong>Resumen Ejecutivo:</strong> Durante esta sesión de desarrollo (31 de mayo - 02 de junio de 2026), se implementaron tres componentes clave de alta prioridad para la operación: (1) <strong>Módulo de Reportes Especiales de Nómina</strong>, diseñado para Carlos López, que unifica la conciliación de horas y el horario semanal de técnicos, con exportación a Excel y un layout optimizado para descarga de PDF multipágina; (2) <strong>Reportes de Uso de Equipos con Filtros Avanzados</strong>, permitiendo filtrar y ordenar las asignaciones del fin de semana por tipo de propiedad (Propio/Rentado), Folio Odoo y Proveedor de Renta, afectando tanto la vista del modal como las exportaciones de WhatsApp y Excel; (3) <strong>Gestión de Proveedores de Maquinaria (Prov. Maquinaria)</strong>, habilitando una pestaña CRUD completa para registrar proveedores de equipos de elevación y ver cuántos equipos pertenecen a cada empresa. Asimismo, se corrigieron bugs críticos de caché del enrutador de Next.js y duplicación de rutas API.
+    </div>
+
+    <!-- Category Summary -->
+    <h2><span class="icon">📁</span> Cambios Estructurados por Categoría</h2>
+    <div class="category-grid">
+      <div class="category-card" style="border-left: 4px solid var(--violet);">
+        <h3>📊 Reportes Especiales (Nómina & PDFs)</h3>
+        <ul>
+          <li><strong>Conciliación de Horas & Horario Semanal</strong>: Una nueva sección avanzada diseñada para conciliar y auditar los horarios semanales de los técnicos del fin de semana.</li>
+          <li><strong>Exportación a Excel</strong>: Generación de archivo Excel con las horas conciliadas y detalles operativos.</li>
+          <li><strong>Layout de Impresión PDF</strong>: Botón interactivo para imprimir/guardar como PDF con paginación optimizada, control de saltos de página inteligentes, y ocultamiento automático de barras de navegación.</li>
+        </ul>
+      </div>
+
+      <div class="category-card" style="border-left: 4px solid var(--emerald);">
+        <h3>🔧 Control de Equipos & Proveedores</h3>
+        <ul>
+          <li><strong>Filtros Rápidos en Reportes</strong>: Filtrado inmediato en el modal de uso de equipos por propiedad (Propio/Rentado), Folio Odoo y Proveedor de Renta.</li>
+          <li><strong>Exportaciones Reactivas</strong>: El copiado a WhatsApp y la descarga de Excel se limitan únicamente a las filas activas bajo los filtros rápidos seleccionados.</li>
+          <li><strong>Pestaña "Prov. Maquinaria"</strong>: Nuevo CRUD en la pantalla de Recursos (<code>/usuarios</code>) para administrar los proveedores de equipos rentados, incluyendo el conteo automático de equipos asociados a cada uno.</li>
+        </ul>
+      </div>
+
+      <div class="category-card" style="border-left: 4px solid var(--blue);">
+        <h3>🔒 Seguridad, Roles & Organización</h3>
+        <ul>
+          <li><strong>Filtro de Usuarios por Compañía</strong>: Los endpoints y vistas de personal filtran los datos según la cookie de la compañía activa para evitar fugas de información.</li>
+          <li><strong>Seguridad en Endpoints de ADMINISTRACION</strong>: Bloqueo de accesos no autorizados en los endpoints de usuarios por empresa para roles administrativos restringidos.</li>
+          <li><strong>Organización del Espacio de Trabajo</strong>: Limpieza y reestructuración de archivos del proyecto, agrupándolos en subcarpetas para reportes corporativos, curriculums, análisis de reclutamiento y scripts de desarrollo.</li>
+        </ul>
+      </div>
+
+      <div class="category-card" style="border-left: 4px solid var(--amber);">
+        <h3>🐛 Corrección de Bugs & Estabilidad</h3>
+        <ul>
+          <li><strong>Solución al guardado de flete y costos</strong>: Corrección de campos faltantes en el endpoint PUT de equipos de elevación.</li>
+          <li><strong>Bypass de Caché en Recursos</strong>: Implementación de cache-busters (<code>?t=timestamp</code>) en las llamadas <code>fetch</code> de <code>/usuarios</code> y marcado de APIs como <code>force-dynamic</code> para solucionar la visualización diferida de cambios.</li>
+          <li><strong>Limpieza de Rutas Duplicadas</strong>: Eliminación de la carpeta de ruta duplicada <code>%5Bid%5D</code> para prevenir conflictos de enrutamiento.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Full commit table -->
+    <h2><span class="icon">📜</span> Detalle de Cambios (Commits)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:35px">#</th>
+          <th style="width:75px">Commit</th>
+          <th>Descripción Técnica del Cambio</th>
+          <th style="width:100px">Categoría</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><span class="commit-hash">971e505</span></td>
+          <td><strong>Equipos</strong>: Eliminación de ruta duplicada <code>%5Bid%5D</code> y solución a la caché del frontend en gestión de recursos.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><span class="commit-hash">33789e9</span></td>
+          <td><strong>Equipos</strong>: Corrección del guardado de costos fijos de flete, jornada y proveedor al editar equipos de elevación.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><span class="commit-hash">8ba8e10</span></td>
+          <td><strong>Proveedores</strong>: Pestaña CRUD para proveedores de maquinaria en Gestión de Recursos e integración de filtros en reportes.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><span class="commit-hash">603bab5</span></td>
+          <td><strong>Filtros</strong>: Filtros rápidos dinámicos por propiedad (tipo) y Folio Odoo en modal de uso de equipos.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><span class="commit-hash">3881583</span></td>
+          <td><strong>Reportes</strong>: Obtención de reporte de uso de equipos con exportación reactiva a Excel y WhatsApp.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><span class="commit-hash">1eedb01</span></td>
+          <td><strong>Reclutamiento</strong>: Análisis estratégico y comparativa de 8 candidatos a Ingeniero de Campo.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><span class="commit-hash">7e4f6e4</span></td>
+          <td><strong>Estructura</strong>: Limpieza y reorganización de archivos sueltos y reportes en carpetas del proyecto.</td>
+          <td><span class="badge scaffold">Refactor</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><span class="commit-hash">bff44d7</span></td>
+          <td><strong>Filtros</strong>: Filtrado dinámico de la lista de usuarios basado en la cookie de empresa seleccionada.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><span class="commit-hash">98ebce3</span></td>
+          <td><strong>Seguridad</strong>: Restricciones y scopes basados en empresa en endpoints de usuarios para rol ADMINISTRACION.</td>
+          <td><span class="badge security">Security</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><span class="commit-hash">d664451</span></td>
+          <td><strong>Assets</strong>: Añadida imagen promocional de anuncio para el módulo de Reportes Especiales.</td>
+          <td><span class="badge style">Style</span></td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td><span class="commit-hash">3228541</span></td>
+          <td><strong>Reportes</strong>: Aislamiento y reordenación de gráficas en página 2 del PDF exportable.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td><span class="commit-hash">af9cda8</span></td>
+          <td><strong>Reportes</strong>: Paginación estructurada para exportar todas las semanas seleccionadas en hojas independientes en PDF.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td><span class="commit-hash">eed18b4</span></td>
+          <td><strong>Reportes</strong>: Limpieza de layout de impresión y ocultamiento de barras de navegación de la app en exportación PDF.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td><span class="commit-hash">9a20e42</span></td>
+          <td><strong>Reportes</strong>: Ajustes de diseño de impresión para la división del horario semanal.</td>
+          <td><span class="badge bugfix">Bug Fix</span></td>
+        </tr>
+        <tr>
+          <td>15</td>
+          <td><span class="commit-hash">d7d2b25</span></td>
+          <td><strong>Reportes</strong>: Añadido botón interactivo y estilos de impresión para descarga nativa de reportes a PDF.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>16</td>
+          <td><span class="commit-hash">7b34545</span></td>
+          <td><strong>Reportes</strong>: Módulo de Reportes Especiales de Nómina (conciliación, horario semanal y Excel) para Carlos López.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>17</td>
+          <td><span class="commit-hash">0f03ef4</span></td>
+          <td><strong>Dashboard</strong>: Botón de resumen de WhatsApp organizado por ingeniero en modal de Cierre Express y firma de NDAs.</td>
+          <td><span class="badge feature">Feature</span></td>
+        </tr>
+        <tr>
+          <td>18</td>
+          <td><span class="commit-hash">a5b915b</span></td>
+          <td><strong>Navegación</strong>: Reordenación de "Nueva Actividad" a la segunda posición y enmascaramiento de links inactivos.</td>
+          <td><span class="badge style">Style</span></td>
+        </tr>
+        <tr>
+          <td>19</td>
+          <td><span class="commit-hash">25adc59</span></td>
+          <td><strong>Seguridad</strong>: Autorización a auditores de seguridad para actualizar reportes de auditoría.</td>
+          <td><span class="badge security">Security</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Files modified -->
+    <h2><span class="icon">🛠️</span> Archivos Principales Afectados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Ruta del Archivo</th>
+          <th>Propósito de la Modificación</th>
+          <th style="text-align:right;width:120px">Líneas Afectadas</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>src/app/(dashboard)/reportes-especiales/ReportesEspecialesClient.tsx</code></td>
+          <td>Lógica completa del módulo de reportes especiales, tablas de nómina y layout CSS de impresión PDF.</td>
+          <td style="text-align:right">+1747 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/(dashboard)/registro-equipos/RegistroEquiposModals.tsx</code></td>
+          <td>Filtro de equipos por proveedor, folios e integración reactiva con exportaciones a Excel y WhatsApp.</td>
+          <td style="text-align:right">+229 / -4</td>
+        </tr>
+        <tr>
+          <td><code>src/app/(dashboard)/usuarios/page.tsx</code></td>
+          <td>Nueva pestaña "Prov. Maquinaria" y CRUD para catálogo de proveedores; cache-busters añadidos.</td>
+          <td style="text-align:right">+77 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/elevation-equip/[id]/route.ts</code></td>
+          <td>Endpoint PUT corregido para admitir el guardado de costos fijos por proveedor en edición.</td>
+          <td style="text-align:right">+14 / -3</td>
+        </tr>
+        <tr>
+          <td><code>src/components/layout/Sidebar.tsx</code></td>
+          <td>Navegación del menú actualizada (reordenación de links y ocultamiento estético).</td>
+          <td style="text-align:right">+49 líneas</td>
+        </tr>
+        <tr>
+          <td><code>src/app/api/users/route.ts</code> y <code>/users/[id]/route.ts</code></td>
+          <td>Añadidos scopes de validación de cookies de empresa para el rol de administración.</td>
+          <td style="text-align:right">+118 líneas</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Perry App v2.x — Desarrollado por CHIGÜIRE LABS & Antigravity (Google DeepMind)</span>
+      <span>Generado: 02 de Junio, 2026 · Tijuana, BC</span>
+    </div>
+
+  </div>
+
+  <!-- Print button (hidden on print) -->
+  <button class="print-btn no-print" onclick="window.print()">
+    <span style="font-size: 14pt;">📄</span> Guardar como PDF
+  </button>
+
+</body>
+</html>
