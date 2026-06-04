@@ -44,8 +44,8 @@ interface Activity {
   cancelNotes?: string | null;
 }
 
-interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; contractorId?: string | null; contractor?: { id: string; name: string } | null; }
-interface SafetyDedicado { id: string; name: string; }
+interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; contractorId?: string | null; contractor?: { id: string; name: string } | null; linkedUserId?: string | null; }
+interface SafetyDedicado { id: string; name: string; linkedUserId?: string | null; }
 interface SafetyDesignadoUser { id: string; name: string; }
 interface Vehicle { id: string; name: string; }
 interface Driver { id: string; name: string; }
@@ -313,13 +313,13 @@ export function AtcFindeClient({
     // Source 1: WeekendUserSafetyAssignment (userId match)
     if ((userSafetyAssignments || []).some((x: any) => x.activityId === actId && x.userId === userId)) return true;
 
-    // Source 2: WeekendTechAssignment with role SAFETY_DESIGNADO (name match)
+    // Source 2: WeekendTechAssignment with role SAFETY_DESIGNADO (name or linkedUserId match)
     const techDesignados = techAssignments.filter(x => x.activityId === actId && x.role === 'SAFETY_DESIGNADO');
-    if (techDesignados.some(x => x.technician.name === userName)) return true;
+    if (techDesignados.some(x => x.technician.name === userName || (x.technician.linkedUserId && x.technician.linkedUserId === userId))) return true;
 
-    // Source 3: WeekendSafetyAssignment with role DESIGNADO (name match)
+    // Source 3: WeekendSafetyAssignment with role DESIGNADO (name or linkedUserId match)
     const safetyDesignados = safetyAssignments.filter(x => x.activityId === actId && x.role === 'DESIGNADO');
-    if (safetyDesignados.some(x => x.safetyDedicado.name === userName)) return true;
+    if (safetyDesignados.some(x => x.safetyDedicado.name === userName || (x.safetyDedicado.linkedUserId && x.safetyDedicado.linkedUserId === userId))) return true;
 
     return false;
   };

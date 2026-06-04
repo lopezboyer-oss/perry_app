@@ -2,6 +2,46 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
+async function isSupOperativo(activityId: string, userId: string, userName: string) {
+  // Source 1: WeekendUserSafetyAssignment (userId match)
+  const userAss = await prisma.weekendUserSafetyAssignment.findFirst({
+    where: { activityId, userId }
+  });
+  if (userAss) return true;
+
+  // Source 2: WeekendTechAssignment with role SAFETY_DESIGNADO (linkedUserId or name match)
+  const techAss = await prisma.weekendTechAssignment.findFirst({
+    where: {
+      activityId,
+      role: 'SAFETY_DESIGNADO',
+      technician: {
+        OR: [
+          { linkedUserId: userId },
+          { name: userName }
+        ]
+      }
+    }
+  });
+  if (techAss) return true;
+
+  // Source 3: WeekendSafetyAssignment with role DESIGNADO (linkedUserId or name match)
+  const safetyAss = await prisma.weekendSafetyAssignment.findFirst({
+    where: {
+      activityId,
+      role: 'DESIGNADO',
+      safetyDedicado: {
+        OR: [
+          { linkedUserId: userId },
+          { name: userName }
+        ]
+      }
+    }
+  });
+  if (safetyAss) return true;
+
+  return false;
+}
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
@@ -20,19 +60,36 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const role = session.user.role;
   const isSupervisorOrAbove = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role);
   if (!isSupervisorOrAbove && activity.userId !== session.user.id) {
-    const isSafetyAuditor = (session.user as any).isSafetyAuditor || false;
-    const updatedFields = Object.keys(body);
-    const safetyAuditFields = [
-      'auditNotes',
-      'teraAuditorFolio',
-      'teraAuditorUploadedAt',
-      'teraAuditorUploadedBy',
-      'teraAuditorImage'
-    ];
-    const isOnlyUpdatingSafetyAudit = updatedFields.every(field => safetyAuditFields.includes(field));
+    const isSup = await isSupOperativo(params.id, session.user.id, session.user.name || '');
+    if (isSup) {
+      // If they are Sup Operativo, they can only edit certain fields
+      const updatedFields = Object.keys(body);
+      const allowedSupFields = [
+        'weekendNotes',
+        'actualStartTime',
+        'actualEndTime',
+        'teraFolio',
+        'safetyAuditImage'
+      ];
+      const isOnlyUpdatingSupFields = updatedFields.every(field => allowedSupFields.includes(field));
+      if (!isOnlyUpdatingSupFields) {
+        return NextResponse.json({ error: 'No autorizado para modificar campos restringidos' }, { status: 403 });
+      }
+    } else {
+      const isSafetyAuditor = (session.user as any).isSafetyAuditor || false;
+      const updatedFields = Object.keys(body);
+      const safetyAuditFields = [
+        'auditNotes',
+        'teraAuditorFolio',
+        'teraAuditorUploadedAt',
+        'teraAuditorUploadedBy',
+        'teraAuditorImage'
+      ];
+      const isOnlyUpdatingSafetyAudit = updatedFields.every(field => safetyAuditFields.includes(field));
 
-    if (!isSafetyAuditor || !isOnlyUpdatingSafetyAudit) {
-      return NextResponse.json({ error: 'No autorizado para modificar esta actividad' }, { status: 403 });
+      if (!isSafetyAuditor || !isOnlyUpdatingSafetyAudit) {
+        return NextResponse.json({ error: 'No autorizado para modificar esta actividad' }, { status: 403 });
+      }
     }
   }
 

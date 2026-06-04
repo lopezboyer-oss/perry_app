@@ -28,7 +28,7 @@ export function Header({ user }: HeaderProps) {
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const pathname = usePathname();
   const visibleNavItems = user.role === 'TECNICO'
-    ? navItems.filter(item => item.href === '/registro-personal')
+    ? navItems.filter(item => item.href === '/registro-personal' || ((user as any).isCruzVerde && item.href === '/atc-finde'))
     : navItems;
 
   useEffect(() => {

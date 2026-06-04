@@ -58,6 +58,9 @@ export function Sidebar({ user }: SidebarProps) {
       return hasSpecialReportsAccess;
     }
     if (user.role === 'TECNICO') {
+      if ((user as any).isCruzVerde && item.href === '/atc-finde') {
+        return true;
+      }
       return item.href === '/registro-personal';
     }
     return true;

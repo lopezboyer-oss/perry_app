@@ -20,8 +20,15 @@ export default auth((req) => {
     response = NextResponse.redirect(new URL('/login', req.url));
   } else {
     const userRole = (req.auth?.user as any)?.role;
-    if (userRole === 'TECNICO' && !pathname.startsWith('/registro-personal') && !pathname.startsWith('/api/')) {
-      response = NextResponse.redirect(new URL('/registro-personal', req.url));
+    const isCruzVerde = (req.auth?.user as any)?.isCruzVerde;
+    if (userRole === 'TECNICO') {
+      const allowedPaths = isCruzVerde ? ['/registro-personal', '/atc-finde'] : ['/registro-personal'];
+      const isAllowed = allowedPaths.some(p => pathname.startsWith(p)) || pathname.startsWith('/api/');
+      if (!isAllowed) {
+        response = NextResponse.redirect(new URL('/registro-personal', req.url));
+      } else {
+        response = NextResponse.next();
+      }
     } else {
       response = NextResponse.next();
     }

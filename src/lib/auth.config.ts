@@ -48,6 +48,17 @@ export const authConfig = {
             token.accessVehicles = freshUser.accessVehicles || false;
             token.accessDrivers = freshUser.accessDrivers || false;
             token.accessElevationEquip = freshUser.accessElevationEquip || false;
+
+            // Fetch isCruzVerde if role is TECNICO
+            if (freshUser.role === 'TECNICO') {
+              const tech = await prisma.technician.findFirst({
+                where: { linkedUserId: token.id as string },
+                select: { isCruzVerde: true },
+              });
+              token.isCruzVerde = tech?.isCruzVerde || false;
+            } else {
+              token.isCruzVerde = false;
+            }
           }
         } catch (e) {
           // If DB is unreachable, keep the cached values
@@ -69,6 +80,7 @@ export const authConfig = {
         (session.user as any).accessVehicles = token.accessVehicles || false;
         (session.user as any).accessDrivers = token.accessDrivers || false;
         (session.user as any).accessElevationEquip = token.accessElevationEquip || false;
+        (session.user as any).isCruzVerde = token.isCruzVerde || false;
       }
       return session;
     },
