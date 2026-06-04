@@ -64,10 +64,37 @@ export default async function AtcFindePage() {
     const co = await prisma.company.findUnique({ where: { id: activeCompanyId }, select: { name: true } });
     if (co) companyName = co.name;
   }
-  const where = {
-    OR: dateRanges,
-    ...companyFilter,
+
+  let where: any = {
+    AND: [
+      { OR: dateRanges }
+    ]
   };
+
+  if (role === 'TECNICO') {
+    const tech = await prisma.technician.findFirst({
+      where: { linkedUserId: userId },
+      select: { id: true }
+    });
+    if (tech) {
+      where.AND.push({
+        OR: [
+          companyFilter,
+          {
+            weekendTechAssignments: {
+              some: {
+                technicianId: tech.id
+              }
+            }
+          }
+        ]
+      });
+    } else {
+      where.AND.push(companyFilter);
+    }
+  } else {
+    where.AND.push(companyFilter);
+  }
 
   // For tech/contractor plans: fetch ALL weekend activities across all companies
   const allCompanyWhere = { OR: dateRanges };
