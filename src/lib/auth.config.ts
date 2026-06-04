@@ -14,7 +14,7 @@ export const authConfig = {
 
       // Re-fetch role from DB on every request to guarantee
       // that role changes (e.g. SUPERVISOR → ADMIN) take effect immediately
-      if (token.id) {
+      if (token.id && process.env.NEXT_RUNTIME !== 'edge') {
         try {
           const { prisma } = await import('./prisma');
           const freshUser = await prisma.user.findUnique({
