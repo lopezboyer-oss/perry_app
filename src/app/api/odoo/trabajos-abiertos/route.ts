@@ -5,6 +5,23 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
+function matchNames(name1: string, name2: string): boolean {
+  const normalize = (s: string) => 
+    s.normalize("NFD")
+     .replace(/[\u0300-\u036f]/g, "")
+     .toUpperCase()
+     .split(/[\s,.-]+/)
+     .filter(word => word.length > 2);
+  
+  const words1 = normalize(name1);
+  const words2 = normalize(name2);
+  
+  if (words1.length === 0 || words2.length === 0) return false;
+  
+  const [shorter, longer] = words1.length < words2.length ? [words1, words2] : [words2, words1];
+  return shorter.every(word => longer.includes(word));
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
@@ -67,9 +84,9 @@ export async function GET(req: NextRequest) {
       {
         fields: [
           'name', 'x_studio_po_cliente_1', 'x_studio_proyecto',
-          'partner_id', 'state', 'invoice_status',
-          'amount_total', 'amount_untaxed', 'date_order',
-          'user_id', 'company_id'
+          'x_studio_empresa_relacionada', 'partner_id', 'state',
+          'invoice_status', 'amount_total', 'amount_untaxed',
+          'date_order', 'user_id', 'company_id'
         ],
         order: 'date_order desc'
       }
@@ -98,10 +115,9 @@ export async function GET(req: NextRequest) {
       );
 
       filteredOrders = validOrders.filter((o: any) => {
-        // Coincide por vendedor en Odoo
+        // Coincide por vendedor en Odoo usando comparación robusta
         const odooSalesperson = o.user_id ? o.user_id[1] : '';
-        const isSalesperson = odooSalesperson.toUpperCase().includes(userName.toUpperCase()) ||
-                              userName.toUpperCase().includes(odooSalesperson.toUpperCase());
+        const isSalesperson = matchNames(odooSalesperson, userName);
         // O coincide por folio asignado en Perry
         const isPerryAssigned = userFolios.has(o.name.toUpperCase());
         
@@ -121,9 +137,39 @@ export async function GET(req: NextRequest) {
     // 7. Mapear y unificar la respuesta
     const mapped = filteredOrders.map((o: any) => {
       const partnerFull = o.partner_id ? o.partner_id[1] : '';
-      const parts = partnerFull.split(',');
-      const clientCompany = parts[0]?.trim() || '';
-      const clientContact = parts.slice(1).join(',').trim() || '';
+      const empresa = o.x_studio_empresa_relacionada ? o.x_studio_empresa_relacionada[1] : null;
+      
+      let clientCompany = empresa || '';
+      let clientContact = '';
+      
+      if (partnerFull) {
+        if (partnerFull.includes(',')) {
+          const firstPart = partnerFull.split(',')[0].trim();
+          const secondPart = partnerFull.split(',').slice(1).join(',').trim();
+          if (!clientCompany) {
+            clientCompany = firstPart;
+          }
+          clientContact = secondPart;
+        } else {
+          if (!clientCompany) {
+            clientCompany = partnerFull;
+          } else if (partnerFull !== clientCompany) {
+            clientContact = partnerFull;
+          }
+        }
+      }
+      
+      if (!clientCompany) {
+        clientCompany = 'Desconocido';
+      }
+
+      let amountTotal = o.amount_total;
+      const amountUntaxed = o.amount_untaxed;
+      
+      // Si el total es igual al subtotal (sin IVA), estimar el total con 16% de IVA
+      if (amountTotal === amountUntaxed && amountTotal > 0) {
+        amountTotal = amountTotal * 1.16;
+      }
 
       return {
         id: o.id,
@@ -134,8 +180,8 @@ export async function GET(req: NextRequest) {
         clientContact,
         state: o.state,
         invoiceStatus: o.invoice_status,
-        amountTotal: o.amount_total,
-        amountUntaxed: o.amount_untaxed,
+        amountTotal,
+        amountUntaxed,
         dateOrder: o.date_order,
         salesperson: o.user_id ? o.user_id[1] : null,
         companyName: o.company_id ? o.company_id[1] : null,

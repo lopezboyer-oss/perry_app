@@ -43,9 +43,14 @@ const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', c
 const fmtDate = (d: string) => {
   if (!d) return '—';
   try {
-    // Check if it has time part, if so parse directly, else add safe mid-day time
-    const cleanD = d.includes(' ') ? d.replace(' ', 'T') : d;
-    return new Date(cleanD).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    // Check if it has time part, if so parse directly as UTC, else add safe mid-day time in UTC
+    const cleanD = d.includes(' ') ? d.replace(' ', 'T') + 'Z' : d + 'T12:00:00Z';
+    return new Date(cleanD).toLocaleDateString('es-MX', {
+      timeZone: 'America/Tijuana',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
   } catch {
     return d;
   }
@@ -53,7 +58,13 @@ const fmtDate = (d: string) => {
 
 const fmtDateTime = (d: string) => {
   try {
-    return new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return new Date(d).toLocaleString('es-MX', {
+      timeZone: 'America/Tijuana',
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   } catch {
     return d;
   }
@@ -336,7 +347,7 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
                         <td>
                           {order.salesperson ? (
                             <span className="text-[11px] text-slate-700 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
-                              {order.salesperson.split('-')[0].trim()}
+                              {order.salesperson.trim().replace(/\s*-\s*$/, '').split(/\s+-\s+/)[0].trim()}
                             </span>
                           ) : (
                             <span className="text-[10px] text-slate-400">—</span>
