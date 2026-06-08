@@ -22,6 +22,22 @@ function matchNames(name1: string, name2: string): boolean {
   return shorter.every(word => longer.includes(word));
 }
 
+function isSameCompany(clientCompany: string, companyName: string): boolean {
+  if (!clientCompany || !companyName) return false;
+  
+  const cNorm = clientCompany.toUpperCase();
+  const sNorm = companyName.toUpperCase();
+  
+  const isCaseme = (cNorm.includes("CASEME") || cNorm.includes("GLOBAL SUPPORT")) && 
+                    (sNorm.includes("CASEME") || sNorm.includes("GLOBAL SUPPORT"));
+  const isDrobots = cNorm.includes("DROBOTS") && sNorm.includes("DROBOTS");
+  const isOpus = cNorm.includes("OPUS") && sNorm.includes("OPUS");
+  const isVulcan = cNorm.includes("VULCAN") && sNorm.includes("VULCAN");
+  const isSainpro = cNorm.includes("SAINPRO") && sNorm.includes("SAINPRO");
+  
+  return isCaseme || isDrobots || isOpus || isVulcan || isSainpro;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
@@ -134,67 +150,72 @@ export async function GET(req: NextRequest) {
         })
       : [];
 
-    // 7. Mapear y unificar la respuesta
-    const mapped = filteredOrders.map((o: any) => {
-      const partnerFull = o.partner_id ? o.partner_id[1] : '';
-      const empresa = o.x_studio_empresa_relacionada ? o.x_studio_empresa_relacionada[1] : null;
-      
-      let clientCompany = empresa || '';
-      let clientContact = '';
-      
-      if (partnerFull) {
-        if (partnerFull.includes(',')) {
-          const firstPart = partnerFull.split(',')[0].trim();
-          const secondPart = partnerFull.split(',').slice(1).join(',').trim();
-          if (!clientCompany) {
-            clientCompany = firstPart;
-          }
-          clientContact = secondPart;
-        } else {
-          if (!clientCompany) {
-            clientCompany = partnerFull;
-          } else if (partnerFull !== clientCompany) {
-            clientContact = partnerFull;
+    // 7. Mapear, unificar la respuesta y omitir transacciones internas/auto-facturación
+    const mapped = filteredOrders
+      .map((o: any) => {
+        const partnerFull = o.partner_id ? o.partner_id[1] : '';
+        const empresa = o.x_studio_empresa_relacionada ? o.x_studio_empresa_relacionada[1] : null;
+        
+        let clientCompany = empresa || '';
+        let clientContact = '';
+        
+        if (partnerFull) {
+          if (partnerFull.includes(',')) {
+            const firstPart = partnerFull.split(',')[0].trim();
+            const secondPart = partnerFull.split(',').slice(1).join(',').trim();
+            if (!clientCompany) {
+              clientCompany = firstPart;
+            }
+            clientContact = secondPart;
+          } else {
+            if (!clientCompany) {
+              clientCompany = partnerFull;
+            } else if (partnerFull !== clientCompany) {
+              clientContact = partnerFull;
+            }
           }
         }
-      }
-      
-      if (!clientCompany) {
-        clientCompany = 'Desconocido';
-      }
+        
+        if (!clientCompany) {
+          clientCompany = 'Desconocido';
+        }
 
-      let amountTotal = o.amount_total;
-      const amountUntaxed = o.amount_untaxed;
-      
-      // Si el total es igual al subtotal (sin IVA), estimar el total con 16% de IVA
-      if (amountTotal === amountUntaxed && amountTotal > 0) {
-        amountTotal = amountTotal * 1.16;
-      }
+        let amountTotal = o.amount_total;
+        const amountUntaxed = o.amount_untaxed;
+        
+        // Si el total es igual al subtotal (sin IVA), estimar el total con 16% de IVA
+        if (amountTotal === amountUntaxed && amountTotal > 0) {
+          amountTotal = amountTotal * 1.16;
+        }
 
-      return {
-        id: o.id,
-        name: o.name,
-        po: o.x_studio_po_cliente_1,
-        project: o.x_studio_proyecto || null,
-        clientCompany,
-        clientContact,
-        state: o.state,
-        invoiceStatus: o.invoice_status,
-        amountTotal,
-        amountUntaxed,
-        dateOrder: o.date_order,
-        salesperson: o.user_id ? o.user_id[1] : null,
-        companyName: o.company_id ? o.company_id[1] : null,
-        comments: comments
-          .filter((c) => c.folio.toUpperCase() === o.name.toUpperCase())
-          .map((c) => ({
-            id: c.id,
-            content: c.content,
-            userName: c.userName,
-            createdAt: c.createdAt.toISOString()
-          }))
-      };
-    });
+        return {
+          id: o.id,
+          name: o.name,
+          po: o.x_studio_po_cliente_1,
+          project: o.x_studio_proyecto || null,
+          clientCompany,
+          clientContact,
+          state: o.state,
+          invoiceStatus: o.invoice_status,
+          amountTotal,
+          amountUntaxed,
+          dateOrder: o.date_order,
+          salesperson: o.user_id ? o.user_id[1] : null,
+          companyName: o.company_id ? o.company_id[1] : null,
+          comments: comments
+            .filter((c) => c.folio.toUpperCase() === o.name.toUpperCase())
+            .map((c) => ({
+              id: c.id,
+              content: c.content,
+              userName: c.userName,
+              createdAt: c.createdAt.toISOString()
+            }))
+        };
+      })
+      .filter((order: any) => {
+        // Omitir si el cliente es la propia empresa analizada
+        return !isSameCompany(order.clientCompany, order.companyName || '');
+      });
 
     return NextResponse.json({ orders: mapped });
   } catch (error: any) {
