@@ -47,6 +47,7 @@ model User {
   userSafetyAssignments WeekendUserSafetyAssignment[]
   invoiceReceipts InvoiceReceipt[]
   timeClockEntries TimeClockEntry[]
+  odooFolioComments OdooFolioComment[]
 }
 
 model Client {
@@ -469,4 +470,16 @@ model TimeClockEntry {
 
   @@index([userId])
   @@index([activityId])
+}
+
+model OdooFolioComment {
+  id        String   @id @default(cuid())
+  folio     String   // e.g. "S06447"
+  content   String   @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userName  String   // snapshot of user name
+  createdAt DateTime @default(now())
+
+  @@index([folio])
 }

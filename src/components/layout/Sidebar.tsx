@@ -36,6 +36,7 @@ export const navItems = [
   { href: '/registro-equipos', label: 'Reg. Equipos', icon: Forklift },
   { href: '/registro-personal', label: 'Asistencia', icon: Timer },
   { href: '/cobranza', label: 'Recibos', icon: DollarSign },
+  { href: '/trabajos-abiertos', label: 'Trabajos Abiertos', icon: ClipboardList },
   { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
   { href: '/reportes-especiales', label: 'Rep. Especiales', icon: PieChart },
   { href: '/oportunidades', label: 'Oportunidades', icon: Target, disabled: true },
@@ -56,6 +57,9 @@ export function Sidebar({ user }: SidebarProps) {
   const visibleNavItems = navItems.filter((item) => {
     if (item.href === '/reportes-especiales') {
       return hasSpecialReportsAccess;
+    }
+    if (item.href === '/trabajos-abiertos') {
+      return ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'INGENIERO'].includes(user.role);
     }
     if (user.role === 'TECNICO') {
       if ((user as any).isCruzVerde && item.href === '/atc-finde') {
