@@ -190,6 +190,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     allowedFields.teraAuditorImage = body.teraAuditorImage || null;
   }
 
+  // TERA Exemption fields
+  if (body.teraExempt !== undefined) {
+    if (role !== 'SUPERVISOR_SAFETY_LP' && role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Sin permisos para modificar exención TERA' }, { status: 403 });
+    }
+    allowedFields.teraExempt = Boolean(body.teraExempt);
+  }
+  if (body.teraExemptBy !== undefined) {
+    if (role !== 'SUPERVISOR_SAFETY_LP' && role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Sin permisos para modificar exención TERA' }, { status: 403 });
+    }
+    allowedFields.teraExemptBy = body.teraExemptBy || null;
+  }
+
   if (Object.keys(allowedFields).length === 0) {
     return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 });
   }
