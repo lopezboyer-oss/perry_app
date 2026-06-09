@@ -223,7 +223,11 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
             <input
               type="date"
               value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                const newStatus = (!isEdit && newDate > getLocalToday()) ? 'PENDIENTE' : form.status;
+                setForm({ ...form, date: newDate, status: newStatus });
+              }}
               className="w-full"
               required
             />
@@ -282,8 +286,10 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
               className="w-full"
+              disabled={!isEdit && form.date > getLocalToday()}
             >
               {Object.entries(activityStatusLabels).map(([k, v]) => {
+                if (!isEdit && form.date > getLocalToday() && k !== 'PENDIENTE') return null;
                 if (k === 'EN_PROGRESO' && form.type !== 'COTIZACION') return null;
                 return <option key={k} value={k}>{v}</option>;
               })}

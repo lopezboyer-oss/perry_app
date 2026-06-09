@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { activitySchema } from '@/lib/validators';
 import { parseLocalDate } from '@/lib/timezone';
-import { toSentenceCase } from '@/lib/utils';
+import { toSentenceCase, getLocalToday } from '@/lib/utils';
 import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
@@ -24,6 +24,15 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data;
+
+    // Validate that future activities can only be created with PENDIENTE status
+    const today = getLocalToday();
+    if (data.date > today && data.status !== 'PENDIENTE') {
+      return NextResponse.json(
+        { error: 'Las actividades programadas para una fecha futura solo pueden crearse con estatus PENDIENTE' },
+        { status: 400 }
+      );
+    }
 
     // Resolve companyId: explicit > active company cookie > user's default company > baseCompany
     let companyId = data.companyId || null;
