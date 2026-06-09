@@ -84,6 +84,7 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
   const [filterCompany, setFilterCompany] = useState<string>('all'); // all | gc | drobots | opus | vulcan | sainpro
   const [filterStatus, setFilterStatus] = useState<string>('all'); // all | to_invoice | no | upselling
   const [filterSalesperson, setFilterSalesperson] = useState<string>('all');
+  const [filterClient, setFilterClient] = useState<string>('all');
 
   const load = async () => {
     setLoading(true);
@@ -170,6 +171,32 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
     return Array.from(set).sort();
   }, [orders]);
 
+  // Obtener lista única de clientes para el filtro rápido
+  const clients = useMemo(() => {
+    const set = new Set<string>();
+    orders.forEach(o => {
+      if (o.clientCompany) {
+        set.add(o.clientCompany.trim());
+      }
+    });
+    return Array.from(set).sort();
+  }, [orders]);
+
+  // Obtener los 6 clientes más frecuentes para el filtro rápido
+  const topClients = useMemo(() => {
+    const counts: Record<string, number> = {};
+    orders.forEach(o => {
+      if (o.clientCompany) {
+        const c = o.clientCompany.trim();
+        counts[c] = (counts[c] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([name]) => name);
+  }, [orders]);
+
   // Filtros aplicados en cascada
   const filtered = useMemo(() => {
     let list = orders;
@@ -209,7 +236,12 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
       list = list.filter(o => o.invoiceStatus === filterStatus);
     }
 
-    // 5. Entrada de búsqueda general
+    // 5. Filtro por Cliente
+    if (filterClient !== 'all') {
+      list = list.filter(o => o.clientCompany.trim() === filterClient);
+    }
+
+    // 6. Entrada de búsqueda general
     if (search) {
       const q = search.toUpperCase();
       list = list.filter(o =>
@@ -222,7 +254,7 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
     }
 
     return list;
-  }, [orders, filterProject, filterCompany, filterSalesperson, filterStatus, search]);
+  }, [orders, filterProject, filterCompany, filterSalesperson, filterStatus, filterClient, search]);
 
   // Stats basados en las órdenes actualmente filtradas
   const stats = useMemo(() => {
@@ -266,6 +298,7 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
       ['Proyecto:', filterProject === 'all' ? 'Todos' : filterProject === 'with_project' ? 'Con Proyecto' : 'Sin Proyecto'],
       ['Empresa:', filterCompany === 'all' ? 'Todas' : filterCompany.toUpperCase()],
       ['Vendedor:', filterSalesperson === 'all' ? 'Todos' : filterSalesperson],
+      ['Cliente:', filterClient === 'all' ? 'Todos' : filterClient],
       ['Estatus Factura:', filterStatus === 'all' ? 'Todos' : (invoiceStatusLabels[filterStatus] || filterStatus)],
       ['Búsqueda:', search || 'Ninguna'],
       ['Fecha de generación:', new Date().toLocaleString('es-MX', { hour12: false })],
@@ -412,9 +445,10 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
             <p>Generado: {new Date().toLocaleString('es-MX', { hour12: false })}</p>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-2 mt-3 text-[9px] text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+        <div className="grid grid-cols-5 gap-2 mt-3 text-[9px] text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
           <div><span className="font-bold text-slate-700">Proyecto:</span> {filterProject === 'all' ? 'Todos' : filterProject === 'with_project' ? 'Con Proyecto' : 'Sin Proyecto'}</div>
           <div><span className="font-bold text-slate-700">Empresa:</span> {filterCompany === 'all' ? 'Todas' : filterCompany.toUpperCase()}</div>
+          <div><span className="font-bold text-slate-700">Cliente:</span> {filterClient === 'all' ? 'Todos' : filterClient}</div>
           <div><span className="font-bold text-slate-700">Vendedor:</span> {filterSalesperson === 'all' ? 'Todos' : filterSalesperson}</div>
           <div><span className="font-bold text-slate-700">Estatus:</span> {filterStatus === 'all' ? 'Todos' : (invoiceStatusLabels[filterStatus] || filterStatus)}</div>
         </div>
@@ -560,6 +594,21 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
             </select>
           </div>
 
+          {/* Filtro por Cliente */}
+          <div className="flex items-center gap-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cliente:</label>
+            <select
+              value={filterClient}
+              onChange={(e) => setFilterClient(e.target.value)}
+              className="text-xs rounded-lg py-1 pl-2 pr-6 border border-slate-200 focus:outline-none bg-slate-50 hover:bg-slate-100 max-w-[180px]"
+            >
+              <option value="all">Todos los clientes</option>
+              {clients.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Filtro por Estatus Factura */}
           <div className="flex items-center gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Factura:</label>
@@ -590,6 +639,37 @@ export function TrabajosAbiertosClient({ userRole }: { userRole: string }) {
             </select>
           </div>
         </div>
+
+        {/* Fila 3: Filtro Rápido por Cliente (Top Clientes) */}
+        {topClients.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Clientes Top:</span>
+            <button
+              onClick={() => setFilterClient('all')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                filterClient === 'all'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Todos
+            </button>
+            {topClients.map((c) => (
+              <button
+                key={c}
+                onClick={() => setFilterClient(c)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all truncate max-w-[180px] ${
+                  filterClient === c
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+                title={c}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Orders Table */}
