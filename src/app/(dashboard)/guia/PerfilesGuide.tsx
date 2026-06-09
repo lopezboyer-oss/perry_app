@@ -233,7 +233,6 @@ export function PerfilesGuide() {
                 { page: 'Planes Pasados (Historial)', values: [1, 1, 1, 1, 1] },
                 { page: 'Recibos (Facturación Odoo)', values: [1, 1, 1, 1, 1] },
                 { page: 'Oportunidades (Odoo)', values: [1, 1, 1, 1, 1] },
-                { page: 'Importar Reporte (Texto/Chat)', values: [1, 1, 1, 1, 1] },
                 { page: 'Alarma TERA (Monitoreo)', values: [1, 1, 1, 1, 0] },
                 { page: 'Gestión de Clientes', values: [1, 1, 1, 1, 0] },
                 { page: 'Guía Perry', values: [1, 1, 1, 1, 1] },

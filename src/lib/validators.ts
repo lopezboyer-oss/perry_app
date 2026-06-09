@@ -28,6 +28,15 @@ export const activitySchema = z.object({
   location: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   continuedFromId: z.string().optional().nullable(),
+  companyId: z.string().optional().nullable(),
+}).refine((data) => {
+  if (data.status === 'EN_PROGRESO' && data.type !== 'COTIZACION') {
+    return false;
+  }
+  return true;
+}, {
+  message: 'El estatus "En Progreso" solo está permitido para actividades de tipo "Cotización"',
+  path: ['status'],
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

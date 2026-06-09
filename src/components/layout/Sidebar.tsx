@@ -6,7 +6,6 @@ import { logoutAction } from '@/app/actions/auth';
 import {
   LayoutDashboard,
   ClipboardList,
-  FileText,
   Target,
   BarChart3,
   ChevronLeft,
@@ -37,7 +36,6 @@ export const navItems = [
   { href: '/registro-personal', label: 'Asistencia', icon: Timer },
   { href: '/cobranza', label: 'Recibos', icon: DollarSign },
   { href: '/trabajos-abiertos', label: 'Trabajos Abiertos', icon: ClipboardList },
-  { href: '/reportes/importar', label: 'Importar Reporte', icon: FileText },
   { href: '/reportes-especiales', label: 'Rep. Especiales', icon: PieChart },
   { href: '/oportunidades', label: 'Oportunidades', icon: Target, disabled: true },
   { href: '/analitica', label: 'Analítica', icon: BarChart3, disabled: true },

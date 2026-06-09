@@ -245,7 +245,11 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
             <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Actividad *</label>
             <select
               value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
+              onChange={(e) => {
+                const newType = e.target.value;
+                const newStatus = (newType !== 'COTIZACION' && form.status === 'EN_PROGRESO') ? 'PENDIENTE' : form.status;
+                setForm({ ...form, type: newType, status: newStatus });
+              }}
               className="w-full"
               required
             >
@@ -279,9 +283,10 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
               onChange={(e) => setForm({ ...form, status: e.target.value })}
               className="w-full"
             >
-              {Object.entries(activityStatusLabels).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
+              {Object.entries(activityStatusLabels).map(([k, v]) => {
+                if (k === 'EN_PROGRESO' && form.type !== 'COTIZACION') return null;
+                return <option key={k} value={k}>{v}</option>;
+              })}
             </select>
           </div>
           <div className="md:col-span-2">

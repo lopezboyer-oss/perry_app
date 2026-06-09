@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import {
   ChevronLeft, ChevronRight, MessageCircle, ClipboardPlus,
-  FileText, CheckCircle2, Lightbulb, ArrowRight, Sparkles,
-  BookOpen, Shield,
+  CheckCircle2, Lightbulb, ArrowRight, BookOpen, Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PerfilesGuide } from './PerfilesGuide';
@@ -26,7 +25,7 @@ const steps = [
           Bienvenido a la <strong>Plataforma PERRY</strong>. Este módulo de asistencia está diseñado para facilitar el registro estandarizado de sus actividades de ingeniería.
         </p>
         <p className="text-slate-600 mb-4">
-          A continuación, se describen los <strong>dos métodos</strong> autorizados para el ingreso de información al sistema:
+          Todas las actividades deben ser capturadas en la plataforma de forma estructurada para asegurar la trazabilidad y la correcta medición de nuestros indicadores clave (KPIs):
         </p>
         <div className="grid gap-3">
           <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl p-4">
@@ -34,17 +33,8 @@ const steps = [
               <ClipboardPlus className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
-              <p className="font-semibold text-indigo-900">Método 1: Actividad Individual</p>
-              <p className="text-sm text-indigo-700">Llenas un formulario por cada actividad realizada</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 bg-purple-50 border border-purple-100 rounded-xl p-4">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-              <FileText className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="font-semibold text-purple-900">Método 2: Extracción Automática (Reporte Múltiple)</p>
-              <p className="text-sm text-purple-700">Procesa lotes de actividades mediante análisis de texto (ej. copias de reportes generados vía WhatsApp)</p>
+              <p className="font-semibold text-indigo-900">Registro Individual de Actividad</p>
+              <p className="text-sm text-indigo-700">Llenas un formulario detallado por cada actividad realizada</p>
             </div>
           </div>
         </div>
@@ -53,14 +43,14 @@ const steps = [
   },
   {
     id: 'actividad-individual',
-    title: 'Método 1: Nueva Actividad',
+    title: 'Registro de Actividad',
     perryMood: 'teaching',
     content: (
       <>
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex gap-3">
           <Lightbulb className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-amber-800">
-            Usa este método cuando quieras registrar <strong>una actividad específica</strong> con todos los detalles.
+            Usa este método para registrar <strong>cada actividad específica</strong> con todos sus detalles técnicos y operativos.
           </p>
         </div>
 
@@ -88,7 +78,7 @@ const steps = [
               <tbody className="divide-y divide-slate-100">
                 <tr><td className="px-4 py-2.5 font-medium">📅 Fecha</td><td className="px-4 py-2.5 text-slate-600">Día en que realizaste la actividad</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">📝 Título</td><td className="px-4 py-2.5 text-slate-600">Descripción breve. Ej: <em>"Instalación de guarda para botonera"</em></td></tr>
-                <tr><td className="px-4 py-2.5 font-medium">🏷️ Tipo</td><td className="px-4 py-2.5 text-slate-600">Rastrillo, Cotización, Ejecución, Planeación o Diseño</td></tr>
+                <tr><td className="px-4 py-2.5 font-medium">🏷️ Tipo</td><td className="px-4 py-2.5 text-slate-600">Rastrillo, Cotización, Ejecución, Planeación, Diseño o Consorcio</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">🏢 Cliente</td><td className="px-4 py-2.5 text-slate-600">Selecciona el cliente asociado</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">⏰ Hora inicio / fin</td><td className="px-4 py-2.5 text-slate-600">La duración se calcula automáticamente</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">✅ Resultado</td><td className="px-4 py-2.5 text-slate-600">Qué lograste. Ej: <em>"Cotización enviada $45,000"</em></td></tr>
@@ -99,79 +89,10 @@ const steps = [
 
         <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">3</span>
-          Haz clic en "Guardar Actividad"
+          Haz clic en "Crear Actividad"
         </h4>
         <p className="text-slate-600 ml-8">
-          ¡Listo! Tu actividad quedará registrada y visible en el listado de Actividades.
-        </p>
-      </>
-    ),
-  },
-  {
-    id: 'importar-reporte',
-    title: 'Método 2: Multi-registro por Texto',
-    perryMood: 'teaching',
-    content: (
-      <>
-        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-5 flex gap-3">
-          <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-purple-800">
-            <strong>Optimización de Tiempos:</strong> El sistema cuenta con un motor de parsing que analiza bloques de texto convencionales (como reportes enviados vía correo o WhatsApp) y pre-clasifica las actividades de manera automatizada.
-          </p>
-        </div>
-
-        <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">1</span>
-          Ve a "Importar Reporte" en el menú
-        </h4>
-        <p className="text-slate-600 mb-5 ml-8">
-          Selecciona la fecha y pega el texto completo de tu reporte. Puede ser tal cual lo mandas por WhatsApp:
-        </p>
-        <div className="ml-8 mb-5 bg-slate-800 rounded-xl p-4 text-sm font-mono text-green-400 leading-relaxed">
-          <p className="text-slate-500 mb-1">// Ejemplo de texto:</p>
-          <p>Buena tarde anexo reporte de actividades:</p>
-          <p>- Se atiende reunión con Ing Alexis Campos para instalación de guarda</p>
-          <p>- Instalación de lámparas de 2ft en MR1</p>
-          <p>- Se envía cotización para barandales FEMSA</p>
-          <p>- Revisión de planos estructurales</p>
-        </div>
-
-        <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">2</span>
-          Ejecutar Clasificación de Datos
-        </h4>
-        <p className="text-slate-600 mb-3 ml-8">
-          El servidor procesará cada línea extraída asignando una caracterización estadística. Parámetros de reconocimiento:
-        </p>
-        <div className="ml-8 mb-5 grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500" />
-            <span>"reunión", "visita" → <strong>Rastrillo</strong></span>
-          </div>
-          <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-3 py-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <span>"cotización", "precio" → <strong>Cotización</strong></span>
-          </div>
-          <div className="flex items-center gap-2 bg-green-50 rounded-lg px-3 py-2">
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-            <span>"instalación", "reemplazo" → <strong>Ejecución</strong></span>
-          </div>
-          <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-3 py-2">
-            <span className="w-2 h-2 rounded-full bg-purple-500" />
-            <span>"permisos", "solicitud" → <strong>Planeación</strong></span>
-          </div>
-          <div className="flex items-center gap-2 bg-rose-50 rounded-lg px-3 py-2 col-span-2">
-            <span className="w-2 h-2 rounded-full bg-rose-500" />
-            <span>"diseño", "planos", "cálculo" → <strong>Diseño</strong></span>
-          </div>
-        </div>
-
-        <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">3</span>
-          Revisa, ajusta y guarda
-        </h4>
-        <p className="text-slate-600 ml-8">
-          Puedes <strong>editar el título</strong>, <strong>cambiar el tipo</strong>, y <strong>asignar el cliente</strong> de cada línea antes de guardar. Desmarca las que no quieras importar.
+          ¡Listo! Tu actividad quedará registrada y visible en el listado general de Actividades.
         </p>
       </>
     ),
@@ -207,6 +128,90 @@ const steps = [
     ),
   },
   {
+    id: 'flujo-estatus',
+    title: 'Estatus y Flujo de Actividades',
+    perryMood: 'teaching',
+    content: (
+      <>
+        <p className="text-slate-600 mb-5">
+          Para medir con exactitud los tiempos de respuesta y optimizar el seguimiento, el estatus <strong>&quot;En Progreso&quot;</strong> está restringido por software según el tipo de actividad:
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Columna Cotización */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50/35 border border-amber-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse" />
+              <h4 className="font-bold text-amber-900 text-base">Actividades de Cotización</h4>
+            </div>
+            <p className="text-xs text-amber-800/90 mb-4 leading-relaxed">
+              Permite trazar y contabilizar el tiempo (Lead Time) desde que inicia el proceso de estimación comercial hasta que se completa.
+            </p>
+            
+            {/* Diagrama de Flujo */}
+            <div className="space-y-2.5 bg-white/70 backdrop-blur-sm border border-amber-100 rounded-xl p-3">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200">1</span>
+                <span className="text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">Pendiente</span>
+              </div>
+              <div className="pl-2.5 text-amber-400">↓</div>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 border border-blue-200">2</span>
+                <span className="text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-200 px-2 py-0.5 rounded">En Progreso</span>
+                <span className="text-[10px] text-blue-500 italic">(Exclusivo)</span>
+              </div>
+              <div className="pl-2.5 text-amber-400">↓</div>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-600 border border-emerald-200">3</span>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded">Completada / Cancelada</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Columna Otros Tipos */}
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-3.5 h-3.5 rounded-full bg-slate-500" />
+              <h4 className="font-bold text-slate-900 text-base">Otros Tipos de Actividad</h4>
+            </div>
+            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+              Rastrillo, Ejecución, Planeación, Diseño y Consorcio. Estas actividades no requieren una fase intermedia de trazabilidad comercial.
+            </p>
+            
+            {/* Diagrama de Flujo */}
+            <div className="space-y-2.5 bg-white/70 backdrop-blur-sm border border-slate-200/60 rounded-xl p-3">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200">1</span>
+                <span className="text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">Pendiente</span>
+              </div>
+              <div className="pl-2.5 text-slate-400">↓</div>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-red-50 flex items-center justify-center text-[10px] font-bold text-red-500 border border-red-150">🚫</span>
+                <span className="text-xs font-semibold text-slate-400 line-through">En Progreso</span>
+                <span className="text-[10px] text-red-500 italic">(Bloqueado)</span>
+              </div>
+              <div className="pl-2.5 text-slate-400">↓</div>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-600 border border-emerald-200">2</span>
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded">Completada / Cancelada</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-indigo-50 border border-indigo-150 rounded-xl p-4 flex gap-3 text-sm text-indigo-900">
+          <Shield className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold mb-1">Restricción por Software Activa:</p>
+            <p className="text-xs text-indigo-700 leading-relaxed">
+              El selector del formulario ocultará automáticamente la opción &quot;En Progreso&quot; para actividades operativas. Si se cambia una Cotización en progreso a otro tipo de actividad, el sistema la restablecerá automáticamente al estatus &quot;Pendiente&quot;.
+            </p>
+          </div>
+        </div>
+      </>
+    ),
+  },
+  {
     id: 'tips',
     title: 'Estándares de Documentación',
     perryMood: 'teaching',
@@ -222,7 +227,6 @@ const steps = [
             { emoji: '✅', tip: 'Llena el campo de Resultado', detail: 'Qué se logró, qué se acordó, cuántas piezas se instalaron. Esto evita dudas posteriores.' },
             { emoji: '➡️', tip: 'Definir Siguiente Paso', detail: 'Si el proceso no ha concluido, establezca el hito pendiente para asegurar la trazabilidad. Ej: "Pendiente prueba de vacío (Lunes)".' },
             { emoji: '🏢', tip: 'Vinculación de Cliente ineludible', detail: 'El registro fidedigno de cuentas permite computar métricas y costos operativos asociados a cada razón social consultor.' },
-            { emoji: '📱', tip: 'Sinergia de Herramientas', detail: 'Utilice el módulo de Importación Masiva para aprovechar el texto de sus reportes informales, reduciendo el margen de tiempo administrativo.' },
           ].map((item, i) => (
             <div key={i} className="flex gap-4 items-start bg-gradient-to-r from-slate-50 to-white border border-slate-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
               <span className="text-2xl flex-shrink-0">{item.emoji}</span>
@@ -295,20 +299,13 @@ const steps = [
             brinda a la Gerencia directrices verídicas para la toma de decisiones.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex justify-center">
           <a
             href="/actividades/nueva"
-            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl px-5 py-3 font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-200"
+            className="w-full sm:w-2/3 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl px-5 py-3 font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-200"
           >
             <ClipboardPlus className="w-5 h-5" />
             Crear Actividad
-          </a>
-          <a
-            href="/reportes/importar"
-            className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-purple-200 text-purple-700 rounded-xl px-5 py-3 font-semibold hover:bg-purple-50 transition-all"
-          >
-            <FileText className="w-5 h-5" />
-            Importar Reporte
           </a>
         </div>
       </>
@@ -400,11 +397,11 @@ export function GuiaClient({ userName, userRole }: GuiaClientProps) {
             </div>
             <p className="text-slate-700">
               {currentStep === 0 && `Bienvenido, ${firstName}. El sistema operativo está listo para facilitar la documentación de sus labores técnicas.`}
-              {currentStep === 1 && `Este es el método idóneo para incorporar registros únicos con alta densidad de especificaciones técnicas.`}
-              {currentStep === 2 && `El módulo de "Importación de Texto" procesa en lote la captura del día. Recomendamos utilizarlo para volúmenes altos.`}
-              {currentStep === 3 && `La taxonomía de actividades es mandatoria para los indicadores clave de rendimiento (KPIs) del Área de Ingeniería.`}
-              {currentStep === 4 && `Las oportunidades brindan trazabilidad de cada cotización. El folio Odoo es el identificador clave para el seguimiento.`}
-              {currentStep === 5 && `El cumplimiento de los protocolos de información es integral para lograr los estándares de calidad ISO y operativos de la compañía.`}
+              {currentStep === 1 && `Este es el método idóneo para incorporar registros únicos con alta densidad de especificaciones de la actividad.`}
+              {currentStep === 2 && `La taxonomía de actividades es mandatoria para los indicadores clave de rendimiento (KPIs) del Área de Ingeniería.`}
+              {currentStep === 3 && `El estatus "En Progreso" es exclusivo de Cotizaciones, lo que nos permite medir el Lead Time de estimaciones con precisión.`}
+              {currentStep === 4 && `El cumplimiento de los protocolos de información es de suma importancia para mantener un historial limpio y útil.`}
+              {currentStep === 5 && `Las oportunidades brindan trazabilidad de cada cotización. El folio Odoo es el identificador clave para el seguimiento.`}
               {currentStep === 6 && `Usted se encuentra facultado para utilizar la plataforma PERRY. Cualquier duda técnica dirígela al Área Administrativa.`}
             </p>
           </div>
