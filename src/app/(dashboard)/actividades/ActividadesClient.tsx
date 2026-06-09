@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Plus, Search, Download, Filter, X, ChevronDown, FileText, Clock, Calendar, Users, BarChart3, AlertTriangle, Loader2
 } from 'lucide-react';
@@ -42,6 +42,128 @@ interface Props {
   userRole: string;
   totalCount: number;
   pageSize: number;
+}
+
+interface SearchableUserSelectProps {
+  users: { id: string; name: string; role: string }[];
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+function SearchableUserSelect({ users, value, onChange, placeholder = "Todos", className = "" }: SearchableUserSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync search input with current selected user name
+  const selectedUser = users.find(u => u.id === value);
+  const [displayValue, setDisplayValue] = useState(selectedUser ? selectedUser.name : '');
+
+  useEffect(() => {
+    const selected = users.find(u => u.id === value);
+    setDisplayValue(selected ? selected.name : '');
+  }, [value, users]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        // Reset display to current selected name when closing
+        const selected = users.find(u => u.id === value);
+        setDisplayValue(selected ? selected.name : '');
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [value, users]);
+
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className={`relative ${className}`} ref={containerRef}>
+      <div className="relative">
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={isOpen ? search : displayValue}
+          onFocus={() => {
+            setIsOpen(true);
+            setSearch('');
+          }}
+          onChange={(e) => {
+            if (isOpen) {
+              setSearch(e.target.value);
+            } else {
+              setSearch('');
+            }
+          }}
+          className="w-full text-sm rounded-lg border border-slate-200 py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+        />
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {value && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange('');
+                setDisplayValue('');
+                setSearch('');
+                setIsOpen(false);
+              }}
+              className="text-slate-400 hover:text-slate-600 p-0.5"
+            >
+              <X size={12} />
+            </button>
+          )}
+          <ChevronDown size={14} className="text-slate-400 pointer-events-none" />
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1">
+          <button
+            type="button"
+            onClick={() => {
+              onChange('');
+              setDisplayValue('');
+              setSearch('');
+              setIsOpen(false);
+            }}
+            className="w-full text-left px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 border-b border-slate-100"
+          >
+            -- {placeholder} --
+          </button>
+          {filteredUsers.length === 0 ? (
+            <p className="text-xs text-slate-400 px-3 py-2 text-center">No se encontraron resultados</p>
+          ) : (
+            filteredUsers.map((u) => (
+              <button
+                type="button"
+                key={u.id}
+                onClick={() => {
+                  onChange(u.id);
+                  setDisplayValue(u.name);
+                  setSearch('');
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 text-xs transition-colors flex justify-between items-center ${
+                  value === u.id
+                    ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span>{u.name}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ActividadesClient({ activities: initialActivities, users, clients, filters, userRole, totalCount, pageSize }: Props) {
@@ -200,17 +322,14 @@ export function ActividadesClient({ activities: initialActivities, users, client
 
         {/* Quick Engineer Selector */}
         {userRole !== 'INGENIERO' && (
-          <div className="flex-1 min-w-[150px] sm:ml-2">
-            <select
+          <div className="flex-1 min-w-[200px] sm:ml-2">
+            <SearchableUserSelect
+              users={users}
               value={localFilters.responsable}
-              onChange={(e) => applyFilters({ responsable: e.target.value })}
-              className="w-full sm:max-w-xs text-sm border-none bg-slate-50 rounded-lg py-1.5 focus:ring-1 focus:ring-indigo-500 font-medium text-slate-700"
-            >
-              <option value="">Equipos (Todos)</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
+              onChange={(val) => applyFilters({ responsable: val })}
+              placeholder="Equipos (Todos)"
+              className="w-full sm:max-w-xs font-medium text-slate-700"
+            />
           </div>
         )}
       </div>
@@ -273,16 +392,13 @@ export function ActividadesClient({ activities: initialActivities, users, client
             {userRole !== 'INGENIERO' && (
               <div>
                 <label className="text-xs font-medium text-slate-500 mb-1 block">Responsable</label>
-                <select
+                <SearchableUserSelect
+                  users={users}
                   value={localFilters.responsable}
-                  onChange={(e) => setLocalFilters({ ...localFilters, responsable: e.target.value })}
+                  onChange={(val) => setLocalFilters({ ...localFilters, responsable: val })}
+                  placeholder="Todos"
                   className="w-full"
-                >
-                  <option value="">Todos</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
+                />
               </div>
             )}
             <div>

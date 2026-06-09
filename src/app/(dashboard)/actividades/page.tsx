@@ -61,7 +61,10 @@ export default async function ActividadesPage({
 
   // Build company-scoped user filter for dropdowns
   const activeCompanyId = (companyFilter as any).companyId || null;
-  const usersWhere: any = { isActive: true };
+  const usersWhere: any = {
+    isActive: true,
+    role: { not: 'TECNICO' }
+  };
   if (activeCompanyId) {
     usersWhere.companies = { some: { companyId: activeCompanyId } };
   }
