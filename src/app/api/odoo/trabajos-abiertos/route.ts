@@ -214,7 +214,14 @@ export async function GET(req: NextRequest) {
       })
       .filter((order: any) => {
         // Omitir si el cliente es la propia empresa analizada
-        return !isSameCompany(order.clientCompany, order.companyName || '');
+        const isInternal = isSameCompany(order.clientCompany, order.companyName || '');
+        if (isInternal) return false;
+
+        // Omitir si está relacionado al usuario YARDA
+        const isYarda = order.salesperson && order.salesperson.toUpperCase().includes('YARDA');
+        if (isYarda) return false;
+
+        return true;
       });
 
     return NextResponse.json({ orders: mapped });
