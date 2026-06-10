@@ -56,6 +56,16 @@ const roles = [
     bg: 'bg-gradient-to-br from-blue-50/50 to-sky-50/20',
     desc: 'Operativo técnico. Registra y edita sus propias actividades, consulta planes del fin de semana, realiza su registro horario (4 fases) y checklists de equipos.'
   },
+  {
+    name: 'Técnico de Campo',
+    tag: 'TECNICO',
+    emoji: '🔧',
+    color: 'from-blue-600 to-sky-600',
+    textColor: 'text-blue-700',
+    borderColor: 'border-blue-100',
+    bg: 'bg-gradient-to-br from-blue-50/50 to-sky-50/20',
+    desc: 'Operativo de campo. Acceso exclusivo a Control de Asistencia para registro de entrada/salida (GPS/Selfie). Si cuenta con acreditación Cruz Verde, se le permite acceso a ATC Finde para visualizar sus asignaciones operativas.'
+  },
 ];
 
 const C = () => (
@@ -74,6 +84,7 @@ const Ey = () => <span className="text-amber-600 font-semibold text-xs bg-amber-
 const Tm = () => <span className="text-indigo-600 font-semibold text-xs bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">👥 Equipo</span>;
 const Sl = () => <span className="text-blue-600 font-semibold text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-100">👤 Propias</span>;
 const Config = () => <span className="inline-flex items-center gap-0.5 text-indigo-700 font-bold text-[10px] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200" title="Configurable por Administrador">⚙️ Habilitable</span>;
+const Cv = () => <span className="text-emerald-600 font-semibold text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">🟢 Cruz Verde</span>;
 
 const th = 'px-4 py-3 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider bg-slate-50 border-b border-slate-200';
 const td = 'px-4 py-3 border-b border-slate-100 text-center text-sm';
@@ -193,6 +204,16 @@ export function PerfilesGuide() {
                     <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded font-bold">Operación & Autogestión</span>
                   </div>
                 </div>
+
+                <div className="pl-6 border-l-2 border-sky-100">
+                  {/* Técnico Box */}
+                  <div className="bg-gradient-to-r from-blue-600 to-cyan-700 text-white rounded-xl p-4 shadow-md mt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm flex items-center gap-2">🔧 Técnico de Campo</span>
+                      <span className="text-[10px] font-mono bg-white/20 px-2 py-0.5 rounded font-bold">Asistencia + Plan Finde</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -221,29 +242,30 @@ export function PerfilesGuide() {
                 <th className={`${th} text-center`}>🟡 Super</th>
                 <th className={`${th} text-center`}>🟢 Safety</th>
                 <th className={`${th} text-center`}>🔵 Ing.</th>
+                <th className={`${th} text-center`}>🔧 Tec.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {[
-                { page: 'Dashboard & Analítica', values: [1, 1, 1, 1, 1] },
-                { page: 'Actividades (Listado & Crear)', values: [1, 1, 1, 1, 1] },
-                { page: 'Control de Asistencia', values: [1, 1, 1, 1, 1] },
-                { page: 'ATC Finde (Plan Finde)', values: [1, 1, 1, 1, 1] },
-                { page: 'Reg. Equipos (Checklist)', values: [1, 1, 1, 1, 1] },
-                { page: 'Planes Pasados (Historial)', values: [1, 1, 1, 1, 1] },
-                { page: 'Recibos (Facturación Odoo)', values: [1, 1, 1, 1, 1] },
-                { page: 'Oportunidades (Odoo)', values: [1, 1, 1, 1, 1] },
-                { page: 'Alarma TERA (Monitoreo)', values: [1, 1, 1, 1, 0] },
-                { page: 'Gestión de Clientes', values: [1, 1, 1, 1, 0] },
-                { page: 'Guía Perry', values: [1, 1, 1, 1, 1] },
-                { page: 'Gestión de Recursos', values: [1, 1, 0, 0, 0] },
-                { page: 'Consorcio (Préstamos)', values: [1, 0, 0, 0, 0] },
+                { page: 'Dashboard & Analítica', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Actividades (Listado & Crear)', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Control de Asistencia', values: [1, 1, 1, 1, 1, 1] },
+                { page: 'ATC Finde (Plan Finde)', values: [1, 1, 1, 1, 1, 2] },
+                { page: 'Reg. Equipos (Checklist)', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Planes Pasados (Historial)', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Recibos (Facturación Odoo)', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Oportunidades (Odoo)', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Alarma TERA (Monitoreo)', values: [1, 1, 1, 1, 0, 0] },
+                { page: 'Gestión de Clientes', values: [1, 1, 1, 1, 0, 0] },
+                { page: 'Guía Perry', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Gestión de Recursos', values: [1, 1, 0, 0, 0, 0] },
+                { page: 'Consorcio (Préstamos)', values: [1, 0, 0, 0, 0, 0] },
               ].map((item, index) => (
                 <tr key={index} className="hover:bg-slate-50/50">
                   <td className={tdl}>{item.page}</td>
                   {item.values.map((v, i) => (
                     <td key={i} className={td}>
-                      {v ? <C /> : <Xx />}
+                      {v === 1 ? <C /> : v === 2 ? <Cv /> : <Xx />}
                     </td>
                   ))}
                 </tr>
@@ -275,6 +297,7 @@ export function PerfilesGuide() {
                 <th className={`${th} text-center`}>🟡 Super</th>
                 <th className={`${th} text-center`}>🟢 Safety</th>
                 <th className={`${th} text-center`}>🔵 Ing.</th>
+                <th className={`${th} text-center`}>🔧 Tec.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -285,6 +308,7 @@ export function PerfilesGuide() {
                 <td className={td}><Tm /> Equipo</td>
                 <td className={td}><C /> Todas</td>
                 <td className={td}><Sl /> Propias</td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>🚫 Cancelar / Deshacer Actividades</td>
@@ -293,6 +317,7 @@ export function PerfilesGuide() {
                 <td className={td}><C /> Todas</td>
                 <td className={td}><C /> Todas</td>
                 <td className={td}><Sl /> Propias</td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>🛡️ Exención TERA (Marcar Exenta N/A)</td>
@@ -300,6 +325,7 @@ export function PerfilesGuide() {
                 <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
                 <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
               </tr>
               <tr>
@@ -309,6 +335,7 @@ export function PerfilesGuide() {
                 <td className={td}><C /> Asignadas</td>
                 <td className={td}><C /> Todas</td>
                 <td className={td}><Sl /> Propias</td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>🔍 Cargar TERA Auditor (Safety Oficial)</td>
@@ -316,6 +343,7 @@ export function PerfilesGuide() {
                 <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
                 <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
               </tr>
               <tr>
@@ -325,6 +353,7 @@ export function PerfilesGuide() {
                 <td className={td}><C /> Asignadas</td>
                 <td className={td}><C /> Todas</td>
                 <td className={td}><C /> Propias</td>
+                <td className={td}><Xx /></td>
               </tr>
             </tbody>
           </table>
@@ -363,6 +392,7 @@ export function PerfilesGuide() {
                 <th className={`${th} text-center`}>🟡 Super</th>
                 <th className={`${th} text-center`}>🟢 Safety</th>
                 <th className={`${th} text-center`}>🔵 Ing.</th>
+                <th className={`${th} text-center`}>🔧 Tec.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -373,6 +403,7 @@ export function PerfilesGuide() {
                 <td className={td}><C /> Todas</td>
                 <td className={td}><C /> Todas</td>
                 <td className={td}><Sl /> Propias</td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>Asignar Operador del Equipo</td>
@@ -381,12 +412,14 @@ export function PerfilesGuide() {
                 <td className={td}><C /> Todas</td>
                 <td className={td}><C /> Todas</td>
                 <td className={td}><Sl /> Propias</td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>📂 Ver Reporte Histórico por Folio (Odoo)</td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
               </tr>
@@ -417,11 +450,13 @@ export function PerfilesGuide() {
                 <th className={`${th} text-center`}>🟡 Super</th>
                 <th className={`${th} text-center`}>🟢 Safety</th>
                 <th className={`${th} text-center`}>🔵 Ing.</th>
+                <th className={`${th} text-center`}>🔧 Tec.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               <tr>
                 <td className={tdl}>Registrar entrada/salida (GPS, Selfie o QR)</td>
+                <td className={td}><C /> Sí</td>
                 <td className={td}><C /> Sí</td>
                 <td className={td}><C /> Sí</td>
                 <td className={td}><C /> Sí</td>
@@ -435,6 +470,7 @@ export function PerfilesGuide() {
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>Ver logs de asistencia de otros</td>
@@ -443,6 +479,7 @@ export function PerfilesGuide() {
                 <td className={td}><C /> Todos</td>
                 <td className={td}><C /> Todos</td>
                 <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>Ver mapa interactivo y foto de capturas</td>
@@ -450,6 +487,7 @@ export function PerfilesGuide() {
                 <td className={td}><C /> Todos</td>
                 <td className={td}><C /> Todos</td>
                 <td className={td}><C /> Todos</td>
+                <td className={td}><Sl /> Propias</td>
                 <td className={td}><Sl /> Propias</td>
               </tr>
             </tbody>
@@ -493,6 +531,7 @@ export function PerfilesGuide() {
                 <th className={`${th} text-center`}>🟡 Super</th>
                 <th className={`${th} text-center`}>🟢 Safety</th>
                 <th className={`${th} text-center`}>🔵 Ing.</th>
+                <th className={`${th} text-center`}>🔧 Tec.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -500,6 +539,7 @@ export function PerfilesGuide() {
                 <td className={tdl}>Usuarios</td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
@@ -511,6 +551,7 @@ export function PerfilesGuide() {
                 <td className={td}><Ey /></td>
                 <td className={td}><Ey /></td>
                 <td className={td}><Xx /></td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>Safety Dedicado</td>
@@ -519,6 +560,7 @@ export function PerfilesGuide() {
                 <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
                 <td className={td}><C /></td>
                 <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>Vehículos</td>
@@ -527,6 +569,7 @@ export function PerfilesGuide() {
                 <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
                 <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
                 <td className={td}><Xx /> <div className="mt-1"><Config /></div></td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>Choferes</td>
@@ -535,6 +578,7 @@ export function PerfilesGuide() {
                 <td className={td}><Xx /> <div className="mt-1"><Config /></div></td>
                 <td className={td}><C /></td>
                 <td className={td}><Xx /> <div className="mt-1"><Config /></div></td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>Equipos de Elevación</td>
@@ -543,11 +587,13 @@ export function PerfilesGuide() {
                 <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
                 <td className={td}><Ey /> <div className="mt-1"><Config /></div></td>
                 <td className={td}><Xx /> <div className="mt-1"><Config /></div></td>
+                <td className={td}><Xx /></td>
               </tr>
               <tr>
                 <td className={tdl}>Contratistas</td>
                 <td className={td}><C /></td>
                 <td className={td}><C /></td>
+                <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
                 <td className={td}><Xx /></td>
