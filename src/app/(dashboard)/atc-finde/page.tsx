@@ -261,6 +261,7 @@ export default async function AtcFindePage() {
       userRole={role}
       userId={userId}
       userName={session.user.name || 'Desconocido'}
+      currentUserEmail={session.user.email || ''}
       weekendOf={saturday}
       weekendLabel={weekendLabel}
       planDays={planDays}

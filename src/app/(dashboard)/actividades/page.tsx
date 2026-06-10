@@ -105,6 +105,7 @@ export default async function ActividadesPage({
       userRole={role}
       totalCount={totalCount}
       pageSize={PAGE_SIZE}
+      currentUserEmail={session.user.email || ''}
     />
   );
 }

@@ -10,6 +10,7 @@ import {
   activityTypeLabels, activityStatusLabels, activityTypeColors,
   activityStatusColors, formatDate, formatDuration,
 } from '@/lib/utils';
+import { canViewEconomicAnalysis } from '@/lib/permissions';
 
 interface Activity {
   id: string;
@@ -20,7 +21,7 @@ interface Activity {
   durationMinutes: number | null;
   workOrderFolio: string | null;
   purchaseOrder: string | null;
-  user: { id: string; name: string };
+  user: { id: string; name: string } | null;
   client: { id: string; name: string } | null;
   continuedFromId?: string | null;
 }
@@ -42,6 +43,7 @@ interface Props {
   userRole: string;
   totalCount: number;
   pageSize: number;
+  currentUserEmail?: string;
 }
 
 interface SearchableUserSelectProps {
@@ -166,7 +168,7 @@ function SearchableUserSelect({ users, value, onChange, placeholder = "Todos", c
   );
 }
 
-export function ActividadesClient({ activities: initialActivities, users, clients, filters, userRole, totalCount, pageSize }: Props) {
+export function ActividadesClient({ activities: initialActivities, users, clients, filters, userRole, totalCount, pageSize, currentUserEmail = '' }: Props) {
   const router = useRouter();
   const [showFilters, setShowFilters] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters);
@@ -492,7 +494,21 @@ export function ActividadesClient({ activities: initialActivities, users, client
                         {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
                       </p>
                       {act.workOrderFolio && (
-                        <p className="text-xs text-indigo-500 font-mono">{act.workOrderFolio}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-indigo-500 font-mono">{act.workOrderFolio}</span>
+                          {canViewEconomicAnalysis(currentUserEmail, userRole) && (
+                            <a
+                              href={`/reportes-especiales?tab=economico&activityId=${act.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 px-1.5 py-0.5 rounded transition-all"
+                              title="Análisis Económico"
+                            >
+                              📊 $
+                            </a>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td>

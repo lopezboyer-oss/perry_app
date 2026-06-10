@@ -5,6 +5,7 @@ import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, Ha
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
+import { canViewEconomicAnalysis } from '@/lib/permissions';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 
@@ -99,6 +100,7 @@ interface Props {
   userIsSafetyAuditor: boolean;
   allCompanyActivities: AllCompanyActivity[];
   preloadedConflicts: Record<string, string[]>;
+  currentUserEmail?: string;
 }
 
 // ─── MULTI-SELECT DROPDOWN ──────────────────────────────────────
@@ -217,7 +219,7 @@ export function AtcFindeClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
-  userRole, userId, userName, weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, allCompanyActivities, preloadedConflicts,
+  userRole, userId, userName, currentUserEmail = '', weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, allCompanyActivities, preloadedConflicts,
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -1953,26 +1955,40 @@ export function AtcFindeClient({
                       </p>
                     </td>
 
-                    {/* FOLIO ODOO */}
                     <td>
-                      {canEditFields ? (
-                        <div className="flex items-center gap-0.5">
-                          <input type="text" maxLength={6} className={`w-[72px] text-xs px-1.5 py-1 rounded-l border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
-                            value={folioState[act.id] || ''} placeholder="—"
-                            onChange={(e) => setFolioState((p) => ({ ...p, [act.id]: e.target.value.slice(0, 6).toUpperCase() }))}
-                            onBlur={() => lookupOdoo(act.id, folioState[act.id])}
-                          />
-                          <button
-                            type="button"
-                            disabled={!folioState[act.id] || odooLoading[act.id]}
-                            onClick={() => lookupOdoo(act.id, folioState[act.id], false)}
-                            className="px-1 py-1 rounded-r border border-l-0 border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-colors disabled:opacity-30"
-                            title="Buscar P.O. en Odoo"
+                      <div className="flex flex-col gap-1">
+                        {canEditFields ? (
+                          <div className="flex items-center gap-0.5">
+                            <input type="text" maxLength={6} className={`w-[72px] text-xs px-1.5 py-1 rounded-l border font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${odooInfo[act.id]?.found === false ? 'border-red-300 bg-red-50' : odooInfo[act.id]?.found ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200'}`}
+                              value={folioState[act.id] || ''} placeholder="—"
+                              onChange={(e) => setFolioState((p) => ({ ...p, [act.id]: e.target.value.slice(0, 6).toUpperCase() }))}
+                              onBlur={() => lookupOdoo(act.id, folioState[act.id])}
+                            />
+                            <button
+                              type="button"
+                              disabled={!folioState[act.id] || odooLoading[act.id]}
+                              onClick={() => lookupOdoo(act.id, folioState[act.id], false)}
+                              className="px-1 py-1 rounded-r border border-l-0 border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-colors disabled:opacity-30"
+                              title="Buscar P.O. en Odoo"
+                            >
+                              {odooLoading[act.id] ? <Loader2 size={12} className="animate-spin text-indigo-500" /> : <Search size={12} className="text-indigo-500" />}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-mono text-slate-600">{act.workOrderFolio || '-'}</span>
+                        )}
+                        {((canEditFields && folioState[act.id]) || (!canEditFields && act.workOrderFolio)) && canViewEconomicAnalysis(currentUserEmail, userRole) && (
+                          <a
+                            href={`/reportes-especiales?tab=economico&activityId=${act.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 py-0.5 px-1.5 rounded transition-all max-w-fit"
+                            title="Análisis Económico"
                           >
-                            {odooLoading[act.id] ? <Loader2 size={12} className="animate-spin text-indigo-500" /> : <Search size={12} className="text-indigo-500" />}
-                          </button>
-                        </div>
-                      ) : <span className="text-xs font-mono text-slate-600">{act.workOrderFolio || '-'}</span>}
+                            📊 $
+                          </a>
+                        )}
+                      </div>
                     </td>
 
                     {/* P.O. */}

@@ -95,6 +95,7 @@ export default async function PlanesPasadosPage({
       userId={session.user.id}
       userName={session.user.name || 'Desconocido'}
       userIsSafetyAuditor={!!(session.user as any).isSafetyAuditor}
+      currentUserEmail={session.user.email || ''}
     />
   );
 }

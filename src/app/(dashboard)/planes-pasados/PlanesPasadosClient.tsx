@@ -6,6 +6,7 @@ import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle,
 import { formatDate } from '@/lib/utils';
 import { TimeInput24h } from '@/components/ui/TimeInput24h';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
+import { canViewEconomicAnalysis } from '@/lib/permissions';
 
 interface Activity {
   id: string; title: string; type: string; status: string; date: string;
@@ -46,6 +47,7 @@ interface Props {
   userId: string;
   userName: string;
   userIsSafetyAuditor: boolean;
+  currentUserEmail?: string;
 }
 
 export function PlanesPasadosClient({
@@ -53,7 +55,7 @@ export function PlanesPasadosClient({
   techAssignments, safetyAssignments,
   vehicleAssignments, driverAssignments, equipAssignments,
   userSafetyAssignments,
-  userRole, userId, userName, userIsSafetyAuditor,
+  userRole, userId, userName, userIsSafetyAuditor, currentUserEmail = '',
 }: Props) {
   const router = useRouter();
   const canEdit = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -554,7 +556,22 @@ export function PlanesPasadosClient({
                       <td><span className="text-xs font-medium text-slate-700">{act.user?.name || '-'}</span></td>
                       <td><span className="text-xs font-medium text-slate-800">{act.contact?.name || '-'}</span></td>
                       <td><p className={`font-semibold text-xs leading-snug ${act.status === 'CANCELADA' ? 'line-through text-red-400' : 'text-slate-800'}`}>{act.status === 'CANCELADA' && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-red-100 text-red-700 border border-red-200 px-1 py-0.5 rounded-full mr-1 align-middle no-underline" style={{ textDecoration: 'none' }}>❌ CANCELADA</span>}{act.continuedFromId && act.type === 'EJECUCION' && act.status !== 'CANCELADA' && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}{act.title}</p></td>
-                      <td><span className="text-xs font-mono text-slate-600">{act.workOrderFolio || '-'}</span></td>
+                      <td>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-mono text-slate-600">{act.workOrderFolio || '-'}</span>
+                          {act.workOrderFolio && canViewEconomicAnalysis(currentUserEmail, userRole) && (
+                            <a
+                              href={`/reportes-especiales?tab=economico&activityId=${act.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 py-0.5 px-1.5 rounded transition-all max-w-fit"
+                              title="Análisis Económico"
+                            >
+                              📊 $
+                            </a>
+                          )}
+                        </div>
+                      </td>
                       <td><span className={`text-xs font-mono ${act.purchaseOrder ? 'text-slate-700' : 'text-red-500 font-bold'}`}>{act.purchaseOrder || 'PEND.'}</span></td>
                       <td className="text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${act.loto ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>{act.loto ? 'SI' : 'NO'}</span></td>
                       <td><span className="text-xs text-slate-600">{techs.join(', ') || '-'}</span></td>

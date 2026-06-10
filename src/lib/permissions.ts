@@ -37,3 +37,13 @@ export const canViewAudit = (role: string) => ['ADMIN', 'SUPERVISOR_SAFETY_LP'].
 
 /** Odoo company IDs to exclude (test company) */
 export const EXCLUDED_ODOO_COMPANY_IDS = [6];
+
+/** Roles/users with access to the Economic Analysis feature */
+export const canViewEconomicAnalysis = (email: string, _role: string) => {
+  // During testing, only enable for Ivan Lopez (lopezboyer@gmail.com)
+  const isIvanLopez = email === 'lopezboyer@gmail.com';
+  return isIvanLopez;
+  
+  // Later we can change this to:
+  // return ['ADMIN', 'ADMINISTRACION'].includes(role) || isIvanLopez;
+};
