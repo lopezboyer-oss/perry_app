@@ -416,10 +416,10 @@ export function CobranzaClient({ userRole }: { userRole?: string }) {
                                 setMessageTab('short');
                                 setCopiedState(false);
                               }}
-                              className="inline-flex items-center justify-center gap-1 text-[10px] font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 py-0.5 px-2 rounded-lg transition-all text-slate-500 max-w-fit mt-1 shadow-sm"
+                              className="inline-flex items-center justify-center text-[10px] bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 hover:border-orange-300 py-0.5 px-1.5 rounded-md transition-all max-w-fit mt-1 shadow-sm"
                               title="Generar mensaje de solicitud de recibo"
                             >
-                              ✉ Solicitud
+                              📢
                             </button>
                           )}
                         </div>
