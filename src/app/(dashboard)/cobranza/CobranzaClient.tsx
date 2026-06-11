@@ -563,23 +563,25 @@ export function CobranzaClient({ userRole }: { userRole?: string }) {
                 const companySign = selectedInvoiceForMessage.sellerCompany || 'GS Ingeniería';
                 const factNum = selectedInvoiceForMessage.number;
 
-                const shortText = `Estimado/a ${requisitor},
+                const shortText = `Estimado/a ${requisitor}, 
 
-Espero que se encuentre muy bien. Le escribo de parte del equipo administrativo de ${companySign}.
+Espero que se encuentre muy bien. 👋
+Le escribo de parte del equipo administrativo de ${companySign} .
 
-Le solicitamos de la manera más atenta su apoyo con la confirmación de recibo de la siguiente factura en su sistema:
+Le solicitamos de la manera más atenta su apoyo con la confirmación de recibo de la siguiente factura en su sistema :
 
-• Factura: ${factNum}
-• Número de PO: ${poNum}
-• Título de PO: ${poTitleStr}
-• Monto: ${amountStr} MXN
+• 📄 Factura: ${factNum}
+• 🏷️ Número de PO: ${poNum}
+• 📌 Título de PO: ${poTitleStr}
+• 💰 Monto: ${amountStr} MXN
 
-Agradecemos de antemano su valioso apoyo. Quedamos a su disposición para cualquier duda.
+Agradecemos de antemano su valioso apoyo. Quedamos a su disposición para cualquier duda. 
 
-¡Que tenga un excelente día!
+¡Que tenga un excelente día! ✨
 
 Atentamente,
-El equipo administrativo de ${companySign}`;
+El equipo administrativo de
+${companySign}`;
 
                 const emailSubject = `Solicitud de confirmación de recibo - Factura ${factNum} - ${companySign}`;
                 const emailText = `Estimado/a ${requisitor},
