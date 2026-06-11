@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
           'invoice_date',
           'ref', 'partner_id', 'invoice_origin',
           'invoice_user_id',
+          'company_id',
         ],
         order: 'invoice_date_due asc',
       },
@@ -85,6 +86,7 @@ export async function GET(req: NextRequest) {
           'invoice_date',
           'ref', 'partner_id', 'invoice_origin',
           'invoice_user_id',
+          'company_id',
         ],
         order: 'invoice_date desc',
         limit: 30,
@@ -93,21 +95,24 @@ export async function GET(req: NextRequest) {
 
     const invoices = [...(unpaidInvoices || []), ...(paidInvoices || [])];
 
-    // Secondary source: cross-reference folios with Perry activities to find the engineer
+    // Secondary source: cross-reference folios with Perry activities to find the engineer and title
     const folios = [...new Set(invoices.map((inv: any) => inv.invoice_origin).filter(Boolean))];
     const engineerMap: Record<string, string> = {};
+    const titleMap: Record<string, string> = {};
 
     if (folios.length > 0) {
       const activities = await prisma.activity.findMany({
         where: { workOrderFolio: { in: folios } },
         select: {
           workOrderFolio: true,
+          title: true,
           user: { select: { name: true } },
         },
       });
       activities.forEach((a) => {
-        if (a.workOrderFolio && a.user?.name) {
-          engineerMap[a.workOrderFolio] = a.user.name;
+        if (a.workOrderFolio) {
+          if (a.user?.name) engineerMap[a.workOrderFolio] = a.user.name;
+          if (a.title) titleMap[a.workOrderFolio] = a.title;
         }
       });
     }
@@ -125,6 +130,25 @@ export async function GET(req: NextRequest) {
       const odooEngineer = inv.invoice_user_id ? inv.invoice_user_id[1] : null;
       const perryEngineer = inv.invoice_origin ? (engineerMap[inv.invoice_origin] || null) : null;
 
+      // Get clean signature/company name from company_id
+      const officialCompany = inv.company_id ? inv.company_id[1] : '';
+      let sellerCompany = 'GS Ingeniería'; // fallback
+      if (officialCompany.toUpperCase().includes('TRAILA')) {
+        sellerCompany = 'Traila Maquinaria';
+      } else if (officialCompany.toUpperCase().includes('CONSORCIO')) {
+        sellerCompany = 'Consorcio Operativo Perry';
+      } else if (officialCompany.toUpperCase().includes('SOLUCIONES')) {
+        sellerCompany = 'Soluciones Industriales';
+      } else if (officialCompany.toUpperCase().includes('GS INGENIERIA')) {
+        sellerCompany = 'GS Ingeniería';
+      } else if (officialCompany) {
+        sellerCompany = officialCompany
+          .replace(/\s+(S\.?[A-Z]\.?\s+DE\s+C\.?[V]\.?|S\.?\s+DE\s+R\.?\s+L\.?.*)$/i, '')
+          .trim();
+      }
+
+      const poTitle = inv.invoice_origin ? (titleMap[inv.invoice_origin] || null) : null;
+
       return {
         id: inv.id,
         number: inv.name,
@@ -138,6 +162,8 @@ export async function GET(req: NextRequest) {
         company,
         contact,
         engineer: odooEngineer || perryEngineer || null,
+        sellerCompany,
+        poTitle,
       };
     });
 

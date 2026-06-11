@@ -19,6 +19,8 @@ interface Invoice {
   contact: string;
   engineer: string | null;
   isPaid: boolean;
+  sellerCompany?: string;
+  poTitle?: string | null;
 }
 
 interface Receipt {
@@ -50,6 +52,12 @@ export function CobranzaClient({ userRole }: { userRole?: string }) {
   const [filterUrgency, setFilterUrgency] = useState<string>('pending');
   const [sortField, setSortField] = useState<'invoiceDate' | 'amountPending'>('amountPending');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  // Message request states
+  const [selectedInvoiceForMessage, setSelectedInvoiceForMessage] = useState<Invoice | null>(null);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageTab, setMessageTab] = useState<'short' | 'email'>('short');
+  const [copiedState, setCopiedState] = useState(false);
 
   // Receipt tracking
   const [receipts, setReceipts] = useState<Record<string, Receipt>>({});
@@ -394,11 +402,27 @@ export function CobranzaClient({ userRole }: { userRole?: string }) {
                     <tr key={inv.id} className={receipt ? 'bg-violet-50/40' : ''}>
                       <td className="text-xs font-mono font-medium text-slate-700">{inv.number}</td>
                       <td>
-                        {inv.folio ? (
-                          <span className="text-xs font-mono text-indigo-600">{inv.folio}</span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400">—</span>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {inv.folio ? (
+                            <span className="text-xs font-mono text-indigo-600">{inv.folio}</span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">—</span>
+                          )}
+                          {!inv.isPaid && !receipts[inv.number] && (
+                            <button
+                              onClick={() => {
+                                setSelectedInvoiceForMessage(inv);
+                                setShowMessageModal(true);
+                                setMessageTab('short');
+                                setCopiedState(false);
+                              }}
+                              className="inline-flex items-center justify-center gap-1 text-[10px] font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 py-0.5 px-2 rounded-lg transition-all text-slate-500 max-w-fit mt-1 shadow-sm"
+                              title="Generar mensaje de solicitud de recibo"
+                            >
+                              ✉ Solicitud
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td>
                         {inv.po ? (
@@ -487,6 +511,135 @@ export function CobranzaClient({ userRole }: { userRole?: string }) {
           </table>
         </div>
       </div>
+      {/* Modal de Solicitud de Recibo */}
+      {showMessageModal && selectedInvoiceForMessage && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full overflow-hidden animate-slide-up">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm">Generar Solicitud de Recibo</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Factura: <span className="font-mono">{selectedInvoiceForMessage.number}</span></p>
+              </div>
+              <button
+                onClick={() => setShowMessageModal(false)}
+                className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full w-7 h-7 flex items-center justify-center font-bold transition-all text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content / Tabs */}
+            <div className="p-5 space-y-4">
+              <div className="flex border-b border-slate-200">
+                <button
+                  onClick={() => { setMessageTab('short'); setCopiedState(false); }}
+                  className={`py-2 px-4 text-xs font-semibold border-b-2 transition-all ${
+                    messageTab === 'short'
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  WhatsApp / Chat (Corto)
+                </button>
+                <button
+                  onClick={() => { setMessageTab('email'); setCopiedState(false); }}
+                  className={`py-2 px-4 text-xs font-semibold border-b-2 transition-all ${
+                    messageTab === 'email'
+                      ? 'border-indigo-600 text-indigo-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Correo Electrónico (Email)
+                </button>
+              </div>
+
+              {/* Message preview */}
+              {(() => {
+                const requisitor = selectedInvoiceForMessage.contact || selectedInvoiceForMessage.company || 'Cliente';
+                const poNum = selectedInvoiceForMessage.po || '—';
+                const poTitleStr = selectedInvoiceForMessage.poTitle || 'Servicio de Soporte y Operación';
+                const amountStr = fmt(selectedInvoiceForMessage.amountTotal);
+                const companySign = selectedInvoiceForMessage.sellerCompany || 'GS Ingeniería';
+                const factNum = selectedInvoiceForMessage.number;
+
+                const shortText = `Estimado/a ${requisitor},
+
+Espero que se encuentre muy bien. Le escribo de parte del equipo administrativo de ${companySign}.
+
+Le solicitamos de la manera más atenta su apoyo con la confirmación de recibo de la siguiente factura en su sistema:
+
+• Factura: ${factNum}
+• Número de PO: ${poNum}
+• Título de PO: ${poTitleStr}
+• Monto: ${amountStr} MXN
+
+Agradecemos de antemano su valioso apoyo. Quedamos a su disposición para cualquier duda.
+
+¡Que tenga un excelente día!
+
+Atentamente,
+El equipo administrativo de ${companySign}`;
+
+                const emailSubject = `Solicitud de confirmación de recibo - Factura ${factNum} - ${companySign}`;
+                const emailText = `Estimado/a ${requisitor},
+
+Reciba un cordial saludo de parte de todo el equipo administrativo de ${companySign}.
+
+Por medio del presente conducto, nos comunicamos con usted para solicitar de la manera más atenta su valioso apoyo con la liberación y confirmación de recibo de la siguiente factura en su portal/sistema:
+
+• Factura: ${factNum}
+• Número de PO: ${poNum}
+• Título de PO: ${poTitleStr}
+• Monto: ${amountStr} MXN
+
+Agradecemos de antemano su colaboración. Si requiere alguna documentación adicional o tiene alguna duda sobre el servicio proporcionado, no dude en hacérnoslo saber respondiendo a este correo.
+
+Que tenga un excelente día.
+
+Atentamente,
+Departamento de Administración
+${companySign}`;
+
+                const activeMessage = messageTab === 'short' ? shortText : emailText;
+
+                const handleCopy = () => {
+                  navigator.clipboard.writeText(activeMessage);
+                  setCopiedState(true);
+                  setTimeout(() => setCopiedState(false), 2000);
+                };
+
+                return (
+                  <div className="space-y-3">
+                    {messageTab === 'email' && (
+                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 font-mono">
+                        <strong className="text-slate-700">Asunto:</strong> {emailSubject}
+                      </div>
+                    )}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-mono text-slate-700 whitespace-pre-wrap max-h-60 overflow-y-auto leading-relaxed text-left">
+                      {activeMessage}
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        onClick={handleCopy}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+                      >
+                        {copiedState ? '✓ ¡Copiado!' : '📋 Copiar Mensaje'}
+                      </button>
+                      <button
+                        onClick={() => setShowMessageModal(false)}
+                        className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs px-4 py-2 rounded-lg transition-colors"
+                      >
+                        Cerrar
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
