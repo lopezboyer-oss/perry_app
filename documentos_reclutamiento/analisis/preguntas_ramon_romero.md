@@ -3,7 +3,7 @@
 **Fecha de Evaluación:** 15 de Junio, 2026
 **Estatus del Perfil:** Top Match (Excelente)
 
-Esta guía estructurada contiene 6 preguntas clave de comportamiento y situación técnica diseñadas a partir del currículum de Ramón Romero (experiencia en Prosing, Aju Steel y ABC Aluminum) y cruzadas con las necesidades reales de Caseme (Plan de Fin de Semana / Plan FINDE, control de asistencia en Perry App, y optimización de rentas de elevación en planta TMMBC).
+Esta guía estructurada contiene 6 preguntas clave de comportamiento y situación técnica diseñadas para la entrevista presencial. Se han diferenciado del cuestionario psicométrico (HTML) para evitar repeticiones, enfocándose en competencias técnicas profundas de Ramón (Prosing, Aju Steel y ABC Aluminum) y las necesidades logísticas de Caseme.
 
 ---
 
@@ -23,59 +23,59 @@ Esta guía estructurada contiene 6 preguntas clave de comportamiento y situació
 
 ---
 
-### 2. Disciplina en Reportes de Asistencia y Uso de Perry App
-> **Contexto (CV & Perry App):** Llevabas el control de prenómina y asistencia de personal en Prosing. En Caseme es obligatorio que todos los ingenieros registren su check-in diario (con geolocalización GPS y selfie) a través de Perry App para el cobro de cuadrillas al cliente.
+### 2. Liderazgo y Resolución de Conflictos con Personal Técnico
+> **Contexto (CV & Perry App):** En ABC Aluminum coordinabas la asignación de actividades y soporte. En Caseme, liderarás cuadrillas donde a veces hay técnicos altamente capacitados pero con actitudes conflictivas o resistencia a la disciplina.
 >
 > **Pregunta:** 
-> *"En tu experiencia gestionando prenóminas, ¿cómo asegurarías que el equipo técnico a tu cargo registre impecablemente su asistencia diaria en la aplicación móvil, y qué acciones tomarías si un ingeniero de alta capacidad técnica se rehúsa de manera constante a usarla bajo el argumento de que 'está muy ocupado en el campo'?"*
+> *"Describe una situación real en tu experiencia donde hayas tenido a tu cargo a un técnico con excelente capacidad de ejecución, pero cuyo comportamiento afectaba la moral del equipo o mostraba resistencia a tus instrucciones. ¿Cómo lo manejaste y cuál fue el resultado?"*
 
-* **Aspecto a explorar:** Liderazgo, resolución de conflictos con personal, disciplina administrativa y apego al uso de herramientas digitales de control.
+* **Aspecto a explorar:** Liderazgo situacional, inteligencia emocional, manejo de conflictos y autoridad asertiva en campo.
 * **Cómo valorar la respuesta:**
-  * **Excelente (5):** Plantea una combinación de concientización y firmeza. Primero explica al ingeniero la importancia comercial de su registro (si no hay check-in en Perry App, el cliente no valida la orden de trabajo y no se le puede pagar la jornada). Si la conducta persiste, implementa advertencias formales en coordinación con Administración/RRHH, aplicando políticas de cero tolerancia ante indisciplina administrativa.
-  * **Aceptable (3):** Ofrece registrarlo él mismo de forma manual o recordarle constantemente que lo haga, asumiendo una carga de trabajo administrativa adicional del ingeniero para evitar fricciones.
-  * **Deficiente (1):** Tolera la omisión del registro bajo la justificación de que el trabajo técnico es más importante que la administración, afectando el flujo de cobros de la empresa.
+  * **Excelente (5):** El candidato describe una intervención directa y oportuna. Habló en privado con el colaborador para retroalimentarlo sobre hechos específicos y el impacto de su actitud, buscó entender si había un problema raíz, estableció expectativas claras de conducta y consecuencias, y logró mejorar el comportamiento o tomó una decisión disciplinaria definitiva sin afectar la operación.
+  * **Aceptable (3):** Intentó ignorar las conductas menores del técnico conflictivo para "evitar roces", o intervino únicamente cuando el problema ya afectaba directamente la entrega de una obra de forma crítica.
+  * **Deficiente (1):** Respondió de manera confrontativa e impulsiva aumentando la tensión del equipo, o evadió el conflicto delegando por completo la solución a gerencia o recursos humanos.
 
 ---
 
-### 3. Control de Costos Operativos y Renta Eficiente de Elevadores
-> **Contexto (CV & Perry App):** Caseme presenta áreas de oportunidad en el gasto de renta de plataformas de elevación (elevadores parados u ociosos en patio). En Prosing tenías bajo tu cargo el análisis de gastos de proyectos.
+### 3. Planeación de Materiales y Logística para Evitar Fletes de Emergencia
+> **Contexto (CV & Perry App):** En Prosing realizabas la planeación de compras de materiales para proyectos de taller y campo. En Caseme, las compras no planificadas de fin de semana (Plan FINDE) generan altos costos por fletes de emergencia e improductividad de técnicos.
 >
 > **Pregunta:** 
-> *"Si en tu frente de trabajo de fin de semana en Toyota detectas que una plataforma articulada rentada por Caseme estará sin uso durante más de 48 horas debido a un cambio imprevisto en la programación del cliente, ¿cuáles son las acciones operativas inmediatas que tomarías para mitigar ese gasto de fuga?"*
+> *"Cuando preparas las actividades de fin de semana, ¿cómo planificas y aseguras la disponibilidad de materiales y consumibles de taller (discos, electrodos, tornillería) antes de arrancar los trabajos en sitio, y qué control implementas para evitar el desperdicio o pérdida de herramientas?"*
 
-* **Aspecto a explorar:** Consciencia financiera, optimización de recursos y proactividad en el control de costos de obra.
+* **Aspecto a explorar:** Organización logística preventiva, control de insumos en obra y optimización de costos indirectos.
 * **Cómo valorar la respuesta:**
-  * **Excelente (5):** Propone dos frentes de acción inmediata: 1) Coordinar una programación cruzada con otros supervisores en sitio para verificar si otra actividad activa de Caseme requiere el equipo de elevación (compartir el recurso); 2) Si ningún frente de Caseme lo necesita, contacta de inmediato al proveedor para reportar el paro, solicitar el cese de cobro (standby) o gestionar la recolección y devolución del equipo sin demora.
-  * **Aceptable (3):** Deja el equipo parado en planta 'por si acaso' el cliente reanuda las actividades de repente, o avisa a su jefe inmediato pero sin proponer una solución activa de control de costos.
-  * **Deficiente (1):** Ignora el estado del equipo y permite que continúe acumulando renta diaria sin reportar la inactividad de la plataforma.
+  * **Excelente (5):** Explica que realiza una revisión de alcance (layout/planos) a mitad de semana, genera una lista de materiales ("Kitting List") con un 5-10% de holgura en consumibles estándar, organiza la entrega en el sitio de trabajo el viernes por la tarde y asigna un responsable de almacén local para el resguardo de herramientas mediante vales.
+  * **Aceptable (3):** Confía en que el almacén general proveerá lo necesario el sábado por la mañana, o maneja un inventario informal de materiales sin controles estrictos de entrega/devolución de herramientas.
+  * **Deficiente (1):** Compra los materiales al día conforme se van necesitando en la obra, provocando paros constantes del personal técnico y fletes recurrentes de emergencia.
 
 ---
 
-### 4. Coordinación de Ventanas Críticas (Plan FINDE) y Entrega de Turno
-> **Contexto (CV & Perry App):** En ABC Aluminum coordinabas entregas de turnos y planeabas actividades. En Caseme, las actividades críticas de mantenimiento en Toyota ocurren en ventanas de tiempo muy reducidas los fines de semana (Plan FINDE).
+### 4. Desconexión Segura y Protocolo LOTO de Energía Cero
+> **Contexto (CV & Perry App):** En ABC Aluminum coordinabas mantenimientos preventivos a maquinaria y utilities de edificio. En Toyota (TMMBC), la intervención de maquinaria sin asegurar energía cero (LOTO) se penaliza con la expulsión inmediata de la planta.
 >
 > **Pregunta:** 
-> *"Imagínate que durante un montaje electromecánico crítico programado en fin de semana en Toyota, la cuadrilla a tu cargo sufre un retraso por una refacción defectuosa y se aproxima la hora del relevo de turno. ¿Cómo estructurarías la entrega del frente de trabajo al siguiente supervisor para no comprometer el arranque de producción de la planta?"*
+> *"Con tu experiencia en sistemas eléctricos, hidráulicos y neumáticos, describe el protocolo que sigues para garantizar que una máquina o línea esté al 100% en 'energía cero' (bloqueo LOTO) cuando hay presencia de energías residuales (gravedad, presión acumulada, condensadores), antes de permitir que tu personal la intervenga."*
 
-* **Aspecto a explorar:** Trabajo bajo presión, comunicación asertiva, organización logística y continuidad segura de operaciones de manufactura.
+* **Aspecto a explorar:** Rigor técnico en seguridad industrial, conocimiento de bloqueo LOTO y protección de personal contra energías peligrosas.
 * **Cómo valorar la respuesta:**
-  * **Excelente (5):** Describe una entrega de turno estructurada: bitácora detallada con el estatus físico y eléctrico exacto del montaje, un relevo presencial side-by-side de al menos 10-15 minutos entre líderes para explicar los puntos clave y riesgos, y una auditoría rápida de seguridad conjunta antes de que la nueva cuadrilla retome las tareas en sitio.
-  * **Aceptable (3):** Solo deja un reporte escrito o envía un mensaje de WhatsApp rápido al supervisor entrante con las generalidades de lo pendiente, sin asegurar un entendimiento verbal completo ni realizar una revisión en sitio.
-  * **Deficiente (1):** Abandona el sitio al concluir su horario de turno confiando en que el equipo entrante deducirá lo que hace falta por su cuenta.
+  * **Excelente (5):** Menciona los pasos fundamentales de LOTO: 1) Identificación de todas las fuentes de energía (eléctrica, neumática, hidráulica, cinética); 2) Apagado y aislamiento de fuentes; 3) Colocación de candados y etiquetas personales; 4) Disipación obligatoria de energías residuales (liberar presión de válvulas, descargar acumuladores, asegurar piezas mecánicas contra caídas); 5) Verificación obligatoria de arranque ("test de energía cero") antes de iniciar el trabajo.
+  * **Aceptable (3):** Describe el uso general de candados y etiquetas eléctricas, pero omite la importancia de disipar energías residuales (como la presión en líneas neumáticas o hidráulicas) o el paso crítico de verificación de arranque.
+  * **Deficiente (1):** Considera que bajar el interruptor general de la máquina es suficiente para trabajar de forma segura, ignorando los protocolos formales de LOTO y las energías acumuladas.
 
 ---
 
-### 5. Tolerancia Cero en EHS y Liberación de Permisos TERA
-> **Contexto (CV & Perry App):** En Aju Steel supervisabas la prevención de accidentes. En la planta TMMBC de Toyota, realizar un trabajo sin permiso de riesgo (TERA) firmado o sin bloqueo de energía (LOTO) es motivo de baja inmediata.
+### 5. Adaptabilidad ante Cambios de Cronograma por Producción
+> **Contexto (CV & Perry App):** En ABC Aluminum planeabas y ejecutabas planes de turno bajo condiciones de producción activa. En Toyota, el cliente puede reducir inesperadamente tu ventana de mantenimiento (Plan FINDE) debido a retrasos en sus corridas de producción.
 >
 > **Pregunta:** 
-> *"Un ingeniero o supervisor del cliente te pide iniciar de urgencia un trabajo en alturas con soldadura porque urge arrancar una línea de producción, pero el permiso TERA oficial aún no está firmado por el área de EHS de Toyota. ¿Qué harías en esta situación?"*
+> *"Imagina que tienes programado un mantenimiento crítico de 12 horas el domingo en Toyota, pero el supervisor del cliente te informa el sábado por la noche que su producción se retrasó y solo dispondrás de 8 horas para entregar el trabajo. ¿Cómo reestructurarías tus actividades y recursos bajo esta presión de tiempo?"*
 
-* **Aspecto a explorar:** Integridad en EHS (Salud, Higiene y Seguridad), manejo de la presión de clientes exigentes y apego a normativas corporativas.
+* **Aspecto a explorar:** Flexibilidad operativa, toma de decisiones crítica bajo presión y balanceo de carga de trabajo.
 * **Cómo valorar la respuesta:**
-  * **Excelente (5):** Se niega rotundamente a iniciar la actividad hasta contar con el documento físico con todas las firmas requeridas. Comunica al cliente con tacto y diplomacia que el inicio prematuro pone en riesgo la vida del personal y expone a ambas empresas a penalizaciones severas; de forma paralela, contacta a su propio prevencionista de Caseme para acelerar la firma del permiso.
-  * **Aceptable (3):** Accede a iniciar los trabajos preparatorios o de montaje a nivel de piso mientras "baja la firma del permiso", asumiendo un riesgo parcial, o se niega pero de forma conflictiva generando una disputa con el cliente.
-  * **Deficiente (1):** Cede ante la presión del cliente e instruye al personal a realizar el trabajo de soldadura en alturas sin el permiso liberado.
+  * **Excelente (5):** Detalla una estrategia lógica: 1) Reevaluar el alcance técnico identificando tareas del "camino crítico" que son indispensables para el arranque de la máquina, postergando tareas secundarias o estéticas (con acuerdo previo del cliente); 2) Reestructurar los frentes de trabajo (ej. traslapar actividades que antes eran secuenciales); 3) Analizar si se requiere incrementar mano de obra/técnicos adicionales para realizar tareas en paralelo, manteniendo siempre la seguridad como prioridad.
+  * **Aceptable (3):** Trata de presionar al equipo para que trabaje "más rápido" para comprimir las 12 horas en 8, comprometiendo potencialmente la calidad del entregable o la seguridad del personal en el sitio.
+  * **Deficiente (1):** Cancela o detiene el proyecto de inmediato argumentando que es técnicamente imposible realizar el mantenimiento en menos de 12 horas, sin proponer alternativas operativas al cliente.
 
 ---
 
