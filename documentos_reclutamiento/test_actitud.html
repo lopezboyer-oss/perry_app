@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grupo Caseme - Evaluación de Actitud Operativa</title>
+  
+  <!-- Modern Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --primary-light: #e0e7ff;
+      --accent: #f97316;
+      --accent-light: #ffedd5;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      
+      --font-title: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--slate-50);
+      color: var(--slate-700);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--slate-900) 0%, #1e1b4b 100%);
+      color: white;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      border-bottom: 4px solid var(--accent);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -50px;
+      left: -50px;
+      width: 150px;
+      height: 150px;
+      background: rgba(249, 115, 22, 0.1);
+      border-radius: 50%;
+    }
+
+    .header-content {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-family: var(--font-title);
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #ffffff, #e2e8f0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      color: var(--slate-300);
+      font-size: 1rem;
+      font-weight: 400;
+    }
+
+    main {
+      flex: 1;
+      max-width: 800px;
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .candidate-info-card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .candidate-info-card {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--slate-800);
+    }
+
+    .form-group input {
+      font-family: inherit;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--slate-300);
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+      background-color: var(--slate-50);
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background-color: white;
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .section-title {
+      font-family: var(--font-title);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--primary);
+      padding-left: 0.75rem;
+    }
+
+    .question-card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .question-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    }
+
+    .question-number {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .question-text {
+      font-family: var(--font-title);
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--slate-800);
+      margin-bottom: 1.25rem;
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--slate-200);
+      border-radius: 0.75rem;
+      cursor: pointer;
+      background-color: white;
+      transition: all 0.2s ease;
+    }
+
+    .option-label:hover {
+      background-color: var(--slate-50);
+      border-color: var(--slate-300);
+    }
+
+    .option-label input[type="radio"] {
+      appearance: none;
+      background-color: #fff;
+      margin: 0.25rem 0 0 0;
+      font: inherit;
+      color: var(--primary);
+      width: 1.15rem;
+      height: 1.15rem;
+      border: 2px solid var(--slate-300);
+      border-radius: 50%;
+      display: grid;
+      place-content: center;
+      transition: 0.15s all ease-in-out;
+      cursor: pointer;
+    }
+
+    .option-label input[type="radio"]::before {
+      content: "";
+      width: 0.65rem;
+      height: 0.65rem;
+      border-radius: 50%;
+      transform: scale(0);
+      transition: 120ms transform ease-in-out;
+      background-color: var(--primary);
+    }
+
+    .option-label input[type="radio"]:checked {
+      border-color: var(--primary);
+    }
+
+    .option-label input[type="radio"]:checked::before {
+      transform: scale(1);
+    }
+
+    .option-label:has(input[type="radio"]:checked) {
+      background-color: var(--primary-light);
+      border-color: var(--primary);
+    }
+
+    .option-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--slate-800);
+    }
+
+    .actions-container {
+      margin-top: 2.5rem;
+      text-align: center;
+    }
+
+    .btn {
+      font-family: var(--font-title);
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 1rem 2.5rem;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+    }
+
+    /* Results Dashboard styles */
+    .results-container {
+      display: none;
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .results-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      border-bottom: 2px solid var(--slate-100);
+      padding-bottom: 1.5rem;
+    }
+
+    .results-header h2 {
+      font-family: var(--font-title);
+      font-size: 1.85rem;
+      color: var(--slate-800);
+    }
+
+    .results-header p {
+      color: var(--slate-500);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .overall-badge {
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      border-radius: 2rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      margin-top: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-excellent { background-color: var(--success-light); color: var(--success); }
+    .badge-good { background-color: var(--primary-light); color: var(--primary); }
+    .badge-moderate { background-color: var(--warning-light); color: var(--warning); }
+    .badge-deficient { background-color: var(--danger-light); color: var(--danger); }
+
+    .dimension-score-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .dimension-bar-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .dimension-bar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--slate-800);
+    }
+
+    .dimension-bar-track {
+      height: 1rem;
+      background-color: var(--slate-100);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      border: 1px solid var(--slate-200);
+    }
+
+    .dimension-bar-fill {
+      height: 100%;
+      border-radius: 0.5rem;
+      width: 0%;
+      transition: width 1s cubic-bezier(0.1, 0.8, 0.25, 1);
+    }
+
+    .fill-ehs { background-color: var(--success); }
+    .fill-liderazgo { background-color: var(--primary); }
+    .fill-costos { background-color: var(--warning); }
+    .fill-cliente { background-color: #ec4899; }
+    .fill-estres { background-color: #06b6d4; }
+
+    .diagnostic-card {
+      background-color: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .diagnostic-card h3 {
+      font-family: var(--font-title);
+      font-size: 1.15rem;
+      color: var(--slate-800);
+      margin-bottom: 0.75rem;
+    }
+
+    .diagnostic-text {
+      font-size: 0.95rem;
+      color: var(--slate-700);
+      line-height: 1.6;
+    }
+
+    .results-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .btn-secondary {
+      background-color: white;
+      color: var(--slate-700);
+      border: 1px solid var(--slate-300);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--slate-100);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--slate-400);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--slate-200);
+      margin-top: auto;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background-color: white;
+        color: black;
+      }
+      
+      header, footer, .actions-container, .results-actions, .question-card, .section-title, .candidate-info-card:not(.printing-info) {
+        display: none !important;
+      }
+
+      main {
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+      }
+
+      .results-container {
+        display: block !important;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+
+      .results-header h2 {
+        font-size: 24pt;
+      }
+
+      .dimension-bar-track {
+        border: 1px solid #000;
+        background-color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .dimension-bar-fill {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .printing-info {
+        display: grid !important;
+        border: 1px solid #000 !important;
+        margin-bottom: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-content">
+      <h1>Evaluación de Actitud Operativa</h1>
+      <p>Cuestionario Psicométrico de Situación en Campo para Supervisores e Ingenieros - Grupo Caseme</p>
+    </div>
+  </header>
+
+  <main>
+    <form id="evaluationForm" onsubmit="evaluateCandidate(event)">
+      <div class="candidate-info-card printing-info">
+        <div class="form-group">
+          <label for="candidateName">Nombre del Candidato</label>
+          <input type="text" id="candidateName" required placeholder="Ej. Ramón Romero Rivas">
+        </div>
+        <div class="form-group">
+          <label for="evaluatorName">Nombre del Evaluador</label>
+          <input type="text" id="evaluatorName" required placeholder="Ej. Iván López">
+        </div>
+      </div>
+
+      <h2 class="section-title">Cuestionario Situacional (10 Escenarios)</h2>
+
+      <!-- Q1: EHS/Seguridad -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 1 (EHS / Seguridad)</span>
+        <p class="question-text">Un supervisor del cliente te presiona de urgencia para soldar una viga en alturas el sábado, pero el permiso físico de Trabajo Especial de Alto Riesgo (TERA) aún no cuenta con la firma del encargado de EHS del cliente. ¿Cómo actúas?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q1" value="0" required>
+            <span class="option-text">Accedo a realizar la soldadura inmediatamente para mantener una excelente relación comercial con el cliente y evitar demoras en la producción.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q1" value="5">
+            <span class="option-text">Instruyo al equipo a que prepare el área de trabajo y monte los andamios/herramientas, pero mantengo en espera las tareas de soldadura caliente hasta que llegue el permiso firmado.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q1" value="10">
+            <span class="option-text">Me niego rotundamente a iniciar cualquier tarea hasta tener el permiso físico en sitio firmado. Le explico cordialmente al cliente que un trabajo sin firma pone en riesgo la vida del equipo y conlleva sanciones inmediatas.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q2: EHS/Seguridad -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 2 (EHS / Seguridad)</span>
+        <p class="question-text">Encuentras a un técnico de alta experiencia realizando una maniobra de canalización eléctrica a 4 metros de altura sobre una plataforma sin enganchar su arnés a la canastilla, argumentando que "sólo le tomará un minuto terminar". ¿Qué haces?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q2" value="3" required>
+            <span class="option-text">Le llamo la atención verbalmente indicándole que se enganche, pero le permito concluir la maniobra rápido para no frenar el avance del fin de semana.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q2" value="10">
+            <span class="option-text">Ordeno detener el trabajo al instante, le exijo que se enganche antes de descender y procedo a registrar el reporte administrativo y de seguridad según la política de tolerancia cero de Caseme.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q2" value="0">
+            <span class="option-text">No intervengo en la maniobra, puesto que es un técnico muy capacitado y con experiencia en planta que sabe cuidarse solo.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q3: Liderazgo y Gestión -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 3 (Liderazgo y Gestión)</span>
+        <p class="question-text">Para facilitar el cobro al cliente, Caseme requiere que los ingenieros registren su asistencia en Perry App (con selfie y GPS). El ingeniero líder del proyecto se niega a registrarse constantemente alegando que "el papeleo le quita tiempo valioso en campo". ¿Cómo lo resuelves?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q3" value="10" required>
+            <span class="option-text">Hablo en privado con él para concientizarlo de que el registro diario es obligatorio porque respalda el cobro de la obra. Si persiste, aplico advertencias disciplinarias formales en conjunto con administración.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q3" value="3">
+            <span class="option-text">Le permito omitir el registro en la aplicación y yo realizo el registro de su asistencia manualmente de forma interna para no desgastar la relación laboral.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q3" value="5">
+            <span class="option-text">Escalo el problema directamente a la gerencia de Caseme para que ellos resuelvan la disciplina del ingeniero y evito involucrarme en el conflicto.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q4: Liderazgo y Gestión -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 4 (Liderazgo y Gestión)</span>
+        <p class="question-text">Durante un trabajo urgente de fin de semana, surge una discrepancia de opiniones entre dos técnicos sobre la forma correcta de instalar una canalización eléctrica pesada, lo cual está paralizando las actividades de la cuadrilla. ¿Qué haces?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q4" value="0" required>
+            <span class="option-text">Dejo que ellos continúen discutiendo hasta que lleguen a un acuerdo mutuo, ya que es importante fomentar la autonomía y la autogestión en el equipo.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="10">
+            <span class="option-text">Intervengo de inmediato, analizo técnicamente las dos propuestas de acuerdo a normas de ingeniería, elijo la solución más segura y eficiente, y asigno roles claros para reanudar el trabajo.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="5">
+            <span class="option-text">Freno temporalmente el trabajo y asigno la tarea completa a un tercer técnico neutro de la cuadrilla para evitar la confrontación entre los primeros dos.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q5: Control de Costos y Recursos -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 5 (Control de Costos y Recursos)</span>
+        <p class="question-text">Una plataforma elevadora articulada rentada por Caseme queda inactiva el sábado porque el área del cliente no se liberó a tiempo. Sabes que el retraso tardará al menos 48 horas adicionales. ¿Cómo procedes?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q5" value="2" required>
+            <span class="option-text">Mantengo el equipo en el área de trabajo por si la situación cambia rápidamente, evitando el tiempo de traslado y asegurando la disponibilidad de la máquina.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q5" value="10">
+            <span class="option-text">Coordino con otros supervisores en sitio para ver si pueden utilizar la plataforma en sus frentes de trabajo. De lo contrario, reporto a compras para solicitar standby al proveedor o devolver el equipo.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q5" value="0">
+            <span class="option-text">Dejo el equipo estacionado en planta y lo reporto el lunes por la mañana en mi bitácora regular de fin de semana para que compras tome la decisión.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q6: Control de Costos y Recursos -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 6 (Control de Costos y Recursos)</span>
+        <p class="question-text">Detectas que durante la instalación electromecánica los técnicos de la cuadrilla están tirando al depósito de scrap tramos de cable y perfilería metálica útil sobrantes de 1 a 2 metros, en lugar de guardarlos. ¿Qué haces?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q6" value="10" required>
+            <span class="option-text">Estandarizo un procedimiento para clasificar, etiquetar y resguardar sobrantes útiles en un contenedor exclusivo para retornar al almacén general de Caseme al término de la obra.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q6" value="3">
+            <span class="option-text">Ignoro la situación debido a que los tramos son pequeños y el costo de tiempo para que los técnicos clasifiquen ese material supera al valor económico del sobrante.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q6" value="0">
+            <span class="option-text">Les pido que tiren el material en los contenedores del cliente para que no se perciba como desperdicio de nuestra parte o desorden en el área.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q7: Orientación al Cliente y Resultados -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 7 (Orientación al Cliente y Resultados)</span>
+        <p class="question-text">El supervisor de Toyota te solicita en el sitio realizar un pequeño desvío en una tubería de proceso para facilitar el paso de aire comprimido, lo cual no está contemplado en la cotización y plano original. ¿Cuál es tu respuesta?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q7" value="2" required>
+            <span class="option-text">Accedo a realizar la modificación inmediatamente sin cargo alguno para ganarnos la confianza del supervisor y agilizar las futuras firmas de conformidad.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q7" value="10">
+            <span class="option-text">Le indico cortésmente que analizaremos la factibilidad técnica y que de inmediato procederé a documentar la solicitud como un "trabajo adicional" con compras del cliente antes de ejecutar el desvío.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q7" value="0">
+            <span class="option-text">Le respondo tajantemente que esa tubería no es parte de nuestro alcance contratado y que no podemos desviar recursos de la empresa a tareas ajenas.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q8: Orientación al Cliente y Resultados -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 8 (Orientación al Cliente y Resultados)</span>
+        <p class="question-text">Durante el cierre y entrega de obra, el cliente de Toyota detecta un cordón de soldadura con acabado rugoso (no estético pero funcional) y condiciona la firma de conformidad hasta que se pula. ¿Cómo procedes?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q8" value="0" required>
+            <span class="option-text">Discuto con el cliente alegando que el cordón cumple perfectamente con la resistencia mecánica requerida y que no es justificable retener la firma de un trabajo funcional.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q8" value="10">
+            <span class="option-text">Acepto la retroalimentación del cliente con actitud profesional, ordeno pulir la soldadura inmediatamente en sitio y le presento una firma de conformidad condicionada para avanzar con el trámite.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q8" value="3">
+            <span class="option-text">Retiro a mi equipo de la planta, doy por terminadas las actividades y le indico al cliente que el detalle lo revisará la administración o gerencia de la empresa posteriormente.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q9: Control de Estrés y Presión -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 9 (Control de Estrés y Presión)</span>
+        <p class="question-text">A solo 2 horas del cierre definitivo de la ventana de mantenimiento del fin de semana, el equipo reporta una falla grave de continuidad eléctrica en el cableado que acaban de tender. ¿Cómo reaccionas ante esta presión?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q9" value="0" required>
+            <span class="option-text">Me frustro visiblemente y presiono intensamente a los técnicos exigiéndoles terminar rápido a cualquier costo, elevando la tensión del equipo en el sitio.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q9" value="10">
+            <span class="option-text">Mantengo la calma, reúno a los técnicos especialistas para realizar una revisión lógica (aislamiento de tramos), reasigno responsabilidades rápidas y coordino los preparativos para resolver la contingencia.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q9" value="5">
+            <span class="option-text">Llamo de inmediato a gerencia para solicitar que avisen al cliente sobre un retraso en la ventana de producción, sin haber evaluado técnicamente si la falla se puede arreglar a tiempo.</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Q10: Control de Estrés y Presión -->
+      <div class="question-card">
+        <span class="question-number">Pregunta 10 (Control de Estrés y Presión)</span>
+        <p class="question-text">Estás a cargo de supervisar 4 frentes de instalación electromecánica distintos y simultáneos el sábado en Toyota. Recibes constantes llamadas de EHS del cliente, llamadas administrativas de Caseme y consultas de tus ingenieros. ¿Cómo actúas?</p>
+        <div class="options-list">
+          <label class="option-label">
+            <input type="radio" name="q10" value="0" required>
+            <span class="option-text">Apago mi teléfono o lo pongo en modo silencio por periodos prolongados para trabajar concentrado en un solo frente y evitar distracciones.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q10" value="10">
+            <span class="option-text">Priorizo los temas en base a la criticidad (1. Riesgo de seguridad, 2. Incidencias técnicas que detienen la obra, 3. Temas administrativos/llamadas). Delego la supervisión física local en mis ingenieros de mayor experiencia en cada frente.</span>
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q10" value="4">
+            <span class="option-text">Intento resolver todo de manera simultánea en sitio, trasladándome rápidamente entre los frentes y atendiendo llamadas a la par, asumiendo la saturación.</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="actions-container">
+        <button type="submit" class="btn">Evaluar Candidato</button>
+      </div>
+    </form>
+
+    <!-- Results Section -->
+    <div id="resultsCard" class="results-container">
+      <div class="results-header">
+        <h2>Reporte de Diagnóstico Psicométrico</h2>
+        <p>Evaluación de Competencias y Actitud de Supervisión en Campo - Grupo Caseme</p>
+        <div id="overallBadge" class="overall-badge">PERFIL PROMEDIO</div>
+      </div>
+
+      <!-- General Info (for Printing) -->
+      <div class="candidate-info-card printing-info" style="display: none; border-color: var(--slate-300);">
+        <div class="form-group">
+          <label>Candidato</label>
+          <div id="printCandidateName" style="font-weight: 600; font-size: 1.1rem; color: var(--slate-800);"></div>
+        </div>
+        <div class="form-group">
+          <label>Evaluador</label>
+          <div id="printEvaluatorName" style="font-weight: 600; font-size: 1.1rem; color: var(--slate-800);"></div>
+        </div>
+      </div>
+
+      <div class="dimension-score-grid">
+        <!-- Dimension 1 -->
+        <div class="dimension-bar-container">
+          <div class="dimension-bar-header">
+            <span>Apego a Normas y Seguridad (EHS)</span>
+            <span id="scoreEHS">0%</span>
+          </div>
+          <div class="dimension-bar-track">
+            <div id="fillEHS" class="dimension-bar-fill fill-ehs"></div>
+          </div>
+        </div>
+
+        <!-- Dimension 2 -->
+        <div class="dimension-bar-container">
+          <div class="dimension-bar-header">
+            <span>Liderazgo y Gestión de Equipo</span>
+            <span id="scoreLiderazgo">0%</span>
+          </div>
+          <div class="dimension-bar-track">
+            <div id="fillLiderazgo" class="dimension-bar-fill fill-liderazgo"></div>
+          </div>
+        </div>
+
+        <!-- Dimension 3 -->
+        <div class="dimension-bar-container">
+          <div class="dimension-bar-header">
+            <span>Consciencia de Costos y Recursos</span>
+            <span id="scoreCostos">0%</span>
+          </div>
+          <div class="dimension-bar-track">
+            <div id="fillCostos" class="dimension-bar-fill fill-costos"></div>
+          </div>
+        </div>
+
+        <!-- Dimension 4 -->
+        <div class="dimension-bar-container">
+          <div class="dimension-bar-header">
+            <span>Orientación al Cliente y Resultados</span>
+            <span id="scoreCliente">0%</span>
+          </div>
+          <div class="dimension-bar-track">
+            <div id="fillCliente" class="dimension-bar-fill fill-cliente"></div>
+          </div>
+        </div>
+
+        <!-- Dimension 5 -->
+        <div class="dimension-bar-container">
+          <div class="dimension-bar-header">
+            <span>Control de Estrés y Presión</span>
+            <span id="scoreEstres">0%</span>
+          </div>
+          <div class="dimension-bar-track">
+            <div id="fillEstres" class="dimension-bar-fill fill-estres"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="diagnostic-card">
+        <h3>Diagnóstico del Perfil Operativo</h3>
+        <p id="diagnosticText" class="diagnostic-text">Completando evaluación...</p>
+      </div>
+
+      <div class="results-actions">
+        <button onclick="window.print()" class="btn">Imprimir Reporte (PDF)</button>
+        <button onclick="resetEvaluation()" class="btn btn-secondary">Nueva Evaluación</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Grupo Caseme. Todos los derechos reservados. Confidencial y de uso interno.</p>
+  </footer>
+
+  <script>
+    function evaluateCandidate(event) {
+      event.preventDefault();
+      
+      const candidateName = document.getElementById('candidateName').value;
+      const evaluatorName = document.getElementById('evaluatorName').value;
+      
+      // Calculate scores for each dimension (0-20 points range, mapped to 0-100%)
+      const q1 = parseInt(document.querySelector('input[name="q1"]:checked').value);
+      const q2 = parseInt(document.querySelector('input[name="q2"]:checked').value);
+      const scoreEhsPct = Math.round(((q1 + q2) / 20) * 100);
+
+      const q3 = parseInt(document.querySelector('input[name="q3"]:checked').value);
+      const q4 = parseInt(document.querySelector('input[name="q4"]:checked').value);
+      const scoreLiderazgoPct = Math.round(((q3 + q4) / 20) * 100);
+
+      const q5 = parseInt(document.querySelector('input[name="q5"]:checked').value);
+      const q6 = parseInt(document.querySelector('input[name="q6"]:checked').value);
+      const scoreCostosPct = Math.round(((q5 + q6) / 20) * 100);
+
+      const q7 = parseInt(document.querySelector('input[name="q7"]:checked').value);
+      const q8 = parseInt(document.querySelector('input[name="q8"]:checked').value);
+      const scoreClientePct = Math.round(((q7 + q8) / 20) * 100);
+
+      const q9 = parseInt(document.querySelector('input[name="q9"]:checked').value);
+      const q10 = parseInt(document.querySelector('input[name="q10"]:checked').value);
+      const scoreEstresPct = Math.round(((q9 + q10) / 20) * 100);
+
+      const averageScore = Math.round((scoreEhsPct + scoreLiderazgoPct + scoreCostosPct + scoreClientePct + scoreEstresPct) / 5);
+
+      // Hide Form and show results
+      document.getElementById('evaluationForm').style.display = 'none';
+      const resultsCard = document.getElementById('resultsCard');
+      resultsCard.style.display = 'block';
+
+      // Set print info
+      document.getElementById('printCandidateName').innerText = candidateName;
+      document.getElementById('printEvaluatorName').innerText = evaluatorName;
+      
+      // Animate progress bars
+      document.getElementById('scoreEHS').innerText = scoreEhsPct + '%';
+      document.getElementById('fillEHS').style.width = scoreEhsPct + '%';
+
+      document.getElementById('scoreLiderazgo').innerText = scoreLiderazgoPct + '%';
+      document.getElementById('fillLiderazgo').style.width = scoreLiderazgoPct + '%';
+
+      document.getElementById('scoreCostos').innerText = scoreCostosPct + '%';
+      document.getElementById('fillCostos').style.width = scoreCostosPct + '%';
+
+      document.getElementById('scoreCliente').innerText = scoreClientePct + '%';
+      document.getElementById('fillCliente').style.width = scoreClientePct + '%';
+
+      document.getElementById('scoreEstres').innerText = scoreEstresPct + '%';
+      document.getElementById('fillEstres').style.width = scoreEstresPct + '%';
+
+      // Overall Badge and Diagnostic Text
+      const overallBadge = document.getElementById('overallBadge');
+      const diagnosticText = document.getElementById('diagnosticText');
+      
+      let badgeClass = '';
+      let badgeText = '';
+      let diagnosticDesc = '';
+
+      if (averageScore >= 85) {
+        badgeClass = 'badge-excellent';
+        badgeText = 'Perfil Sobresaliente';
+        diagnosticDesc = `El candidato ${candidateName} demuestra un perfil altamente compatible con las necesidades de supervisión técnica de Grupo Caseme en Toyota. Muestra un apego excelente a normativas de seguridad (EHS), consciencia en el uso eficiente de recursos críticos (renta de plataformas de elevación) y gran tolerancia bajo escenarios de alta presión característicos de los planes de fin de semana (Plan FINDE). Es apto para toma de decisiones tácticas en campo y goza de una disciplina administrativa sólida.`;
+      } else if (averageScore >= 65) {
+        badgeClass = 'badge-good';
+        badgeText = 'Perfil Aceptable con Desarrollo';
+        diagnosticDesc = `El candidato ${candidateName} cuenta con bases firmes para integrarse como ingeniero/supervisor. Su toma de decisiones es mayormente acertada, aunque presenta áreas menores de oportunidad, principalmente en el balance entre la urgencia de producción en sitio y el apego administrativo o control preventivo de costos. Se recomienda un periodo inicial de onboarding enfocado en la disciplina de registro en Perry App y procedimientos de adicionales comerciales.`;
+      } else if (averageScore >= 45) {
+        badgeClass = 'badge-moderate';
+        badgeText = 'Perfil en Observación';
+        diagnosticDesc = `El candidato ${candidateName} tiene aptitudes operativas promedio, pero su tolerancia a las presiones del cliente o su rigidez en normas de seguridad y administración no están completamente alineadas a la política de Caseme y Toyota. Requeriría supervisión cercana y capacitación intensiva durante sus primeras semanas en campo.`;
+      } else {
+        badgeClass = 'badge-deficient';
+        badgeText = 'Perfil de Alto Riesgo';
+        diagnosticDesc = `El candidato ${candidateName} muestra una baja compatibilidad con el puesto de supervisor. Su tendencia a ceder ante la presión de producción sobre las reglas básicas de seguridad (EHS) o su laxitud en la disciplina de reporteo administrativo representan un riesgo operativo significativo en un entorno de alta exigencia regulado como TMMBC.`;
+      }
+
+      overallBadge.className = 'overall-badge ' + badgeClass;
+      overallBadge.innerText = badgeText;
+      diagnosticText.innerText = diagnosticDesc;
+    }
+
+    function resetEvaluation() {
+      document.getElementById('evaluationForm').reset();
+      document.getElementById('evaluationForm').style.display = 'block';
+      document.getElementById('resultsCard').style.display = 'none';
+      
+      // Reset width animations
+      document.getElementById('fillEHS').style.width = '0%';
+      document.getElementById('fillLiderazgo').style.width = '0%';
+      document.getElementById('fillCostos').style.width = '0%';
+      document.getElementById('fillCliente').style.width = '0%';
+      document.getElementById('fillEstres').style.width = '0%';
+    }
+  </script>
+</body>
+</html>
