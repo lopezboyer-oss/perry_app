@@ -707,6 +707,22 @@
       </div>
     </form>
 
+    <!-- Lock Screen / Success Card -->
+    <div id="lockCard" class="results-container" style="display: none; text-align: center; max-width: 600px; margin: 2rem auto;">
+      <div style="font-size: 3.5rem; margin-bottom: 1rem;">✅</div>
+      <h2 style="font-family: var(--font-title); font-size: 1.75rem; color: var(--slate-800); margin-bottom: 0.75rem;">¡Respuestas Registradas!</h2>
+      <p style="color: var(--slate-600); margin-bottom: 2rem; font-size: 0.95rem;">El cuestionario ha sido completado con éxito. Por favor, entrega el dispositivo al evaluador para proceder con tu entrevista.</p>
+      
+      <div style="border-top: 1px solid var(--slate-200); padding-top: 1.5rem; max-width: 300px; margin: 0 auto;">
+        <div class="form-group" style="margin-bottom: 1rem; text-align: left;">
+          <label for="unlockPassword" style="font-weight: 600; font-size: 0.85rem; color: var(--slate-500); text-transform: uppercase;">Acceso Evaluador (Ivan Lopez)</label>
+          <input type="password" id="unlockPassword" placeholder="Contraseña de acceso" style="width: 100%; text-align: center; padding: 0.75rem; border: 1px solid var(--slate-300); border-radius: 0.5rem; margin-top: 0.25rem;">
+        </div>
+        <button onclick="unlockResults()" class="btn" style="width: 100%; padding: 0.75rem; font-size: 0.95rem; margin-top: 0.5rem;">Ver Resultados</button>
+        <p id="passwordError" style="color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; display: none; font-weight: 600;">Contraseña incorrecta. Inténtalo de nuevo.</p>
+      </div>
+    </div>
+
     <!-- Results Section -->
     <div id="resultsCard" class="results-container">
       <div class="results-header">
@@ -801,6 +817,8 @@
   </footer>
 
   <script>
+    let computedResults = null;
+
     function evaluateCandidate(event) {
       event.preventDefault();
       
@@ -830,66 +848,96 @@
 
       const averageScore = Math.round((scoreEhsPct + scoreLiderazgoPct + scoreCostosPct + scoreClientePct + scoreEstresPct) / 5);
 
-      // Hide Form and show results
+      // Save calculated data in memory
+      computedResults = {
+        candidateName,
+        evaluatorName,
+        scoreEhsPct,
+        scoreLiderazgoPct,
+        scoreCostosPct,
+        scoreClientePct,
+        scoreEstresPct,
+        averageScore
+      };
+
+      // Hide Form and show lock card
       document.getElementById('evaluationForm').style.display = 'none';
-      const resultsCard = document.getElementById('resultsCard');
-      resultsCard.style.display = 'block';
+      document.getElementById('lockCard').style.display = 'block';
+      document.getElementById('unlockPassword').value = '';
+      document.getElementById('passwordError').style.display = 'none';
+    }
 
-      // Set print info
-      document.getElementById('printCandidateName').innerText = candidateName;
-      document.getElementById('printEvaluatorName').innerText = evaluatorName;
+    function unlockResults() {
+      const passwordInput = document.getElementById('unlockPassword').value;
       
-      // Animate progress bars
-      document.getElementById('scoreEHS').innerText = scoreEhsPct + '%';
-      document.getElementById('fillEHS').style.width = scoreEhsPct + '%';
+      // Strict password gate check
+      if (passwordInput === 'ivan2026') {
+        document.getElementById('lockCard').style.display = 'none';
+        document.getElementById('resultsCard').style.display = 'block';
+        
+        const res = computedResults;
+        if (!res) return;
 
-      document.getElementById('scoreLiderazgo').innerText = scoreLiderazgoPct + '%';
-      document.getElementById('fillLiderazgo').style.width = scoreLiderazgoPct + '%';
+        // Set print info
+        document.getElementById('printCandidateName').innerText = res.candidateName;
+        document.getElementById('printEvaluatorName').innerText = res.evaluatorName;
+        
+        // Animate progress bars
+        document.getElementById('scoreEHS').innerText = res.scoreEhsPct + '%';
+        document.getElementById('fillEHS').style.width = res.scoreEhsPct + '%';
 
-      document.getElementById('scoreCostos').innerText = scoreCostosPct + '%';
-      document.getElementById('fillCostos').style.width = scoreCostosPct + '%';
+        document.getElementById('scoreLiderazgo').innerText = res.scoreLiderazgoPct + '%';
+        document.getElementById('fillLiderazgo').style.width = res.scoreLiderazgoPct + '%';
 
-      document.getElementById('scoreCliente').innerText = scoreClientePct + '%';
-      document.getElementById('fillCliente').style.width = scoreClientePct + '%';
+        document.getElementById('scoreCostos').innerText = res.scoreCostosPct + '%';
+        document.getElementById('fillCostos').style.width = res.scoreCostosPct + '%';
 
-      document.getElementById('scoreEstres').innerText = scoreEstresPct + '%';
-      document.getElementById('fillEstres').style.width = scoreEstresPct + '%';
+        document.getElementById('scoreCliente').innerText = res.scoreClientePct + '%';
+        document.getElementById('fillCliente').style.width = res.scoreClientePct + '%';
 
-      // Overall Badge and Diagnostic Text
-      const overallBadge = document.getElementById('overallBadge');
-      const diagnosticText = document.getElementById('diagnosticText');
-      
-      let badgeClass = '';
-      let badgeText = '';
-      let diagnosticDesc = '';
+        document.getElementById('scoreEstres').innerText = res.scoreEstresPct + '%';
+        document.getElementById('fillEstres').style.width = res.scoreEstresPct + '%';
 
-      if (averageScore >= 85) {
-        badgeClass = 'badge-excellent';
-        badgeText = 'Perfil Sobresaliente';
-        diagnosticDesc = `El candidato ${candidateName} demuestra un perfil altamente compatible con las necesidades de supervisión técnica de Grupo Caseme en Toyota. Muestra un apego excelente a normativas de seguridad (EHS), consciencia en el uso eficiente de recursos críticos (renta de plataformas de elevación) y gran tolerancia bajo escenarios de alta presión característicos de los planes de fin de semana (Plan FINDE). Es apto para toma de decisiones tácticas en campo y goza de una disciplina administrativa sólida.`;
-      } else if (averageScore >= 65) {
-        badgeClass = 'badge-good';
-        badgeText = 'Perfil Aceptable con Desarrollo';
-        diagnosticDesc = `El candidato ${candidateName} cuenta con bases firmes para integrarse como ingeniero/supervisor. Su toma de decisiones es mayormente acertada, aunque presenta áreas menores de oportunidad, principalmente en el balance entre la urgencia de producción en sitio y el apego administrativo o control preventivo de costos. Se recomienda un periodo inicial de onboarding enfocado en la disciplina de registro en Perry App y procedimientos de adicionales comerciales.`;
-      } else if (averageScore >= 45) {
-        badgeClass = 'badge-moderate';
-        badgeText = 'Perfil en Observación';
-        diagnosticDesc = `El candidato ${candidateName} tiene aptitudes operativas promedio, pero su tolerancia a las presiones del cliente o su rigidez en normas de seguridad y administración no están completamente alineadas a la política de Caseme y Toyota. Requeriría supervisión cercana y capacitación intensiva durante sus primeras semanas en campo.`;
+        // Overall Badge and Diagnostic Text
+        const overallBadge = document.getElementById('overallBadge');
+        const diagnosticText = document.getElementById('diagnosticText');
+        
+        let badgeClass = '';
+        let badgeText = '';
+        let diagnosticDesc = '';
+
+        if (res.averageScore >= 85) {
+          badgeClass = 'badge-excellent';
+          badgeText = 'Perfil Sobresaliente';
+          diagnosticDesc = `El candidato ${res.candidateName} demuestra un perfil altamente compatible con las necesidades de supervisión técnica de Grupo Caseme en Toyota. Muestra un apego excelente a normativas de seguridad (EHS), consciencia en el uso eficiente de recursos críticos (renta de plataformas de elevación) y gran tolerancia bajo escenarios de alta presión característicos de los planes de fin de semana (Plan FINDE). Es apto para toma de decisiones tácticas en campo y goza de una disciplina administrativa sólida.`;
+        } else if (res.averageScore >= 65) {
+          badgeClass = 'badge-good';
+          badgeText = 'Perfil Aceptable con Desarrollo';
+          diagnosticDesc = `El candidato ${res.candidateName} cuenta con bases firmes para integrarse como ingeniero/supervisor. Su toma de decisiones es mayormente acertada, aunque presenta áreas menores de oportunidad, principalmente en el balance entre la urgencia de producción en sitio y el apego administrativo o control preventivo de costos. Se recomienda un periodo inicial de onboarding enfocado en la disciplina de registro en Perry App y procedimientos de adicionales comerciales.`;
+        } else if (res.averageScore >= 45) {
+          badgeClass = 'badge-moderate';
+          badgeText = 'Perfil en Observación';
+          diagnosticDesc = `El candidato ${res.candidateName} tiene aptitudes operativas promedio, pero su tolerancia a las presiones del cliente o su rigidez en normas de seguridad y administración no están completamente alineadas a la política de Caseme y Toyota. Requeriría supervisión cercana y capacitación intensiva durante sus primeras semanas en campo.`;
+        } else {
+          badgeClass = 'badge-deficient';
+          badgeText = 'Perfil de Alto Riesgo';
+          diagnosticDesc = `El candidato ${res.candidateName} muestra una baja compatibilidad con el puesto de supervisor. Su tendencia a ceder ante la presión de producción sobre las reglas básicas de seguridad (EHS) o su laxitud en la disciplina de reporteo administrativo representan un riesgo operativo significativo en un entorno de alta exigencia regulado como TMMBC.`;
+        }
+
+        overallBadge.className = 'overall-badge ' + badgeClass;
+        overallBadge.innerText = badgeText;
+        diagnosticText.innerText = diagnosticDesc;
       } else {
-        badgeClass = 'badge-deficient';
-        badgeText = 'Perfil de Alto Riesgo';
-        diagnosticDesc = `El candidato ${candidateName} muestra una baja compatibilidad con el puesto de supervisor. Su tendencia a ceder ante la presión de producción sobre las reglas básicas de seguridad (EHS) o su laxitud en la disciplina de reporteo administrativo representan un riesgo operativo significativo en un entorno de alta exigencia regulado como TMMBC.`;
+        document.getElementById('passwordError').style.display = 'block';
       }
-
-      overallBadge.className = 'overall-badge ' + badgeClass;
-      overallBadge.innerText = badgeText;
-      diagnosticText.innerText = diagnosticDesc;
     }
 
     function resetEvaluation() {
+      computedResults = null;
       document.getElementById('evaluationForm').reset();
       document.getElementById('evaluationForm').style.display = 'block';
       document.getElementById('resultsCard').style.display = 'none';
+      document.getElementById('lockCard').style.display = 'none';
       
       // Reset width animations
       document.getElementById('fillEHS').style.width = '0%';
