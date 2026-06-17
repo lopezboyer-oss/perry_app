@@ -2,30 +2,10 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { canManageResources } from '@/lib/permissions';
-import { toTitleCase } from '@/lib/utils';
+import { toTitleCase, getDeterministicPassword } from '@/lib/utils';
 import bcrypt from 'bcryptjs';
 
-// Deterministic digits generation based on email
-function getDeterministicDigits(email: string): string {
-  let hash = 0;
-  const cleanEmail = email.toLowerCase().trim();
-  for (let i = 0; i < cleanEmail.length; i++) {
-    hash = cleanEmail.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return String((Math.abs(hash) % 9000) + 1000); // 1000 to 9999
-}
-
-// Generate password matching: Firstname + 4 deterministic digits
-function getDeterministicPassword(name: string, email: string): string {
-  const firstName = name.trim().split(/\s+/)[0] || 'User';
-  const normalizedName = firstName
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, ''); // Remove accents
-  const capitalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
-  
-  const digits = getDeterministicDigits(email);
-  return `${capitalizedName}${digits}`;
-}
+// getDeterministicPassword imported from @/lib/utils
 
 // Generate base email prefix
 function getBaseEmail(name: string): string {
@@ -133,6 +113,7 @@ export async function POST(req: NextRequest) {
           name: toTitleCase(name),
           email: targetEmail,
           passwordHash,
+          passwordPlaintext: cleartextPassword,
           role: 'TECNICO',
           isActive: true,
           baseCompanyId: companyId,

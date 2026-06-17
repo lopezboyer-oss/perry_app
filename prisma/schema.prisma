@@ -24,6 +24,7 @@ model User {
   name              String
   email             String    @unique
   passwordHash      String
+  passwordPlaintext String?               // Contraseña en texto plano para compartir acceso (solo visible para ADMIN)
   role              String    @default("INGENIERO")
   isActive          Boolean   @default(true)
   isSafetyDesignado Boolean   @default(false)

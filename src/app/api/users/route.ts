@@ -149,6 +149,7 @@ export async function POST(req: Request) {
         name: normalizedName,
         email,
         passwordHash,
+        passwordPlaintext: password,
         role: role || 'INGENIERO',
         supervisorId: role === 'INGENIERO' ? supervisorId : null,
         isSafetyDesignado: isSafetyDesignado || false,

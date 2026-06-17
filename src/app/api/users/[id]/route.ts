@@ -71,6 +71,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     if (password && password.trim() !== '') {
       dataToUpdate.passwordHash = await bcrypt.hash(password, 10);
+      dataToUpdate.passwordPlaintext = password;
     }
 
     const updatedUser = await prisma.user.update({

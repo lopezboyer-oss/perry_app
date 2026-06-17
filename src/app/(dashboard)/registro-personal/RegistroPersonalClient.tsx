@@ -1011,34 +1011,31 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                 const selectedUser = users.find(u => u.id === filterUser);
                 if (!selectedUser) return null;
                 
-                const handleSendAccess = () => {
-                  const email = selectedUser.email || '';
-                  
-                  // Deterministic password generation matching server side
-                  const firstName = selectedUser.name.trim().split(/\s+/)[0] || 'User';
-                  const normalizedName = firstName
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '');
-                  const capitalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
-                  
-                  // Calculate 4 deterministic digits
-                  const cleanEmail = email.toLowerCase().trim();
-                  let hash = 0;
-                  for (let i = 0; i < cleanEmail.length; i++) {
-                    hash = cleanEmail.charCodeAt(i) + ((hash << 5) - hash);
+                const handleSendAccess = async () => {
+                  try {
+                    // Fetch real credentials from server instead of generating locally
+                    const res = await fetch(`/api/users/${selectedUser.id}/credentials`);
+                    if (!res.ok) {
+                      alert('Error al obtener credenciales del servidor');
+                      return;
+                    }
+                    const creds = await res.json();
+                    const email = creds.email || '';
+                    const password = creds.password || '';
+                    
+                    const message = `¡Hola ${selectedUser.name}! Te comparto tus datos de acceso para la aplicación PERRY APP y las instrucciones para registrar tu asistencia:\n\n🌐 Enlace: https://perryapp.netlify.app\n📧 Usuario (Email): ${email}\n🔑 Contraseña: ${password}\n\nPasos para registrar Asistencia:\n1. Inicia sesión con tus credenciales.\n2. Ve a la sección "Asistencia".\n3. Elige tu método (GPS 🗺️, Selfie 📷 o Escanear QR 🔍).\n4. Presiona Registrar Entrada o Salida.`;
+                    
+                    const encodedText = encodeURIComponent(message);
+                    const phone = selectedUser.phone ? selectedUser.phone.replace(/[^0-9]/g, '') : '';
+                    const url = phone 
+                      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`
+                      : `https://api.whatsapp.com/send?text=${encodedText}`;
+                    
+                    window.open(url, '_blank');
+                  } catch (err) {
+                    console.error('Error fetching credentials:', err);
+                    alert('Error de red al obtener credenciales');
                   }
-                  const digits = String((Math.abs(hash) % 9000) + 1000);
-                  const password = `${capitalizedName}${digits}`;
-                  
-                  const message = `¡Hola ${selectedUser.name}! Te comparto tus datos de acceso para la aplicación PERRY APP y las instrucciones para registrar tu asistencia:\n\n🌐 Enlace: https://perryapp.netlify.app\n📧 Usuario (Email): ${email}\n🔑 Contraseña: ${password}\n\nPasos para registrar Asistencia:\n1. Inicia sesión con tus credenciales.\n2. Ve a la sección "Asistencia".\n3. Elige tu método (GPS 🗺️, Selfie 📷 o Escanear QR 🔍).\n4. Presiona Registrar Entrada o Salida.`;
-                  
-                  const encodedText = encodeURIComponent(message);
-                  const phone = selectedUser.phone ? selectedUser.phone.replace(/[^0-9]/g, '') : '';
-                  const url = phone 
-                    ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`
-                    : `https://api.whatsapp.com/send?text=${encodedText}`;
-                  
-                  window.open(url, '_blank');
                 };
 
                 return (
