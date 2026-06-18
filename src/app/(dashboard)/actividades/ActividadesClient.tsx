@@ -498,7 +498,7 @@ export function ActividadesClient({ activities: initialActivities, users, client
                           <span className="text-xs text-indigo-500 font-mono">{act.workOrderFolio}</span>
                           {canViewEconomicAnalysis(currentUserEmail, userRole) && (
                             <a
-                              href={`/reportes-especiales?tab=economico&activityId=${act.id}`}
+                              href={`/analisis-economico?activityId=${act.id}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}

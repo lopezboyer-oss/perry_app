@@ -21,9 +21,11 @@ import {
   Forklift,
   Timer,
   PieChart,
+  TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { canViewEconomicAnalysis } from '@/lib/permissions';
 
 export const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,6 +39,7 @@ export const navItems = [
   { href: '/cobranza', label: 'Recibos', icon: DollarSign },
   { href: '/trabajos-abiertos', label: 'Trabajos Abiertos', icon: ClipboardList },
   { href: '/reportes-especiales', label: 'Rep. Especiales', icon: PieChart },
+  { href: '/analisis-economico', label: 'Análisis Económico', icon: TrendingUp },
   { href: '/oportunidades', label: 'Oportunidades', icon: Target, disabled: true },
   { href: '/analitica', label: 'Analítica', icon: BarChart3, disabled: true },
   { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
@@ -55,6 +58,9 @@ export function Sidebar({ user }: SidebarProps) {
   const visibleNavItems = navItems.filter((item) => {
     if (item.href === '/reportes-especiales') {
       return hasSpecialReportsAccess;
+    }
+    if (item.href === '/analisis-economico') {
+      return canViewEconomicAnalysis(user.email, user.role);
     }
     if (item.href === '/trabajos-abiertos') {
       return ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'INGENIERO'].includes(user.role);
