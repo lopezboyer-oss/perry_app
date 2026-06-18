@@ -1980,8 +1980,6 @@ export function AtcFindeClient({
                         {((canEditFields && folioState[act.id]) || (!canEditFields && act.workOrderFolio)) && canViewEconomicAnalysis(currentUserEmail, userRole) && (
                           <a
                             href={`/analisis-economico?activityId=${act.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             className="inline-flex items-center justify-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 py-0.5 px-1.5 rounded transition-all max-w-fit"
                             title="Análisis Económico"
                           >

@@ -499,8 +499,6 @@ export function ActividadesClient({ activities: initialActivities, users, client
                           {canViewEconomicAnalysis(currentUserEmail, userRole) && (
                             <a
                               href={`/analisis-economico?activityId=${act.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
                               className="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 px-1.5 py-0.5 rounded transition-all"
                               title="Análisis Económico"
