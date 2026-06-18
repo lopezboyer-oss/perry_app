@@ -61,6 +61,8 @@ export default function UsuariosPage() {
   const [sessionUser, setSessionUser] = useState<any>(null);
   const [userFilterRole, setUserFilterRole] = useState('');
   const [userFilterEmpresa, setUserFilterEmpresa] = useState('');
+  const [userSearchName, setUserSearchName] = useState('');
+  const [techSearchName, setTechSearchName] = useState('');
   const router = useRouter();
 
   // ── Form states ──
@@ -288,6 +290,7 @@ export default function UsuariosPage() {
         empresaUserOptions.sort((a, b) => a.label.localeCompare(b.label));
 
         const filteredUsers = users.filter(u => {
+          if (userSearchName && !u.name.toLowerCase().includes(userSearchName.toLowerCase())) return false;
           if (userFilterRole && u.role !== userFilterRole) return false;
           if (userFilterEmpresa) {
             const def = u.companies.find(c => c.isDefault) || u.companies[0];
@@ -304,6 +307,13 @@ export default function UsuariosPage() {
           {/* Filter bar */}
           <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
             <Filter size={16} className="text-slate-400" />
+            <input
+              type="text"
+              value={userSearchName}
+              onChange={(e) => setUserSearchName(e.target.value)}
+              placeholder="🔍 Buscar por nombre..."
+              className="text-sm rounded-lg py-1.5 px-3 border border-slate-200 w-48 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            />
             <select value={userFilterRole} onChange={(e) => setUserFilterRole(e.target.value)} className="text-sm rounded-lg py-1.5 px-3 border-slate-200">
               <option value="">Todos los roles</option>
               {roleOptions.map(r => <option key={r} value={r}>{roleLabels[r] || r}</option>)}
@@ -312,8 +322,8 @@ export default function UsuariosPage() {
               <option value="">Todas las empresas</option>
               {empresaUserOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            {(userFilterRole || userFilterEmpresa) && (
-              <button onClick={() => { setUserFilterRole(''); setUserFilterEmpresa(''); }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+            {(userFilterRole || userFilterEmpresa || userSearchName) && (
+              <button onClick={() => { setUserFilterRole(''); setUserFilterEmpresa(''); setUserSearchName(''); }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
                 Limpiar filtros
               </button>
             )}
@@ -399,6 +409,7 @@ export default function UsuariosPage() {
         // Filter techs
         const filteredTechs = techs.filter((t) => {
           const tAny = t as any;
+          if (techSearchName && !t.name.toLowerCase().includes(techSearchName.toLowerCase())) return false;
           if (techFilterType && t.type !== techFilterType) return false;
           if (techFilterEmpresa) {
             if (t.type === 'EXTERNO' && tAny.contractor) {
@@ -468,12 +479,13 @@ export default function UsuariosPage() {
                   <label className="block text-sm font-medium text-slate-700 mb-1">📧 Email</label>
                   <input type="email" value={techFormData.email} onChange={(e) => setTechFormData({ ...techFormData, email: e.target.value })} placeholder="correo@ejemplo.com" className="w-full" />
                 </div>
-                {techFormData.type === 'EXTERNO' && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Tarifa Horaria (MXN)</label>
-                    <input type="number" min="0" step="0.01" value={techFormData.hourlyRate || ''} onChange={(e) => setTechFormData({ ...techFormData, hourlyRate: parseFloat(e.target.value) || 0 })} placeholder="Ej: 150" className="w-full" />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tarifa Horaria (MXN)</label>
+                  <input type="number" min="0" step="0.01" value={techFormData.hourlyRate || ''} onChange={(e) => setTechFormData({ ...techFormData, hourlyRate: parseFloat(e.target.value) || 0 })} placeholder="Ej: 150" className="w-full" />
+                  {techFormData.type === 'PROPIO' && (
+                    <p className="text-[10px] text-slate-400 mt-1">Si está en $0, se usará el Salario Semanal del Usuario vinculado.</p>
+                  )}
+                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveTech} className="btn-primary text-sm">Guardar</button>
@@ -484,6 +496,13 @@ export default function UsuariosPage() {
           {/* Filter bar */}
           <div className="flex flex-wrap items-center gap-3 mb-4 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
             <Filter size={16} className="text-slate-400" />
+            <input
+              type="text"
+              value={techSearchName}
+              onChange={(e) => setTechSearchName(e.target.value)}
+              placeholder="🔍 Buscar por nombre..."
+              className="text-sm rounded-lg py-1.5 px-3 border border-slate-200 w-48 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+            />
             <select value={techFilterType} onChange={(e) => setTechFilterType(e.target.value)} className="text-sm rounded-lg py-1.5 px-3 border-slate-200">
               <option value="">Todos los tipos</option>
               <option value="PROPIO">Propio</option>
@@ -493,8 +512,8 @@ export default function UsuariosPage() {
               <option value="">Todas las empresas</option>
               {empresaOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            {(techFilterType || techFilterEmpresa) && (
-              <button onClick={() => { setTechFilterType(''); setTechFilterEmpresa(''); }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium ml-auto">
+            {(techFilterType || techFilterEmpresa || techSearchName) && (
+              <button onClick={() => { setTechFilterType(''); setTechFilterEmpresa(''); setTechSearchName(''); }} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
                 Limpiar filtros
               </button>
             )}
@@ -513,10 +532,10 @@ export default function UsuariosPage() {
                       <td className="px-6 py-4"><span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold ${t.type === 'PROPIO' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>{t.type === 'PROPIO' ? 'Propio' : 'Externo'}</span></td>
                       <td className="px-6 py-4">{t.type === 'EXTERNO' && (t as any).contractor ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded bg-orange-500">{(t as any).contractor.name}</span> : (t as any).baseCompany ? <span className="text-xs font-medium text-white px-2 py-0.5 rounded" style={{ backgroundColor: (t as any).baseCompany.color || '#6366f1' }}>{(t as any).baseCompany.shortName || (t as any).baseCompany.name}</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       <td className="px-6 py-4 font-mono text-slate-700">
-                        {t.type === 'EXTERNO' && t.hourlyRate !== undefined && t.hourlyRate !== null ? (
+                        {t.hourlyRate !== undefined && t.hourlyRate !== null && t.hourlyRate > 0 ? (
                           new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(t.hourlyRate) + '/hr'
                         ) : (
-                          <span className="text-slate-400 text-xs">—</span>
+                          <span className="text-slate-400 text-xs">$0.00</span>
                         )}
                       </td>
                       <td className="px-6 py-4">{t.isCruzVerde ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700"><CheckSquare size={12} /> Acreditado</span> : <span className="text-slate-400 text-xs">—</span>}</td>
