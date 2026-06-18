@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: 'Solo administradores' }, { status: 403 });
     }
 
-    const { name, type, isCruzVerde, isActive, contractorId, baseCompanyId, phone, email, hourlyRate } = await req.json();
+    const { name, type, isCruzVerde, isActive, contractorId, baseCompanyId, phone, email, hourlyRate, weeklySalary } = await req.json();
 
     const technician = await prisma.$transaction(async (tx) => {
       // Find current technician state
@@ -74,6 +74,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
             ...(email !== undefined && { email: email?.trim() || undefined }),
             ...(isActive !== undefined && { isActive }),
             ...(baseCompanyId !== undefined && { baseCompanyId: baseCompanyId || null }),
+            ...(weeklySalary !== undefined && { weeklySalary: Number(weeklySalary) || 0 }),
           },
         });
       } else if (updatedTech.isActive) {

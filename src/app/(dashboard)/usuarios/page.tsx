@@ -67,7 +67,7 @@ export default function UsuariosPage() {
 
   // ── Form states ──
   const [techFormOpen, setTechFormOpen] = useState(false);
-  const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '', phone: '', email: '', hourlyRate: 0 });
+  const [techFormData, setTechFormData] = useState({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '', phone: '', email: '', hourlyRate: 0, weeklySalary: 0 });
   const [techFilterType, setTechFilterType] = useState('');
   const [techFilterEmpresa, setTechFilterEmpresa] = useState('');
   const techFormRef = useRef<HTMLDivElement>(null);
@@ -186,7 +186,7 @@ export default function UsuariosPage() {
     const url = techFormData.id ? `/api/technicians/${techFormData.id}` : '/api/technicians';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(techFormData) });
     if (!res.ok) { alert('Error al guardar técnico'); return; }
-    setTechFormOpen(false); setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '', phone: '', email: '', hourlyRate: 0 }); await fetchAll();
+    setTechFormOpen(false); setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: '', phone: '', email: '', hourlyRate: 0, weeklySalary: 0 }); await fetchAll();
   };
   const handleDeleteTech = async (id: string, name: string) => { if (!window.confirm(`¿Desactivar a ${name}?`)) return; await fetch(`/api/technicians/${id}`, { method: 'DELETE' }); await fetchAll(); };
 
@@ -431,7 +431,7 @@ export default function UsuariosPage() {
         <>
           {canManageTechs && (
             <div className="flex justify-end mb-4">
-              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: companyList[0]?.id || '', phone: '', email: '', hourlyRate: 0 }); setTechFormOpen(true); setTimeout(() => techFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
+              <button onClick={() => { setTechFormData({ id: '', name: '', type: 'PROPIO', isCruzVerde: false, contractorId: '', baseCompanyId: companyList[0]?.id || '', phone: '', email: '', hourlyRate: 0, weeklySalary: 0 }); setTechFormOpen(true); setTimeout(() => techFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="btn-primary"><Plus size={18} /> Añadir Técnico</button>
             </div>
           )}
           {techFormOpen && (
@@ -486,6 +486,12 @@ export default function UsuariosPage() {
                     <p className="text-[10px] text-slate-400 mt-1">Si está en $0, se usará el Salario Semanal del Usuario vinculado.</p>
                   )}
                 </div>
+                {techFormData.type === 'PROPIO' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Salario Semanal (MXN)</label>
+                    <input type="number" min="0" step="0.01" value={techFormData.weeklySalary || ''} onChange={(e) => setTechFormData({ ...techFormData, weeklySalary: parseFloat(e.target.value) || 0 })} placeholder="Ej: 5000" className="w-full" />
+                  </div>
+                )}
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={handleSaveTech} className="btn-primary text-sm">Guardar</button>
@@ -523,7 +529,7 @@ export default function UsuariosPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
-                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Empresa</th><th className="px-6 py-4">Tarifa Horaria</th><th className="px-6 py-4">Cruz Verde</th>{canManageTechs && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
+                  <tr><th className="px-6 py-4">Nombre</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Empresa</th><th className="px-6 py-4">Tarifa Horaria</th><th className="px-6 py-4">Salario Semanal</th><th className="px-6 py-4">Cruz Verde</th>{canManageTechs && <th className="px-6 py-4 text-right">Acciones</th>}</tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredTechs.map((t) => (
@@ -538,16 +544,23 @@ export default function UsuariosPage() {
                           <span className="text-slate-400 text-xs">$0.00</span>
                         )}
                       </td>
+                      <td className="px-6 py-4 font-mono text-slate-700">
+                        {t.type === 'PROPIO' && (t as any).weeklySalary !== undefined && (t as any).weeklySalary !== null && (t as any).weeklySalary > 0 ? (
+                          new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format((t as any).weeklySalary)
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4">{t.isCruzVerde ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700"><CheckSquare size={12} /> Acreditado</span> : <span className="text-slate-400 text-xs">—</span>}</td>
                       {canManageTechs && (
                         <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '', baseCompanyId: (t as any).baseCompanyId || '', phone: (t as any).phone || '', email: (t as any).email || '', hourlyRate: t.hourlyRate || 0 }); setTechFormOpen(true); scrollToForm(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => { setTechFormData({ id: t.id, name: t.name, type: t.type, isCruzVerde: t.isCruzVerde, contractorId: (t as any).contractor?.id || '', baseCompanyId: (t as any).baseCompanyId || '', phone: (t as any).phone || '', email: (t as any).email || '', hourlyRate: t.hourlyRate || 0, weeklySalary: (t as any).weeklySalary || 0 }); setTechFormOpen(true); scrollToForm(); }} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
                           <button onClick={() => handleDeleteTech(t.id, t.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                         </div></td>
                       )}
                     </tr>
                   ))}
-                  {filteredTechs.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">{techs.length > 0 ? 'No hay técnicos con estos filtros.' : 'No hay técnicos registrados.'}</td></tr>}
+                  {filteredTechs.length === 0 && <tr><td colSpan={7} className="px-6 py-8 text-center text-slate-500">{techs.length > 0 ? 'No hay técnicos con estos filtros.' : 'No hay técnicos registrados.'}</td></tr>}
                 </tbody>
               </table>
             </div>

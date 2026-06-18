@@ -38,11 +38,25 @@ export async function GET() {
     });
 
     // Strip hourlyRate for non-admin users
+    // Pre-fetch all linked user salaries if admin
+    let salaryMap = new Map<string, number>();
+    if (isAdmin) {
+      const linkedUserIds = technicians.map(t => t.linkedUserId).filter(Boolean) as string[];
+      if (linkedUserIds.length > 0) {
+        const users = await prisma.user.findMany({
+          where: { id: { in: linkedUserIds } },
+          select: { id: true, weeklySalary: true }
+        });
+        salaryMap = new Map(users.map(u => [u.id, u.weeklySalary || 0]));
+      }
+    }
+
     const mapped = technicians.map(t => {
       const { hourlyRate, ...rest } = t;
+      const weeklySalary = t.linkedUserId ? salaryMap.get(t.linkedUserId) || 0 : 0;
       return {
         ...rest,
-        ...(isAdmin ? { hourlyRate } : { hourlyRate: null })
+        ...(isAdmin ? { hourlyRate, weeklySalary } : { hourlyRate: null, weeklySalary: null })
       };
     });
 
@@ -59,7 +73,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Solo administradores' }, { status: 403 });
     }
 
-    const { name, type, isCruzVerde, contractorId, baseCompanyId, phone, email, hourlyRate } = await req.json();
+    const { name, type, isCruzVerde, contractorId, baseCompanyId, phone, email, hourlyRate, weeklySalary } = await req.json();
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 });
     }
@@ -117,6 +131,7 @@ export async function POST(req: NextRequest) {
           role: 'TECNICO',
           isActive: true,
           baseCompanyId: companyId,
+          weeklySalary: weeklySalary !== undefined ? Number(weeklySalary) || 0 : 0,
         },
       });
 
