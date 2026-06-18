@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     const includeConfig = {
       client: { select: { id: true, name: true } },
       company: { select: { id: true, name: true } },
-      user: { select: { id: true, name: true } },
+      user: { select: { id: true, name: true, weeklySalary: true } },
       weekendTechAssignments: {
         include: {
           technician: {
@@ -313,6 +313,25 @@ export async function GET(req: NextRequest) {
         });
         perryResources.summary.safetyCost += cost;
       });
+
+      // B.3 Fallback to main activity user if no explicit safety users are assigned
+      const hasExplicitSafetyUsers = activity.weekendUserSafetyAssignments && activity.weekendUserSafetyAssignments.length > 0;
+      if (!hasExplicitSafetyUsers && activity.user && activity.type === 'EJECUCION') {
+        const u = activity.user;
+        const weeklySalary = u.weeklySalary || 0;
+        const rate = weeklySalary > 0 ? Number((weeklySalary / 48).toFixed(2)) : 150;
+        const cost = Number((rate * durationHours).toFixed(2));
+
+        safetyEntries.push({
+          id: u.id,
+          name: u.name,
+          role: 'Supervisor Operativo',
+          cost,
+          activityId: activity.id,
+          activityDate: actDate,
+        });
+        perryResources.summary.safetyCost += cost;
+      }
 
       // C. Renta de Equipos (Plataformas)
       activity.weekendEquipAssignments?.forEach((ea: any) => {
