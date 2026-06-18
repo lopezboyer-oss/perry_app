@@ -430,6 +430,66 @@ export async function GET(req: NextRequest) {
       perryResources.summary.equipmentCost + 
       perryResources.summary.safetyCost;
 
+    // 5.5 Consultar facturas de proveedor (Gastos reales de materiales)
+    let billsData: any[] = [];
+    let totalMaterialsCost = 0;
+    try {
+      console.log(`Buscando facturas de proveedor en Odoo para folio ${folio}...`);
+      const vendorBills = await odooExecute('account.move', 'search_read', [
+        [[
+          ['ref', 'ilike', folio],
+          ['move_type', '=', 'in_invoice'],
+          ['state', '=', 'posted']
+        ]],
+        {
+          fields: [
+            'name', 'partner_id', 'amount_total', 'amount_untaxed', 'invoice_date', 'ref', 'payment_state', 'invoice_line_ids'
+          ]
+        }
+      ]);
+
+      if (vendorBills && vendorBills.length > 0) {
+        let vendorBillLines: any[] = [];
+        const allLineIds = vendorBills.flatMap((m: any) => m.invoice_line_ids || []);
+        if (allLineIds.length > 0) {
+          vendorBillLines = await odooExecute('account.move.line', 'search_read', [
+            [[['id', 'in', allLineIds]]],
+            {
+              fields: [
+                'move_id', 'name', 'product_id', 'quantity', 'price_unit', 'price_subtotal', 'display_type'
+              ]
+            }
+          ]) || [];
+        }
+
+        billsData = vendorBills.map((bill: any) => {
+          const lines = vendorBillLines.filter((l: any) => l.move_id && l.move_id[0] === bill.id);
+          return {
+            id: bill.id,
+            name: bill.name,
+            supplierName: bill.partner_id ? bill.partner_id[1] : 'Desconocido',
+            amountTotal: bill.amount_total,
+            amountUntaxed: bill.amount_untaxed || 0,
+            date: bill.invoice_date,
+            ref: bill.ref || '',
+            paymentState: bill.payment_state,
+            lines: lines.map((l: any) => ({
+              id: l.id,
+              name: l.name || '',
+              productName: l.product_id ? l.product_id[1] : '',
+              quantity: l.quantity || 0,
+              priceUnit: l.price_unit || 0,
+              priceSubtotal: l.price_subtotal || 0
+            }))
+          };
+        });
+
+        totalMaterialsCost = billsData.reduce((sum: number, b: any) => sum + (b.amountUntaxed || 0), 0);
+      }
+    } catch (err) {
+      console.error('Error al obtener facturas de proveedor:', err);
+    }
+
     // Build the perryActivities summary for the response header
     const perryActivitiesSummary = allActivities.map(a => ({
       id: a.id,
@@ -473,7 +533,9 @@ export async function GET(req: NextRequest) {
       } : null,
       // New: all activities summary
       perryActivities: perryActivitiesSummary,
-      perryResources
+      perryResources,
+      vendorBills: billsData,
+      totalMaterialsCost
     });
 
   } catch (error: any) {

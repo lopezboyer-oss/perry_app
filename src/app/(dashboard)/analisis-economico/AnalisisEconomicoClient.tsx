@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -52,6 +52,7 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
   const [showExecutiveSummary, setShowExecutiveSummary] = useState(false);
   const [folioActivities, setFolioActivities] = useState<any[] | null>(null);
   const [folioLoading, setFolioLoading] = useState(false);
+  const [expandMaterials, setExpandMaterials] = useState(false);
 
   const loadEconomicData = async (targetId: string | null, targetFolio: string | null) => {
     setEconomicLoading(true);
@@ -225,7 +226,7 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
           {/* KPI Summary Cards */}
           {(() => {
             const amountUntaxed = economicData.odooOrder.amountUntaxed || 0;
-            const totalCost = economicData.perryResources?.summary?.totalCost || 0;
+            const totalCost = (economicData.perryResources?.summary?.totalCost || 0) + (economicData.totalMaterialsCost || 0);
             const grossMargin = amountUntaxed - totalCost;
             const marginPercent = amountUntaxed > 0 ? (grossMargin / amountUntaxed) * 100 : 0;
             
@@ -287,13 +288,18 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
               { name: 'Mano de Obra / Servicios', odoo: odooLabor, perry: perryLabor },
               { name: 'Renta de Equipos (Elevación)', odoo: odooLifts, perry: perryLifts },
               { name: 'Seguridad y Coordinación', odoo: odooSafety, perry: perrySafety },
-              { name: 'Materiales y Suministros', odoo: odooMaterials, perry: 0, note: 'Perry no planifica costos de materiales' },
+              { 
+                name: 'Materiales y Suministros', 
+                odoo: odooMaterials, 
+                perry: economicData.totalMaterialsCost || 0,
+                isMaterials: true 
+              },
               { name: 'Indirectos', odoo: odooIndirects, perry: 0, note: 'Perry no planifica costos indirectos' },
               { name: 'Otros Conceptos', odoo: odooOther, perry: 0 },
             ];
 
             const amountUntaxed = economicData.odooOrder.amountUntaxed || 0;
-            const totalCost = economicData.perryResources?.summary?.totalCost || 0;
+            const totalCost = (economicData.perryResources?.summary?.totalCost || 0) + (economicData.totalMaterialsCost || 0);
 
             return (
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -344,19 +350,71 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                         }
 
                         return (
-                          <tr key={i} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-5 py-3 font-semibold text-slate-800">{c.name}</td>
-                            <td className="px-5 py-3 text-right text-slate-600">
-                              {c.odoo > 0 ? `$${c.odoo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
-                            </td>
-                            <td className="px-5 py-3 text-right text-slate-600">
-                              {c.perry > 0 ? `$${c.perry.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
-                            </td>
-                            <td className={`px-5 py-3 text-right font-bold ${isNegative ? 'text-rose-600' : variance > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                              {isNegative ? '-' : variance > 0 ? '+' : ''}{displayVariance}
-                            </td>
-                            <td className="px-5 py-3">{statusBadge}</td>
-                          </tr>
+                          <Fragment key={i}>
+                            <tr className="hover:bg-slate-50 transition-colors">
+                              <td className="px-5 py-3 font-semibold text-slate-800 flex items-center flex-wrap gap-2">
+                                <span>{c.name}</span>
+                                {(c as any).isMaterials && economicData.vendorBills && economicData.vendorBills.length > 0 && (
+                                  <button
+                                    onClick={() => setExpandMaterials(!expandMaterials)}
+                                    className="inline-flex items-center gap-1 text-[10px] text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200 transition-all select-none shadow-sm"
+                                  >
+                                    {expandMaterials ? 'Ocultar' : 'Ver'} {economicData.vendorBills.length} factura{economicData.vendorBills.length !== 1 ? 's' : ''}
+                                    {expandMaterials ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                  </button>
+                                )}
+                              </td>
+                              <td className="px-5 py-3 text-right text-slate-600">
+                                {c.odoo > 0 ? `$${c.odoo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
+                              </td>
+                              <td className="px-5 py-3 text-right text-slate-600">
+                                {c.perry > 0 ? `$${c.perry.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
+                              </td>
+                              <td className={`px-5 py-3 text-right font-bold ${isNegative ? 'text-rose-600' : variance > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                {isNegative ? '-' : variance > 0 ? '+' : ''}{displayVariance}
+                              </td>
+                              <td className="px-5 py-3">{statusBadge}</td>
+                            </tr>
+                            {(c as any).isMaterials && expandMaterials && economicData.vendorBills && economicData.vendorBills.length > 0 && (
+                              <tr key="materials-details" className="bg-slate-50/50">
+                                <td colSpan={5} className="px-5 py-4 border-t border-slate-100">
+                                  <div className="space-y-3 pl-4 border-l-2 border-indigo-500">
+                                    <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Desglose de Facturas de Proveedores (Odoo)</h5>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-5xl">
+                                      {economicData.vendorBills.map((bill: any) => (
+                                        <div key={bill.id} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm text-xs space-y-2">
+                                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-100 pb-1.5">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-bold text-slate-800">{bill.name}</span>
+                                              <span className="text-[10px] text-slate-400">({bill.date})</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-semibold text-indigo-600 text-[10px]">{bill.supplierName}</span>
+                                              <span className="font-bold text-slate-800">${bill.amountUntaxed.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                          </div>
+                                          <p className="text-[10px] text-slate-500 font-mono break-words leading-relaxed"><strong className="text-slate-600 font-sans">Ref:</strong> {bill.ref}</p>
+                                          {bill.lines && bill.lines.length > 0 && (
+                                            <div className="bg-slate-50 rounded p-2 text-[10px] space-y-1.5">
+                                              <p className="font-bold text-slate-500 uppercase tracking-wider text-[8px] mb-1">Conceptos:</p>
+                                              {bill.lines.map((l: any) => (
+                                                <div key={l.id} className="flex justify-between gap-4 text-slate-600 leading-snug">
+                                                  <span className="truncate flex-1" title={l.name}>{l.name}</span>
+                                                  <span className="shrink-0 font-medium text-slate-500">
+                                                    {l.quantity} x ${l.priceUnit.toLocaleString('es-MX', { minimumFractionDigits: 2 })} = <strong className="text-slate-800">${l.priceSubtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong>
+                                                  </span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         );
                       })}
                       
