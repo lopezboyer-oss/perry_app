@@ -39,72 +39,64 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Se requiere activityId o folio' }, { status: 400 });
     }
 
-    let activity: any = null;
+    // 2. Obtener folio y TODAS las actividades asociadas
     let folio = '';
+    let allActivities: any[] = [];
 
-    // 2. Obtener actividad y folio
-    if (activityId) {
-      activity = await prisma.activity.findUnique({
-        where: { id: activityId },
+    const includeConfig = {
+      client: { select: { id: true, name: true } },
+      company: { select: { id: true, name: true } },
+      user: { select: { id: true, name: true } },
+      weekendTechAssignments: {
         include: {
-          client: { select: { id: true, name: true } },
-          company: { select: { id: true, name: true } },
-          weekendTechAssignments: {
+          technician: {
             include: {
-              technician: {
-                include: {
-                  contractor: { select: { id: true, name: true } }
-                }
-              }
+              contractor: { select: { id: true, name: true } }
             }
-          },
-          weekendSafetyAssignments: {
-            include: { safetyDedicado: true }
-          },
-          weekendUserSafetyAssignments: {
-            include: { user: { select: { id: true, name: true, weeklySalary: true } } }
-          },
-          weekendEquipAssignments: {
-            include: { equip: true }
-          },
-          timeRegistryEntries: true
+          }
         }
+      },
+      weekendSafetyAssignments: {
+        include: { safetyDedicado: true }
+      },
+      weekendUserSafetyAssignments: {
+        include: { user: { select: { id: true, name: true, weeklySalary: true } } }
+      },
+      weekendEquipAssignments: {
+        include: { equip: true }
+      },
+      timeRegistryEntries: true
+    };
+
+    if (activityId) {
+      // First get the clicked activity to find the folio
+      const clickedActivity = await prisma.activity.findUnique({
+        where: { id: activityId },
+        select: { workOrderFolio: true }
       });
       
-      if (!activity) {
+      if (!clickedActivity) {
         return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 });
       }
-      folio = activity.workOrderFolio || '';
+      folio = clickedActivity.workOrderFolio || '';
+      
+      if (!folio) {
+        return NextResponse.json({ error: 'La actividad seleccionada no tiene un Folio Odoo asociado.' }, { status: 400 });
+      }
+
+      // Now get ALL activities with this folio
+      allActivities = await prisma.activity.findMany({
+        where: { workOrderFolio: folio },
+        include: includeConfig,
+        orderBy: { date: 'asc' }
+      });
     } else if (searchFolio) {
       folio = searchFolio.toUpperCase().trim();
       
-      // Intentar buscar alguna actividad en Perry asociada a ese folio para traer sus asignaciones
-      activity = await prisma.activity.findFirst({
+      allActivities = await prisma.activity.findMany({
         where: { workOrderFolio: { equals: folio, mode: 'insensitive' } },
-        include: {
-          client: { select: { id: true, name: true } },
-          company: { select: { id: true, name: true } },
-          weekendTechAssignments: {
-            include: {
-              technician: {
-                include: {
-                  contractor: { select: { id: true, name: true } }
-                }
-              }
-            }
-          },
-          weekendSafetyAssignments: {
-            include: { safetyDedicado: true }
-          },
-          weekendUserSafetyAssignments: {
-            include: { user: { select: { id: true, name: true, weeklySalary: true } } }
-          },
-          weekendEquipAssignments: {
-            include: { equip: true }
-          },
-          timeRegistryEntries: true
-        },
-        orderBy: { date: 'desc' }
+        include: includeConfig,
+        orderBy: { date: 'asc' }
       });
     }
 
@@ -115,7 +107,7 @@ export async function GET(req: NextRequest) {
     // 3. Consultar Odoo para obtener detalles del folio
     console.log(`Buscando orden de venta ${folio} en Odoo...`);
     const odooOrders = await odooExecute('sale.order', 'search_read', [
-      [[['name', '=', folio]]],
+      [[[`name`, '=', folio]]],
       {
         fields: ['name', 'amount_total', 'amount_untaxed', 'order_line', 'company_id']
       }
@@ -124,7 +116,7 @@ export async function GET(req: NextRequest) {
     if (!odooOrders || odooOrders.length === 0) {
       return NextResponse.json({ 
         error: `No se encontró la orden de venta "${folio}" en Odoo.`, 
-        activityFound: !!activity 
+        activityFound: allActivities.length > 0
       }, { status: 404 });
     }
 
@@ -193,7 +185,7 @@ export async function GET(req: NextRequest) {
       else odooBreakdown.other.push(item);
     });
 
-    // 5. Procesar asignaciones en Perry y calcular costos programados
+    // 5. Procesar asignaciones de TODAS las actividades del folio
     const perryResources = {
       technicians: [] as any[],
       safety: [] as any[],
@@ -206,8 +198,17 @@ export async function GET(req: NextRequest) {
       }
     };
 
-    if (activity) {
+    // Track unique resources to avoid double-counting within same activity
+    // but correctly count across different activities (same tech can work multiple days)
+    const techEntries: any[] = [];
+    const safetyEntries: any[] = [];
+    const equipEntries: any[] = [];
+
+    for (const activity of allActivities) {
       const durationHours = getDurationHours(activity.startTime, activity.endTime);
+      const actDate = activity.date instanceof Date 
+        ? activity.date.toISOString().substring(0, 10) 
+        : String(activity.date).substring(0, 10);
 
       // A. Mano de Obra (Técnicos)
       activity.weekendTechAssignments?.forEach((ta: any) => {
@@ -215,26 +216,26 @@ export async function GET(req: NextRequest) {
         if (!t) return;
 
         let rate = t.hourlyRate || 0;
-        // Si no tiene tarifa pero tiene usuario vinculado, estimar de su salario semanal
         if (rate === 0 && t.linkedUserId) {
-          // Buscamos salario semanal si es usuario interno
-          const matchedUser = activity.weekendUserSafetyAssignments?.find((sa: any) => sa.userId === t.linkedUserId)?.user 
-                            || activity.weekendTechAssignments?.find((ta2: any) => ta2.technician?.linkedUserId === t.linkedUserId)?.user;
+          const matchedUser = activity.weekendUserSafetyAssignments?.find((sa: any) => sa.userId === t.linkedUserId)?.user;
           const weeklySalary = matchedUser?.weeklySalary || 0;
           if (weeklySalary > 0) {
-            rate = Number((weeklySalary / 48).toFixed(2)); // Estimar 48 hrs semanales
+            rate = Number((weeklySalary / 48).toFixed(2));
           }
         }
 
         const cost = Number((rate * durationHours).toFixed(2));
-        perryResources.technicians.push({
+        techEntries.push({
           id: t.id,
           name: t.name,
           type: t.type,
           contractor: t.contractor?.name || 'Interno',
           hours: durationHours,
           rate,
-          cost
+          cost,
+          activityId: activity.id,
+          activityTitle: activity.title,
+          activityDate: actDate,
         });
         perryResources.summary.laborCost += cost;
       });
@@ -244,13 +245,14 @@ export async function GET(req: NextRequest) {
       activity.weekendSafetyAssignments?.forEach((sa: any) => {
         const s = sa.safetyDedicado;
         if (!s) return;
-        // Asignamos un costo estimado o tasa por evento (ej: $1,200 por turno)
         const cost = 1200; 
-        perryResources.safety.push({
+        safetyEntries.push({
           id: s.id,
           name: s.name,
           role: 'Safety Dedicado',
-          cost
+          cost,
+          activityId: activity.id,
+          activityDate: actDate,
         });
         perryResources.summary.safetyCost += cost;
       });
@@ -261,14 +263,16 @@ export async function GET(req: NextRequest) {
         if (!u) return;
 
         const weeklySalary = u.weeklySalary || 0;
-        const rate = weeklySalary > 0 ? Number((weeklySalary / 48).toFixed(2)) : 150; // default $150/hr
+        const rate = weeklySalary > 0 ? Number((weeklySalary / 48).toFixed(2)) : 150;
         const cost = Number((rate * durationHours).toFixed(2));
 
-        perryResources.safety.push({
+        safetyEntries.push({
           id: u.id,
           name: u.name,
           role: 'Supervisor Operativo',
-          cost
+          cost,
+          activityId: activity.id,
+          activityDate: actDate,
         });
         perryResources.summary.safetyCost += cost;
       });
@@ -280,25 +284,114 @@ export async function GET(req: NextRequest) {
 
         const dailyCost = eq.costPerDay || 0;
         const freight = eq.freightCost || 0;
-        const totalEquipCost = dailyCost + freight; // Asumimos 1 día por asignación
+        const totalEquipCost = dailyCost + freight;
 
-        perryResources.equipment.push({
+        equipEntries.push({
           id: eq.id,
           name: eq.name,
           ownership: eq.ownership,
           costPerDay: dailyCost,
           freightCost: freight,
-          cost: totalEquipCost
+          cost: totalEquipCost,
+          activityId: activity.id,
+          activityDate: actDate,
         });
         perryResources.summary.equipmentCost += totalEquipCost;
       });
-
-      // Calcular Costo Total
-      perryResources.summary.totalCost = 
-        perryResources.summary.laborCost + 
-        perryResources.summary.equipmentCost + 
-        perryResources.summary.safetyCost;
     }
+
+    // Aggregate technicians: group by person, sum hours and cost across activities
+    const techMap = new Map<string, any>();
+    for (const t of techEntries) {
+      const key = t.id;
+      if (techMap.has(key)) {
+        const existing = techMap.get(key)!;
+        existing.hours += t.hours;
+        existing.cost += t.cost;
+        existing.activityCount += 1;
+        existing.activities.push({ id: t.activityId, title: t.activityTitle, date: t.activityDate, hours: t.hours });
+      } else {
+        techMap.set(key, {
+          id: t.id,
+          name: t.name,
+          type: t.type,
+          contractor: t.contractor,
+          hours: t.hours,
+          rate: t.rate,
+          cost: t.cost,
+          activityCount: 1,
+          activities: [{ id: t.activityId, title: t.activityTitle, date: t.activityDate, hours: t.hours }],
+        });
+      }
+    }
+    perryResources.technicians = Array.from(techMap.values());
+
+    // Aggregate safety: group by person, sum cost
+    const safetyMap = new Map<string, any>();
+    for (const s of safetyEntries) {
+      const key = `${s.id}-${s.role}`;
+      if (safetyMap.has(key)) {
+        const existing = safetyMap.get(key)!;
+        existing.cost += s.cost;
+        existing.activityCount += 1;
+      } else {
+        safetyMap.set(key, {
+          id: s.id,
+          name: s.name,
+          role: s.role,
+          cost: s.cost,
+          activityCount: 1,
+        });
+      }
+    }
+    perryResources.safety = Array.from(safetyMap.values());
+
+    // Aggregate equipment: group by equip, sum cost
+    const equipMap = new Map<string, any>();
+    for (const eq of equipEntries) {
+      const key = eq.id;
+      if (equipMap.has(key)) {
+        const existing = equipMap.get(key)!;
+        existing.cost += eq.cost;
+        existing.activityCount += 1;
+      } else {
+        equipMap.set(key, {
+          id: eq.id,
+          name: eq.name,
+          ownership: eq.ownership,
+          costPerDay: eq.costPerDay,
+          freightCost: eq.freightCost,
+          cost: eq.cost,
+          activityCount: 1,
+        });
+      }
+    }
+    perryResources.equipment = Array.from(equipMap.values());
+
+    // Calcular Costo Total
+    perryResources.summary.totalCost = 
+      perryResources.summary.laborCost + 
+      perryResources.summary.equipmentCost + 
+      perryResources.summary.safetyCost;
+
+    // Build the perryActivities summary for the response header
+    const perryActivitiesSummary = allActivities.map(a => ({
+      id: a.id,
+      title: a.title,
+      date: a.date instanceof Date ? a.date.toISOString() : String(a.date),
+      type: a.type,
+      clientName: a.client?.name || 'Desconocido',
+      companyName: a.company?.name || 'Desconocido',
+      durationHours: getDurationHours(a.startTime, a.endTime),
+      startTime: a.startTime,
+      endTime: a.endTime,
+      userName: a.user?.name || null,
+    }));
+
+    const totalDurationHours = perryActivitiesSummary.reduce((s, a) => s + a.durationHours, 0);
+
+    // Use the first activity for backward compatibility in banner display
+    const firstActivity = allActivities[0] || null;
 
     // 6. Enviar respuesta unificada
     return NextResponse.json({
@@ -311,16 +404,19 @@ export async function GET(req: NextRequest) {
         amountUntaxed: totalQuotedUntaxed,
       },
       odooBreakdown,
-      perryActivity: activity ? {
-        id: activity.id,
-        title: activity.title,
-        date: activity.date.toISOString(),
-        clientName: activity.client?.name || 'Desconocido',
-        companyName: activity.company?.name || 'Desconocido',
-        durationHours: getDurationHours(activity.startTime, activity.endTime),
-        startTime: activity.startTime,
-        endTime: activity.endTime
+      // Backward compat: single activity for banner
+      perryActivity: firstActivity ? {
+        id: firstActivity.id,
+        title: firstActivity.title,
+        date: firstActivity.date instanceof Date ? firstActivity.date.toISOString() : String(firstActivity.date),
+        clientName: firstActivity.client?.name || 'Desconocido',
+        companyName: firstActivity.company?.name || 'Desconocido',
+        durationHours: totalDurationHours,
+        startTime: firstActivity.startTime,
+        endTime: firstActivity.endTime
       } : null,
+      // New: all activities summary
+      perryActivities: perryActivitiesSummary,
       perryResources
     });
 

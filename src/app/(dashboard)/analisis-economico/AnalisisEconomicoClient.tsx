@@ -190,16 +190,26 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
           {/* General Info Banner */}
           <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-xl p-5 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <span className="text-[10px] uppercase font-bold bg-white/10 text-indigo-200 px-2.5 py-0.5 rounded-full">Actividad Perry</span>
+              <span className="text-[10px] uppercase font-bold bg-white/10 text-indigo-200 px-2.5 py-0.5 rounded-full">
+                Perry App — {economicData.perryActivities?.length || 1} actividad{(economicData.perryActivities?.length || 1) !== 1 ? 'es' : ''} del folio
+              </span>
               {economicData.perryActivity ? (
                 <>
                   <h2 className="text-lg font-bold mt-1.5">{economicData.perryActivity.title}</h2>
                   <p className="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-3">
-                    <span>📅 {new Date(economicData.perryActivity.date).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                    <span>⏰ {economicData.perryActivity.startTime || '--:--'} a {economicData.perryActivity.endTime || '--:--'} ({economicData.perryActivity.durationHours} hrs)</span>
+                    <span>⏱️ {Number(economicData.perryActivity.durationHours).toFixed(1)} hrs-hombre totales</span>
                     <span>🏢 Cliente: <strong className="text-white">{economicData.perryActivity.clientName}</strong></span>
                     <span>🏢 Empresa: <strong className="text-white">{economicData.perryActivity.companyName}</strong></span>
                   </p>
+                  {economicData.perryActivities && economicData.perryActivities.length > 1 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {economicData.perryActivities.map((a: any) => (
+                        <span key={a.id} className="text-[9px] bg-white/10 border border-white/10 text-slate-300 px-2 py-0.5 rounded">
+                          📅 {new Date(a.date).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} · {a.durationHours.toFixed(1)}h · {a.userName || 'Sin asignar'}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="text-xs text-slate-400 italic mt-2">Sin actividad Perry asociada (Búsqueda por folio directo)</p>
@@ -459,7 +469,14 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
               <div className="p-5 space-y-6">
                 {/* Técnicos */}
                 <div>
-                  <h4 className="text-xs font-bold text-indigo-600 mb-2 uppercase tracking-wide">Mano de Obra (Técnicos)</h4>
+                  <h4 className="text-xs font-bold text-indigo-600 mb-2 uppercase tracking-wide">
+                    Mano de Obra (Técnicos)
+                    {(economicData.perryActivities?.length || 0) > 1 && (
+                      <span className="ml-2 text-[10px] font-medium text-slate-400 normal-case">
+                        — Agregado de {economicData.perryActivities.length} actividades
+                      </span>
+                    )}
+                  </h4>
                   {economicData.perryResources.technicians?.length > 0 ? (
                     <div className="border border-slate-200 rounded-lg overflow-hidden">
                       <table className="w-full text-left border-collapse text-xs">
@@ -467,9 +484,12 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                           <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-500">
                             <th className="px-4 py-2">Nombre</th>
                             <th className="px-4 py-2">Contratista / Tipo</th>
-                            <th className="px-4 py-2 text-right">Horas</th>
+                            <th className="px-4 py-2 text-right">Horas Totales</th>
                             <th className="px-4 py-2 text-right">Tarifa / Hora</th>
                             <th className="px-4 py-2 text-right">Costo Total</th>
+                            {(economicData.perryActivities?.length || 0) > 1 && (
+                              <th className="px-4 py-2 text-center">Actividades</th>
+                            )}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -477,16 +497,23 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                             <tr key={idx} className="hover:bg-slate-50/50">
                               <td className="px-4 py-2 font-medium text-slate-700">{t.name}</td>
                               <td className="px-4 py-2 text-slate-500">{t.contractor} ({t.type})</td>
-                              <td className="px-4 py-2 text-right">{t.hours} h</td>
+                              <td className="px-4 py-2 text-right">{Number(t.hours).toFixed(1)} h</td>
                               <td className="px-4 py-2 text-right">${t.rate.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                               <td className="px-4 py-2 text-right font-bold text-slate-800">${t.cost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                              {(economicData.perryActivities?.length || 0) > 1 && (
+                                <td className="px-4 py-2 text-center">
+                                  <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">
+                                    {t.activityCount || 1}
+                                  </span>
+                                </td>
+                              )}
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 italic">No hay técnicos asignados en esta actividad.</p>
+                    <p className="text-xs text-slate-400 italic">No hay técnicos asignados en las actividades de este folio.</p>
                   )}
                 </div>
 
