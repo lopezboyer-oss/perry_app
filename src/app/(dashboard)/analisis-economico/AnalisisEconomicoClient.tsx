@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Search,
   RefreshCw,
@@ -13,7 +14,19 @@ import {
   Users,
   DollarSign,
   BarChart3,
+  Clock,
+  CheckCircle,
+  Calendar,
+  User,
+  Timer,
+  Zap,
+  Hash,
+  Award,
+  Activity,
+  BarChart2,
+  Target,
 } from 'lucide-react';
+import { formatDuration, formatDate, activityTypeLabels, activityStatusLabels, activityTypeColors, activityStatusColors } from '@/lib/utils';
 
 interface CompanyInfo {
   id: string;
@@ -34,6 +47,11 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
   const [economicSearchFolio, setEconomicSearchFolio] = useState('');
   const [showOdooDetail, setShowOdooDetail] = useState(true);
   const [showPerryDetail, setShowPerryDetail] = useState(true);
+
+  // Executive summary state
+  const [showExecutiveSummary, setShowExecutiveSummary] = useState(false);
+  const [folioActivities, setFolioActivities] = useState<any[] | null>(null);
+  const [folioLoading, setFolioLoading] = useState(false);
 
   const loadEconomicData = async (targetId: string | null, targetFolio: string | null) => {
     setEconomicLoading(true);
@@ -363,6 +381,19 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
             );
           })()}
 
+          {/* ── Executive Summary Section (collapsible) ── */}
+          {economicData.folio && (
+            <ExecutiveSummarySection
+              folio={economicData.folio}
+              showExecutiveSummary={showExecutiveSummary}
+              setShowExecutiveSummary={setShowExecutiveSummary}
+              folioActivities={folioActivities}
+              setFolioActivities={setFolioActivities}
+              folioLoading={folioLoading}
+              setFolioLoading={setFolioLoading}
+            />
+          )}
+
           {/* Odoo Detail Breakdown */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <button 
@@ -525,6 +556,332 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// ─── Executive Summary Collapsible Section ───────────────────────────────────
+
+interface ExecutiveSummaryProps {
+  folio: string;
+  showExecutiveSummary: boolean;
+  setShowExecutiveSummary: (v: boolean) => void;
+  folioActivities: any[] | null;
+  setFolioActivities: (v: any[]) => void;
+  folioLoading: boolean;
+  setFolioLoading: (v: boolean) => void;
+}
+
+function ExecutiveSummarySection({
+  folio, showExecutiveSummary, setShowExecutiveSummary,
+  folioActivities, setFolioActivities, folioLoading, setFolioLoading,
+}: ExecutiveSummaryProps) {
+
+  const handleToggle = async () => {
+    const next = !showExecutiveSummary;
+    setShowExecutiveSummary(next);
+    // Lazy load on first expand
+    if (next && !folioActivities && !folioLoading) {
+      setFolioLoading(true);
+      try {
+        const res = await fetch(`/api/activities/folio-summary?folio=${encodeURIComponent(folio)}`);
+        const data = await res.json();
+        if (res.ok && data.activities) {
+          setFolioActivities(data.activities);
+        }
+      } catch { /* silent */ }
+      setFolioLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-indigo-200 shadow-sm overflow-hidden">
+      <button
+        onClick={handleToggle}
+        className="w-full px-5 py-4 border-b border-indigo-100 flex items-center justify-between hover:bg-indigo-50/50 transition-colors"
+      >
+        <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+          <Target className="w-[18px] h-[18px] text-indigo-500" />
+          Resumen Ejecutivo del Folio — {folio}
+        </h3>
+        <div className="flex items-center gap-2">
+          {folioActivities && (
+            <span className="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+              {folioActivities.length} actividades
+            </span>
+          )}
+          {showExecutiveSummary ? <ChevronUp className="w-[18px] h-[18px] text-slate-400" /> : <ChevronDown className="w-[18px] h-[18px] text-slate-400" />}
+        </div>
+      </button>
+
+      {showExecutiveSummary && (
+        <div className="p-5 space-y-5">
+          {folioLoading && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <RefreshCw className="w-7 h-7 text-indigo-600 animate-spin" />
+              <p className="text-slate-500 text-sm">Cargando actividades del folio...</p>
+            </div>
+          )}
+
+          {folioActivities && folioActivities.length > 0 && (
+            <FolioSummaryContent activities={folioActivities} folio={folio} />
+          )}
+
+          {folioActivities && folioActivities.length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-8">No se encontraron actividades para el folio {folio}.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Folio Summary Content (replicates OportunidadDetalle logic) ─────────────
+
+function FolioSummaryContent({ activities, folio }: { activities: any[]; folio: string }) {
+  // Derived state
+  const cotizaciones = activities.filter(a => a.type === 'COTIZACION');
+  const first = cotizaciones[0] || activities[0];
+  const enProgreso = cotizaciones.find((a: any) => a.status === 'EN_PROGRESO');
+  const completada = cotizaciones.find((a: any) => a.status === 'COMPLETADA');
+
+  const fechaInicio = new Date(enProgreso?.date || first.date);
+  const fechaFin = completada ? new Date(completada.date) : null;
+  let leadTimeDays: number | null = null;
+  if (fechaFin) {
+    leadTimeDays = Math.ceil((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24));
+    if (leadTimeDays < 0) leadTimeDays = 0;
+  }
+
+  let estado: 'EN_PROGRESO' | 'COMPLETADA' | 'CANCELADA' = 'EN_PROGRESO';
+  if (completada) estado = 'COMPLETADA';
+  else if (cotizaciones.length > 0 && cotizaciones.every((a: any) => a.status === 'CANCELADA')) estado = 'CANCELADA';
+
+  const totalMinutos = activities.reduce((s: number, a: any) => s + (a.durationMinutes || 0), 0);
+  const daysSinceStart = Math.ceil((new Date().getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24));
+
+  // By type
+  const byType: Record<string, { count: number; minutos: number }> = {};
+  for (const a of activities) {
+    if (!byType[a.type]) byType[a.type] = { count: 0, minutos: 0 };
+    byType[a.type].count++;
+    byType[a.type].minutos += a.durationMinutes || 0;
+  }
+
+  // By status
+  const byStatus: Record<string, number> = {};
+  for (const a of activities) {
+    byStatus[a.status] = (byStatus[a.status] || 0) + 1;
+  }
+
+  // By person
+  const byPerson: Record<string, { name: string; count: number; minutos: number }> = {};
+  for (const a of activities) {
+    const id = a.user?.id || 'unknown';
+    const name = a.user?.name || 'Sin asignar';
+    if (!byPerson[id]) byPerson[id] = { name, count: 0, minutos: 0 };
+    byPerson[id].count++;
+    byPerson[id].minutos += a.durationMinutes || 0;
+  }
+
+  const activitiesWithTime = activities.filter((a: any) => a.durationMinutes);
+  const avgDuration = activitiesWithTime.length > 0
+    ? Math.round(activitiesWithTime.reduce((s: number, a: any) => s + (a.durationMinutes || 0), 0) / activitiesWithTime.length)
+    : null;
+
+  const maxType = Object.entries(byType).sort((a, b) => b[1].minutos - a[1].minutos)[0];
+
+  const estadoConfig: Record<string, { label: string; color: string }> = {
+    EN_PROGRESO: { label: 'En Progreso', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+    COMPLETADA: { label: 'Completada', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+    CANCELADA: { label: 'Cancelada', color: 'bg-red-100 text-red-800 border-red-200' },
+  };
+  const cfg = estadoConfig[estado] || estadoConfig.EN_PROGRESO;
+
+  return (
+    <>
+      {/* Status Badge */}
+      <div className="flex items-center gap-3 mb-1">
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${cfg.color}`}>
+          {estado === 'COMPLETADA' ? <CheckCircle size={12} /> : estado === 'CANCELADA' ? <AlertCircle size={12} /> : <Clock size={12} />}
+          {cfg.label}
+        </span>
+        <span className="text-xs text-slate-400">
+          {first.client?.name || '—'} · Resp: {first.user?.name || '—'}
+        </span>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <MiniKpi icon={<Hash size={16} className="text-indigo-500" />} label="Actividades" value={activities.length} />
+        <MiniKpi icon={<Timer size={16} className="text-violet-500" />} label="Tiempo Total" value={formatDuration(totalMinutos)} />
+        <MiniKpi
+          icon={<TrendingUp size={16} className="text-emerald-500" />}
+          label="Lead Time"
+          value={leadTimeDays !== null ? `${leadTimeDays}d` : estado === 'EN_PROGRESO' ? `${daysSinceStart}d*` : '—'}
+          sub={leadTimeDays !== null ? undefined : estado === 'EN_PROGRESO' ? 'transcurridos' : undefined}
+        />
+        <MiniKpi icon={<Calendar size={16} className="text-blue-500" />} label="Inicio" value={formatDate(fechaInicio.toISOString())} />
+        <MiniKpi icon={<CheckCircle size={16} className="text-emerald-500" />} label="Cierre" value={fechaFin ? formatDate(fechaFin.toISOString()) : '—'} />
+        <MiniKpi icon={<Zap size={16} className="text-amber-500" />} label="Duración Prom." value={avgDuration ? formatDuration(avgDuration) : '—'} sub="por actividad" />
+      </div>
+
+      {/* Analytics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* By Type */}
+        <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+          <h4 className="font-semibold text-slate-700 text-xs mb-3 flex items-center gap-1.5">
+            <BarChart2 size={14} className="text-indigo-500" /> Por Tipo
+          </h4>
+          <div className="space-y-2.5">
+            {Object.entries(byType).sort((a, b) => b[1].minutos - a[1].minutos).map(([type, data]) => {
+              const pct = totalMinutos > 0 ? Math.round(data.minutos / totalMinutos * 100) : 0;
+              return (
+                <div key={type}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${activityTypeColors[type] || 'bg-slate-100 text-slate-700'}`}>
+                      {activityTypeLabels[type] || type}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-bold">{data.count} act · {formatDuration(data.minutos)}</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* By Status */}
+        <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+          <h4 className="font-semibold text-slate-700 text-xs mb-3 flex items-center gap-1.5">
+            <Activity size={14} className="text-violet-500" /> Por Estado
+          </h4>
+          <div className="space-y-2">
+            {Object.entries(byStatus).map(([status, count]) => (
+              <div key={status} className="flex items-center justify-between">
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${activityStatusColors[status] || 'bg-slate-100 text-slate-700'}`}>
+                  {activityStatusLabels[status] || status}
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 rounded-full bg-slate-200 w-16 overflow-hidden">
+                    <div className="h-full rounded-full bg-violet-400" style={{ width: `${Math.round(count / activities.length * 100)}%` }} />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-700 w-4 text-right">{count}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* By Person */}
+        <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+          <h4 className="font-semibold text-slate-700 text-xs mb-3 flex items-center gap-1.5">
+            <User size={14} className="text-rose-500" /> Participación
+          </h4>
+          <div className="space-y-2.5">
+            {Object.entries(byPerson).sort((a, b) => b[1].minutos - a[1].minutos).map(([id, data]) => {
+              const pct = totalMinutos > 0 ? Math.round(data.minutos / totalMinutos * 100) : 0;
+              return (
+                <div key={id}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[10px] font-medium text-slate-700">{data.name}</span>
+                    <span className="text-[10px] text-slate-500">{data.count} act · {formatDuration(data.minutos)}</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-rose-400 rounded-full" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Executive Strip */}
+      <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-xl p-4">
+        <h4 className="font-semibold text-slate-700 text-xs mb-2 flex items-center gap-1.5">
+          <Award size={13} className="text-indigo-600" /> Resumen
+        </h4>
+        <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs">
+          <div><span className="text-slate-500">Tipo dominante:</span> <span className="font-semibold text-slate-800">{maxType ? `${activityTypeLabels[maxType[0]] || maxType[0]} (${formatDuration(maxType[1].minutos)})` : '—'}</span></div>
+          <div><span className="text-slate-500">Personas:</span> <span className="font-semibold text-slate-800">{Object.keys(byPerson).length}</span></div>
+          <div><span className="text-slate-500">Completadas:</span> <span className="font-semibold text-slate-800">{byStatus['COMPLETADA'] || 0} de {activities.length}</span></div>
+          {leadTimeDays !== null && leadTimeDays > 0 && (
+            <div><span className="text-slate-500">Eficiencia:</span> <span className="font-semibold text-slate-800">{Math.round(totalMinutos / leadTimeDays)}min/día</span></div>
+          )}
+        </div>
+      </div>
+
+      {/* Timeline Table */}
+      <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <h4 className="font-semibold text-slate-700 text-xs flex items-center gap-1.5">
+            <FileText size={13} className="text-slate-500" /> Timeline de Actividades
+          </h4>
+          <span className="text-[10px] text-slate-400">{activities.length} registros</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-100/50 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                <th className="px-4 py-2 w-[30px] text-center">#</th>
+                <th className="px-4 py-2 w-[85px]">Fecha</th>
+                <th className="px-4 py-2 w-[75px]">Tipo</th>
+                <th className="px-4 py-2">Título</th>
+                <th className="px-4 py-2 w-[100px]">Responsable</th>
+                <th className="px-4 py-2 w-[70px]">Horario</th>
+                <th className="px-4 py-2 w-[55px] text-center">Tiempo</th>
+                <th className="px-4 py-2 w-[75px] text-center">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {activities.map((act: any, idx: number) => (
+                <tr key={act.id} className="hover:bg-slate-50/50 transition-colors align-top">
+                  <td className="px-4 py-2 text-center">
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">{idx + 1}</span>
+                  </td>
+                  <td className="px-4 py-2 text-slate-700 font-medium whitespace-nowrap">{formatDate(act.date)}</td>
+                  <td className="px-4 py-2">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${activityTypeColors[act.type] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                      {activityTypeLabels[act.type] || act.type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <Link href={`/actividades/${act.id}`} className="text-xs font-medium text-slate-800 hover:text-indigo-600 leading-snug">
+                      {act.title}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-2 text-slate-600">{act.user?.name || '-'}</td>
+                  <td className="px-4 py-2 font-mono text-slate-600 whitespace-nowrap">
+                    {act.startTime ? `${act.startTime}${act.endTime ? `–${act.endTime}` : ''}` : '—'}
+                  </td>
+                  <td className="px-4 py-2 text-center text-slate-600">{act.durationMinutes ? formatDuration(act.durationMinutes) : '—'}</td>
+                  <td className="px-4 py-2 text-center">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${activityStatusColors[act.status] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                      {activityStatusLabels[act.status] || act.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function MiniKpi({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string | number; sub?: string }) {
+  return (
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-start gap-2.5">
+      <div className="p-1.5 rounded-lg bg-white border border-slate-100 flex-shrink-0">{icon}</div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-slate-500">{label}</p>
+        <p className="text-sm font-bold text-slate-800 leading-tight">{value}</p>
+        {sub && <p className="text-[9px] text-slate-400">{sub}</p>}
+      </div>
     </div>
   );
 }
