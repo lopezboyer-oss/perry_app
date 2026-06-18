@@ -156,18 +156,6 @@ export async function GET(req: NextRequest) {
       const desc = (l.name || '').toUpperCase();
       const productName = l.product_id ? l.product_id[1].toUpperCase() : '';
 
-      const isRental = desc.includes('RENTA') || desc.includes('PLATAFORMA') || desc.includes('TIJERA') || desc.includes('GENIE') || desc.includes('GRUA') || desc.includes('ELEVACION') || desc.includes('MANLIFT') ||
-                       productName.includes('RENTA') || productName.includes('PLATAFORMA');
-                       
-      const isCoord = desc.includes('COORDINACION') || desc.includes('SAFETY') || desc.includes('SUPERVISOR') || desc.includes('JSRA') || desc.includes('VIGILANTE') ||
-                      productName.includes('COORDINACION') || productName.includes('SEGURIDAD');
-
-      const isIndirect = desc.includes('INDIRECTO') || desc.includes('EPP') || desc.includes('CONSUMIBLES') || desc.includes('ADMINISTRACION');
-
-      const isMaterial = productName.includes('MATERIAL') || productName.includes('SUMINISTRO') || desc.includes('MATERIAL') || desc.includes('SUMINISTRO');
-
-      const isLabor = productName.includes('SERVICIO') || productName.includes('MANO DE OBRA') || desc.includes('INSTALACION') || desc.includes('EJECUCION') || desc.includes('FABRICACION');
-
       const item = {
         id: l.id,
         product: l.product_id ? l.product_id[1] : '—',
@@ -177,11 +165,42 @@ export async function GET(req: NextRequest) {
         subtotal: l.price_subtotal
       };
 
+      // Classification priority: productName first (most reliable), then description as fallback
+      // Step 1: Classify by productName (definitive — product catalog is controlled)
+      if (productName.includes('SERVICIO') || productName.includes('MANO DE OBRA')) {
+        // Product is a service/labor item. Check description for indirect override
+        if (desc.includes('INDIRECTO')) {
+          odooBreakdown.indirects.push(item);
+        } else {
+          odooBreakdown.labor.push(item);
+        }
+        return;
+      }
+      if (productName.includes('MATERIAL') || productName.includes('SUMINISTRO')) {
+        odooBreakdown.materials.push(item);
+        return;
+      }
+      if (productName.includes('RENTA') || productName.includes('PLATAFORMA')) {
+        odooBreakdown.equipmentRental.push(item);
+        return;
+      }
+      if (productName.includes('COORDINACION') || productName.includes('SEGURIDAD')) {
+        odooBreakdown.coordination.push(item);
+        return;
+      }
+
+      // Step 2: Fallback to description keywords (less reliable — free text)
+      const isRental = desc.includes('RENTA') || desc.includes('PLATAFORMA') || desc.includes('TIJERA') || desc.includes('GENIE') || desc.includes('GRUA') || desc.includes('ELEVACION') || desc.includes('MANLIFT');
+      const isCoord = desc.includes('COORDINACION') || desc.includes('SAFETY') || desc.includes('SUPERVISOR') || desc.includes('JSRA') || desc.includes('VIGILANTE');
+      const isIndirect = desc.includes('INDIRECTO') || desc.includes('EPP') || desc.includes('CONSUMIBLES') || desc.includes('ADMINISTRACION');
+      const isMaterial = desc.includes('MATERIAL') || desc.includes('SUMINISTRO');
+      const isLabor = desc.includes('INSTALACION') || desc.includes('EJECUCION') || desc.includes('FABRICACION');
+
       if (isRental) odooBreakdown.equipmentRental.push(item);
       else if (isCoord) odooBreakdown.coordination.push(item);
+      else if (isLabor) odooBreakdown.labor.push(item);
       else if (isIndirect) odooBreakdown.indirects.push(item);
       else if (isMaterial) odooBreakdown.materials.push(item);
-      else if (isLabor) odooBreakdown.labor.push(item);
       else odooBreakdown.other.push(item);
     });
 
