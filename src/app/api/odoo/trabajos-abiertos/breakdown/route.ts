@@ -204,6 +204,23 @@ export async function GET(req: NextRequest) {
     const safetyEntries: any[] = [];
     const equipEntries: any[] = [];
 
+    // Pre-fetch all linked User records for PROPIO technicians to get weeklySalary
+    const linkedUserIds = allActivities
+      .flatMap(a => a.weekendTechAssignments || [])
+      .map((ta: any) => ta.technician?.linkedUserId)
+      .filter(Boolean);
+
+    const linkedUsersMap = new Map<string, { weeklySalary: number }>();
+    if (linkedUserIds.length > 0) {
+      const linkedUsers = await prisma.user.findMany({
+        where: { id: { in: [...new Set(linkedUserIds)] } },
+        select: { id: true, weeklySalary: true },
+      });
+      for (const u of linkedUsers) {
+        linkedUsersMap.set(u.id, { weeklySalary: u.weeklySalary || 0 });
+      }
+    }
+
     for (const activity of allActivities) {
       const durationHours = getDurationHours(activity.startTime, activity.endTime);
       const actDate = activity.date instanceof Date 
@@ -217,8 +234,9 @@ export async function GET(req: NextRequest) {
 
         let rate = t.hourlyRate || 0;
         if (rate === 0 && t.linkedUserId) {
-          const matchedUser = activity.weekendUserSafetyAssignments?.find((sa: any) => sa.userId === t.linkedUserId)?.user;
-          const weeklySalary = matchedUser?.weeklySalary || 0;
+          // Look up the linked User's weeklySalary from our pre-fetched map
+          const linkedUser = linkedUsersMap.get(t.linkedUserId);
+          const weeklySalary = linkedUser?.weeklySalary || 0;
           if (weeklySalary > 0) {
             rate = Number((weeklySalary / 48).toFixed(2));
           }
