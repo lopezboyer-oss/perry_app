@@ -122,6 +122,7 @@ export const activityTypeLabels: Record<string, string> = {
   DISENO: 'Diseño',
   CONSORCIO: 'Consorcio',
   CAPACITACION: 'Capacitación',
+  SOPORTE_INTERNO: 'Soporte Interno',
 };
 
 /**
@@ -158,6 +159,7 @@ export const activityTypeColors: Record<string, string> = {
   DISENO: 'bg-rose-100 text-rose-800 border-rose-200',
   CONSORCIO: 'bg-cyan-100 text-cyan-800 border-cyan-200',
   CAPACITACION: 'bg-teal-100 text-teal-800 border-teal-200',
+  SOPORTE_INTERNO: 'bg-slate-100 text-slate-800 border-slate-200',
 };
 
 /**

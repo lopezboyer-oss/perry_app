@@ -8,7 +8,7 @@ export const loginSchema = z.object({
 export const activitySchema = z.object({
   date: z.string().min(1, 'La fecha es requerida'),
   userId: z.string().min(1, 'El responsable es requerido'),
-  type: z.enum(['VISITA_CAMPO', 'COTIZACION', 'EJECUCION', 'PLANEACION', 'DISENO', 'CONSORCIO', 'CAPACITACION'], {
+  type: z.enum(['VISITA_CAMPO', 'COTIZACION', 'EJECUCION', 'PLANEACION', 'DISENO', 'CONSORCIO', 'CAPACITACION', 'SOPORTE_INTERNO'], {
     errorMap: () => ({ message: 'Tipo de actividad no válido' }),
   }),
   status: z.enum(['PENDIENTE', 'EN_PROGRESO', 'COMPLETADA', 'CANCELADA']).default('PENDIENTE'),

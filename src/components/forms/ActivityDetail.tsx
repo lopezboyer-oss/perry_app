@@ -96,7 +96,7 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DetailItem icon={Calendar} label="Fecha" value={formatDate(activity.date)} />
             <DetailItem icon={User} label="Responsable" value={activity.user?.name || '—'} />
-            {activity.type !== 'CAPACITACION' && (
+            {activity.type !== 'CAPACITACION' && activity.type !== 'SOPORTE_INTERNO' && (
               <>
                 <DetailItem icon={Building} label="Cliente" value={activity.client?.name || '—'} />
                 <DetailItem icon={User} label="Contacto" value={activity.contact?.name || '—'} />

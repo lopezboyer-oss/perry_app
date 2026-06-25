@@ -165,15 +165,15 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     setError('');
 
     try {
-      const isCapacitacion = form.type === 'CAPACITACION';
+      const isInternal = form.type === 'CAPACITACION' || form.type === 'SOPORTE_INTERNO';
       const body = {
         ...form,
-        clientId: isCapacitacion ? null : (form.clientId || null),
-        contactId: isCapacitacion ? null : (form.contactId || null),
-        workOrderFolio: isCapacitacion ? null : (form.workOrderFolio || null),
-        purchaseOrder: isCapacitacion ? null : (form.purchaseOrder || null),
+        clientId: isInternal ? null : (form.clientId || null),
+        contactId: isInternal ? null : (form.contactId || null),
+        workOrderFolio: isInternal ? null : (form.workOrderFolio || null),
+        purchaseOrder: isInternal ? null : (form.purchaseOrder || null),
         consortiumCompany: form.type === 'CONSORCIO' ? (form.consortiumCompany || null) : null,
-        projectArea: isCapacitacion ? null : (form.projectArea || null),
+        projectArea: isInternal ? null : (form.projectArea || null),
         result: form.result || null,
         nextStep: form.nextStep || null,
         commitmentDate: form.commitmentDate || null,
@@ -310,9 +310,11 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         </div>
       </div>
 
-      {form.type === 'CAPACITACION' ? (
+      {form.type === 'CAPACITACION' || form.type === 'SOPORTE_INTERNO' ? (
         <div className="card p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Detalles de Capacitación</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            {form.type === 'CAPACITACION' ? 'Detalles de Capacitación' : 'Detalles de Soporte Interno'}
+          </h2>
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Ubicación / Medio</label>

@@ -496,7 +496,7 @@ export function ActividadesClient({ activities: initialActivities, users, client
                       {act.workOrderFolio && (
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-indigo-500 font-mono">{act.workOrderFolio}</span>
-                          {act.type !== 'CAPACITACION' && canViewEconomicAnalysis(currentUserEmail, userRole) && (
+                          {act.type !== 'CAPACITACION' && act.type !== 'SOPORTE_INTERNO' && canViewEconomicAnalysis(currentUserEmail, userRole) && (
                             <a
                               href={`/analisis-economico?activityId=${act.id}`}
                               onClick={(e) => e.stopPropagation()}

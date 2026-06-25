@@ -15,6 +15,7 @@ const TYPE_COLORS: Record<string, string> = {
   PLANEACION: '#8b5cf6',
   DISENO: '#f43f5e',
   CAPACITACION: '#0d9488',
+  SOPORTE_INTERNO: '#64748b',
 };
 
 interface AnalyticsData {
@@ -50,6 +51,7 @@ export function AnaliticaClient({ data }: { data: AnalyticsData }) {
     Planeación: m.PLANEACION || 0,
     Diseño: m.DISENO || 0,
     Capacitación: m.CAPACITACION || 0,
+    'Soporte Interno': m.SOPORTE_INTERNO || 0,
   }));
 
   return (
@@ -165,6 +167,7 @@ export function AnaliticaClient({ data }: { data: AnalyticsData }) {
               <Area type="monotone" dataKey="Planeación" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
               <Area type="monotone" dataKey="Diseño" stackId="1" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.3} />
               <Area type="monotone" dataKey="Capacitación" stackId="1" stroke="#0d9488" fill="#0d9488" fillOpacity={0.3} />
+              <Area type="monotone" dataKey="Soporte Interno" stackId="1" stroke="#64748b" fill="#64748b" fillOpacity={0.3} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   ClipboardList, Target, Clock, AlertTriangle, TrendingUp, Users,
   HardHat, FileSearch, Wrench, Calendar, Trophy, FileText, Receipt,
-  ChevronDown, ChevronUp, X, Check, Copy, MessageCircle, GraduationCap
+  ChevronDown, ChevronUp, X, Check, Copy, MessageCircle, GraduationCap, LifeBuoy
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
@@ -27,6 +27,7 @@ const typeIcons: Record<string, any> = {
   PLANEACION: Calendar,
   DISENO: FileSearch,
   CAPACITACION: GraduationCap,
+  SOPORTE_INTERNO: LifeBuoy,
 };
 
 interface TopPerformer {
@@ -865,6 +866,7 @@ const SCHEDULE_TYPE_COLORS: Record<string, { bg: string; border: string; text: s
   DISENO: { bg: 'bg-rose-200', border: 'border-rose-400', text: 'text-rose-900' },
   CONSORCIO: { bg: 'bg-cyan-200', border: 'border-cyan-400', text: 'text-cyan-900' },
   CAPACITACION: { bg: 'bg-teal-200', border: 'border-teal-400', text: 'text-teal-900' },
+  SOPORTE_INTERNO: { bg: 'bg-slate-200', border: 'border-slate-400', text: 'text-slate-900' },
 };
 
 function ScheduleTimeline({
