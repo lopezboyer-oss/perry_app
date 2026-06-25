@@ -121,6 +121,7 @@ export const activityTypeLabels: Record<string, string> = {
   PLANEACION: 'Planeación',
   DISENO: 'Diseño',
   CONSORCIO: 'Consorcio',
+  CAPACITACION: 'Capacitación',
 };
 
 /**
@@ -156,6 +157,7 @@ export const activityTypeColors: Record<string, string> = {
   PLANEACION: 'bg-purple-100 text-purple-800 border-purple-200',
   DISENO: 'bg-rose-100 text-rose-800 border-rose-200',
   CONSORCIO: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+  CAPACITACION: 'bg-teal-100 text-teal-800 border-teal-200',
 };
 
 /**

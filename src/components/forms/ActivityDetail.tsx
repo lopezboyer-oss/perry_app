@@ -96,23 +96,27 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <DetailItem icon={Calendar} label="Fecha" value={formatDate(activity.date)} />
             <DetailItem icon={User} label="Responsable" value={activity.user?.name || '—'} />
-            <DetailItem icon={Building} label="Cliente" value={activity.client?.name || '—'} />
-            <DetailItem icon={User} label="Contacto" value={activity.contact?.name || '—'} />
-            <DetailItem label="Folio ODOO" value={
-              activity.workOrderFolio ? (
-                <Link href={`/oportunidades/${activity.workOrderFolio}`} className="font-mono text-indigo-600 hover:text-indigo-700">
-                  {activity.workOrderFolio}
-                </Link>
-              ) : '—'
-            } />
-            <DetailItem label="P.O. Cliente" value={
-              activity.purchaseOrder ? (
-                <span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">{activity.purchaseOrder}</span>
-              ) : activity.workOrderFolio ? (
-                <span className="text-amber-600 font-bold text-xs">Sin P.O.</span>
-              ) : '—'
-            } />
-            <DetailItem label="Proyecto / Área" value={activity.projectArea || '—'} />
+            {activity.type !== 'CAPACITACION' && (
+              <>
+                <DetailItem icon={Building} label="Cliente" value={activity.client?.name || '—'} />
+                <DetailItem icon={User} label="Contacto" value={activity.contact?.name || '—'} />
+                <DetailItem label="Folio ODOO" value={
+                  activity.workOrderFolio ? (
+                    <Link href={`/oportunidades/${activity.workOrderFolio}`} className="font-mono text-indigo-600 hover:text-indigo-700">
+                      {activity.workOrderFolio}
+                    </Link>
+                  ) : '—'
+                } />
+                <DetailItem label="P.O. Cliente" value={
+                  activity.purchaseOrder ? (
+                    <span className="font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">{activity.purchaseOrder}</span>
+                  ) : activity.workOrderFolio ? (
+                    <span className="text-amber-600 font-bold text-xs">Sin P.O.</span>
+                  ) : '—'
+                } />
+                <DetailItem label="Proyecto / Área" value={activity.projectArea || '—'} />
+              </>
+            )}
             <DetailItem icon={MapPin} label="Ubicación" value={activity.location || '—'} />
           </div>
         </div>

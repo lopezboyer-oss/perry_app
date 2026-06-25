@@ -165,14 +165,15 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     setError('');
 
     try {
+      const isCapacitacion = form.type === 'CAPACITACION';
       const body = {
         ...form,
-        clientId: form.clientId || null,
-        contactId: form.contactId || null,
-        workOrderFolio: form.workOrderFolio || null,
-        purchaseOrder: form.purchaseOrder || null,
+        clientId: isCapacitacion ? null : (form.clientId || null),
+        contactId: isCapacitacion ? null : (form.contactId || null),
+        workOrderFolio: isCapacitacion ? null : (form.workOrderFolio || null),
+        purchaseOrder: isCapacitacion ? null : (form.purchaseOrder || null),
         consortiumCompany: form.type === 'CONSORCIO' ? (form.consortiumCompany || null) : null,
-        projectArea: form.projectArea || null,
+        projectArea: isCapacitacion ? null : (form.projectArea || null),
         result: form.result || null,
         nextStep: form.nextStep || null,
         commitmentDate: form.commitmentDate || null,
@@ -309,95 +310,113 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         </div>
       </div>
 
-      <div className="card p-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Cliente y Proyecto</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
-            <SearchableSelect
-              options={[
-                { id: '', name: 'Selecciona...' },
-                ...clients.map((c) => ({ id: c.id, name: c.name }))
-              ]}
-              value={form.clientId}
-              onChange={(val) => setForm({ ...form, clientId: val, contactId: '' })}
-              placeholder="Buscar cliente..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Contacto</label>
-            <SearchableSelect
-              options={[
-                { id: '', name: 'Selecciona...' },
-                ...contacts.map((c) => ({ id: c.id, name: c.name }))
-              ]}
-              value={form.contactId}
-              onChange={(val) => setForm({ ...form, contactId: val })}
-              placeholder="Buscar contacto..."
-              disabled={!form.clientId}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Folio ODOO</label>
-            <div className="flex gap-1">
+      {form.type === 'CAPACITACION' ? (
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">Detalles de Capacitación</h2>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Ubicación / Medio</label>
               <input
                 type="text"
-                maxLength={6}
-                value={form.workOrderFolio}
-                onChange={(e) => setForm({ ...form, workOrderFolio: e.target.value.toUpperCase().slice(0, 6) })}
-                onBlur={lookupOdoo}
-                placeholder="Ej: S06309"
-                className={`flex-1 font-mono ${odooMsg?.type === 'ok' ? 'border-emerald-300 bg-emerald-50' : odooMsg?.type === 'err' ? 'border-red-300 bg-red-50' : ''}`}
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="Ej: Sala de juntas, Teams, Zoom, Planta..."
+                className="w-full"
               />
-              <button
-                type="button"
-                disabled={!form.workOrderFolio || odooLoading}
-                onClick={lookupOdoo}
-                className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-colors disabled:opacity-30"
-                title="Buscar en Odoo"
-              >
-                {odooLoading ? <Loader2 size={16} className="animate-spin text-indigo-500" /> : <Search size={16} className="text-indigo-500" />}
-              </button>
             </div>
-            {odooMsg && (
-              <p className={`text-xs mt-1 ${odooMsg.type === 'ok' ? 'text-emerald-600' : odooMsg.type === 'warn' ? 'text-amber-600' : 'text-red-500'}`}>
-                {odooMsg.text}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">P.O. Cliente</label>
-            <input
-              type="text"
-              maxLength={10}
-              value={form.purchaseOrder}
-              onChange={(e) => setForm({ ...form, purchaseOrder: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              placeholder="Se autocompleta desde Odoo"
-              className={`w-full font-mono ${form.purchaseOrder ? 'border-emerald-300 bg-emerald-50' : ''}`}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto / Área</label>
-            <input
-              type="text"
-              value={form.projectArea}
-              onChange={(e) => setForm({ ...form, projectArea: e.target.value })}
-              placeholder="Ej: Nave 3, Producción"
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Ubicación</label>
-            <input
-              type="text"
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-              placeholder="Ej: Planta Monterrey"
-              className="w-full"
-            />
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">Cliente y Proyecto</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Cliente</label>
+              <SearchableSelect
+                options={[
+                  { id: '', name: 'Selecciona...' },
+                  ...clients.map((c) => ({ id: c.id, name: c.name }))
+                ]}
+                value={form.clientId}
+                onChange={(val) => setForm({ ...form, clientId: val, contactId: '' })}
+                placeholder="Buscar cliente..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Contacto</label>
+              <SearchableSelect
+                options={[
+                  { id: '', name: 'Selecciona...' },
+                  ...contacts.map((c) => ({ id: c.id, name: c.name }))
+                ]}
+                value={form.contactId}
+                onChange={(val) => setForm({ ...form, contactId: val })}
+                placeholder="Buscar contacto..."
+                disabled={!form.clientId}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Folio ODOO</label>
+              <div className="flex gap-1">
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={form.workOrderFolio}
+                  onChange={(e) => setForm({ ...form, workOrderFolio: e.target.value.toUpperCase().slice(0, 6) })}
+                  onBlur={lookupOdoo}
+                  placeholder="Ej: S06309"
+                  className={`flex-1 font-mono ${odooMsg?.type === 'ok' ? 'border-emerald-300 bg-emerald-50' : odooMsg?.type === 'err' ? 'border-red-300 bg-red-50' : ''}`}
+                />
+                <button
+                  type="button"
+                  disabled={!form.workOrderFolio || odooLoading}
+                  onClick={lookupOdoo}
+                  className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-colors disabled:opacity-30"
+                  title="Buscar en Odoo"
+                >
+                  {odooLoading ? <Loader2 size={16} className="animate-spin text-indigo-500" /> : <Search size={16} className="text-indigo-500" />}
+                </button>
+              </div>
+              {odooMsg && (
+                <p className={`text-xs mt-1 ${odooMsg.type === 'ok' ? 'text-emerald-600' : odooMsg.type === 'warn' ? 'text-amber-600' : 'text-red-500'}`}>
+                  {odooMsg.text}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">P.O. Cliente</label>
+              <input
+                type="text"
+                maxLength={10}
+                value={form.purchaseOrder}
+                onChange={(e) => setForm({ ...form, purchaseOrder: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                placeholder="Se autocompleta desde Odoo"
+                className={`w-full font-mono ${form.purchaseOrder ? 'border-emerald-300 bg-emerald-50' : ''}`}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Proyecto / Área</label>
+              <input
+                type="text"
+                value={form.projectArea}
+                onChange={(e) => setForm({ ...form, projectArea: e.target.value })}
+                placeholder="Ej: Nave 3, Producción"
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Ubicación</label>
+              <input
+                type="text"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="Ej: Planta Monterrey"
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card p-6">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">Horario y Duración</h2>

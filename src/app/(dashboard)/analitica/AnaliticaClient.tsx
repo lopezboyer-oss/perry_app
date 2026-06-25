@@ -7,13 +7,14 @@ import {
 import { activityTypeLabels } from '@/lib/utils';
 import { TrendingUp, Clock, Target, Award, ArrowRightLeft, Users } from 'lucide-react';
 
-const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#8b5cf6'];
+const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#8b5cf6', '#0d9488'];
 const TYPE_COLORS: Record<string, string> = {
   VISITA_CAMPO: '#6366f1',
   COTIZACION: '#f59e0b',
   EJECUCION: '#10b981',
   PLANEACION: '#8b5cf6',
   DISENO: '#f43f5e',
+  CAPACITACION: '#0d9488',
 };
 
 interface AnalyticsData {
@@ -48,6 +49,7 @@ export function AnaliticaClient({ data }: { data: AnalyticsData }) {
     Ejecuciones: m.EJECUCION || 0,
     Planeación: m.PLANEACION || 0,
     Diseño: m.DISENO || 0,
+    Capacitación: m.CAPACITACION || 0,
   }));
 
   return (
@@ -162,6 +164,7 @@ export function AnaliticaClient({ data }: { data: AnalyticsData }) {
               <Area type="monotone" dataKey="Ejecuciones" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
               <Area type="monotone" dataKey="Planeación" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
               <Area type="monotone" dataKey="Diseño" stackId="1" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.3} />
+              <Area type="monotone" dataKey="Capacitación" stackId="1" stroke="#0d9488" fill="#0d9488" fillOpacity={0.3} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

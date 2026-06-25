@@ -108,7 +108,7 @@ export default async function AnaliticaPage() {
       ...types,
     })),
     byUser: byUser.map((g) => ({
-      userName: userMap[g.userId] || 'Desconocido',
+      userName: g.userId ? (userMap[g.userId] || 'Desconocido') : 'Desconocido',
       count: g._count.id,
       hours: Math.round((g._sum.durationMinutes || 0) / 60),
     })),
