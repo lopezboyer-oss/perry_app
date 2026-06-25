@@ -22,7 +22,7 @@ export default auth((req) => {
     const userRole = (req.auth?.user as any)?.role;
     const isCruzVerde = (req.auth?.user as any)?.isCruzVerde;
     if (userRole === 'TECNICO') {
-      const allowedPaths = isCruzVerde ? ['/registro-personal', '/atc-finde'] : ['/registro-personal'];
+      const allowedPaths = isCruzVerde ? ['/registro-personal', '/atc-finde', '/summer-shut-down'] : ['/registro-personal'];
       const isAllowed = allowedPaths.some(p => pathname.startsWith(p)) || pathname.startsWith('/api/');
       if (!isAllowed) {
         response = NextResponse.redirect(new URL('/registro-personal', req.url));

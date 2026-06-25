@@ -29,14 +29,21 @@ export async function GET(req: Request) {
   sunDate.setDate(sunDate.getDate() + 1);
   const sunday = `${sunDate.getFullYear()}-${String(sunDate.getMonth() + 1).padStart(2, '0')}-${String(sunDate.getDate()).padStart(2, '0')}`;
 
-  // Get extra days
-  const extraDays = await prisma.extraPlanDay.findMany({
-    where: { weekendOf },
-    orderBy: { date: 'asc' },
-  });
-
-  const allDates = [...new Set([weekendOf, sunday, ...extraDays.map(d => d.date)])];
-  allDates.sort();
+  // Get extra days or handle Summer Shut Down hardcoded dates
+  let allDates: string[];
+  if (weekendOf === '2026-07-11') {
+    allDates = [
+      '2026-07-11', '2026-07-12', '2026-07-13', '2026-07-14',
+      '2026-07-15', '2026-07-16', '2026-07-17', '2026-07-18', '2026-07-19'
+    ];
+  } else {
+    const extraDays = await prisma.extraPlanDay.findMany({
+      where: { weekendOf },
+      orderBy: { date: 'asc' },
+    });
+    allDates = [...new Set([weekendOf, sunday, ...extraDays.map(d => d.date)])];
+    allDates.sort();
+  }
 
   // Build date ranges — NO company filter
   const dateRanges = allDates.map(dateStr => {
