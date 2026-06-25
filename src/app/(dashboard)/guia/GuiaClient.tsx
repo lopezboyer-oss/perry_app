@@ -108,7 +108,7 @@ const steps = [
         </p>
         <div className="space-y-3">
           {[
-            { type: 'Rastrillo', color: 'bg-blue-500', bg: 'bg-blue-50 border-blue-100', desc: 'Reuniones con clientes, levantamientos, recorridos en planta, inspecciones.' , examples: '"Reunión con Ing. Campos", "Visita a planta Ternium", "Levantamiento de grúas"' },
+            { type: 'Rastrillo', color: 'bg-blue-500', bg: 'bg-blue-50 border-blue-100', desc: 'Recorrido en planta para buscar trabajo. (NO APLICA PARA LEVANTAMIENTOS, NI TOMA DE MEDIDAS)' , examples: '"Recorrido en planta Ternium", "Búsqueda de trabajo en planta Metalsa"' },
             { type: 'Cotización', color: 'bg-amber-500', bg: 'bg-amber-50 border-amber-100', desc: 'Elaboración, envío o seguimiento de cotizaciones y propuestas comerciales.', examples: '"Envío cotización barandales $185K", "Elaboración presupuesto sistema contra incendio"' },
             { type: 'Ejecución', color: 'bg-green-500', bg: 'bg-green-50 border-green-100', desc: 'Trabajos físicos: instalaciones, reparaciones, mantenimientos, pruebas.', examples: '"Instalación lámparas LED", "Reemplazo cableado nave 3", "Pruebas sistema neumático"' },
             { type: 'Planeación', color: 'bg-purple-500', bg: 'bg-purple-50 border-purple-100', desc: 'Coordinación, permisos, solicitudes de material, documentación, revisiones.', examples: '"Solicitud de materiales", "Permisos de fin de semana", "Coordinación con equipo"' },
