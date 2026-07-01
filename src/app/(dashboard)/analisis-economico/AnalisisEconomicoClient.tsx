@@ -27,7 +27,7 @@ import {
   Target,
 } from 'lucide-react';
 import { formatDuration, formatDate, activityTypeLabels, activityStatusLabels, activityTypeColors, activityStatusColors } from '@/lib/utils';
-import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
+import { ManualTimeOverrideModal } from '@/components/ui/ManualTimeOverrideModal';
 
 interface CompanyInfo {
   id: string;
@@ -55,7 +55,7 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
   const [folioLoading, setFolioLoading] = useState(false);
   const [expandMaterials, setExpandMaterials] = useState(false);
   
-  const [timeRegistryModal, setTimeRegistryModal] = useState<{ activityId: string; activityTitle: string; entries: TimeRegistryEntryData[] } | null>(null);
+  const [manualOverrideModal, setManualOverrideModal] = useState<{ activityId: string; activityTitle: string; initialInicio: string; initialFinal: string; initialTechCount: number } | null>(null);
 
   const loadEconomicData = async (targetId: string | null, targetFolio: string | null) => {
     setEconomicLoading(true);
@@ -537,7 +537,13 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                             </td>
                             <td className="px-5 py-3 text-center">
                               <button
-                                onClick={() => setTimeRegistryModal({ activityId: act.id, activityTitle: act.title, entries: act.timeRegistryEntries || [] })}
+                                onClick={() => setManualOverrideModal({ 
+                                  activityId: act.id, 
+                                  activityTitle: act.title, 
+                                  initialInicio: inicio?.time || '', 
+                                  initialFinal: final?.time || '', 
+                                  initialTechCount: techCount 
+                                })}
                                 className="text-[10px] font-bold px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors"
                               >
                                 {inicio && final ? 'Editar' : 'Completar'}
@@ -771,14 +777,16 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
         </>
       )}
 
-      {timeRegistryModal && (
-        <TimeRegistryModal
-          activityId={timeRegistryModal.activityId}
-          activityTitle={timeRegistryModal.activityTitle}
-          entries={timeRegistryModal.entries}
-          onClose={() => setTimeRegistryModal(null)}
-          onEntryAdded={() => {
-            setTimeRegistryModal(null);
+      {manualOverrideModal && (
+        <ManualTimeOverrideModal
+          activityId={manualOverrideModal.activityId}
+          activityTitle={manualOverrideModal.activityTitle}
+          initialInicio={manualOverrideModal.initialInicio}
+          initialFinal={manualOverrideModal.initialFinal}
+          initialTechCount={manualOverrideModal.initialTechCount}
+          onClose={() => setManualOverrideModal(null)}
+          onSaved={() => {
+            setManualOverrideModal(null);
             if (economicData) {
               loadEconomicData(economicData.perryActivity?.id || null, economicData.folio);
             }

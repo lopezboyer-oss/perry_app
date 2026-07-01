@@ -1,0 +1,734 @@
+{
+  "orders": [
+    {
+      "id": 9614,
+      "name": "S06456",
+      "date_order": "2026-06-06 21:50:17",
+      "state": "draft",
+      "amount_total": 61079.64,
+      "amount_untaxed": 61079.64,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9569,
+      "name": "S06433",
+      "date_order": "2026-05-29 21:24:08",
+      "state": "sent",
+      "amount_total": 28173.75,
+      "amount_untaxed": 28173.75,
+      "partner_id": [
+        1469,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ALEXIS CAMPOS"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9565,
+      "name": "S06431",
+      "date_order": "2026-05-29 17:06:21",
+      "state": "sale",
+      "amount_total": 30394.89,
+      "amount_untaxed": 30394.89,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "to invoice",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9564,
+      "name": "S06430",
+      "date_order": "2026-05-29 16:57:01",
+      "state": "cancel",
+      "amount_total": 0,
+      "amount_untaxed": 0,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9419,
+      "name": "S06366",
+      "date_order": "2026-05-07 19:18:35",
+      "state": "sale",
+      "amount_total": 60789.78,
+      "amount_untaxed": 60789.78,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9418,
+      "name": "S06365",
+      "date_order": "2026-05-06 23:50:32",
+      "state": "draft",
+      "amount_total": 0,
+      "amount_untaxed": 0,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9321,
+      "name": "S06309",
+      "date_order": "2026-04-21 23:35:46",
+      "state": "sale",
+      "amount_total": 60789.78,
+      "amount_untaxed": 60789.78,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9096,
+      "name": "S06221",
+      "date_order": "2026-04-21 16:01:24",
+      "state": "sale",
+      "amount_total": 120693.59,
+      "amount_untaxed": 120693.59,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "to invoice",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9274,
+      "name": "S06289",
+      "date_order": "2026-04-15 16:21:46",
+      "state": "sent",
+      "amount_total": 0,
+      "amount_untaxed": 0,
+      "partner_id": [
+        506,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, MANUEL MARTINEZ"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9168,
+      "name": "S06251",
+      "date_order": "2026-04-06 22:04:59",
+      "state": "sale",
+      "amount_total": 60789.78,
+      "amount_untaxed": 60789.78,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9158,
+      "name": "S06249",
+      "date_order": "2026-04-02 22:17:58",
+      "state": "sale",
+      "amount_total": 150987.38,
+      "amount_untaxed": 150987.38,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9091,
+      "name": "S06218",
+      "date_order": "2026-03-27 17:53:11",
+      "state": "sale",
+      "amount_total": 43559.24,
+      "amount_untaxed": 43559.24,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9089,
+      "name": "S06217",
+      "date_order": "2026-03-14 17:26:50",
+      "state": "cancel",
+      "amount_total": 124000.8,
+      "amount_untaxed": 124000.8,
+      "partner_id": [
+        1979,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, Francisco Perez"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9087,
+      "name": "S06215",
+      "date_order": "2026-03-13 21:47:52",
+      "state": "cancel",
+      "amount_total": 97398.59,
+      "amount_untaxed": 97398.59,
+      "partner_id": [
+        1979,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, Francisco Perez"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 9001,
+      "name": "S06176",
+      "date_order": "2026-02-26 04:51:24",
+      "state": "cancel",
+      "amount_total": 93617.49,
+      "amount_untaxed": 93617.49,
+      "partner_id": [
+        984,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, Juan Carlos Camacho"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8989,
+      "name": "S06167",
+      "date_order": "2026-02-24 20:19:26",
+      "state": "cancel",
+      "amount_total": 61461,
+      "amount_untaxed": 61461,
+      "partner_id": [
+        300,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ANA LUISA PARRA"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8808,
+      "name": "S06072",
+      "date_order": "2026-02-05 23:44:37",
+      "state": "sale",
+      "amount_total": 139190,
+      "amount_untaxed": 139190,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8890,
+      "name": "S06112",
+      "date_order": "2026-02-05 00:56:16",
+      "state": "cancel",
+      "amount_total": 111216.6,
+      "amount_untaxed": 111216.6,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8870,
+      "name": "S06098",
+      "date_order": "2026-02-02 01:03:58",
+      "state": "cancel",
+      "amount_total": 77148,
+      "amount_untaxed": 77148,
+      "partner_id": [
+        301,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ANDREA ISELA GONZALEZ"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8837,
+      "name": "S06088",
+      "date_order": "2026-01-28 01:39:37",
+      "state": "cancel",
+      "amount_total": 26829.06,
+      "amount_untaxed": 26829.06,
+      "partner_id": [
+        1979,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, Francisco Perez"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8811,
+      "name": "S06075",
+      "date_order": "2026-01-22 23:22:16",
+      "state": "cancel",
+      "amount_total": 74209.46,
+      "amount_untaxed": 74209.46,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8682,
+      "name": "S06016",
+      "date_order": "2026-01-22 17:43:18",
+      "state": "sale",
+      "amount_total": 25559.69,
+      "amount_untaxed": 25559.69,
+      "partner_id": [
+        524,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ENRIQUE SANCHEZ"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8688,
+      "name": "S06020",
+      "date_order": "2026-01-22 17:41:26",
+      "state": "sale",
+      "amount_total": 14113.6,
+      "amount_untaxed": 14113.6,
+      "partner_id": [
+        524,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ENRIQUE SANCHEZ"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8686,
+      "name": "S06019",
+      "date_order": "2026-01-22 17:36:55",
+      "state": "sale",
+      "amount_total": 27748.28,
+      "amount_untaxed": 27748.28,
+      "partner_id": [
+        524,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ENRIQUE SANCHEZ"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8784,
+      "name": "S06063",
+      "date_order": "2026-01-20 05:51:16",
+      "state": "cancel",
+      "amount_total": 19268,
+      "amount_untaxed": 19268,
+      "partner_id": [
+        984,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, Juan Carlos Camacho"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8611,
+      "name": "S05966",
+      "date_order": "2026-01-12 21:42:08",
+      "state": "sale",
+      "amount_total": 176630,
+      "amount_untaxed": 176630,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8637,
+      "name": "S05992",
+      "date_order": "2026-01-08 19:45:26",
+      "state": "sale",
+      "amount_total": 176630,
+      "amount_untaxed": 176630,
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "invoice_status": "invoiced",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 8665,
+      "name": "S06008",
+      "date_order": "2026-01-06 16:36:13",
+      "state": "cancel",
+      "amount_total": 50548.18,
+      "amount_untaxed": 50548.18,
+      "partner_id": [
+        524,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ENRIQUE SANCHEZ"
+      ],
+      "invoice_status": "no",
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    }
+  ],
+  "invoices": [
+    {
+      "id": 55018,
+      "name": "INV/2026/00176",
+      "invoice_date": "2026-05-18",
+      "invoice_origin": "S06366",
+      "ref": "4522641237",
+      "amount_total": 70516.14,
+      "amount_untaxed": 60789.78,
+      "payment_state": "paid",
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 54229,
+      "name": "INV/2026/00156",
+      "invoice_date": "2026-05-04",
+      "invoice_origin": "S06309",
+      "ref": "4522409445",
+      "amount_total": 70516.14,
+      "amount_untaxed": 60789.78,
+      "payment_state": "paid",
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 53593,
+      "name": "INV/2026/00135",
+      "invoice_date": "2026-04-13",
+      "invoice_origin": "S06251",
+      "ref": "45222204587",
+      "amount_total": 70516.14,
+      "amount_untaxed": 60789.78,
+      "payment_state": "paid",
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 53597,
+      "name": "INV/2026/00132",
+      "invoice_date": "2026-04-13",
+      "invoice_origin": "S06218",
+      "ref": "4522125829",
+      "amount_total": 50528.71,
+      "amount_untaxed": 43559.24,
+      "payment_state": "paid",
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 53259,
+      "name": "INV/2026/00130",
+      "invoice_date": "2026-04-06",
+      "invoice_origin": "S06249",
+      "ref": "4522172833",
+      "amount_total": 175145.36,
+      "amount_untaxed": 150987.38,
+      "payment_state": "not_paid",
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 52255,
+      "name": "INV/2026/00090",
+      "invoice_date": "2026-03-09",
+      "invoice_origin": "S06072",
+      "ref": "4521553822",
+      "amount_total": 161460.4,
+      "amount_untaxed": 139190,
+      "payment_state": "paid",
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 52259,
+      "name": "INV/2026/00088",
+      "invoice_date": "2026-03-09",
+      "invoice_origin": "S05630",
+      "ref": "4520940706",
+      "amount_total": 19366.2,
+      "amount_untaxed": 16695,
+      "payment_state": "paid",
+      "partner_id": [
+        984,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, Juan Carlos Camacho"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 51716,
+      "name": "INV/2026/00078",
+      "invoice_date": "2026-02-24",
+      "invoice_origin": "S05966",
+      "ref": "4521323046",
+      "amount_total": 204890.8,
+      "amount_untaxed": 176630,
+      "payment_state": "paid",
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 50914,
+      "name": "INV/2026/00051",
+      "invoice_date": "2026-02-03",
+      "invoice_origin": "S06016",
+      "ref": "4521415525",
+      "amount_total": 29649.24,
+      "amount_untaxed": 25559.69,
+      "payment_state": "paid",
+      "partner_id": [
+        524,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ENRIQUE SANCHEZ"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 50916,
+      "name": "INV/2026/00050",
+      "invoice_date": "2026-02-03",
+      "invoice_origin": "S06019",
+      "ref": "4521415522",
+      "amount_total": 32188,
+      "amount_untaxed": 27748.28,
+      "payment_state": "paid",
+      "partner_id": [
+        524,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ENRIQUE SANCHEZ"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 50915,
+      "name": "INV/2026/00049",
+      "invoice_date": "2026-02-03",
+      "invoice_origin": "S06020",
+      "ref": "4521415524",
+      "amount_total": 16371.78,
+      "amount_untaxed": 14113.6,
+      "payment_state": "paid",
+      "partner_id": [
+        524,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, ENRIQUE SANCHEZ"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 50921,
+      "name": "INV/2026/00048",
+      "invoice_date": "2026-02-03",
+      "invoice_origin": "S05992",
+      "ref": "4521297003",
+      "amount_total": 204890.8,
+      "amount_untaxed": 176630,
+      "payment_state": "paid",
+      "partner_id": [
+        346,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, EDUARDO GALVAN"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 50203,
+      "name": "INV/2026/00034",
+      "invoice_date": "2026-01-19",
+      "invoice_origin": "S05807",
+      "ref": "4520943452",
+      "amount_total": 58263.76,
+      "amount_untaxed": 50227.38,
+      "payment_state": "paid",
+      "partner_id": [
+        998,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, Eduardo Valencia"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    },
+    {
+      "id": 49690,
+      "name": "INV/2026/00003",
+      "invoice_date": "2026-01-02",
+      "invoice_origin": "S05935",
+      "ref": "4521201809",
+      "amount_total": 48723,
+      "amount_untaxed": 42002.59,
+      "payment_state": "paid",
+      "partner_id": [
+        290,
+        "TMMBC - TOYOTA BAJA CALIFORNIA MXN, JUAN MANUEL DOMINGUEZ"
+      ],
+      "company_id": [
+        1,
+        "GLOBAL SUPPORT INGENIERIA (GRUPO CASEME)"
+      ]
+    }
+  ]
+}

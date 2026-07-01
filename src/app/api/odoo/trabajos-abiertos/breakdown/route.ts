@@ -252,7 +252,7 @@ export async function GET(req: NextRequest) {
       // Calcular horas hombre reales basadas en INICIO_LOGISTICO y FINAL_LOGISTICO
       const inicioLogistico = activity.timeRegistryEntries?.find((e: any) => e.type === 'INICIO_LOGISTICO')?.timestamp;
       const finalLogistico = activity.timeRegistryEntries?.find((e: any) => e.type === 'FINAL_LOGISTICO')?.timestamp;
-      const techCount = activity.weekendTechAssignments?.length || 0;
+      const techCount = activity.actualTechCount !== null ? activity.actualTechCount : (activity.weekendTechAssignments?.length || 0);
       
       if (techCount > 0) {
         if (inicioLogistico && finalLogistico) {
@@ -514,7 +514,7 @@ export async function GET(req: NextRequest) {
     const perryActivitiesSummary = allActivities.map(a => {
       const inicioLogistico = a.timeRegistryEntries?.find((e: any) => e.phase === 'INICIO_LOGISTICO');
       const finalLogistico = a.timeRegistryEntries?.find((e: any) => e.phase === 'FINAL_LOGISTICO');
-      const techCount = a.weekendTechAssignments?.length || 0;
+      const techCount = a.actualTechCount !== null ? a.actualTechCount : (a.weekendTechAssignments?.length || 0);
       let realManHours = 0;
       
       if (techCount > 0 && inicioLogistico?.time && finalLogistico?.time) {

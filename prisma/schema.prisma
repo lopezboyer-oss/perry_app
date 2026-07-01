@@ -139,6 +139,7 @@ model Activity {
   cancelHasCharges Boolean?            // Whether the cancellation generates client charges
   cancelledBy      String?             // Name of user who cancelled
   cancelledResources String?            // JSON snapshot of resource assignments before cancellation (for undo)
+  actualTechCount    Int?               // Manual override for total technician count (for KPI analysis)
   companyId       String?
   company         Company?     @relation(fields: [companyId], references: [id])
   createdAt       DateTime     @default(now())
