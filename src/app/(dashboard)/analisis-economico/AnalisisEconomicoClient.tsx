@@ -454,10 +454,11 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
 
           {/* Horas Hombre Detailed Table */}
           {(() => {
-            const projectedHours = economicData.perryResources?.summary?.projectedManHours || 0;
-            const totalRealHours = economicData.perryResources?.summary?.realManHours || 0;
-            const variance = projectedHours - totalRealHours;
+            const projectedCost = economicData.perryResources?.summary?.projectedLaborCost || 0;
+            const realCost = economicData.perryResources?.summary?.laborCost || 0;
+            const variance = projectedCost - realCost;
             const isNegative = variance < 0;
+            const totalRealHours = economicData.perryResources?.summary?.realManHours || 0;
             const totalTechs = economicData.perryActivities?.reduce((acc: number, act: any) => acc + (act.techCount || 0), 0) || 0;
             
             return (
@@ -473,12 +474,12 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                   <div className="flex gap-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                     <div className="text-right">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cotizadas (Odoo)</span>
-                      <p className="text-lg font-bold text-slate-700">{projectedHours.toFixed(1)} h</p>
+                      <p className="text-lg font-bold text-slate-700">${projectedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs text-slate-500">MN</span></p>
                     </div>
                     <div className="text-right border-l border-slate-200 pl-4">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reales (Perry)</span>
                       <p className={`text-lg font-bold ${isNegative ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {totalRealHours.toFixed(1)} h
+                        ${realCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs opacity-75">MN</span>
                       </p>
                     </div>
                   </div>
@@ -571,11 +572,11 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                         <td className="px-5 py-4 text-center">
                           {isNegative ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300">
-                              Excedido por {Math.abs(variance).toFixed(1)} h
+                              Excedido por ${Math.abs(variance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
-                              Ahorro de {variance.toFixed(1)} h
+                              Ahorro de ${variance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           )}
                         </td>

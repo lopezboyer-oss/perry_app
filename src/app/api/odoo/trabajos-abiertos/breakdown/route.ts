@@ -215,6 +215,7 @@ export async function GET(req: NextRequest) {
         safetyCost: 0,
         totalCost: 0,
         projectedManHours: odooBreakdown.labor.reduce((sum: number, item: any) => sum + (item.qty || 0), 0),
+        projectedLaborCost: odooBreakdown.labor.reduce((sum: number, item: any) => sum + (item.subtotal || 0), 0),
         realManHours: 0,
         hasMissingLogistics: false
       }
