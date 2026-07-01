@@ -250,15 +250,23 @@ export async function GET(req: NextRequest) {
         : String(activity.date).substring(0, 10);
 
       // Calcular horas hombre reales basadas en INICIO_LOGISTICO y FINAL_LOGISTICO
-      const inicioLogistico = activity.timeRegistryEntries?.find((e: any) => e.type === 'INICIO_LOGISTICO')?.timestamp;
-      const finalLogistico = activity.timeRegistryEntries?.find((e: any) => e.type === 'FINAL_LOGISTICO')?.timestamp;
+      const inicioLogistico = activity.timeRegistryEntries?.find((e: any) => e.phase === 'INICIO_LOGISTICO');
+      const finalLogistico = activity.timeRegistryEntries?.find((e: any) => e.phase === 'FINAL_LOGISTICO');
       const techCount = activity.actualTechCount !== null ? activity.actualTechCount : (activity.weekendTechAssignments?.length || 0);
       
       if (techCount > 0) {
-        if (inicioLogistico && finalLogistico) {
-          const diffMs = new Date(finalLogistico).getTime() - new Date(inicioLogistico).getTime();
-          if (diffMs > 0) {
-            perryResources.summary.realManHours += (diffMs / (1000 * 60 * 60)) * techCount;
+        if (inicioLogistico?.time && finalLogistico?.time) {
+          const parseTime = (timeStr: string) => {
+            const [h, m] = timeStr.split(':').map(Number);
+            return (isNaN(h) ? 0 : h) + (isNaN(m) ? 0 : m) / 60;
+          };
+          const hInicio = parseTime(inicioLogistico.time);
+          const hFinal = parseTime(finalLogistico.time);
+          let diffHours = hFinal - hInicio;
+          if (diffHours < 0) diffHours += 24; // Cross midnight
+          
+          if (diffHours > 0) {
+            perryResources.summary.realManHours += diffHours * techCount;
           }
         } else {
           perryResources.summary.hasMissingLogistics = true;

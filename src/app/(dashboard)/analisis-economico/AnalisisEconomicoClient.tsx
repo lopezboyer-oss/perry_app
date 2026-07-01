@@ -458,6 +458,7 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
             const totalRealHours = economicData.perryResources?.summary?.realManHours || 0;
             const variance = projectedHours - totalRealHours;
             const isNegative = variance < 0;
+            const totalTechs = economicData.perryActivities?.reduce((acc: number, act: any) => acc + (act.techCount || 0), 0) || 0;
             
             return (
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
@@ -561,7 +562,9 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                       )}
                       
                       <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
-                        <td colSpan={4} className="px-5 py-4 text-slate-800 text-right">TOTAL GENERAL</td>
+                        <td className="px-5 py-4 text-slate-800 text-right">TOTAL GENERAL</td>
+                        <td className="px-5 py-4 text-center text-slate-800">{totalTechs} téc.</td>
+                        <td colSpan={2} className="px-5 py-4 text-right"></td>
                         <td className="px-5 py-4 text-right text-slate-800 text-sm">
                           {totalRealHours.toFixed(1)} h
                         </td>
