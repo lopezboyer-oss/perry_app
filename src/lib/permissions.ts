@@ -40,9 +40,9 @@ export const EXCLUDED_ODOO_COMPANY_IDS = [6];
 
 /** Roles/users with access to the Economic Analysis feature */
 export const canViewEconomicAnalysis = (email: string, _role: string) => {
-  // During testing, only enable for Ivan Lopez (lopezboyer@gmail.com)
-  const isIvanLopez = email === 'lopezboyer@gmail.com';
-  return isIvanLopez;
+  // During testing, only enable for Ivan Lopez (lopezboyer@gmail.com) and Jose Angel Molina
+  const allowedEmails = ['lopezboyer@gmail.com', 'joseangel.molina.gsi@gmail.com'];
+  return allowedEmails.includes(email);
   
   // Later we can change this to:
   // return ['ADMIN', 'ADMINISTRACION'].includes(role) || isIvanLopez;

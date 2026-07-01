@@ -213,7 +213,10 @@ export async function GET(req: NextRequest) {
         laborCost: 0,
         equipmentCost: 0,
         safetyCost: 0,
-        totalCost: 0
+        totalCost: 0,
+        projectedManHours: odooBreakdown.labor.reduce((sum: number, item: any) => sum + (item.qty || 0), 0),
+        realManHours: 0,
+        hasMissingLogistics: false
       }
     };
 
@@ -245,6 +248,23 @@ export async function GET(req: NextRequest) {
       const actDate = activity.date instanceof Date 
         ? activity.date.toISOString().substring(0, 10) 
         : String(activity.date).substring(0, 10);
+
+      // Calcular horas hombre reales basadas en INICIO_LOGISTICO y FINAL_LOGISTICO
+      const inicioLogistico = activity.timeRegistryEntries?.find((e: any) => e.type === 'INICIO_LOGISTICO')?.timestamp;
+      const finalLogistico = activity.timeRegistryEntries?.find((e: any) => e.type === 'FINAL_LOGISTICO')?.timestamp;
+      const techCount = activity.weekendTechAssignments?.length || 0;
+      
+      if (techCount > 0) {
+        if (inicioLogistico && finalLogistico) {
+          const diffMs = new Date(finalLogistico).getTime() - new Date(inicioLogistico).getTime();
+          if (diffMs > 0) {
+            perryResources.summary.realManHours += (diffMs / (1000 * 60 * 60)) * techCount;
+          }
+        } else {
+          perryResources.summary.hasMissingLogistics = true;
+        }
+      }
+
 
       // A. Mano de Obra (Técnicos)
       activity.weekendTechAssignments?.forEach((ta: any) => {
@@ -502,6 +522,7 @@ export async function GET(req: NextRequest) {
       startTime: a.startTime,
       endTime: a.endTime,
       userName: a.user?.name || null,
+      timeRegistryEntries: a.timeRegistryEntries || [],
     }));
 
     const totalDurationHours = perryActivitiesSummary.reduce((s, a) => s + a.durationHours, 0);
