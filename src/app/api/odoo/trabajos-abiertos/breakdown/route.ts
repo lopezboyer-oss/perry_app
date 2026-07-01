@@ -511,19 +511,35 @@ export async function GET(req: NextRequest) {
     }
 
     // Build the perryActivities summary for the response header
-    const perryActivitiesSummary = allActivities.map(a => ({
-      id: a.id,
-      title: a.title,
-      date: a.date instanceof Date ? a.date.toISOString() : String(a.date),
-      type: a.type,
-      clientName: a.client?.name || 'Desconocido',
-      companyName: a.company?.name || 'Desconocido',
-      durationHours: getDurationHours(a.startTime, a.endTime),
-      startTime: a.startTime,
-      endTime: a.endTime,
-      userName: a.user?.name || null,
-      timeRegistryEntries: a.timeRegistryEntries || [],
-    }));
+    const perryActivitiesSummary = allActivities.map(a => {
+      const inicioLogistico = a.timeRegistryEntries?.find((e: any) => e.type === 'INICIO_LOGISTICO')?.timestamp;
+      const finalLogistico = a.timeRegistryEntries?.find((e: any) => e.type === 'FINAL_LOGISTICO')?.timestamp;
+      const techCount = a.weekendTechAssignments?.length || 0;
+      let realManHours = 0;
+      
+      if (techCount > 0 && inicioLogistico && finalLogistico) {
+        const diffMs = new Date(finalLogistico).getTime() - new Date(inicioLogistico).getTime();
+        if (diffMs > 0) {
+          realManHours = (diffMs / (1000 * 60 * 60)) * techCount;
+        }
+      }
+
+      return {
+        id: a.id,
+        title: a.title,
+        date: a.date instanceof Date ? a.date.toISOString() : String(a.date),
+        type: a.type,
+        clientName: a.client?.name || 'Desconocido',
+        companyName: a.company?.name || 'Desconocido',
+        durationHours: getDurationHours(a.startTime, a.endTime),
+        startTime: a.startTime,
+        endTime: a.endTime,
+        userName: a.user?.name || null,
+        timeRegistryEntries: a.timeRegistryEntries || [],
+        techCount,
+        realManHours,
+      };
+    });
 
     const totalDurationHours = perryActivitiesSummary.reduce((s, a) => s + a.durationHours, 0);
 

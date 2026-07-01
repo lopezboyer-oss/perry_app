@@ -238,7 +238,7 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
               : 'text-rose-600 bg-rose-50/50 border-rose-200';
 
             return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Cotizado (Odoo Subtotal)</p>
                   <p className="text-2xl font-bold text-slate-800 mt-1">
@@ -270,58 +270,6 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                   </p>
                   <p className="text-[10px] opacity-80 mt-1">Sobre el monto cotizado</p>
                 </div>
-                
-                {/* Horas Hombre Card */}
-                {(() => {
-                  const projectedHours = economicData.perryResources?.summary?.projectedManHours || 0;
-                  const realHours = economicData.perryResources?.summary?.realManHours || 0;
-                  const hasMissing = economicData.perryResources?.summary?.hasMissingLogistics;
-                  const overHours = realHours > projectedHours;
-                  
-                  return (
-                    <div className={`rounded-xl border shadow-sm p-4 ${hasMissing ? 'border-amber-300 bg-amber-50/30' : overHours ? 'border-rose-300 bg-rose-50/30' : 'border-emerald-200 bg-emerald-50/30'}`}>
-                      <div className="flex justify-between items-start">
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-600">Horas Hombre</p>
-                        <Timer className={`w-4 h-4 ${hasMissing ? 'text-amber-500' : overHours ? 'text-rose-500' : 'text-emerald-500'}`} />
-                      </div>
-                      
-                      <div className="mt-2 flex items-baseline gap-2">
-                        <span className={`text-2xl font-bold ${overHours ? 'text-rose-700' : 'text-emerald-700'}`}>
-                          {realHours.toFixed(1)}
-                        </span>
-                        <span className="text-sm font-medium text-slate-400">/ {projectedHours.toFixed(1)} h</span>
-                      </div>
-                      
-                      {hasMissing ? (
-                        <div className="mt-2 flex flex-col gap-1">
-                          <p className="text-[10px] font-bold text-amber-600 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            Faltan registros (Inicio/Fin)
-                          </p>
-                          <div className="flex flex-col gap-1 mt-1">
-                            {economicData.perryActivities?.filter((a: any) => {
-                               const hasInicio = a.timeRegistryEntries?.some((e: any) => e.type === 'INICIO_LOGISTICO');
-                               const hasFin = a.timeRegistryEntries?.some((e: any) => e.type === 'FINAL_LOGISTICO');
-                               return !(hasInicio && hasFin);
-                             }).map((a: any) => (
-                              <button
-                                key={a.id}
-                                onClick={() => setTimeRegistryModal({ activityId: a.id, activityTitle: a.title, entries: a.timeRegistryEntries || [] })}
-                                className="text-[10px] text-left px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded transition-colors"
-                              >
-                                + Completar: {a.title} ({new Date(a.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })})
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className={`text-[10px] mt-1 ${overHours ? 'text-rose-600' : 'text-emerald-600'}`}>
-                          {overHours ? `Excede por ${(realHours - projectedHours).toFixed(1)} h` : 'Dentro de lo proyectado'}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })()}
               </div>
             );
           })()}
@@ -493,6 +441,132 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300">
                               Operación Deficitaria
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Horas Hombre Detailed Table */}
+          {(() => {
+            const projectedHours = economicData.perryResources?.summary?.projectedManHours || 0;
+            const totalRealHours = economicData.perryResources?.summary?.realManHours || 0;
+            const variance = projectedHours - totalRealHours;
+            const isNegative = variance < 0;
+            
+            return (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                      <Timer className="w-5 h-5 text-indigo-500" />
+                      Desglose de Horas Hombre
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Control de jornada real por técnico vs horas cotizadas de Mano de Obra en Odoo.</p>
+                  </div>
+                  <div className="flex gap-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cotizadas (Odoo)</span>
+                      <p className="text-lg font-bold text-slate-700">{projectedHours.toFixed(1)} h</p>
+                    </div>
+                    <div className="text-right border-l border-slate-200 pl-4">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reales (Perry)</span>
+                      <p className={`text-lg font-bold ${isNegative ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {totalRealHours.toFixed(1)} h
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-100/50 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                        <th className="px-5 py-3">Jornada / Actividad</th>
+                        <th className="px-5 py-3 text-center">Técnicos</th>
+                        <th className="px-5 py-3 text-center">Inicio Logístico</th>
+                        <th className="px-5 py-3 text-center">Final Logístico</th>
+                        <th className="px-5 py-3 text-right">Horas Reales</th>
+                        <th className="px-5 py-3 text-center">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {economicData.perryActivities?.map((act: any) => {
+                        const inicio = act.timeRegistryEntries?.find((e: any) => e.type === 'INICIO_LOGISTICO');
+                        const final = act.timeRegistryEntries?.find((e: any) => e.type === 'FINAL_LOGISTICO');
+                        const techCount = act.techCount || 0;
+                        const realHours = act.realManHours || 0;
+                        
+                        return (
+                          <tr key={act.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-5 py-3">
+                              <p className="font-semibold text-slate-800">{act.title}</p>
+                              <p className="text-[10px] text-slate-400">{new Date(act.date).toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'short' })}</p>
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              <span className="font-semibold text-slate-700">{techCount}</span> <span className="text-slate-400">téc.</span>
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              {inicio ? (
+                                <span className="font-mono text-slate-600">
+                                  {new Date(inicio.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1">
+                                  <AlertCircle className="w-3 h-3" /> Faltante
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              {final ? (
+                                <span className="font-mono text-slate-600">
+                                  {new Date(final.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1">
+                                  <AlertCircle className="w-3 h-3" /> Faltante
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              <span className="font-bold text-slate-700">{realHours > 0 ? `${realHours.toFixed(1)} h` : '—'}</span>
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              <button
+                                onClick={() => setTimeRegistryModal({ activityId: act.id, activityTitle: act.title, entries: act.timeRegistryEntries || [] })}
+                                className="text-[10px] font-bold px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors"
+                              >
+                                {inicio && final ? 'Editar' : 'Completar'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {(!economicData.perryActivities || economicData.perryActivities.length === 0) && (
+                        <tr>
+                          <td colSpan={6} className="px-5 py-8 text-center text-slate-400 italic">
+                            No hay actividades registradas en Perry para este folio.
+                          </td>
+                        </tr>
+                      )}
+                      
+                      <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
+                        <td colSpan={4} className="px-5 py-4 text-slate-800 text-right">TOTAL GENERAL</td>
+                        <td className="px-5 py-4 text-right text-slate-800 text-sm">
+                          {totalRealHours.toFixed(1)} h
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          {isNegative ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300">
+                              Excedido por {Math.abs(variance).toFixed(1)} h
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
+                              Ahorro de {variance.toFixed(1)} h
                             </span>
                           )}
                         </td>
