@@ -496,8 +496,8 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-xs">
                       {economicData.perryActivities?.map((act: any) => {
-                        const inicio = act.timeRegistryEntries?.find((e: any) => e.type === 'INICIO_LOGISTICO');
-                        const final = act.timeRegistryEntries?.find((e: any) => e.type === 'FINAL_LOGISTICO');
+                        const inicio = act.timeRegistryEntries?.find((e: any) => e.phase === 'INICIO_LOGISTICO');
+                        const final = act.timeRegistryEntries?.find((e: any) => e.phase === 'FINAL_LOGISTICO');
                         const techCount = act.techCount || 0;
                         const realHours = act.realManHours || 0;
                         
@@ -511,9 +511,9 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                               <span className="font-semibold text-slate-700">{techCount}</span> <span className="text-slate-400">téc.</span>
                             </td>
                             <td className="px-5 py-3 text-center">
-                              {inicio ? (
+                              {inicio?.time ? (
                                 <span className="font-mono text-slate-600">
-                                  {new Date(inicio.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                  {inicio.time}
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1">
@@ -522,9 +522,9 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                               )}
                             </td>
                             <td className="px-5 py-3 text-center">
-                              {final ? (
+                              {final?.time ? (
                                 <span className="font-mono text-slate-600">
-                                  {new Date(final.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                  {final.time}
                                 </span>
                               ) : (
                                 <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1">

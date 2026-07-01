@@ -512,15 +512,23 @@ export async function GET(req: NextRequest) {
 
     // Build the perryActivities summary for the response header
     const perryActivitiesSummary = allActivities.map(a => {
-      const inicioLogistico = a.timeRegistryEntries?.find((e: any) => e.type === 'INICIO_LOGISTICO')?.timestamp;
-      const finalLogistico = a.timeRegistryEntries?.find((e: any) => e.type === 'FINAL_LOGISTICO')?.timestamp;
+      const inicioLogistico = a.timeRegistryEntries?.find((e: any) => e.phase === 'INICIO_LOGISTICO');
+      const finalLogistico = a.timeRegistryEntries?.find((e: any) => e.phase === 'FINAL_LOGISTICO');
       const techCount = a.weekendTechAssignments?.length || 0;
       let realManHours = 0;
       
-      if (techCount > 0 && inicioLogistico && finalLogistico) {
-        const diffMs = new Date(finalLogistico).getTime() - new Date(inicioLogistico).getTime();
-        if (diffMs > 0) {
-          realManHours = (diffMs / (1000 * 60 * 60)) * techCount;
+      if (techCount > 0 && inicioLogistico?.time && finalLogistico?.time) {
+        const parseTime = (timeStr: string) => {
+          const [h, m] = timeStr.split(':').map(Number);
+          return (isNaN(h) ? 0 : h) + (isNaN(m) ? 0 : m) / 60;
+        };
+        const hInicio = parseTime(inicioLogistico.time);
+        const hFinal = parseTime(finalLogistico.time);
+        let diffHours = hFinal - hInicio;
+        if (diffHours < 0) diffHours += 24; // If it crosses midnight
+        
+        if (diffHours > 0) {
+          realManHours = diffHours * techCount;
         }
       }
 
