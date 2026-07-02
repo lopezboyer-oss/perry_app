@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
         consortiumCompany: data.consortiumCompany || null,
         continuedFromId: data.continuedFromId || null,
         companyId,
+        isManPower: data.isManPower || false,
       },
     });
 

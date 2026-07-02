@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { formatDuration, formatDate, activityTypeLabels, activityStatusLabels, activityTypeColors, activityStatusColors } from '@/lib/utils';
 import { ManualTimeOverrideModal } from '@/components/ui/ManualTimeOverrideModal';
+import { TechAssignmentModal } from '@/components/ui/TechAssignmentModal';
 
 interface CompanyInfo {
   id: string;
@@ -56,6 +57,25 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
   const [expandMaterials, setExpandMaterials] = useState(false);
   
   const [manualOverrideModal, setManualOverrideModal] = useState<{ activityId: string; activityTitle: string; initialInicio: string; initialFinal: string; initialTechCount: number } | null>(null);
+  const [techAssignmentModal, setTechAssignmentModal] = useState<{
+    activityId: string;
+    activityTitle: string;
+    assignmentId?: string;
+    initialTimeIn?: string;
+    initialTimeOut?: string;
+    initialTechnicianId?: string;
+    initialTechnicianName?: string;
+  } | null>(null);
+
+  const handleDeleteAssignment = async (activityId: string, assignmentId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este técnico de la actividad?')) return;
+    try {
+      await fetch(`/api/activities/${activityId}/tech-assignments/${assignmentId}`, { method: 'DELETE' });
+      loadEconomicData(economicData?.perryActivity?.id || null, economicSearchFolio);
+    } catch (err) {
+      alert('Error al eliminar');
+    }
+  };
 
   const loadEconomicData = async (targetId: string | null, targetFolio: string | null) => {
     setEconomicLoading(true);
@@ -452,141 +472,7 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
             );
           })()}
 
-          {/* Horas Hombre Detailed Table */}
-          {(() => {
-            const projectedCost = economicData.perryResources?.summary?.projectedLaborCost || 0;
-            const realCost = economicData.perryResources?.summary?.laborCost || 0;
-            const variance = projectedCost - realCost;
-            const isNegative = variance < 0;
-            const totalRealHours = economicData.perryResources?.summary?.realManHours || 0;
-            const totalTechs = economicData.perryActivities?.reduce((acc: number, act: any) => acc + (act.techCount || 0), 0) || 0;
-            
-            return (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-6">
-                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                      <Timer className="w-5 h-5 text-indigo-500" />
-                      Desglose de Horas Hombre
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">Control de jornada real por técnico vs horas cotizadas de Mano de Obra en Odoo.</p>
-                  </div>
-                  <div className="flex gap-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                    <div className="text-right">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cotizadas (Odoo)</span>
-                      <p className="text-lg font-bold text-slate-700">${projectedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs text-slate-500">MN</span></p>
-                    </div>
-                    <div className="text-right border-l border-slate-200 pl-4">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reales (Perry)</span>
-                      <p className={`text-lg font-bold ${isNegative ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        ${realCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs opacity-75">MN</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-100/50 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                        <th className="px-5 py-3">Jornada / Actividad</th>
-                        <th className="px-5 py-3 text-center">Técnicos</th>
-                        <th className="px-5 py-3 text-center">Inicio Logístico</th>
-                        <th className="px-5 py-3 text-center">Final Logístico</th>
-                        <th className="px-5 py-3 text-right">Horas Reales</th>
-                        <th className="px-5 py-3 text-center">Acción</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-xs">
-                      {economicData.perryActivities?.map((act: any) => {
-                        const inicio = act.timeRegistryEntries?.find((e: any) => e.phase === 'INICIO_LOGISTICO');
-                        const final = act.timeRegistryEntries?.find((e: any) => e.phase === 'FINAL_LOGISTICO');
-                        const techCount = act.techCount || 0;
-                        const realHours = act.realManHours || 0;
-                        
-                        return (
-                          <tr key={act.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-5 py-3">
-                              <p className="font-semibold text-slate-800">{act.title}</p>
-                              <p className="text-[10px] text-slate-400">{new Date(act.date).toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'short' })}</p>
-                            </td>
-                            <td className="px-5 py-3 text-center">
-                              <span className="font-semibold text-slate-700">{techCount}</span> <span className="text-slate-400">téc.</span>
-                            </td>
-                            <td className="px-5 py-3 text-center">
-                              {inicio?.time ? (
-                                <span className="font-mono text-slate-600">
-                                  {inicio.time}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1">
-                                  <AlertCircle className="w-3 h-3" /> Faltante
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-5 py-3 text-center">
-                              {final?.time ? (
-                                <span className="font-mono text-slate-600">
-                                  {final.time}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1">
-                                  <AlertCircle className="w-3 h-3" /> Faltante
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-5 py-3 text-right">
-                              <span className="font-bold text-slate-700">{realHours > 0 ? `${realHours.toFixed(1)} h` : '—'}</span>
-                            </td>
-                            <td className="px-5 py-3 text-center">
-                              <button
-                                onClick={() => setManualOverrideModal({ 
-                                  activityId: act.id, 
-                                  activityTitle: act.title, 
-                                  initialInicio: inicio?.time || '', 
-                                  initialFinal: final?.time || '', 
-                                  initialTechCount: techCount 
-                                })}
-                                className="text-[10px] font-bold px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors"
-                              >
-                                {inicio && final ? 'Editar' : 'Completar'}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {(!economicData.perryActivities || economicData.perryActivities.length === 0) && (
-                        <tr>
-                          <td colSpan={6} className="px-5 py-8 text-center text-slate-400 italic">
-                            No hay actividades registradas en Perry para este folio.
-                          </td>
-                        </tr>
-                      )}
-                      
-                      <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
-                        <td className="px-5 py-4 text-slate-800 text-right">TOTAL GENERAL</td>
-                        <td className="px-5 py-4 text-center text-slate-800">{totalTechs} téc.</td>
-                        <td colSpan={2} className="px-5 py-4 text-right"></td>
-                        <td className="px-5 py-4 text-right text-slate-800 text-sm">
-                          {totalRealHours.toFixed(1)} h
-                        </td>
-                        <td className="px-5 py-4 text-center">
-                          {isNegative ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300">
-                              Excedido por ${Math.abs(variance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
-                              Ahorro de ${variance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })()}
+
 
           {/* ── Executive Summary Section (collapsible) ── */}
           {economicData.folio && (
@@ -662,55 +548,136 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
               {showPerryDetail ? <ChevronUp className="w-4.5 h-4.5 text-slate-400" /> : <ChevronDown className="w-4.5 h-4.5 text-slate-400" />}
             </button>
 
-            {showPerryDetail && (
+            {showPerryDetail && (() => {
+              const projectedCost = economicData.perryResources?.summary?.projectedLaborCost || 0;
+              const realCost = economicData.perryResources?.summary?.laborCost || 0;
+              const variance = projectedCost - realCost;
+              const isNegative = variance < 0;
+
+              return (
               <div className="p-5 space-y-6">
+                {/* Variance Cards */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div>
+                    <h4 className="font-semibold text-slate-800 flex items-center gap-2">
+                      <Timer className="w-4 h-4 text-indigo-500" /> Costo de Mano de Obra
+                    </h4>
+                    <p className="text-xs text-slate-500">Comparativa de nómina real vs presupuestada.</p>
+                    <div className="mt-2">
+                      {isNegative ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300">
+                          Excedido por ${Math.abs(variance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
+                          Ahorro de ${variance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cotizadas (Odoo)</span>
+                      <p className="text-lg font-bold text-slate-700">${projectedCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="text-right border-l border-slate-200 pl-4">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reales (Perry)</span>
+                      <p className={`text-lg font-bold ${isNegative ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        ${realCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Técnicos */}
                 <div>
-                  <h4 className="text-xs font-bold text-indigo-600 mb-2 uppercase tracking-wide">
-                    Mano de Obra (Técnicos)
-                    {(economicData.perryActivities?.length || 0) > 1 && (
-                      <span className="ml-2 text-[10px] font-medium text-slate-400 normal-case">
-                        — Agregado de {economicData.perryActivities.length} actividades
-                      </span>
-                    )}
+                  <h4 className="text-xs font-bold text-indigo-600 mb-4 uppercase tracking-wide">
+                    Mano de Obra (Técnicos por Actividad)
                   </h4>
-                  {economicData.perryResources.technicians?.length > 0 ? (
-                    <div className="border border-slate-200 rounded-lg overflow-hidden">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-500">
-                            <th className="px-4 py-2">Nombre</th>
-                            <th className="px-4 py-2">Contratista / Tipo</th>
-                            <th className="px-4 py-2 text-right">Horas Totales</th>
-                            <th className="px-4 py-2 text-right">Tarifa / Hora</th>
-                            <th className="px-4 py-2 text-right">Costo Total</th>
-                            {(economicData.perryActivities?.length || 0) > 1 && (
-                              <th className="px-4 py-2 text-center">Actividades</th>
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {economicData.perryResources.technicians.map((t: any, idx: number) => (
-                            <tr key={idx} className="hover:bg-slate-50/50">
-                              <td className="px-4 py-2 font-medium text-slate-700">{t.name}</td>
-                              <td className="px-4 py-2 text-slate-500">{t.contractor} ({t.type})</td>
-                              <td className="px-4 py-2 text-right">{Number(t.hours).toFixed(1)} h</td>
-                              <td className="px-4 py-2 text-right">${t.rate.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                              <td className="px-4 py-2 text-right font-bold text-slate-800">${t.cost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                              {(economicData.perryActivities?.length || 0) > 1 && (
-                                <td className="px-4 py-2 text-center">
-                                  <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">
-                                    {t.activityCount || 1}
-                                  </span>
-                                </td>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  {economicData.perryActivities?.length > 0 ? (
+                    <div className="space-y-6">
+                      {economicData.perryActivities.map((act: any) => (
+                        <div key={act.id} className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                            <div>
+                              <h5 className="font-bold text-slate-800">{act.title}</h5>
+                              <p className="text-xs text-slate-500">{new Date(act.date).toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'short' })}</p>
+                            </div>
+                            <button
+                              onClick={() => setTechAssignmentModal({
+                                activityId: act.id,
+                                activityTitle: act.title,
+                              })}
+                              className="text-xs font-bold px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1"
+                            >
+                              + Agregar Técnico
+                            </button>
+                          </div>
+                          
+                          {act.technicians && act.technicians.length > 0 ? (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                  <tr className="border-b border-slate-100 font-bold text-slate-500 bg-white">
+                                    <th className="px-4 py-2">Nombre</th>
+                                    <th className="px-4 py-2 text-center">Horario</th>
+                                    <th className="px-4 py-2 text-right">Horas</th>
+                                    <th className="px-4 py-2 text-right">Tarifa</th>
+                                    <th className="px-4 py-2 text-right">Costo</th>
+                                    <th className="px-4 py-2 text-center">Acciones</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {act.technicians.map((t: any) => (
+                                    <tr key={t.assignmentId} className="hover:bg-slate-50/50">
+                                      <td className="px-4 py-2 font-medium text-slate-700">{t.name} <span className="text-[10px] text-slate-400 font-normal ml-1">({t.contractor})</span></td>
+                                      <td className="px-4 py-2 text-center text-slate-600 font-mono font-medium">
+                                        {t.timeIn || '--:--'} - {t.timeOut || '--:--'}
+                                      </td>
+                                      <td className="px-4 py-2 text-right">{Number(t.hours).toFixed(1)} h</td>
+                                      <td className="px-4 py-2 text-right text-slate-500">${t.rate.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                      <td className="px-4 py-2 text-right font-bold text-slate-800">${t.cost.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                      <td className="px-4 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-3">
+                                          <button
+                                            onClick={() => setTechAssignmentModal({
+                                              activityId: act.id,
+                                              activityTitle: act.title,
+                                              assignmentId: t.assignmentId,
+                                              initialTimeIn: t.timeIn,
+                                              initialTimeOut: t.timeOut,
+                                              initialTechnicianId: t.id,
+                                              initialTechnicianName: t.name,
+                                            })}
+                                            className="text-indigo-600 hover:text-indigo-800 font-semibold transition-colors"
+                                            title="Editar Horario"
+                                          >
+                                            Editar
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteAssignment(act.id, t.assignmentId)}
+                                            className="text-rose-600 hover:text-rose-800 font-semibold transition-colors"
+                                            title="Eliminar"
+                                          >
+                                            Borrar
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <div className="px-4 py-6 text-center text-xs text-slate-400 italic">
+                              No hay técnicos asignados a esta actividad.
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 italic">No hay técnicos asignados en las actividades de este folio.</p>
+                    <p className="text-xs text-slate-400 italic">No hay actividades registradas en Perry para este folio.</p>
                   )}
                 </div>
 
@@ -775,27 +742,27 @@ export function AnalisisEconomicoClient({ companies, currentUserEmail }: ClientP
                     <p className="text-xs text-slate-400 italic">No hay equipos de elevación asignados en esta actividad.</p>
                   )}
                 </div>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {manualOverrideModal && (
-        <ManualTimeOverrideModal
-          activityId={manualOverrideModal.activityId}
-          activityTitle={manualOverrideModal.activityTitle}
-          initialInicio={manualOverrideModal.initialInicio}
-          initialFinal={manualOverrideModal.initialFinal}
-          initialTechCount={manualOverrideModal.initialTechCount}
-          onClose={() => setManualOverrideModal(null)}
+                {techAssignmentModal && (
+        <TechAssignmentModal
+          activityId={techAssignmentModal.activityId}
+          activityTitle={techAssignmentModal.activityTitle}
+          assignmentId={techAssignmentModal.assignmentId}
+          initialTimeIn={techAssignmentModal.initialTimeIn}
+          initialTimeOut={techAssignmentModal.initialTimeOut}
+          initialTechnicianId={techAssignmentModal.initialTechnicianId}
+          initialTechnicianName={techAssignmentModal.initialTechnicianName}
+          onClose={() => setTechAssignmentModal(null)}
           onSaved={() => {
-            setManualOverrideModal(null);
-            if (economicData) {
-              loadEconomicData(economicData.perryActivity?.id || null, economicData.folio);
-            }
+            setTechAssignmentModal(null);
+            loadEconomicData(null, economicSearchFolio);
           }}
         />
+      )}
+              </div>
+              );
+            })()}
+          </div>
+        </>
       )}
     </div>
   );

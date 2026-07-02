@@ -79,6 +79,7 @@ export async function PUT(
         location: data.location || null,
         notes: data.notes || null,
         consortiumCompany: data.consortiumCompany || null,
+        isManPower: data.isManPower !== undefined ? data.isManPower : undefined,
       },
     });
 

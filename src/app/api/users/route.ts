@@ -75,6 +75,7 @@ export async function GET() {
         accessVehicles: true,
         accessDrivers: true,
         accessElevationEquip: true,
+        accessManPower: true,
         supervisorId: true,
         baseCompanyId: true,
         supervisor: { select: { name: true } },
@@ -105,7 +106,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip, weeklySalary } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip, accessManPower, weeklySalary } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -158,6 +159,7 @@ export async function POST(req: Request) {
         accessVehicles: accessVehicles || false,
         accessDrivers: accessDrivers || false,
         accessElevationEquip: accessElevationEquip || false,
+        accessManPower: accessManPower || false,
         baseCompanyId: baseCompanyId || null,
         ...(isAdmin && weeklySalary !== undefined && { weeklySalary: Number(weeklySalary) || 0 }),
       },

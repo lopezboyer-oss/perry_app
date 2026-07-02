@@ -13,7 +13,7 @@ export async function GET() {
       include: {
         client: { select: { name: true } },
         _count: {
-          select: { activities: true, opportunities: true }
+          select: { activities: true }
         }
       },
       orderBy: { name: 'asc' },

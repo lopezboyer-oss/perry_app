@@ -16,8 +16,8 @@ export interface UserFormData {
   isSafetyAuditor?: boolean;
   accessSafetyDedicado?: boolean;
   accessVehicles?: boolean;
-  accessDrivers?: boolean;
   accessElevationEquip?: boolean;
+  accessManPower?: boolean;
   baseCompanyId?: string | null;
   companyIds?: string[];          // empresas a las que tiene acceso
   defaultCompanyId?: string | null; // empresa por defecto al login
@@ -56,6 +56,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
     accessVehicles: false,
     accessDrivers: false,
     accessElevationEquip: false,
+    accessManPower: false,
     baseCompanyId: null,
     companyIds: [],
     defaultCompanyId: null,
@@ -80,6 +81,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
           accessVehicles: initialData.accessVehicles || false,
           accessDrivers: initialData.accessDrivers || false,
           accessElevationEquip: initialData.accessElevationEquip || false,
+          accessManPower: initialData.accessManPower || false,
           baseCompanyId: initialData.baseCompanyId || null,
           companyIds: initialData.companyIds || [],
           defaultCompanyId: initialData.defaultCompanyId || null,
@@ -89,7 +91,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
         setFormData({
           name: '', email: '', password: '', role: 'INGENIERO',
           supervisorId: null, isSafetyDesignado: false, isSafetyAuditor: false,
-          accessSafetyDedicado: false, accessVehicles: false, accessDrivers: false, accessElevationEquip: false,
+          accessSafetyDedicado: false, accessVehicles: false, accessDrivers: false, accessElevationEquip: false, accessManPower: false,
           baseCompanyId: companies[0]?.id || null,
           companyIds: companies[0] ? [companies[0].id] : [],
           defaultCompanyId: companies[0]?.id || null,
@@ -289,6 +291,15 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
                       className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     <span className="text-sm text-slate-700">Eq. Elevación</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.accessManPower || false}
+                      onChange={(e) => setFormData({ ...formData, accessManPower: e.target.checked })}
+                      className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-slate-700">Man Power</span>
                   </label>
                 </div>
               </div>

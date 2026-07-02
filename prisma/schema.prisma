@@ -33,6 +33,7 @@ model User {
   accessVehicles       Boolean @default(false)
   accessDrivers        Boolean @default(false)
   accessElevationEquip Boolean @default(false)
+  accessManPower       Boolean @default(false) // Permiso para acceder al dashboard Man Power
   supervisorId      String?
   supervisor        User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
   team              User[]    @relation("SupervisorTeam")
@@ -142,6 +143,7 @@ model Activity {
   actualTechCount    Int?               // Manual override for total technician count (for KPI analysis)
   companyId       String?
   company         Company?     @relation(fields: [companyId], references: [id])
+  isManPower      Boolean      @default(false)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -154,6 +156,7 @@ model Activity {
   timeRegistryEntries          TimeRegistryEntry[]
   timeClockEntries             TimeClockEntry[]
   equipRecords                 EquipRecord[]
+  parts                        ActivityPart[]
 }
 
 // ─── REGISTRO HORARIO ───────────────────────────────────────────
@@ -283,6 +286,8 @@ model WeekendTechAssignment {
   technician   Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
   role         String     @default("TECNICO") // TECNICO | SAFETY_DESIGNADO
   weekendOf    String     // "YYYY-MM-DD" del sábado de ese fin de semana
+  timeIn       String?    // Hora de inicio logístico (ej. "08:00")
+  timeOut      String?    // Hora de final logístico (ej. "18:00")
 
   @@unique([activityId, technicianId, weekendOf, role])
 }
@@ -484,4 +489,21 @@ model OdooFolioComment {
   createdAt DateTime @default(now())
 
   @@index([folio])
+}
+
+// ─── REFACCIONES (MAN POWER) ──────────────────────────────────────
+
+model ActivityPart {
+  id          String   @id @default(cuid())
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  name        String
+  quantity    Int      @default(1)
+  status      String   @default("SOLICITADA") // SOLICITADA, COTIZADO, CON_PO, PAGADO, ENTREGADA, INSTALADA
+  providedBy  String   @default("CASEME")     // CASEME, CLIENTE
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([activityId])
 }

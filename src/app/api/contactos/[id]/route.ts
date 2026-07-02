@@ -39,7 +39,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       where: { id },
       select: {
         _count: {
-          select: { activities: true, opportunities: true }
+          select: { activities: true }
         }
       }
     });
@@ -48,10 +48,10 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
 
-    if (contactDeps._count.activities > 0 || contactDeps._count.opportunities > 0) {
+    if (contactDeps._count.activities > 0) {
       return NextResponse.json(
         { 
-          error: 'No puedes borrar este contacto porque ya está referenciado en actividades u oportunidades. Bórralo primero de ahí o agrégale un aviso en sus Notas.' 
+          error: 'No puedes borrar este contacto porque ya está referenciado en actividades. Bórralo primero de ahí o agrégale un aviso en sus Notas.' 
         }, 
         { status: 400 }
       );

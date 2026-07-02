@@ -250,39 +250,30 @@ export async function GET(req: NextRequest) {
         ? activity.date.toISOString().substring(0, 10) 
         : String(activity.date).substring(0, 10);
 
-      // Calcular horas hombre reales basadas en INICIO_LOGISTICO y FINAL_LOGISTICO
+      // Extraer tiempos globales como fallback
       const inicioLogistico = activity.timeRegistryEntries?.find((e: any) => e.phase === 'INICIO_LOGISTICO');
       const finalLogistico = activity.timeRegistryEntries?.find((e: any) => e.phase === 'FINAL_LOGISTICO');
-      const techCount = activity.actualTechCount !== null ? activity.actualTechCount : (activity.weekendTechAssignments?.length || 0);
-      
-      if (techCount > 0) {
-        if (inicioLogistico?.time && finalLogistico?.time) {
-          const parseTime = (timeStr: string) => {
-            const [h, m] = timeStr.split(':').map(Number);
-            return (isNaN(h) ? 0 : h) + (isNaN(m) ? 0 : m) / 60;
-          };
-          const hInicio = parseTime(inicioLogistico.time);
-          const hFinal = parseTime(finalLogistico.time);
-          let diffHours = hFinal - hInicio;
-          if (diffHours < 0) diffHours += 24; // Cross midnight
-          
-          if (diffHours > 0) {
-            perryResources.summary.realManHours += diffHours * techCount;
-          }
-        } else {
-          perryResources.summary.hasMissingLogistics = true;
-        }
-      }
-
+      const fallbackTimeIn = inicioLogistico?.time || null;
+      const fallbackTimeOut = finalLogistico?.time || null;
+      const parseTime = (timeStr: string) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return (isNaN(h) ? 0 : h) + (isNaN(m) ? 0 : m) / 60;
+      };
 
       // A. Mano de Obra (Técnicos)
+      // Reiniciamos techCount real porque ahora será la cuenta real de asignaciones con horas > 0
+      let activityRealTechCount = 0;
+      let activityRealManHours = 0;
+
+      // Agregaremos los técnicos de esta actividad a un arreglo propio para exponerlo al frontend
+      const activityTechnicians: any[] = [];
+
       activity.weekendTechAssignments?.forEach((ta: any) => {
         const t = ta.technician;
         if (!t) return;
 
         let rate = t.hourlyRate || 0;
         if (rate === 0 && t.linkedUserId) {
-          // Look up the linked User's weeklySalary from our pre-fetched map
           const linkedUser = linkedUsersMap.get(t.linkedUserId);
           const weeklySalary = linkedUser?.weeklySalary || 0;
           if (weeklySalary > 0) {
@@ -290,21 +281,54 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        const cost = Number((rate * durationHours).toFixed(2));
-        techEntries.push({
+        const timeIn = ta.timeIn || fallbackTimeIn;
+        const timeOut = ta.timeOut || fallbackTimeOut;
+        
+        let techDurationHours = 0;
+        if (timeIn && timeOut) {
+          const hInicio = parseTime(timeIn);
+          const hFinal = parseTime(timeOut);
+          let diff = hFinal - hInicio;
+          if (diff < 0) diff += 24; // Cross midnight
+          if (diff > 0) techDurationHours = diff;
+        } else {
+          // Fallback a las horas globales si no hay registros logísticos
+          techDurationHours = durationHours;
+          perryResources.summary.hasMissingLogistics = true;
+        }
+
+        if (techDurationHours > 0) {
+          activityRealTechCount++;
+          activityRealManHours += techDurationHours;
+        }
+
+        const cost = Number((rate * techDurationHours).toFixed(2));
+        
+        const entry = {
+          assignmentId: ta.id,
           id: t.id,
           name: t.name,
           type: t.type,
           contractor: t.contractor?.name || 'Interno',
-          hours: durationHours,
+          hours: techDurationHours,
+          timeIn: timeIn || '',
+          timeOut: timeOut || '',
           rate,
           cost,
           activityId: activity.id,
           activityTitle: activity.title,
           activityDate: actDate,
-        });
+        };
+        
+        techEntries.push(entry);
+        activityTechnicians.push(entry);
         perryResources.summary.laborCost += cost;
       });
+
+      perryResources.summary.realManHours += activityRealManHours;
+      
+      // Inject technicians array into activity so the frontend can group them by activity easily
+      activity.technicians = activityTechnicians;
 
       // B. Seguridad y Supervisores
       // B.1 Safety Dedicados

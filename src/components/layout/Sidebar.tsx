@@ -45,6 +45,8 @@ export const navItems = [
   { href: '/oportunidades', label: 'Oportunidades', icon: Target, disabled: true },
   { href: '/analitica', label: 'Analítica', icon: BarChart3, disabled: true },
   { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
+  { href: '/man-power', label: 'Man Power', icon: Target },
+  { href: '/dashboard-cliente', label: 'Cliente Tier 1', icon: BarChart3 },
 ];
 
 interface SidebarProps {
@@ -72,6 +74,15 @@ export function Sidebar({ user }: SidebarProps) {
         return true;
       }
       return item.href === '/registro-personal';
+    }
+    if (item.href === '/man-power') {
+      return (user as any).accessManPower === true;
+    }
+    if (item.href === '/dashboard-cliente') {
+      return user.role === 'CLIENTE';
+    }
+    if (user.role === 'CLIENTE') {
+      return item.href === '/dashboard-cliente';
     }
     return true;
   });

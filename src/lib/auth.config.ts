@@ -28,6 +28,7 @@ export const authConfig = {
               accessVehicles: true,
               accessDrivers: true,
               accessElevationEquip: true,
+              accessManPower: true,
               companies: {
                 select: {
                   companyId: true,
@@ -48,6 +49,7 @@ export const authConfig = {
             token.accessVehicles = freshUser.accessVehicles || false;
             token.accessDrivers = freshUser.accessDrivers || false;
             token.accessElevationEquip = freshUser.accessElevationEquip || false;
+            token.accessManPower = freshUser.accessManPower || false;
 
             // Fetch isCruzVerde if role is TECNICO
             if (freshUser.role === 'TECNICO') {
@@ -80,6 +82,7 @@ export const authConfig = {
         (session.user as any).accessVehicles = token.accessVehicles || false;
         (session.user as any).accessDrivers = token.accessDrivers || false;
         (session.user as any).accessElevationEquip = token.accessElevationEquip || false;
+        (session.user as any).accessManPower = token.accessManPower || false;
         (session.user as any).isCruzVerde = token.isCruzVerde || false;
       }
       return session;

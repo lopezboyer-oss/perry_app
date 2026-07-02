@@ -13,7 +13,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const { id } = params;
     const body = await req.json();
-    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip, weeklySalary } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip, accessManPower, weeklySalary } = body;
 
     // Only ADMIN MAESTRO can assign/keep the ADMIN role
     if (role === 'ADMIN' && session.user.role !== 'ADMIN') {
@@ -65,6 +65,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       accessVehicles: accessVehicles || false,
       accessDrivers: accessDrivers || false,
       accessElevationEquip: accessElevationEquip || false,
+      accessManPower: accessManPower || false,
       baseCompanyId: baseCompanyId || undefined,
       ...(isAdmin && weeklySalary !== undefined && { weeklySalary: Number(weeklySalary) || 0 }),
     };

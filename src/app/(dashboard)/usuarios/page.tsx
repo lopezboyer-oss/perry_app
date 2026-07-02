@@ -16,8 +16,8 @@ interface UserData {
   isSafetyAuditor: boolean;
   accessSafetyDedicado: boolean;
   accessVehicles: boolean;
-  accessDrivers: boolean;
   accessElevationEquip: boolean;
+  accessManPower: boolean;
   supervisorId: string | null;
   supervisor: { name: string } | null;
   isActive: boolean;
@@ -166,6 +166,7 @@ export default function UsuariosPage() {
       accessVehicles: user.accessVehicles || false,
       accessDrivers: user.accessDrivers || false,
       accessElevationEquip: user.accessElevationEquip || false,
+      accessManPower: user.accessManPower || false,
       baseCompanyId: user.baseCompanyId,
       companyIds: user.companies?.map(c => c.companyId) || [],
       defaultCompanyId: defaultUC?.companyId || null,

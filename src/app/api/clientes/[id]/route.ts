@@ -39,7 +39,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       where: { id },
       select: {
         _count: {
-          select: { activities: true, opportunities: true }
+          select: { activities: true }
         }
       }
     });
@@ -48,10 +48,10 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
 
-    if (clientDeps._count.activities > 0 || clientDeps._count.opportunities > 0) {
+    if (clientDeps._count.activities > 0) {
       return NextResponse.json(
         { 
-          error: 'No puedes borrar este cliente porque ya tiene historial de actividades u oportunidades. Deberás "Desactivarlo" en su lugar para mantener la integridad de la base de datos.' 
+          error: 'No puedes borrar este cliente porque ya tiene historial de actividades. Deberás "Desactivarlo" en su lugar para mantener la integridad de la base de datos.' 
         }, 
         { status: 400 }
       );

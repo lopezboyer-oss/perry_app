@@ -44,6 +44,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     consortiumCompany: initialData?.consortiumCompany || '',
     companyId: initialData?.companyId || '',
     continuedFromId: initialData?.continuedFromId || '',
+    isManPower: initialData?.isManPower || false,
   });
 
   // On mount, read active company from cookie if no companyId set
@@ -182,6 +183,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         durationMinutes: form.durationMinutes ? parseInt(form.durationMinutes) : null,
         location: form.location || null,
         notes: form.notes || null,
+        isManPower: form.isManPower,
       };
 
       const url = isEdit ? `/api/actividades/${initialData.id}` : '/api/actividades';
@@ -307,6 +309,19 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
               required
             />
           </div>
+          {(userRole === 'ADMIN' || userRole === 'SUPERVISOR' || userRole === 'SUPERVISOR_SAFETY_LP' || userRole === 'ADMINISTRACION') && (
+            <div className="md:col-span-2 mt-2">
+              <label className="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer w-fit">
+                <input
+                  type="checkbox"
+                  checked={form.isManPower}
+                  onChange={(e) => setForm({ ...form, isManPower: e.target.checked })}
+                  className="rounded border-slate-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-5 h-5"
+                />
+                <span>Designar como Actividad Man Power (Soporte Técnico Especializado Tier One)</span>
+              </label>
+            </div>
+          )}
         </div>
       </div>
 

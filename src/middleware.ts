@@ -29,8 +29,22 @@ export default auth((req) => {
       } else {
         response = NextResponse.next();
       }
+    } else if (userRole === 'CLIENTE') {
+      const allowedPaths = ['/dashboard-cliente'];
+      const isAllowed = allowedPaths.some(p => pathname.startsWith(p)) || pathname.startsWith('/api/');
+      if (!isAllowed) {
+        response = NextResponse.redirect(new URL('/dashboard-cliente', req.url));
+      } else {
+        response = NextResponse.next();
+      }
     } else {
-      response = NextResponse.next();
+      // Check Man Power access
+      const accessManPower = (req.auth?.user as any)?.accessManPower;
+      if (pathname.startsWith('/man-power') && !accessManPower) {
+        response = NextResponse.redirect(new URL('/dashboard', req.url));
+      } else {
+        response = NextResponse.next();
+      }
     }
   }
 
