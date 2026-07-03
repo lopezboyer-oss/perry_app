@@ -40,7 +40,9 @@ export default auth((req) => {
     } else {
       // Check Man Power access
       const accessManPower = (req.auth?.user as any)?.accessManPower;
-      if (pathname.startsWith('/man-power') && !accessManPower) {
+      const isAdminOrManagement = userRole === 'ADMIN' || userRole === 'ADMINISTRACION';
+      
+      if (pathname.startsWith('/man-power') && !accessManPower && !isAdminOrManagement) {
         response = NextResponse.redirect(new URL('/dashboard', req.url));
       } else {
         response = NextResponse.next();
