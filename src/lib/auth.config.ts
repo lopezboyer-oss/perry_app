@@ -10,6 +10,11 @@ export const authConfig = {
         token.id = user.id;
         token.role = (user as any).role;
         token.isSafetyAuditor = (user as any).isSafetyAuditor || false;
+        token.accessManPower = (user as any).accessManPower || false;
+        token.accessSafetyDedicado = (user as any).accessSafetyDedicado || false;
+        token.accessVehicles = (user as any).accessVehicles || false;
+        token.accessDrivers = (user as any).accessDrivers || false;
+        token.accessElevationEquip = (user as any).accessElevationEquip || false;
       }
 
       // Re-fetch role from DB on every request to guarantee
