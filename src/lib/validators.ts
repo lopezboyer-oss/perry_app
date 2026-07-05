@@ -30,6 +30,8 @@ export const activitySchema = z.object({
   continuedFromId: z.string().optional().nullable(),
   companyId: z.string().optional().nullable(),
   isManPower: z.boolean().optional().default(false),
+  manPowerEquipo: z.string().optional().nullable(),
+  manPowerPhotos: z.string().optional().nullable(),
 }).refine((data) => {
   if (data.status === 'EN_PROGRESO' && data.type !== 'COTIZACION') {
     return false;

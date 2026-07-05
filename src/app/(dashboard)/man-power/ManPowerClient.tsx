@@ -2113,7 +2113,7 @@ export function ManPowerClient({
                           }
                           
                           // Group by status
-                          const statusCounts = act.parts!.reduce((acc: any, part: any) => {
+                          const statusCounts = act.parts!.reduce((acc: Record<string, number>, part: any) => {
                             acc[part.status] = (acc[part.status] || 0) + 1;
                             return acc;
                           }, {});
