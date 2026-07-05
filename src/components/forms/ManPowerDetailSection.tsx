@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Trash2, ImagePlus, MessageSquare, Loader2, X } from 'lucide-react';
+import { Plus, Trash2, ImagePlus, MessageSquare, Loader2, X, Bot } from 'lucide-react';
 
 interface Part {
   id?: string;
@@ -48,6 +48,67 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
         setLoading(false);
       });
   }, [activityId]);
+
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiInputText, setAiInputText] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiParsedParts, setAiParsedParts] = useState<Partial<Part>[] | null>(null);
+
+  const processAI = async () => {
+    if (!aiInputText.trim()) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch('/api/ai/parse-materials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: aiInputText })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const mapped = data.items.map((item: any) => ({
+          name: item.name,
+          quantity: item.quantity || 1,
+          providerType: 'COTIZAR',
+          status: 'VALIDANDO'
+        }));
+        setAiParsedParts(mapped);
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión con IA');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const saveAiParts = async () => {
+    if (!aiParsedParts || aiParsedParts.length === 0) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch(`/api/actividades/${activityId}/parts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aiParsedParts)
+      });
+      if (res.ok) {
+        const newParts = await res.json();
+        setParts([...parts, ...newParts]);
+        setAiModalOpen(false);
+        setAiParsedParts(null);
+        setAiInputText('');
+      } else {
+        alert('Error al guardar los materiales');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error guardando materiales');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const addPart = async () => {
     const name = prompt('Nombre del material:');
@@ -206,6 +267,9 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
             <button onClick={notifyClient} className="btn-secondary text-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
               <MessageSquare size={14} /> Avisar Cliente
             </button>
+            <button onClick={() => setAiModalOpen(true)} className="inline-flex items-center gap-1 bg-violet-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-violet-700">
+              <Bot size={16} /> Importar WhatsApp
+            </button>
             <button onClick={addPart} className="inline-flex items-center gap-1 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700">
               <Plus size={16} /> Añadir Material
             </button>
@@ -320,6 +384,136 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
           </div>
         )}
       </div>
+
+      {/* AI Modal */}
+      {aiModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-4 border-b border-slate-100">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <Bot className="text-violet-600" size={20} /> Asistente IA de Materiales
+              </h3>
+              <button onClick={() => setAiModalOpen(false)} className="p-1 hover:bg-slate-100 rounded-full text-slate-500">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto flex-1 bg-slate-50">
+              {!aiParsedParts ? (
+                <>
+                  <p className="text-sm text-slate-600 mb-2">Pega aquí el mensaje de texto, reporte o lista enviada por los técnicos de campo. La Inteligencia Artificial analizará el texto para extraer cada material y su cantidad.</p>
+                  <textarea
+                    value={aiInputText}
+                    onChange={(e) => setAiInputText(e.target.value)}
+                    className="w-full h-48 border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 resize-none shadow-inner"
+                    placeholder="Ejemplo: Se necesitan 2 codos de 45 de ductos 14, 5 Ductape, 1m Tubería cobre tipo L..."
+                  />
+                  
+                  <div className="mt-4 flex justify-end">
+                    <button 
+                      onClick={processAI}
+                      disabled={!aiInputText.trim() || aiLoading}
+                      className="bg-violet-600 text-white px-6 py-2 rounded-lg font-medium shadow flex items-center gap-2 hover:bg-violet-700 disabled:opacity-50 transition-all"
+                    >
+                      {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Bot size={16} />}
+                      {aiLoading ? 'Procesando...' : 'Analizar Texto'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-sm font-medium text-slate-700">Revisa y edita los materiales extraídos ({aiParsedParts.length} elementos)</p>
+                    <button 
+                      onClick={() => setAiParsedParts(null)}
+                      className="text-xs text-slate-500 hover:text-slate-800 underline"
+                    >
+                      Volver a analizar
+                    </button>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mb-4">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                        <tr>
+                          <th className="py-2 px-3">Material Extraído</th>
+                          <th className="py-2 px-3 w-24 text-center">Cant.</th>
+                          <th className="py-2 px-3 w-12 text-center"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {aiParsedParts.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="py-1 px-3">
+                              <input 
+                                type="text" 
+                                value={item.name} 
+                                onChange={(e) => {
+                                  const newArr = [...aiParsedParts];
+                                  newArr[idx].name = e.target.value;
+                                  setAiParsedParts(newArr);
+                                }} 
+                                className="w-full text-sm border border-transparent hover:border-slate-300 focus:border-violet-500 rounded px-2 py-1 transition-colors" 
+                              />
+                            </td>
+                            <td className="py-1 px-3">
+                              <input 
+                                type="number" 
+                                min={1} 
+                                value={item.quantity} 
+                                onChange={(e) => {
+                                  const newArr = [...aiParsedParts];
+                                  newArr[idx].quantity = parseInt(e.target.value) || 1;
+                                  setAiParsedParts(newArr);
+                                }} 
+                                className="w-full text-sm text-center border border-transparent hover:border-slate-300 focus:border-violet-500 rounded px-2 py-1 transition-colors" 
+                              />
+                            </td>
+                            <td className="py-1 px-3 text-center">
+                              <button 
+                                onClick={() => {
+                                  setAiParsedParts(aiParsedParts.filter((_, i) => i !== idx));
+                                }}
+                                className="text-red-400 hover:text-red-600 p-1"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {aiParsedParts.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="py-8 text-center text-slate-500">
+                              Todos los elementos eliminados.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
+                    <button 
+                      onClick={() => setAiModalOpen(false)}
+                      className="px-4 py-2 rounded-lg text-slate-600 font-medium hover:bg-slate-200 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={saveAiParts}
+                      disabled={aiLoading || aiParsedParts.length === 0}
+                      className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium shadow flex items-center gap-2 hover:bg-emerald-700 disabled:opacity-50 transition-all"
+                    >
+                      {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                      {aiLoading ? 'Guardando...' : 'Guardar Materiales'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
