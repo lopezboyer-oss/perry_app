@@ -167,6 +167,31 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
     }
   };
 
+  const bulkUpdateStatus = async (newStatus: string) => {
+    if (!confirm(`¿Cambiar el estatus a "${newStatus}" para TODOS los materiales de Contratista?`)) return;
+    
+    const newParts = parts.map(p => {
+      if (p.providerType === 'COTIZAR') {
+        return { ...p, status: newStatus };
+      }
+      return p;
+    });
+    setParts(newParts);
+
+    try {
+      await Promise.all(parts.filter(p => p.providerType === 'COTIZAR' && p.id).map(p => 
+        fetch(`/api/parts/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        })
+      ));
+    } catch (err) {
+      console.error(err);
+      alert('Hubo un error al actualizar algunos materiales');
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -235,7 +260,7 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
   };
 
   const notifyDriver = () => {
-    const compras = parts.filter(p => p.providerType === 'COTIZAR');
+    const compras = parts.filter(p => p.providerType === 'COTIZAR' && p.status === 'COMPRAR');
     let msg = `Estimado Chofer 👋, apóyanos con la compra del siguiente material para el proyecto con:\n\n*Folio Odoo:* ${folioOdoo || 'N/A'}\n*Equipo:* ${equipo || 'N/A'}\n\n`;
     if (compras.length === 0) {
       msg += 'No hay materiales requeridos para comprar en este momento. 👍';
@@ -289,7 +314,29 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
                   <th className="py-2 px-3 rounded-tl-lg">Material</th>
                   <th className="py-2 px-3 w-24 text-center">Cant.</th>
                   <th className="py-2 px-3 w-40 text-center">Provee</th>
-                  <th className="py-2 px-3 w-48 text-center">Estatus</th>
+                  <th className="py-2 px-3 w-48 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <span>Estatus</span>
+                      <select 
+                        className="text-xs bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-600 w-full cursor-pointer hover:border-indigo-300 focus:ring-1 focus:ring-indigo-500"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            bulkUpdateStatus(e.target.value);
+                            e.target.value = "";
+                          }
+                        }}
+                        defaultValue=""
+                      >
+                        <option value="" disabled>Cambio Masivo...</option>
+                        <option value="VALIDANDO">Todos a Validando</option>
+                        <option value="COTIZANDO">Todos a Cotizando</option>
+                        <option value="COMPRAR">Todos a Comprar</option>
+                        <option value="EN_BODEGA">Todos a En Bodega</option>
+                        <option value="INSTALADO">Todos a Instalado</option>
+                        <option value="FACTURADO">Todos a Facturado</option>
+                      </select>
+                    </div>
+                  </th>
                   <th className="py-2 px-3 w-16 text-center rounded-tr-lg"></th>
                 </tr>
               </thead>
