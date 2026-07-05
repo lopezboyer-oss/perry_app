@@ -141,7 +141,7 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
     
     // Auto adjust status if providerType changes
     if (updates.providerType === 'CLIENTE' && part.providerType !== 'CLIENTE') {
-      newParts[index].status = 'EN_BODEGA';
+      newParts[index].status = 'VALIDANDO';
     } else if (updates.providerType === 'COTIZAR' && part.providerType !== 'COTIZAR') {
       newParts[index].status = 'VALIDANDO';
     }
@@ -197,7 +197,7 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
     
     const newParts = parts.map(p => {
       let status = p.status;
-      if (newProvider === 'CLIENTE' && p.providerType !== 'CLIENTE') status = 'EN_BODEGA';
+      if (newProvider === 'CLIENTE' && p.providerType !== 'CLIENTE') status = 'VALIDANDO';
       else if (newProvider === 'COTIZAR' && p.providerType !== 'COTIZAR') status = 'VALIDANDO';
       return { ...p, providerType: newProvider, status };
     });
@@ -410,6 +410,7 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
                           </>
                         ) : (
                           <>
+                            <option value="VALIDANDO">Validando</option>
                             <option value="EN_BODEGA">En Bodega</option>
                             <option value="INSTALADO">Instalado</option>
                           </>
