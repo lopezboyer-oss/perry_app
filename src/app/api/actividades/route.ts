@@ -88,6 +88,8 @@ export async function POST(req: NextRequest) {
         continuedFromId: data.continuedFromId || null,
         companyId,
         isManPower: data.isManPower || false,
+        manPowerEquipo: data.manPowerEquipo ? data.manPowerEquipo.toUpperCase().slice(0, 6) : null,
+        manPowerPhotos: data.manPowerPhotos || null,
       },
     });
 

@@ -8,6 +8,7 @@ import {
   activityStatusColors, formatDate, formatDuration,
 } from '@/lib/utils';
 import { useState } from 'react';
+import { ManPowerDetailSection } from './ManPowerDetailSection';
 
 interface Props {
   activity: any;
@@ -143,6 +144,16 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
             </div>
           </div>
         </div>
+
+        {activity.isManPower && (
+          <ManPowerDetailSection 
+            activityId={activity.id} 
+            equipo={activity.manPowerEquipo} 
+            folioOdoo={activity.workOrderFolio}
+            initialPhotos={activity.manPowerPhotos}
+            userName={activity.user?.name || 'Usuario'}
+          />
+        )}
 
         {activity.dailyReport && (
           <div className="card p-6">

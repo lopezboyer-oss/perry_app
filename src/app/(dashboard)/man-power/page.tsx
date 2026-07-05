@@ -144,6 +144,8 @@ export default async function ManPowerPage() {
         cancelledBy: true,
         cancelReason: true,
         cancelNotes: true,
+        manPowerEquipo: true,
+        manPowerPhotos: true,
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true } },

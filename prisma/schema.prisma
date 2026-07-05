@@ -144,6 +144,8 @@ model Activity {
   companyId       String?
   company         Company?     @relation(fields: [companyId], references: [id])
   isManPower      Boolean      @default(false)
+  manPowerEquipo  String?      // 6-character alphanumeric ID for Man Power
+  manPowerPhotos  String?      @db.Text // JSON array of uploaded photos [{id, url, uploadedBy, uploadedAt}]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -499,8 +501,9 @@ model ActivityPart {
   activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
   name        String
   quantity    Int      @default(1)
-  status      String   @default("SOLICITADA") // SOLICITADA, COTIZADO, CON_PO, PAGADO, ENTREGADA, INSTALADA
-  providedBy  String   @default("CASEME")     // CASEME, CLIENTE
+  status      String   @default("VALIDANDO") // SOLICITADA, COTIZADO, CON_PO, PAGADO, ENTREGADA, INSTALADA, etc.
+  providerType String  @default("COTIZAR") // COTIZAR | CLIENTE
+  providedBy  String   @default("CASEME")     // CASEME, CLIENTE (legacy or related)
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -45,9 +45,12 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     companyId: initialData?.companyId || '',
     continuedFromId: initialData?.continuedFromId || '',
     isManPower: initialData?.isManPower || false,
+    manPowerEquipo: initialData?.manPowerEquipo || '',
   });
 
-  // On mount, read active company from cookie if no companyId set
+  const [equiposList, setEquiposList] = useState<string[]>([]);
+
+  // On mount, read active company from cookie if no companyId set, and fetch equipos
   useEffect(() => {
     if (!form.companyId) {
       const cookie = document.cookie.split('; ').find(c => c.startsWith('perry_active_company='));
@@ -56,6 +59,14 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         setForm(f => ({ ...f, companyId: val }));
       }
     }
+    
+    // Fetch equipos for datalist
+    fetch('/api/actividades/equipos')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setEquiposList(data);
+      })
+      .catch(err => console.error('Error fetching equipos', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -184,6 +195,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         location: form.location || null,
         notes: form.notes || null,
         isManPower: form.isManPower,
+        manPowerEquipo: form.isManPower ? (form.manPowerEquipo || null) : null,
       };
 
       const url = isEdit ? `/api/actividades/${initialData.id}` : '/api/actividades';
@@ -310,7 +322,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
             />
           </div>
           {(userRole === 'ADMIN' || userRole === 'SUPERVISOR' || userRole === 'SUPERVISOR_SAFETY_LP' || userRole === 'ADMINISTRACION') && (
-            <div className="md:col-span-2 mt-2">
+            <div className="md:col-span-2 mt-2 space-y-4">
               <label className="flex items-center space-x-2 text-sm font-medium text-slate-700 cursor-pointer w-fit">
                 <input
                   type="checkbox"
@@ -320,6 +332,28 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
                 />
                 <span>Designar como Actividad Man Power (Soporte Técnico Especializado Tier One)</span>
               </label>
+              
+              {form.isManPower && (
+                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg animate-fade-in">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    # Equipo <span className="text-xs text-slate-500 font-normal">(6 caracteres)</span>
+                  </label>
+                  <input
+                    type="text"
+                    list="equipos-list"
+                    maxLength={6}
+                    value={form.manPowerEquipo}
+                    onChange={(e) => setForm({ ...form, manPowerEquipo: e.target.value.toUpperCase() })}
+                    placeholder="Ej: ABC123"
+                    className="w-40 font-mono uppercase"
+                  />
+                  <datalist id="equipos-list">
+                    {equiposList.map((eq) => (
+                      <option key={eq} value={eq} />
+                    ))}
+                  </datalist>
+                </div>
+              )}
             </div>
           )}
         </div>

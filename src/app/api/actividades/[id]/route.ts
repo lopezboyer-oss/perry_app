@@ -78,8 +78,11 @@ export async function PUT(
         durationMinutes: data.durationMinutes || null,
         location: data.location || null,
         notes: data.notes || null,
-        consortiumCompany: data.consortiumCompany || null,
+        consortiumCompany: data.consortiumCompany !== undefined ? (data.consortiumCompany || null) : undefined,
+        companyId: data.companyId !== undefined ? data.companyId : undefined,
         isManPower: data.isManPower !== undefined ? data.isManPower : undefined,
+        manPowerEquipo: data.manPowerEquipo !== undefined ? (data.manPowerEquipo ? data.manPowerEquipo.toUpperCase().slice(0, 6) : null) : undefined,
+        manPowerPhotos: data.manPowerPhotos !== undefined ? data.manPowerPhotos : undefined,
       },
     });
 

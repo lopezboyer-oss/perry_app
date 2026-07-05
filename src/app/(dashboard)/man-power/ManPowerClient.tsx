@@ -43,6 +43,8 @@ interface Activity {
   cancelledBy?: string | null;
   cancelReason?: string | null;
   cancelNotes?: string | null;
+  manPowerEquipo?: string | null;
+  manPowerPhotos?: string | null;
   parts?: any[];
 }
 
@@ -234,6 +236,7 @@ export function ManPowerClient({
   const [lotoState, setLotoState] = useState<Record<string, boolean>>(Object.fromEntries(activities.map((a) => [a.id, a.loto])));
   const [poState, setPoState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.purchaseOrder || ''])));
   const [folioState, setFolioState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.workOrderFolio || ''])));
+  const [equipoState, setEquipoState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.manPowerEquipo || ''])));
   const [notesState, setNotesState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.weekendNotes || ''])));
   const [auditNotesState, setAuditNotesState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.auditNotes || ''])));
   const [alertNotesState, setAlertNotesState] = useState<Record<string, string>>(Object.fromEntries(activities.map((a) => [a.id, a.alertNotes || ''])));
@@ -1378,6 +1381,7 @@ export function ManPowerClient({
             <button onClick={() => { setSelectedContractorId(assignedContractors[0]?.id || null); setShowContractorPlansModal(true); }} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-purple-50 !text-purple-700 !border-purple-300 hover:!bg-purple-100 leading-tight text-center">🏭 Plan<br/>Contratista</button>
           )}
           <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100 leading-tight text-center">🏗️ Reporte<br/>Equipos</button>
+          <button onClick={() => alert('Función de exportación de Resumen Ejecutivo en desarrollo')} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-rose-50 !text-rose-700 !border-rose-300 hover:!bg-rose-100 leading-tight text-center"><Download size={12} /> Resumen<br/>Ejecutivo</button>
           <button onClick={exportCSV} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100 leading-tight text-center"><Download size={12} /> Exportar<br/>Excel</button>
           {['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole) && (
             <button onClick={exportMultiCompanyExcel} disabled={exportingMulti} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-violet-50 !text-violet-700 !border-violet-300 hover:!bg-violet-100 disabled:opacity-50 leading-tight text-center">
@@ -1867,7 +1871,9 @@ export function ManPowerClient({
                 <th className="font-semibold w-[120px]">Contacto</th>
                 <th className="font-semibold">Actividad</th>
                 <th className="font-semibold w-[80px]">Folio Odoo</th>
+                <th className="font-semibold w-[100px]"># Equipo</th>
                 <th className="font-semibold w-[100px]">P.O.</th>
+                <th className="font-semibold w-[120px]">Materiales</th>
                 <th className="font-semibold w-[55px] text-center">LOTO</th>
                 <th className="font-semibold min-w-[180px]">Técnicos</th>
                 <th className="font-semibold min-w-[160px]">Sup Operativo</th>
@@ -2043,6 +2049,19 @@ export function ManPowerClient({
                       </div>
                     </td>
 
+                    {/* # Equipo */}
+                    <td>
+                      {canEditFields ? (
+                        <input type="text" maxLength={6} className="w-[80px] text-xs px-1.5 py-1 rounded border border-slate-200 font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          value={equipoState[act.id] || ''} placeholder="—"
+                          onChange={(e) => setEquipoState((p) => ({ ...p, [act.id]: e.target.value.toUpperCase() }))}
+                          onBlur={() => updateField(act.id, 'manPowerEquipo', equipoState[act.id] || null)}
+                        />
+                      ) : (
+                        <span className="text-xs font-mono font-semibold text-slate-700">{act.manPowerEquipo || '-'}</span>
+                      )}
+                    </td>
+
                     {/* P.O. */}
                     <td>
                       {canEditFields ? (
@@ -2064,6 +2083,47 @@ export function ManPowerClient({
                           )}
                         </div>
                       ) : <span className={`text-xs font-mono ${act.purchaseOrder ? 'text-slate-700' : 'text-red-500 font-bold'}`}>{act.purchaseOrder || 'Sin Cotización'}</span>}
+                    </td>
+
+                    {/* Materiales */}
+                    <td>
+                      <div className="flex flex-col gap-1 items-start">
+                        {(() => {
+                          const partsCount = act.parts?.length || 0;
+                          if (partsCount === 0) {
+                            return (
+                              <button 
+                                onClick={() => router.push(`/actividades/${act.id}#materiales`)}
+                                className="text-[10px] font-bold bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200 px-2 py-1 rounded transition-colors whitespace-nowrap"
+                              >
+                                Añadir Material
+                              </button>
+                            );
+                          }
+                          
+                          // Group by status
+                          const statusCounts = act.parts!.reduce((acc: any, part: any) => {
+                            acc[part.status] = (acc[part.status] || 0) + 1;
+                            return acc;
+                          }, {});
+
+                          return (
+                            <div className="flex flex-col gap-0.5 min-w-[100px]">
+                              {Object.entries(statusCounts).map(([status, count]) => (
+                                <span key={status} className="text-[9px] font-semibold text-slate-600 leading-tight">
+                                  • {count} {status.replace('_', ' ')}
+                                </span>
+                              ))}
+                              <button 
+                                onClick={() => router.push(`/actividades/${act.id}#materiales`)}
+                                className="text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-0.5 mt-1 rounded transition-colors text-center w-full"
+                              >
+                                Desglose
+                              </button>
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </td>
 
                     {/* LOTO */}
