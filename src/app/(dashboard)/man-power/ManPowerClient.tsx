@@ -310,6 +310,14 @@ export function ManPowerClient({
     return false;
   };
 
+  const handleRowClick = (e: React.MouseEvent, actId: string) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('input, button, select, a, textarea')) {
+      return;
+    }
+    router.push(`/actividades/${actId}`);
+  };
+
   // Check if current user is assigned as Sup Operativo for an activity
   // Covers ALL 3 assignment sources:
   //   1. Técnico Cruz Verde as SAFETY_DESIGNADO (match by name)
@@ -1941,7 +1949,10 @@ export function ManPowerClient({
                       </td>
                     </tr>
                   )}
-                  <tr className={`transition-colors align-top ${cancelledIds.has(act.id) ? 'bg-red-100 hover:bg-red-100' : hasAlert ? 'bg-amber-50/40 hover:bg-slate-50/50' : 'hover:bg-slate-50/50'}`}>
+                  <tr 
+                    onClick={(e) => handleRowClick(e, act.id)}
+                    className={`cursor-pointer transition-colors align-top ${cancelledIds.has(act.id) ? 'bg-red-100 hover:bg-red-200' : hasAlert ? 'bg-amber-50/40 hover:bg-amber-100' : 'hover:bg-slate-100'}`}
+                  >
                     <td className="text-center">
                       <div className="flex flex-col items-center gap-0.5">
                         <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${hasAlert ? 'bg-amber-400 text-white animate-pulse' : 'bg-slate-200 text-slate-700'}`}>{idx + 1}</span>
