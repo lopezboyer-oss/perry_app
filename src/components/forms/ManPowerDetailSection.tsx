@@ -235,14 +235,15 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
   };
 
   const notifyDriver = () => {
-    const pendingCaseme = parts.filter(p => p.providerType === 'COTIZAR' && p.status === 'EN_BODEGA');
-    let msg = `Chofer, favor de trasladar los siguientes materiales para el Folio: ${folioOdoo || 'N/A'}, Equipo: ${equipo || 'N/A'}:\n\n`;
-    if (pendingCaseme.length === 0) {
-      msg += 'No hay materiales en bodega listos para trasladar.';
+    const compras = parts.filter(p => p.providerType === 'COTIZAR');
+    let msg = `Estimado Chofer 👋, apóyanos con la compra del siguiente material para el proyecto con:\n\n*Folio Odoo:* ${folioOdoo || 'N/A'}\n*Equipo:* ${equipo || 'N/A'}\n\n`;
+    if (compras.length === 0) {
+      msg += 'No hay materiales requeridos para comprar en este momento. 👍';
     } else {
-      pendingCaseme.forEach(p => {
-        msg += `- ${p.quantity}x ${p.name}\n`;
+      compras.forEach(p => {
+        msg += `🔹 ${p.quantity}x ${p.name}\n`;
       });
+      msg += `\n¡Muchas gracias por tu valioso apoyo! 🙏🚀`;
     }
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -303,7 +304,7 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
                     </td>
                     <td className="py-2 px-3">
                       <select value={part.providerType} onChange={(e) => updatePart(idx, { providerType: e.target.value })} className="w-full text-sm font-medium bg-slate-100 border-none rounded-lg text-slate-700 py-1.5 focus:ring-0">
-                        <option value="COTIZAR">Caseme (Cotizar)</option>
+                        <option value="COTIZAR">Contratista</option>
                         <option value="CLIENTE">Cliente</option>
                       </select>
                     </td>
