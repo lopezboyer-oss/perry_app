@@ -192,6 +192,31 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
     }
   };
 
+  const bulkUpdateProvider = async (newProvider: string) => {
+    if (!confirm(`¿Cambiar el proveedor a "${newProvider === 'COTIZAR' ? 'Contratista' : 'Cliente'}" para TODOS los materiales?`)) return;
+    
+    const newParts = parts.map(p => {
+      let status = p.status;
+      if (newProvider === 'CLIENTE' && p.providerType !== 'CLIENTE') status = 'EN_BODEGA';
+      else if (newProvider === 'COTIZAR' && p.providerType !== 'COTIZAR') status = 'VALIDANDO';
+      return { ...p, providerType: newProvider, status };
+    });
+    setParts(newParts);
+
+    try {
+      await Promise.all(newParts.filter(p => p.id).map(p => 
+        fetch(`/api/parts/${p.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ providerType: p.providerType, status: p.status })
+        })
+      ));
+    } catch (err) {
+      console.error(err);
+      alert('Hubo un error al actualizar algunos proveedores');
+    }
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -313,7 +338,25 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
                 <tr>
                   <th className="py-2 px-3 rounded-tl-lg">Material</th>
                   <th className="py-2 px-3 w-24 text-center">Cant.</th>
-                  <th className="py-2 px-3 w-40 text-center">Provee</th>
+                  <th className="py-2 px-3 w-40 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <span>Provee</span>
+                      <select 
+                        className="text-xs bg-white border border-slate-200 rounded px-1 py-0.5 text-slate-600 w-full cursor-pointer hover:border-indigo-300 focus:ring-1 focus:ring-indigo-500"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            bulkUpdateProvider(e.target.value);
+                            e.target.value = "";
+                          }
+                        }}
+                        defaultValue=""
+                      >
+                        <option value="" disabled>Cambio Masivo...</option>
+                        <option value="COTIZAR">Todos a Contratista</option>
+                        <option value="CLIENTE">Todos a Cliente</option>
+                      </select>
+                    </div>
+                  </th>
                   <th className="py-2 px-3 w-48 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <span>Estatus</span>
