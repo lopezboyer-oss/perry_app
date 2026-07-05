@@ -33,7 +33,7 @@ Texto a analizar:
 ${text}
 """`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ ${text}
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Gemini API Error:', errorText);
-      return NextResponse.json({ error: 'Error al contactar la IA' }, { status: 502 });
+      return NextResponse.json({ error: `Error de la IA: ${errorText}` }, { status: 502 });
     }
 
     const data = await response.json();
