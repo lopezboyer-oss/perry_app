@@ -168,18 +168,15 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
   };
 
   const bulkUpdateStatus = async (newStatus: string) => {
-    if (!confirm(`¿Cambiar el estatus a "${newStatus}" para TODOS los materiales de Contratista?`)) return;
+    if (!confirm(`¿Cambiar el estatus a "${newStatus}" para TODOS los materiales?`)) return;
     
     const newParts = parts.map(p => {
-      if (p.providerType === 'COTIZAR') {
-        return { ...p, status: newStatus };
-      }
-      return p;
+      return { ...p, status: newStatus };
     });
     setParts(newParts);
 
     try {
-      await Promise.all(parts.filter(p => p.providerType === 'COTIZAR' && p.id).map(p => 
+      await Promise.all(parts.filter(p => p.id).map(p => 
         fetch(`/api/parts/${p.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -214,6 +211,20 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
     } catch (err) {
       console.error(err);
       alert('Hubo un error al actualizar algunos proveedores');
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (!confirm('¿Estás seguro de que deseas ELIMINAR TODOS los materiales de este equipo? Esta acción no se puede deshacer.')) return;
+    
+    const partsToDelete = parts.filter(p => p.id);
+    setParts([]);
+    
+    try {
+      await Promise.all(partsToDelete.map(p => fetch(`/api/parts/${p.id}`, { method: 'DELETE' })));
+    } catch (err) {
+      console.error(err);
+      alert('Error eliminando algunos materiales en el servidor.');
     }
   };
 
@@ -310,7 +321,12 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-slate-800">Materiales y Equipos Requeridos</h3>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 justify-end">
+            {parts.length > 0 && (
+              <button onClick={bulkDelete} className="btn-secondary text-xs bg-red-50 text-red-700 border-red-200 hover:bg-red-100 mr-2">
+                <Trash2 size={14} /> Borrar Todo
+              </button>
+            )}
             <button onClick={notifyDriver} className="btn-secondary text-xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100">
               <MessageSquare size={14} /> Avisar Chofer
             </button>
