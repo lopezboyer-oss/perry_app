@@ -271,14 +271,13 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
   };
 
   const notifyClient = () => {
-    const pendingClient = parts.filter(p => p.providerType === 'CLIENTE' && p.status !== 'INSTALADO');
-    let msg = `Hola, te informamos sobre el estatus de materiales para el equipo ${equipo || 'N/A'}:\n\n`;
+    const pendingClient = parts.filter(p => p.providerType === 'CLIENTE' && p.status === 'VALIDANDO');
+    let msg = `Hola Ingeniero! \uD83D\uDC4B\nPara el trabajo en curso del\n*Equipo:* ${equipo || 'N/A'}\n\nSe requiere el siguiente material, háganos saber si usted tiene alguno o le enviamos la cotización por todo el lote:\n\n`;
     if (pendingClient.length === 0) {
-      msg += 'Actualmente no hay materiales pendientes por parte del cliente.';
+      msg += 'No hay materiales en estatus de validación para revisión en este momento.';
     } else {
-      msg += 'Materiales pendientes por entregar (Cliente):\n';
       pendingClient.forEach(p => {
-        msg += `- ${p.quantity}x ${p.name} (${p.status})\n`;
+        msg += `\uD83D\uDD39 ${p.quantity}x ${p.name}\n`;
       });
     }
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
