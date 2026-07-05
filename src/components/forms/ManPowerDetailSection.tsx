@@ -256,21 +256,21 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
         msg += `- ${p.quantity}x ${p.name} (${p.status})\n`;
       });
     }
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const notifyDriver = () => {
     const compras = parts.filter(p => p.providerType === 'COTIZAR' && p.status === 'COMPRAR');
-    let msg = `Estimado Chofer 👋, apóyanos con la compra del siguiente material para el proyecto con:\n\n*Folio Odoo:* ${folioOdoo || 'N/A'}\n*Equipo:* ${equipo || 'N/A'}\n\n`;
+    let msg = `Estimado Chofer \uD83D\uDC4B, apóyanos con la compra del siguiente material para el proyecto con:\n\n*Folio Odoo:* ${folioOdoo || 'N/A'}\n*Equipo:* ${equipo || 'N/A'}\n\n`;
     if (compras.length === 0) {
-      msg += 'No hay materiales requeridos para comprar en este momento. 👍';
+      msg += 'No hay materiales requeridos para comprar en este momento. \uD83D\uDC4D';
     } else {
       compras.forEach(p => {
-        msg += `🔹 ${p.quantity}x ${p.name}\n`;
+        msg += `\uD83D\uDD39 ${p.quantity}x ${p.name}\n`;
       });
-      msg += `\n¡Muchas gracias por tu valioso apoyo! 🙏🚀`;
+      msg += `\n¡Muchas gracias por tu valioso apoyo! \uD83D\uDE4F\uD83D\uDE80`;
     }
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   if (loading) return <div className="p-6 card mt-4 text-center text-slate-500"><Loader2 className="animate-spin mx-auto mb-2" /> Cargando...</div>;
