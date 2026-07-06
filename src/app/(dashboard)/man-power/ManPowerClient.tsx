@@ -1487,6 +1487,7 @@ export function ManPowerClient({
 
   return (
     <div className="space-y-5 pb-20 md:pb-0 animate-fade-in">
+      <div className="print:hidden space-y-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -2938,6 +2939,7 @@ export function ManPowerClient({
           </div>
         </div>
       )}
+      </div>
 
       {/* ── EXECUTIVE SUMMARY LOADING MODAL ── */}
       {showExecutiveSummary && executiveSummaryLoading && (
