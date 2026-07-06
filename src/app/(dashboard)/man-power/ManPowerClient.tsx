@@ -134,30 +134,30 @@ function AssignDropdown({
   const available = options.filter((o) => !assignedIds.has(o.id) && o.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={ref} onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-wrap gap-1 min-h-[28px]">
         {assigned.map((a) => (
           <span key={a.assignmentId} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${a.hasConflict ? 'bg-red-100 text-red-700 ring-1 ring-red-300' : colorClass}`}>
             {a.hasConflict && <AlertTriangle size={10} />}
             {a.name}
-            {!disabled && <button onClick={() => onRemove(a.assignmentId)} className="hover:text-red-600 ml-0.5"><X size={10} /></button>}
+            {!disabled && <button onClick={(e) => { e.stopPropagation(); onRemove(a.assignmentId); }} className="hover:text-red-600 ml-0.5"><X size={10} /></button>}
           </span>
         ))}
         {!disabled && (
-          <button onClick={() => setOpen(!open)} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] text-slate-500 hover:bg-slate-100 border border-dashed border-slate-300 transition-colors">
+          <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] text-slate-500 hover:bg-slate-100 border border-dashed border-slate-300 transition-colors">
             <Plus size={10} /> {label}
           </button>
         )}
       </div>
       {open && (
-        <div className="absolute z-30 mt-1 w-56 bg-white rounded-lg shadow-xl border border-slate-200 p-2 animate-fade-in">
+        <div className="absolute z-30 mt-1 w-56 bg-white rounded-lg shadow-xl border border-slate-200 p-2 animate-fade-in" onClick={(e) => e.stopPropagation()}>
           <div className="relative mb-2">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input type="text" className="w-full pl-8 pr-2 py-1.5 text-xs bg-slate-50 border-none rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
           </div>
           <ul className="max-h-40 overflow-y-auto space-y-0.5">
             {available.length === 0 ? <li className="text-xs text-slate-400 text-center py-3">Sin opciones disponibles</li> : available.map((opt) => (
-              <li key={opt.id} className="flex items-center justify-between px-2 py-1.5 text-xs rounded-md cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => { onAssign(opt.id); setSearch(''); }}>
+              <li key={opt.id} className="flex items-center justify-between px-2 py-1.5 text-xs rounded-md cursor-pointer hover:bg-slate-100 transition-colors" onClick={(e) => { e.stopPropagation(); onAssign(opt.id); setSearch(''); }}>
                 <span className="font-medium text-slate-700">{opt.name}</span>
                 {opt.badge && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{opt.badge}</span>}
               </li>
@@ -187,7 +187,7 @@ function NoteCell({ value, onChange, disabled, placeholder, color }: {
   const hasContent = value && value.trim().length > 0;
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={ref} onClick={(e) => e.stopPropagation()}>
       <button
         onClick={() => !disabled && setOpen(!open)}
         className={`w-full text-left px-2 py-1 rounded text-xs truncate max-w-[110px] ${hasContent ? `${color} font-medium` : 'text-slate-300'} ${disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-100 transition-colors'}`}

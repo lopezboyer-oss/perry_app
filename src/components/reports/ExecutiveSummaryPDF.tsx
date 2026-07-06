@@ -283,6 +283,13 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
             <p className="text-[10px] text-slate-400 mt-2 text-center">*Muestra representativa de evidencias. El archivo completo se encuentra en plataforma.</p>
           </div>
 
+          {/* Footer */}
+          <div className="mt-12 pt-6 border-t border-slate-200 text-center print:fixed print:bottom-6 print:left-0 print:right-0 print:border-none print:pt-0">
+            <p className="text-[10px] font-medium text-slate-400">
+              Resumen Ejecutivo elaborado con Perry App y procesado con Gemini IA | By Chigüire Labs | Todos los derechos reservados
+            </p>
+          </div>
+
         </div>
       </div>
       
