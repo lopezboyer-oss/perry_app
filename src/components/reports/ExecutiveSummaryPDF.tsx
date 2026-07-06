@@ -27,9 +27,10 @@ interface ExecutiveSummaryPDFProps {
   onClose: () => void;
   reportContext: string;
   reportEquipo?: string;
+  userName: string;
 }
 
-export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, aiSummaries, onClose, reportContext, reportEquipo }: ExecutiveSummaryPDFProps) {
+export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, aiSummaries, onClose, reportContext, reportEquipo, userName }: ExecutiveSummaryPDFProps) {
   
   // -- Calculations --
   const totalDays = new Set(activities.map(a => a.date)).size;
@@ -148,7 +149,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, ai
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/80 flex items-start justify-center p-4 pt-10 overflow-y-auto print:bg-white print:p-0 print:block">
+    <div className="fixed inset-0 z-50 bg-slate-900/80 flex items-start justify-center p-4 pt-10 overflow-y-auto print:static print:bg-white print:p-0 print:block print:overflow-visible print:h-auto">
       
       {/* Floating Controls - Hidden in print */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl z-[60] print:hidden border border-slate-700/50">
@@ -162,27 +163,23 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, ai
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 relative print:shadow-none print:my-0 print:w-full print:max-w-none print:rounded-none pb-20 print:pb-0">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 relative print:shadow-none print:my-0 print:w-full print:max-w-none print:rounded-none pb-20 print:pb-0 print:overflow-visible print:h-auto">
         
         {/* Printable Area */}
-        <div className="p-10 print:p-6 relative z-10" id="pdf-content">
-          
-          {/* Watermark for Print */}
-          <div className="hidden print:flex fixed inset-0 pointer-events-none z-[-1] opacity-[0.18] items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/LOGO_DROBOTS.png" alt="Watermark" className="w-[70%] max-w-2xl object-contain grayscale" />
-          </div>
+        <div className="p-10 print:p-0 relative z-10" id="pdf-content">
           
           {/* Header */}
-          <div className="flex justify-between items-start border-b-2 border-indigo-900 pb-6 mb-8">
+          <div className="flex justify-between items-start border-b-2 border-indigo-900 pb-6 mb-8 print:pt-6">
             <div>
               <h1 className="text-3xl font-black text-indigo-950 uppercase tracking-tight">Resumen Ejecutivo</h1>
               <p className="text-slate-500 mt-1 font-medium">{reportContext}</p>
               <p className="text-slate-400 text-sm mt-1">Generado el {format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: es })}</p>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-black text-indigo-600">MAN POWER</div>
-              <p className="text-slate-500 text-sm font-medium">Reporte Gerencial</p>
+            <div className="text-right flex flex-col items-end">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/LOGO_DROBOTS.png" alt="Drobots Logo" className="h-10 object-contain mb-2" />
+              <div className="text-sm font-black text-indigo-950">DROBOTS S DE RL DE CV</div>
+              <p className="text-slate-500 text-[11px] font-medium uppercase mt-0.5">{userName}</p>
             </div>
           </div>
 
@@ -203,23 +200,24 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, ai
           </div>
 
           {/* Charts Row */}
-          <div className="grid grid-cols-2 gap-8 mb-10 min-h-[16rem]">
+          <div className="grid grid-cols-2 gap-8 mb-10 min-h-[16rem] print:min-h-0 print:break-inside-avoid">
             
             {/* Actividades por Equipo */}
             <div className="border border-slate-200 rounded-xl p-4 flex flex-col print:border-none print:p-0">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider text-center mb-4">Actividades por Equipo</h3>
-              <div className="flex-1 w-full">
+              <div className="flex-1 w-full h-[300px] print:h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={activitiesChartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      innerRadius={50}
+                      outerRadius={70}
                       paddingAngle={5}
                       dataKey="value"
                       label={({ name, percent, value }: any) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                      labelLine={true}
                     >
                       {activitiesChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -237,7 +235,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, ai
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider text-center mb-4">
                 {reportEquipo === 'ALL' ? 'Horas por Equipo' : 'Horas por Actividad'}
               </h3>
-              <div className="flex-1 w-full" style={{ minHeight: `${Math.max(100, (reportEquipo === 'ALL' ? equipoHoursData.length : activityHoursData.length) * 35)}px` }}>
+              <div className="w-full" style={{ height: `${Math.max(250, (reportEquipo === 'ALL' ? equipoHoursData.length : activityHoursData.length) * 45)}px` }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={reportEquipo === 'ALL' ? equipoHoursData : activityHoursData} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 5 }}>
                     <XAxis type="number" hide />

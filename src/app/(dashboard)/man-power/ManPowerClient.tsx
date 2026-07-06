@@ -2960,6 +2960,7 @@ export function ManPowerClient({
           onClose={() => setShowExecutiveSummary(false)}
           reportContext={reportLabel}
           reportEquipo={reportEquipo}
+          userName={userName}
         />
       )}
     </div>
