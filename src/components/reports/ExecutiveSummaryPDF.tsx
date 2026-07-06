@@ -207,7 +207,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
-                      label={({ name, percent, value }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                      label={({ name, percent, value }: any) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
                     >
                       {activitiesChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -227,7 +227,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
                   <BarChart data={activityHoursData} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 5 }}>
                     <XAxis type="number" hide />
                     <YAxis dataKey="name" type="category" width={50} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{ fill: 'transparent' }} formatter={(value) => [`${value} hrs`, 'Duración']} />
+                    <Tooltip cursor={{ fill: 'transparent' }} formatter={(value: any) => [`${value} hrs`, 'Duración']} />
                     <Bar dataKey="hours" radius={[0, 4, 4, 0]} barSize={16} label={{ position: 'right', formatter: (val: any) => `${val}h`, fill: '#64748b', fontSize: 12, fontWeight: 500 }}>
                       {activityHoursData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
