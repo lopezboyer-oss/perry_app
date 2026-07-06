@@ -229,42 +229,53 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (photos.length >= 8) {
-      alert('Máximo 8 fotos permitidas');
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    if (photos.length + files.length > 8) {
+      alert('Máximo 8 fotos permitidas en total');
       return;
     }
 
     setUploadingImage(true);
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const base64 = ev.target?.result as string;
-      const newPhoto: Photo = {
-        id: Date.now().toString(),
-        url: base64,
-        uploadedBy: userName,
-        uploadedAt: new Date().toISOString()
+    let uploadedCount = 0;
+    const newAddedPhotos: Photo[] = [];
+
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target?.result as string;
+        const newPhoto: Photo = {
+          id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+          url: base64,
+          uploadedBy: userName,
+          uploadedAt: new Date().toISOString()
+        };
+        
+        newAddedPhotos.push(newPhoto);
+        uploadedCount++;
+
+        // When all files are processed, update state and server
+        if (uploadedCount === files.length) {
+          const finalPhotos = [...photos, ...newAddedPhotos];
+          setPhotos(finalPhotos);
+          
+          try {
+            const res = await fetch(`/api/actividades/${activityId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ manPowerPhotos: JSON.stringify(finalPhotos) })
+            });
+            if (!res.ok) console.error('Error del servidor:', await res.text());
+          } catch (err) {
+            console.error('Error guardando fotos', err);
+          } finally {
+            setUploadingImage(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }
+        }
       };
-      
-      const newPhotos = [...photos, newPhoto];
-      setPhotos(newPhotos);
-      
-      try {
-        const res = await fetch(`/api/actividades/${activityId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ manPowerPhotos: JSON.stringify(newPhotos) })
-        });
-        if (!res.ok) console.error('Error del servidor:', await res.text());
-      } catch (err) {
-        console.error('Error guardando foto', err);
-      } finally {
-        setUploadingImage(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
   };
 
   const deletePhoto = async (id: string) => {
@@ -464,6 +475,7 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
           <input 
             type="file" 
             accept="image/*" 
+            multiple
             ref={fileInputRef} 
             onChange={handleImageUpload} 
             className="hidden" 
