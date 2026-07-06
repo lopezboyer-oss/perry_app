@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
+import { ExecutiveSummaryPDF } from '@/components/reports/ExecutiveSummaryPDF';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 
@@ -284,6 +285,11 @@ export function ManPowerClient({
   const [extraDayDate, setExtraDayDate] = useState('');
   const [extraDayLabel, setExtraDayLabel] = useState('');
   const [extraDaySaving, setExtraDaySaving] = useState(false);
+
+  // Executive Summary State
+  const [showExecutiveSummary, setShowExecutiveSummary] = useState(false);
+  const [executiveSummaryLoading, setExecutiveSummaryLoading] = useState(false);
+  const [executiveSummaryText, setExecutiveSummaryText] = useState('');
 
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -669,6 +675,29 @@ export function ManPowerClient({
       }
     } catch { alert('Error de conexión'); }
     setTeraAuditorImageLoading((p) => ({ ...p, [actId]: false }));
+  };
+
+  const generateExecutiveSummary = async () => {
+    setExecutiveSummaryLoading(true);
+    setExecutiveSummaryText('');
+    setShowExecutiveSummary(true);
+
+    try {
+      const res = await fetch('/api/ai/executive-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activities })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al generar resumen');
+      
+      setExecutiveSummaryText(data.summary);
+    } catch (err: any) {
+      console.error(err);
+      setExecutiveSummaryText('Error al generar la síntesis ejecutiva: ' + err.message);
+    } finally {
+      setExecutiveSummaryLoading(false);
+    }
   };
 
   // ── CSV EXPORT ──
@@ -1389,7 +1418,9 @@ export function ManPowerClient({
             <button onClick={() => { setSelectedContractorId(assignedContractors[0]?.id || null); setShowContractorPlansModal(true); }} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-purple-50 !text-purple-700 !border-purple-300 hover:!bg-purple-100 leading-tight text-center">🏭 Plan<br/>Contratista</button>
           )}
           <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100 leading-tight text-center">🏗️ Reporte<br/>Equipos</button>
-          <button onClick={() => alert('Función de exportación de Resumen Ejecutivo en desarrollo')} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-rose-50 !text-rose-700 !border-rose-300 hover:!bg-rose-100 leading-tight text-center"><Download size={12} /> Resumen<br/>Ejecutivo</button>
+          <button onClick={generateExecutiveSummary} disabled={executiveSummaryLoading} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-rose-50 !text-rose-700 !border-rose-300 hover:!bg-rose-100 disabled:opacity-50 leading-tight text-center">
+            {executiveSummaryLoading ? <><Loader2 size={12} className="animate-spin" /> Analizando...</> : <><Download size={12} /> Resumen<br/>Ejecutivo</>}
+          </button>
           <button onClick={exportCSV} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100 leading-tight text-center"><Download size={12} /> Exportar<br/>Excel</button>
           {['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole) && (
             <button onClick={exportMultiCompanyExcel} disabled={exportingMulti} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-violet-50 !text-violet-700 !border-violet-300 hover:!bg-violet-100 disabled:opacity-50 leading-tight text-center">
@@ -2733,6 +2764,16 @@ export function ManPowerClient({
             )}
           </div>
         </div>
+      )}
+
+      {/* ── EXECUTIVE SUMMARY PDF MODAL ── */}
+      {showExecutiveSummary && !executiveSummaryLoading && (
+        <ExecutiveSummaryPDF
+          activities={activities}
+          aiSummary={executiveSummaryText}
+          onClose={() => setShowExecutiveSummary(false)}
+          reportContext={weekendLabel}
+        />
       )}
     </div>
   );
