@@ -52,7 +52,7 @@ Tu tarea es leer los reportes de técnicos de un equipo específico (${reportEqu
 ESTRUCTURA OBLIGATORIA DEL REPORTE (debes usar estrictamente este formato con números y títulos):
 
 1. Resumen Ejecutivo
-Escribe un párrafo narrativo (máximo 4 líneas) reportando el avance en los trabajos de ${reportEquipo}. Menciona fechas de jornadas trabajadas, un resumen del progreso global, y quién es el Responsable principal, Cliente/Contacto, y el Estado general (calcula un % aproximado de avance o usa el estado dominante).
+Escribe un párrafo narrativo (máximo 4 líneas) reportando el avance en los trabajos de ${reportEquipo}. Menciona fechas de jornadas trabajadas, un resumen del progreso global, y quién es el Responsable principal y Cliente/Contacto. IMPORTANTE: NO emitas conclusiones genéricas ni inventes porcentajes de avance total (ej. "estado COMPLETADO con un avance del 100%").
 
 2. Actividades Reportadas
 Enumera con viñetas las actividades ejecutadas y su fecha. Ejemplo: • 1. Título de actividad (Fecha).
@@ -73,7 +73,7 @@ Debes sonar muy profesional, analítico y conciso. Omite la jerga técnica innec
 Enfócate en:
 1. Hitos logrados o avances importantes agrupados por áreas o equipos principales.
 2. Problemas globales, alertas o riesgos detectados que afecten múltiples actividades.
-3. El estado general de los proyectos.
+3. El estado general de los proyectos. IMPORTANTE: NO emitas conclusiones genéricas ni inventes porcentajes de avance total (ej. "estado COMPLETADO con un avance del 100%").
 
 Evita usar saludos. Ve directo al grano. Usa negritas para destacar equipos o métricas, mantenlo en estilo de párrafo narrativo ejecutivo. NO satures con detalles individuales si no son de alto impacto.`;
     }

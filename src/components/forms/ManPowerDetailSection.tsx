@@ -16,6 +16,7 @@ interface Photo {
   url: string;
   uploadedBy: string;
   uploadedAt: string;
+  description?: string;
 }
 
 interface Props {
@@ -288,6 +289,21 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manPowerPhotos: JSON.stringify(newPhotos) })
       });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const updatePhotoDescription = async (id: string, description: string) => {
+    try {
+      // Find the specific photo to check if it really changed (optional optimization)
+      const newPhotos = photos.map(p => p.id === id ? { ...p, description } : p);
+      
+      const res = await fetch(`/api/actividades/${activityId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manPowerPhotos: JSON.stringify(newPhotos) })
+      });
       if (!res.ok) console.error('Error del servidor:', await res.text());
     } catch (err) {
       console.error(err);
@@ -489,17 +505,30 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {photos.map((photo, i) => (
-              <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-square bg-slate-100 flex items-center justify-center">
-                <img src={photo.url} alt={`Evidencia ${i + 1}`} className="object-cover w-full h-full" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                  <button onClick={() => deletePhoto(photo.id)} className="self-end bg-red-500 text-white p-1.5 rounded-lg hover:bg-red-600">
-                    <Trash2 size={14} />
-                  </button>
-                  <div className="text-white text-[10px] bg-black/60 p-1 rounded backdrop-blur-sm">
-                    <p className="font-medium truncate">{photo.uploadedBy}</p>
-                    <p className="text-white/70">{new Date(photo.uploadedAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</p>
+              <div key={photo.id} className="flex flex-col gap-1">
+                <div className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-square bg-slate-100 flex items-center justify-center">
+                  <img src={photo.url} alt={`Evidencia ${i + 1}`} className="object-cover w-full h-full" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                    <button onClick={() => deletePhoto(photo.id)} className="self-end bg-red-500 text-white p-1.5 rounded-lg hover:bg-red-600">
+                      <Trash2 size={14} />
+                    </button>
+                    <div className="text-white text-[10px] bg-black/60 p-1 rounded backdrop-blur-sm">
+                      <p className="font-medium truncate">{photo.uploadedBy}</p>
+                      <p className="text-white/70">{new Date(photo.uploadedAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                    </div>
                   </div>
                 </div>
+                <input 
+                  type="text" 
+                  value={photo.description || ''}
+                  onChange={(e) => {
+                    const newPhotos = photos.map(p => p.id === photo.id ? { ...p, description: e.target.value } : p);
+                    setPhotos(newPhotos);
+                  }}
+                  onBlur={(e) => updatePhotoDescription(photo.id, e.target.value)}
+                  placeholder="Descripción (opcional)"
+                  className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md text-slate-700 bg-slate-50 focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors"
+                />
               </div>
             ))}
           </div>

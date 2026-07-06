@@ -479,7 +479,23 @@ export function ManPowerClient({
 
       const res = await fetch('/api/weekend-assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (!res.ok) { alert(data.error || 'Error al asignar'); return; }
+      if (!res.ok) { 
+        if (res.status === 409) {
+          // Si ya está asignado (desync de estado), refrescamos las asignaciones desde el servidor
+          const refreshRes = await fetch(`/api/weekend-assignments?weekendOf=${weekendOf}`);
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            setTechAssignments(refreshData.techAssignments);
+            setSafetyAssignments(refreshData.safetyAssignments);
+            setVehicleAssignments(refreshData.vehicleAssignments);
+            setDriverAssignments(refreshData.driverAssignments);
+            setEquipAssignments(refreshData.equipAssignments);
+          }
+        } else {
+          alert(data.error || 'Error al asignar'); 
+        }
+        return; 
+      }
 
       if (data.conflicts?.length > 0) {
         const msgs = data.conflicts.map((c: any) => `⚠️ "${c.activityTitle}" (${c.startTime || '?'} - ${c.endTime || '?'}) ${c.day || ''} ${c.company || ''}`.trim());
@@ -2937,6 +2953,7 @@ export function ManPowerClient({
           aiSummary={executiveSummaryText}
           onClose={() => setShowExecutiveSummary(false)}
           reportContext={reportLabel}
+          reportEquipo={reportEquipo}
         />
       )}
     </div>

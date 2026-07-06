@@ -25,9 +25,10 @@ interface ExecutiveSummaryPDFProps {
   aiSummary: string;
   onClose: () => void;
   reportContext: string;
+  reportEquipo?: string;
 }
 
-export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, onClose, reportContext }: ExecutiveSummaryPDFProps) {
+export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, onClose, reportContext, reportEquipo }: ExecutiveSummaryPDFProps) {
   
   // -- Calculations --
   const totalDays = new Set(activities.map(a => a.date)).size;
@@ -100,6 +101,10 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
     };
   });
 
+  const equipoHoursData = Object.entries(hoursByEquipo)
+    .map(([name, hours]) => ({ name, hours: Number(hours.toFixed(1)) }))
+    .sort((a, b) => b.hours - a.hours);
+
   // Colors for charts
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6'];
 
@@ -159,7 +164,13 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 relative print:shadow-none print:my-0 print:w-full print:max-w-none print:rounded-none pb-20 print:pb-0">
         
         {/* Printable Area */}
-        <div className="p-10 print:p-6" id="pdf-content">
+        <div className="p-10 print:p-6 relative z-10" id="pdf-content">
+          
+          {/* Watermark for Print */}
+          <div className="hidden print:flex fixed inset-0 pointer-events-none z-[-1] opacity-[0.08] items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/LOGO_DROBOTS.png" alt="Watermark" className="w-[70%] max-w-2xl object-contain grayscale" />
+          </div>
           
           {/* Header */}
           <div className="flex justify-between items-start border-b-2 border-indigo-900 pb-6 mb-8">
@@ -220,16 +231,19 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
             </div>
 
             {/* Horas Registradas por Actividad */}
+            {/* Horas Registradas por Actividad/Equipo */}
             <div className="border border-slate-200 rounded-xl p-4 flex flex-col print:border-none print:p-0 overflow-hidden">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider text-center mb-4">Horas por Actividad</h3>
-              <div className="flex-1 w-full" style={{ minHeight: `${Math.max(100, activityHoursData.length * 35)}px` }}>
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider text-center mb-4">
+                {reportEquipo === 'ALL' ? 'Horas por Equipo' : 'Horas por Actividad'}
+              </h3>
+              <div className="flex-1 w-full" style={{ minHeight: `${Math.max(100, (reportEquipo === 'ALL' ? equipoHoursData.length : activityHoursData.length) * 35)}px` }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={activityHoursData} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 5 }}>
+                  <BarChart data={reportEquipo === 'ALL' ? equipoHoursData : activityHoursData} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 5 }}>
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" width={50} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="name" type="category" width={reportEquipo === 'ALL' ? 120 : 50} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
                     <Tooltip cursor={{ fill: 'transparent' }} formatter={(value: any) => [`${value} hrs`, 'Duración']} />
                     <Bar dataKey="hours" radius={[0, 4, 4, 0]} barSize={16} label={{ position: 'right', formatter: (val: any) => `${val}h`, fill: '#64748b', fontSize: 12, fontWeight: 500 }}>
-                      {activityHoursData.map((entry, index) => (
+                      {(reportEquipo === 'ALL' ? equipoHoursData : activityHoursData).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Bar>
@@ -269,7 +283,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={photos[0].url} alt={`Evidencia ${act.equipo}`} className="w-full h-full object-cover grayscale-[20%] print:grayscale-0" />
                           <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-1">
-                            <p className="text-[10px] text-white font-medium truncate text-center">{act.equipo || 'General'}</p>
+                            <p className="text-[10px] text-white font-medium truncate text-center">{photos[0].description || act.equipo || 'General'}</p>
                           </div>
                         </div>
                       );
