@@ -61,7 +61,7 @@ Enumera con viñetas las actividades ejecutadas y su fecha. Ejemplo: • 1. Tít
 Extrae una lista de pendientes en viñetas basándote en las notas de resultados, seguimiento y observaciones. Si un técnico reporta algo como faltante o incompleto, ponlo aquí. Si no hay nada, omite esta sección o pon "Sin pendientes registrados".
 
 4. Materiales Requeridos
-Extrae una lista de refacciones/materiales en viñetas usando los "Materiales vinculados" de los reportes, así como cualquier requerimiento que los técnicos mencionen en las notas. Si no hay, omite la sección o pon "Sin requerimientos".
+Extrae una lista de refacciones/materiales en viñetas usando ÚNICAMENTE y EXCLUSIVAMENTE los "Materiales vinculados" proporcionados explícitamente en el listado de abajo. NO inventes ni deduzcas materiales de las notas. Si no se listan "Materiales vinculados", omite la sección o pon "Sin requerimientos".
 
 5. Anexos - Evidencias Fotográficas
 Solamente imprime este texto literalmente como título (la aplicación inyectará las fotos aquí abajo, tú no debes intentar insertar fotos).`;
