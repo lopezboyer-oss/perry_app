@@ -23,12 +23,13 @@ interface ExecutiveSummaryPDFProps {
   activities: Activity[];
   techAssignments: any[];
   aiSummary: string;
+  aiSummaries?: {equipo: string, resumen: string}[];
   onClose: () => void;
   reportContext: string;
   reportEquipo?: string;
 }
 
-export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, onClose, reportContext, reportEquipo }: ExecutiveSummaryPDFProps) {
+export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, aiSummaries, onClose, reportContext, reportEquipo }: ExecutiveSummaryPDFProps) {
   
   // -- Calculations --
   const totalDays = new Set(activities.map(a => a.date)).size;
@@ -167,7 +168,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
         <div className="p-10 print:p-6 relative z-10" id="pdf-content">
           
           {/* Watermark for Print */}
-          <div className="hidden print:flex fixed inset-0 pointer-events-none z-[-1] opacity-[0.08] items-center justify-center">
+          <div className="hidden print:flex fixed inset-0 pointer-events-none z-[-1] opacity-[0.18] items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/LOGO_DROBOTS.png" alt="Watermark" className="w-[70%] max-w-2xl object-contain grayscale" />
           </div>
@@ -255,47 +256,92 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
           </div>
 
           {/* AI Summary Section */}
-          <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-8 print:bg-transparent print:border-slate-300">
-            <h2 className="text-lg font-black text-indigo-950 uppercase tracking-wider mb-6 flex items-center gap-2 border-b-2 border-indigo-900 pb-2">
-              <span className="text-indigo-600">✨</span> Síntesis Ejecutiva
-            </h2>
-            <div className="text-slate-700 text-[13px] leading-relaxed">
-              {renderMarkdown(aiSummary)}
-            </div>
-          </div>
-
-          {/* Page Break for print if needed */}
-          <div className="print:break-before-page"></div>
-
-          {/* Opcional: Extracto de Evidencias */}
-          <div className="mt-8">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">Evidencia Destacada</h2>
-            <div className="grid grid-cols-4 gap-4">
-              {activities
-                .filter(a => a.manPowerPhotos && a.manPowerPhotos !== "[]")
-                .slice(0, 4) // Solo las 4 primeras actividades con fotos para no hacer el reporte tan grande
-                .map((act, idx) => {
+          {reportEquipo === 'ALL' && aiSummaries && aiSummaries.length > 0 ? (
+            <div className="mb-8">
+              {aiSummaries.map((summaryObj, sIdx) => {
+                // Find photos for this equipment
+                const eqActivities = activities.filter(a => (a.manPowerEquipo || a.equipo || 'Sin Equipo') === summaryObj.equipo);
+                const eqPhotos = eqActivities.reduce((acc: any[], act) => {
                   try {
-                    const photos = JSON.parse(act.manPowerPhotos as string);
-                    if (photos && photos.length > 0) {
-                      return (
-                        <div key={idx} className="aspect-video bg-slate-100 rounded-lg overflow-hidden border border-slate-200 relative">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={photos[0].url} alt={`Evidencia ${act.equipo}`} className="w-full h-full object-cover grayscale-[20%] print:grayscale-0" />
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-1">
-                            <p className="text-[10px] text-white font-medium truncate text-center">{photos[0].description || act.equipo || 'General'}</p>
-                          </div>
+                    const photos = act.manPowerPhotos ? JSON.parse(act.manPowerPhotos) : [];
+                    return [...acc, ...photos];
+                  } catch(e) { return acc; }
+                }, []);
+                
+                return (
+                  <div key={sIdx} className="mb-10 bg-slate-50 border border-slate-200 rounded-xl p-8 print:bg-transparent print:border-slate-300 print:mb-8 print:break-inside-avoid">
+                    <h2 className="text-lg font-black text-indigo-950 uppercase tracking-wider mb-4 flex items-center gap-2 border-b-2 border-indigo-900 pb-2">
+                      <span className="text-indigo-600">✨</span> Resumen Ejecutivo Para Equipo {summaryObj.equipo}
+                    </h2>
+                    <div className="text-slate-700 text-[13px] leading-relaxed mb-6 whitespace-pre-wrap">
+                      {summaryObj.resumen}
+                    </div>
+                    
+                    {eqPhotos.length > 0 && (
+                      <div className="mt-4">
+                        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 border-b border-slate-200 pb-1">Evidencia Fotográfica ({summaryObj.equipo})</h3>
+                        <div className="grid grid-cols-4 gap-4">
+                          {eqPhotos.slice(0, 4).map((photo, pIdx) => (
+                            <div key={pIdx} className="aspect-video bg-slate-100 rounded-lg overflow-hidden border border-slate-200 relative">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={photo.url} alt={`Evidencia ${summaryObj.equipo}`} className="w-full h-full object-cover grayscale-[20%] print:grayscale-0" />
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-1">
+                                <p className="text-[10px] text-white font-medium truncate text-center">{photo.description || summaryObj.equipo}</p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      );
-                    }
-                  } catch (e) {
-                    return null;
-                  }
-                  return null;
-                })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <p className="text-[10px] text-slate-400 mt-2 text-center">*Muestra representativa de evidencias. El archivo completo se encuentra en plataforma.</p>
-          </div>
+          ) : (
+            <>
+              <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-8 print:bg-transparent print:border-slate-300">
+                <h2 className="text-lg font-black text-indigo-950 uppercase tracking-wider mb-6 flex items-center gap-2 border-b-2 border-indigo-900 pb-2">
+                  <span className="text-indigo-600">✨</span> Síntesis Ejecutiva
+                </h2>
+                <div className="text-slate-700 text-[13px] leading-relaxed">
+                  {renderMarkdown(aiSummary)}
+                </div>
+              </div>
+
+              {/* Page Break for print if needed */}
+              <div className="print:break-before-page"></div>
+
+              {/* Opcional: Extracto de Evidencias */}
+              <div className="mt-8">
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">Evidencia Destacada</h2>
+                <div className="grid grid-cols-4 gap-4">
+                  {activities
+                    .filter(a => a.manPowerPhotos && a.manPowerPhotos !== "[]")
+                    .slice(0, 4)
+                    .map((act, idx) => {
+                      try {
+                        const photos = JSON.parse(act.manPowerPhotos as string);
+                        if (photos && photos.length > 0) {
+                          return (
+                            <div key={idx} className="aspect-video bg-slate-100 rounded-lg overflow-hidden border border-slate-200 relative">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={photos[0].url} alt={`Evidencia ${act.equipo}`} className="w-full h-full object-cover grayscale-[20%] print:grayscale-0" />
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-1">
+                                <p className="text-[10px] text-white font-medium truncate text-center">{photos[0].description || act.equipo || 'General'}</p>
+                              </div>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        return null;
+                      }
+                      return null;
+                    })}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2 text-center">*Muestra representativa de evidencias. El archivo completo se encuentra en plataforma.</p>
+              </div>
+            </>
+          )}
 
           {/* Footer */}
           <div className="mt-12 pt-6 border-t border-slate-200 text-center print:fixed print:bottom-6 print:left-0 print:right-0 print:border-none print:pt-0">

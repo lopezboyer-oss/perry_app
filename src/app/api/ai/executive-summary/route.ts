@@ -66,16 +66,22 @@ Extrae una lista de refacciones/materiales en viñetas usando ÚNICAMENTE y EXCL
 5. Anexos - Evidencias Fotográficas
 Solamente imprime este texto literalmente como título (la aplicación inyectará las fotos aquí abajo, tú no debes intentar insertar fotos).`;
     } else {
-      systemPrompt = `Eres un gerente de proyectos de ingeniería altamente capacitado.
-Tu tarea es leer los siguientes reportes de técnicos en campo de múltiples equipos y redactar un Resumen Ejecutivo Multidisciplinario de máximo 3 párrafos.
-Este resumen será leído por la gerencia del cliente.
-Debes sonar muy profesional, analítico y conciso. Omite la jerga técnica innecesaria.
-Enfócate en:
-1. Hitos logrados o avances importantes agrupados por áreas o equipos principales.
-2. Problemas globales, alertas o riesgos detectados que afecten múltiples actividades.
-3. El estado general de los proyectos. IMPORTANTE: NO emitas conclusiones genéricas ni inventes porcentajes de avance total (ej. "estado COMPLETADO con un avance del 100%").
+      systemPrompt = `Eres un gerente de proyectos de ingeniería.
+Tu tarea es leer los reportes de técnicos en campo de múltiples equipos y redactar un resumen ejecutivo POR EQUIPO.
+Debes devolver ESTRICTAMENTE un arreglo JSON con la siguiente estructura:
+[
+  {
+    "equipo": "Nombre del Equipo",
+    "resumen": "Párrafo narrativo sobre este equipo..."
+  }
+]
 
-Evita usar saludos. Ve directo al grano. Usa negritas para destacar equipos o métricas, mantenlo en estilo de párrafo narrativo ejecutivo. NO satures con detalles individuales si no son de alto impacto.`;
+Reglas para el resumen de cada equipo:
+1. NO des detalles de materiales específicos ni listes actividades una por una.
+2. Menciona de forma narrada cuántas actividades tuvo el equipo en el periodo.
+3. Menciona si requirió o no materiales/refacciones (sin listarlos).
+4. Menciona hitos o problemas generales.
+5. NO inventes porcentajes de avance total ni emitas conclusiones genéricas de completitud.`;
     }
 
     const text = `${systemPrompt}\n\nDatos Extraídos de la Base de Datos:\n${promptData}`;
@@ -94,6 +100,7 @@ Evita usar saludos. Ve directo al grano. Usa negritas para destacar equipos o m�
         ],
         generationConfig: {
           temperature: 0.3,
+          responseMimeType: reportEquipo === 'ALL' ? "application/json" : "text/plain"
         }
       })
     });
@@ -105,9 +112,19 @@ Evita usar saludos. Ve directo al grano. Usa negritas para destacar equipos o m�
     }
 
     const data = await response.json();
-    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const summaryText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    return NextResponse.json({ summary: summary.trim() });
+    if (reportEquipo === 'ALL') {
+      try {
+        const parsed = JSON.parse(summaryText);
+        return NextResponse.json({ summary: parsed, type: 'json' });
+      } catch (e) {
+        console.error("Error parsing Gemini JSON:", e);
+        return NextResponse.json({ summary: [], type: 'json', error: 'Fallo al procesar JSON de la IA' });
+      }
+    }
+
+    return NextResponse.json({ summary: summaryText.trim(), type: 'text' });
   } catch (error: any) {
     console.error('Error generating executive summary:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

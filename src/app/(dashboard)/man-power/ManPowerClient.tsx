@@ -291,6 +291,7 @@ export function ManPowerClient({
   const [showExecutiveSummary, setShowExecutiveSummary] = useState(false);
   const [executiveSummaryLoading, setExecutiveSummaryLoading] = useState(false);
   const [executiveSummaryText, setExecutiveSummaryText] = useState('');
+  const [executiveSummaries, setExecutiveSummaries] = useState<{equipo: string, resumen: string}[]>([]);
   
   const [reportEquipo, setReportEquipo] = useState('ALL');
   const [reportDateRangeType, setReportDateRangeType] = useState('HOY');
@@ -785,7 +786,11 @@ export function ManPowerClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al generar resumen');
       
-      setExecutiveSummaryText(data.summary);
+      if (data.type === 'json') {
+        setExecutiveSummaries(data.summary || []);
+      } else {
+        setExecutiveSummaryText(data.summary);
+      }
     } catch (err: any) {
       console.error(err);
       setExecutiveSummaryText('Error al generar la síntesis ejecutiva: ' + err.message);
@@ -2951,6 +2956,7 @@ export function ManPowerClient({
           activities={reportActivities}
           techAssignments={techAssignments}
           aiSummary={executiveSummaryText}
+          aiSummaries={executiveSummaries}
           onClose={() => setShowExecutiveSummary(false)}
           reportContext={reportLabel}
           reportEquipo={reportEquipo}
