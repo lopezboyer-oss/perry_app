@@ -16,6 +16,7 @@ interface Activity {
   endTime?: string | null;
   actualStartTime?: string | null;
   actualEndTime?: string | null;
+  user?: { id: string; name: string } | null;
 }
 
 interface ExecutiveSummaryPDFProps {
@@ -58,7 +59,13 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
 
     // Number of technicians assigned
     const actTechs = techAssignments.filter(ta => ta.activityId === act.id);
-    actTechs.forEach(ta => uniqueTechs.add(ta.technicianId));
+    if (actTechs.length > 0) {
+      actTechs.forEach(ta => uniqueTechs.add(ta.technicianId));
+    } else if (act.user) {
+      uniqueTechs.add(act.user.id);
+    } else {
+      uniqueTechs.add('unknown-' + act.id);
+    }
     
     const techsCount = actTechs.length || 1; // Default to 1 if no techs assigned but activity happened
     
@@ -81,6 +88,40 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
 
   // Colors for charts
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6'];
+
+  // -- Custom Markdown Renderer for AI Summary --
+  const renderMarkdown = (text: string) => {
+    if (!text) return null;
+    const lines = text.split('\n');
+    return lines.map((line, idx) => {
+      // Make bold
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+      const formattedLine = parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i} className="font-bold text-slate-800">{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      });
+
+      if (line.trim().match(/^[1-5]\.\s/)) {
+        return (
+          <h3 key={idx} className="text-sm font-black text-indigo-900 uppercase tracking-wider mt-6 mb-2 border-b border-indigo-100 pb-1">
+            {formattedLine}
+          </h3>
+        );
+      }
+      if (line.trim().startsWith('* ') || line.trim().startsWith('- ') || line.trim().startsWith('• ')) {
+        return (
+          <div key={idx} className="flex gap-2 mb-1.5 pl-2">
+            <span className="text-indigo-400 font-bold">•</span>
+            <span className="text-slate-700">{formattedLine}</span>
+          </div>
+        );
+      }
+      if (line.trim() === '') return <div key={idx} className="h-2"></div>;
+      return <p key={idx} className="mb-2 text-slate-700">{formattedLine}</p>;
+    });
+  };
 
   const handlePrint = () => {
     window.print();
@@ -186,12 +227,12 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
           </div>
 
           {/* AI Summary Section */}
-          <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-6 print:bg-transparent print:border-slate-300">
-            <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <span className="text-indigo-500">✨</span> Síntesis Ejecutiva
+          <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-8 print:bg-transparent print:border-slate-300">
+            <h2 className="text-lg font-black text-indigo-950 uppercase tracking-wider mb-6 flex items-center gap-2 border-b-2 border-indigo-900 pb-2">
+              <span className="text-indigo-600">✨</span> Síntesis Ejecutiva
             </h2>
-            <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-              {aiSummary}
+            <div className="text-slate-700 text-[13px] leading-relaxed">
+              {renderMarkdown(aiSummary)}
             </div>
           </div>
 
