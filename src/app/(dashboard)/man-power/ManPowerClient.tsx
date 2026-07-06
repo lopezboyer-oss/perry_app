@@ -287,9 +287,17 @@ export function ManPowerClient({
   const [extraDaySaving, setExtraDaySaving] = useState(false);
 
   // Executive Summary State
+  const [showExecutiveSummaryConfig, setShowExecutiveSummaryConfig] = useState(false);
   const [showExecutiveSummary, setShowExecutiveSummary] = useState(false);
   const [executiveSummaryLoading, setExecutiveSummaryLoading] = useState(false);
   const [executiveSummaryText, setExecutiveSummaryText] = useState('');
+  
+  const [reportEquipo, setReportEquipo] = useState('ALL');
+  const [reportDateRangeType, setReportDateRangeType] = useState('HOY');
+  const [reportStartDate, setReportStartDate] = useState('');
+  const [reportEndDate, setReportEndDate] = useState('');
+  const [reportActivities, setReportActivities] = useState<Activity[]>([]);
+  const [reportLabel, setReportLabel] = useState('');
 
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -677,7 +685,77 @@ export function ManPowerClient({
     setTeraAuditorImageLoading((p) => ({ ...p, [actId]: false }));
   };
 
-  const generateExecutiveSummary = async () => {
+  const openExecutiveSummaryConfig = () => {
+    setReportEquipo('ALL');
+    setReportDateRangeType('HOY');
+    
+    // Set default dates to today
+    const tzOffset = new Date().getTimezoneOffset() * 60000; // offset in milliseconds
+    const localISOTime = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+    setReportStartDate(localISOTime);
+    setReportEndDate(localISOTime);
+    
+    setShowExecutiveSummaryConfig(true);
+  };
+
+  const handleGenerateClick = () => {
+    let filtered = [...activities];
+    
+    // 1. Filter by Equipo
+    if (reportEquipo !== 'ALL') {
+      filtered = filtered.filter(a => (a.manPowerEquipo || a.equipo) === reportEquipo);
+    }
+    
+    // 2. Filter by Date
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const localToday = new Date(today.getTime() - tzOffset);
+    localToday.setUTCHours(0,0,0,0);
+    
+    let label = '';
+    
+    if (reportDateRangeType === 'HOY') {
+      const todayStr = localToday.toISOString().slice(0, 10);
+      filtered = filtered.filter(a => a.date.startsWith(todayStr));
+      label = `Reporte del Día (${todayStr})`;
+    } else if (reportDateRangeType === 'AYER') {
+      const yesterday = new Date(localToday);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      const yesterdayStr = yesterday.toISOString().slice(0, 10);
+      filtered = filtered.filter(a => a.date.startsWith(yesterdayStr));
+      label = `Reporte del Día (${yesterdayStr})`;
+    } else if (reportDateRangeType === 'ULTIMOS_7') {
+      const sevenDaysAgo = new Date(localToday);
+      sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+      const startStr = sevenDaysAgo.toISOString().slice(0, 10);
+      const endStr = localToday.toISOString().slice(0, 10);
+      filtered = filtered.filter(a => a.date >= startStr && a.date <= endStr + 'T23:59:59');
+      label = `Últimos 7 días (${startStr} al ${endStr})`;
+    } else if (reportDateRangeType === 'CUSTOM') {
+      if (!reportStartDate || !reportEndDate) {
+        alert('Por favor selecciona la fecha de inicio y fin');
+        return;
+      }
+      filtered = filtered.filter(a => a.date >= reportStartDate && a.date <= reportEndDate + 'T23:59:59');
+      label = `Periodo del ${reportStartDate} al ${reportEndDate}`;
+    }
+
+    if (reportEquipo !== 'ALL') {
+      label += ` | Equipo: ${reportEquipo}`;
+    }
+
+    if (filtered.length === 0) {
+      alert('No se encontraron actividades en el periodo y equipo seleccionados.');
+      return;
+    }
+
+    setReportLabel(label);
+    setReportActivities(filtered);
+    setShowExecutiveSummaryConfig(false);
+    generateExecutiveSummary(filtered);
+  };
+
+  const generateExecutiveSummary = async (filteredActivities: Activity[]) => {
     setExecutiveSummaryLoading(true);
     setExecutiveSummaryText('');
     setShowExecutiveSummary(true);
@@ -686,7 +764,7 @@ export function ManPowerClient({
       const res = await fetch('/api/ai/executive-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ activities })
+        body: JSON.stringify({ activities: filteredActivities })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al generar resumen');
@@ -1418,7 +1496,7 @@ export function ManPowerClient({
             <button onClick={() => { setSelectedContractorId(assignedContractors[0]?.id || null); setShowContractorPlansModal(true); }} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-purple-50 !text-purple-700 !border-purple-300 hover:!bg-purple-100 leading-tight text-center">🏭 Plan<br/>Contratista</button>
           )}
           <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100 leading-tight text-center">🏗️ Reporte<br/>Equipos</button>
-          <button onClick={generateExecutiveSummary} disabled={executiveSummaryLoading} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-rose-50 !text-rose-700 !border-rose-300 hover:!bg-rose-100 disabled:opacity-50 leading-tight text-center">
+          <button onClick={openExecutiveSummaryConfig} disabled={executiveSummaryLoading} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-rose-50 !text-rose-700 !border-rose-300 hover:!bg-rose-100 disabled:opacity-50 leading-tight text-center">
             {executiveSummaryLoading ? <><Loader2 size={12} className="animate-spin" /> Analizando...</> : <><Download size={12} /> Resumen<br/>Ejecutivo</>}
           </button>
           <button onClick={exportCSV} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100 leading-tight text-center"><Download size={12} /> Exportar<br/>Excel</button>
@@ -2766,13 +2844,87 @@ export function ManPowerClient({
         </div>
       )}
 
+      {/* ── EXECUTIVE SUMMARY CONFIG MODAL ── */}
+      {showExecutiveSummaryConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowExecutiveSummaryConfig(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 animate-slide-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Download size={20} className="text-rose-600" /> Resumen Ejecutivo
+              </h3>
+              <button onClick={() => setShowExecutiveSummaryConfig(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Equipo / Proyecto</label>
+                <select 
+                  value={reportEquipo} 
+                  onChange={e => setReportEquipo(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-rose-500 transition-colors"
+                >
+                  <option value="ALL">Todos los Equipos</option>
+                  {[...new Set(activities.map(a => a.manPowerEquipo || a.equipo).filter(Boolean))].sort().map(eq => (
+                    <option key={eq as string} value={eq as string}>{eq as string}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Periodo de Tiempo</label>
+                <select 
+                  value={reportDateRangeType} 
+                  onChange={e => setReportDateRangeType(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-rose-500 transition-colors"
+                >
+                  <option value="HOY">Hoy</option>
+                  <option value="AYER">Ayer</option>
+                  <option value="ULTIMOS_7">Últimos 7 días</option>
+                  <option value="CUSTOM">Seleccionar periodo...</option>
+                </select>
+              </div>
+
+              {reportDateRangeType === 'CUSTOM' && (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Desde</label>
+                    <input 
+                      type="date" 
+                      value={reportStartDate} 
+                      onChange={e => setReportStartDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">Hasta</label>
+                    <input 
+                      type="date" 
+                      value={reportEndDate} 
+                      onChange={e => setReportEndDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <button 
+                onClick={handleGenerateClick}
+                className="w-full py-2.5 mt-4 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 active:scale-[0.98] transition-all flex justify-center items-center gap-2 shadow-lg shadow-rose-200"
+              >
+                Generar Resumen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── EXECUTIVE SUMMARY PDF MODAL ── */}
       {showExecutiveSummary && !executiveSummaryLoading && (
         <ExecutiveSummaryPDF
-          activities={activities}
+          activities={reportActivities}
           aiSummary={executiveSummaryText}
           onClose={() => setShowExecutiveSummary(false)}
-          reportContext={weekendLabel}
+          reportContext={reportLabel}
         />
       )}
     </div>
