@@ -88,21 +88,21 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/80 flex items-center justify-center p-4 overflow-y-auto print:bg-white print:p-0 print:block">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 relative print:shadow-none print:m-0 print:w-full print:max-w-none print:rounded-none">
-        
-        {/* Controls - Hidden in print */}
-        <div className="bg-slate-100 border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl print:hidden">
-          <h2 className="text-lg font-bold text-slate-800">Vista Previa del Reporte</h2>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors">
-              Cancelar
-            </button>
-            <button onClick={handlePrint} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
-              Imprimir / Guardar PDF
-            </button>
-          </div>
-        </div>
+      
+      {/* Floating Controls - Hidden in print */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl z-[60] print:hidden border border-slate-700/50">
+        <span className="text-white/90 font-medium text-sm hidden sm:block">Vista Previa del Reporte</span>
+        <div className="w-px h-5 bg-white/20 hidden sm:block"></div>
+        <button onClick={onClose} className="text-slate-300 hover:text-white text-sm font-medium transition-colors px-2">
+          Cerrar
+        </button>
+        <button onClick={handlePrint} className="px-5 py-2 bg-indigo-500 text-white rounded-full text-sm font-bold hover:bg-indigo-400 transition-colors shadow-lg flex items-center gap-2">
+          Imprimir / Guardar PDF
+        </button>
+      </div>
 
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 relative print:shadow-none print:my-0 print:w-full print:max-w-none print:rounded-none pb-20 print:pb-0">
+        
         {/* Printable Area */}
         <div className="p-10 print:p-6" id="pdf-content">
           
@@ -120,7 +120,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
           </div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-3 gap-6 mb-10">
+          <div className="grid grid-cols-3 gap-6 mb-8">
             <div className="border-l-4 border-indigo-500 bg-indigo-50/50 p-4 rounded-r-lg print:border-slate-300 print:bg-transparent">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Técnicos Involucrados</p>
               <p className="text-3xl font-black text-indigo-950">{totalTechs}</p>
@@ -132,16 +132,6 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
             <div className="border-l-4 border-amber-500 bg-amber-50/50 p-4 rounded-r-lg print:border-slate-300 print:bg-transparent">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Días Reportados</p>
               <p className="text-3xl font-black text-amber-950">{totalDays}</p>
-            </div>
-          </div>
-
-          {/* AI Summary Section */}
-          <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-6 print:bg-transparent print:border-slate-300">
-            <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <span className="text-indigo-500">✨</span> Síntesis Ejecutiva
-            </h2>
-            <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-              {aiSummary}
             </div>
           </div>
 
@@ -193,6 +183,16 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
               </div>
             </div>
 
+          </div>
+
+          {/* AI Summary Section */}
+          <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-6 print:bg-transparent print:border-slate-300">
+            <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <span className="text-indigo-500">✨</span> Síntesis Ejecutiva
+            </h2>
+            <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+              {aiSummary}
+            </div>
           </div>
 
           {/* Page Break for print if needed */}
