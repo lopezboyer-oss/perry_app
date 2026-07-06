@@ -12,21 +12,26 @@ interface Activity {
   timeRegistryEntries?: any[];
   parts?: any[];
   manPowerPhotos?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
 }
 
 interface ExecutiveSummaryPDFProps {
   activities: Activity[];
+  techAssignments: any[];
   aiSummary: string;
   onClose: () => void;
-  reportContext: string; // e.g. "Semana del 1 al 7 de Julio"
+  reportContext: string;
 }
 
-export function ExecutiveSummaryPDF({ activities, aiSummary, onClose, reportContext }: ExecutiveSummaryPDFProps) {
+export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, onClose, reportContext }: ExecutiveSummaryPDFProps) {
   
   // -- Calculations --
   const totalDays = new Set(activities.map(a => a.date)).size;
   
-  let totalHours = 0;
+  let totalManHours = 0;
   const uniqueTechs = new Set<string>();
   
   const hoursByEquipo: Record<string, number> = {};
@@ -36,16 +41,31 @@ export function ExecutiveSummaryPDF({ activities, aiSummary, onClose, reportCont
     const equipo = act.manPowerEquipo || act.equipo || 'Sin Equipo';
     activitiesByEquipo[equipo] = (activitiesByEquipo[equipo] || 0) + 1;
 
-    let actHours = 0;
-    act.timeRegistryEntries?.forEach(entry => {
-      uniqueTechs.add(entry.technicianId);
-      // Ensure we treat manualTotalMinutes safely
-      const mins = Number(entry.manualTotalMinutes) || 0;
-      actHours += (mins / 60);
-    });
+    // Calculate duration of the activity
+    let actDurationHours = 0;
     
-    totalHours += actHours;
-    hoursByEquipo[equipo] = (hoursByEquipo[equipo] || 0) + actHours;
+    const startStr = (act.actualStartTime && act.actualEndTime) ? act.actualStartTime : act.startTime;
+    const endStr = (act.actualStartTime && act.actualEndTime) ? act.actualEndTime : act.endTime;
+    
+    if (startStr && endStr) {
+      const [sh, sm] = startStr.split(':').map(Number);
+      const [eh, em] = endStr.split(':').map(Number);
+      let sMins = sh * 60 + sm;
+      let eMins = eh * 60 + em;
+      if (eMins < sMins) eMins += 1440; // overnight
+      actDurationHours = (eMins - sMins) / 60;
+    }
+
+    // Number of technicians assigned
+    const actTechs = techAssignments.filter(ta => ta.activityId === act.id);
+    actTechs.forEach(ta => uniqueTechs.add(ta.technicianId));
+    
+    const techsCount = actTechs.length || 1; // Default to 1 if no techs assigned but activity happened
+    
+    const actManHours = actDurationHours * techsCount;
+    totalManHours += actManHours;
+    
+    hoursByEquipo[equipo] = (hoursByEquipo[equipo] || 0) + actDurationHours;
   });
 
   const totalTechs = uniqueTechs.size;
@@ -71,10 +91,10 @@ export function ExecutiveSummaryPDF({ activities, aiSummary, onClose, reportCont
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 relative print:shadow-none print:m-0 print:w-full print:max-w-none print:rounded-none">
         
         {/* Controls - Hidden in print */}
-        <div className="sticky top-0 bg-white/90 backdrop-blur-sm border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl print:hidden z-10">
+        <div className="bg-slate-100 border-b border-slate-200 p-4 flex justify-between items-center rounded-t-xl print:hidden">
           <h2 className="text-lg font-bold text-slate-800">Vista Previa del Reporte</h2>
           <div className="flex gap-3">
-            <button onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors">
+            <button onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors">
               Cancelar
             </button>
             <button onClick={handlePrint} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
@@ -99,16 +119,6 @@ export function ExecutiveSummaryPDF({ activities, aiSummary, onClose, reportCont
             </div>
           </div>
 
-          {/* AI Summary Section */}
-          <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-6 print:bg-transparent print:border-slate-300">
-            <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <span className="text-indigo-500">✨</span> Síntesis Ejecutiva
-            </h2>
-            <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-              {aiSummary}
-            </div>
-          </div>
-
           {/* KPIs */}
           <div className="grid grid-cols-3 gap-6 mb-10">
             <div className="border-l-4 border-indigo-500 bg-indigo-50/50 p-4 rounded-r-lg print:border-slate-300 print:bg-transparent">
@@ -117,11 +127,21 @@ export function ExecutiveSummaryPDF({ activities, aiSummary, onClose, reportCont
             </div>
             <div className="border-l-4 border-emerald-500 bg-emerald-50/50 p-4 rounded-r-lg print:border-slate-300 print:bg-transparent">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Horas Hombre Totales</p>
-              <p className="text-3xl font-black text-emerald-950">{totalHours.toFixed(1)} <span className="text-lg text-emerald-700 font-semibold">hrs</span></p>
+              <p className="text-3xl font-black text-emerald-950">{totalManHours.toFixed(1)} <span className="text-lg text-emerald-700 font-semibold">hrs</span></p>
             </div>
             <div className="border-l-4 border-amber-500 bg-amber-50/50 p-4 rounded-r-lg print:border-slate-300 print:bg-transparent">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Días Reportados</p>
               <p className="text-3xl font-black text-amber-950">{totalDays}</p>
+            </div>
+          </div>
+
+          {/* AI Summary Section */}
+          <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-6 print:bg-transparent print:border-slate-300">
+            <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <span className="text-indigo-500">✨</span> Síntesis Ejecutiva
+            </h2>
+            <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+              {aiSummary}
             </div>
           </div>
 

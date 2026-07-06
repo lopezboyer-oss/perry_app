@@ -2918,10 +2918,22 @@ export function ManPowerClient({
         </div>
       )}
 
+      {/* ── EXECUTIVE SUMMARY LOADING MODAL ── */}
+      {showExecutiveSummary && executiveSummaryLoading && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 flex flex-col items-center text-center animate-slide-in">
+            <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Analizando con IA</h3>
+            <p className="text-sm text-slate-500">Gemini está leyendo los reportes y redactando la síntesis ejecutiva...</p>
+          </div>
+        </div>
+      )}
+
       {/* ── EXECUTIVE SUMMARY PDF MODAL ── */}
       {showExecutiveSummary && !executiveSummaryLoading && (
         <ExecutiveSummaryPDF
           activities={reportActivities}
+          techAssignments={techAssignments}
           aiSummary={executiveSummaryText}
           onClose={() => setShowExecutiveSummary(false)}
           reportContext={reportLabel}
