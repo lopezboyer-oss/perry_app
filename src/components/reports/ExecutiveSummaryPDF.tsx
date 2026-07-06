@@ -82,9 +82,23 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
     .map(([name, count]) => ({ name, value: count }))
     .sort((a, b) => b.value - a.value);
 
-  const hoursChartData = Object.entries(hoursByEquipo)
-    .map(([name, hours]) => ({ name, hours: Number(hours.toFixed(1)) }))
-    .sort((a, b) => b.hours - a.hours);
+  const activityHoursData = activities.map((act, index) => {
+    let duration = 0;
+    const startStr = (act.actualStartTime && act.actualEndTime) ? act.actualStartTime : act.startTime;
+    const endStr = (act.actualStartTime && act.actualEndTime) ? act.actualEndTime : act.endTime;
+    if (startStr && endStr) {
+      const [sh, sm] = startStr.split(':').map(Number);
+      const [eh, em] = endStr.split(':').map(Number);
+      let sMins = sh * 60 + sm;
+      let eMins = eh * 60 + em;
+      if (eMins < sMins) eMins += 1440; // overnight
+      duration = (eMins - sMins) / 60;
+    }
+    return {
+      name: `Act. ${index + 1}`,
+      hours: Number(duration.toFixed(1))
+    };
+  });
 
   // Colors for charts
   const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6'];
@@ -128,7 +142,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/80 flex items-center justify-center p-4 overflow-y-auto print:bg-white print:p-0 print:block">
+    <div className="fixed inset-0 z-50 bg-slate-900/80 flex items-start justify-center p-4 pt-10 overflow-y-auto print:bg-white print:p-0 print:block">
       
       {/* Floating Controls - Hidden in print */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl z-[60] print:hidden border border-slate-700/50">
@@ -177,7 +191,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
           </div>
 
           {/* Charts Row */}
-          <div className="grid grid-cols-2 gap-8 mb-10 h-64">
+          <div className="grid grid-cols-2 gap-8 mb-10 min-h-[16rem]">
             
             {/* Actividades por Equipo */}
             <div className="border border-slate-200 rounded-xl p-4 flex flex-col print:border-none print:p-0">
@@ -193,7 +207,7 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent, value }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
                     >
                       {activitiesChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -205,17 +219,17 @@ export function ExecutiveSummaryPDF({ activities, techAssignments, aiSummary, on
               </div>
             </div>
 
-            {/* Horas por Equipo */}
-            <div className="border border-slate-200 rounded-xl p-4 flex flex-col print:border-none print:p-0">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider text-center mb-4">Horas por Equipo</h3>
-              <div className="flex-1 w-full">
+            {/* Horas Registradas por Actividad */}
+            <div className="border border-slate-200 rounded-xl p-4 flex flex-col print:border-none print:p-0 overflow-hidden">
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider text-center mb-4">Horas por Actividad</h3>
+              <div className="flex-1 w-full" style={{ minHeight: `${Math.max(100, activityHoursData.length * 35)}px` }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={hoursChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={activityHoursData} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 5 }}>
                     <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
-                    <Tooltip cursor={{ fill: 'transparent' }} />
-                    <Bar dataKey="hours" radius={[0, 4, 4, 0]} barSize={24}>
-                      {hoursChartData.map((entry, index) => (
+                    <YAxis dataKey="name" type="category" width={50} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
+                    <Tooltip cursor={{ fill: 'transparent' }} formatter={(value) => [`${value} hrs`, 'Duración']} />
+                    <Bar dataKey="hours" radius={[0, 4, 4, 0]} barSize={16} label={{ position: 'right', formatter: (val: any) => `${val}h`, fill: '#64748b', fontSize: 12, fontWeight: 500 }}>
+                      {activityHoursData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Bar>
