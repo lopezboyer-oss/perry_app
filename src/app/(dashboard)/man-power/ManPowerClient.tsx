@@ -764,7 +764,7 @@ export function ManPowerClient({
       const res = await fetch('/api/ai/executive-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ activities: filteredActivities })
+        body: JSON.stringify({ activities: filteredActivities, reportEquipo })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al generar resumen');
