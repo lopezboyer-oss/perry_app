@@ -251,11 +251,12 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
       setPhotos(newPhotos);
       
       try {
-        await fetch(`/api/actividades/${activityId}`, {
-          method: 'PUT',
+        const res = await fetch(`/api/actividades/${activityId}`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ manPowerPhotos: JSON.stringify(newPhotos) })
         });
+        if (!res.ok) console.error('Error del servidor:', await res.text());
       } catch (err) {
         console.error('Error guardando foto', err);
       } finally {
@@ -271,11 +272,12 @@ export function ManPowerDetailSection({ activityId, equipo, folioOdoo, initialPh
     const newPhotos = photos.filter(p => p.id !== id);
     setPhotos(newPhotos);
     try {
-      await fetch(`/api/actividades/${activityId}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/actividades/${activityId}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ manPowerPhotos: JSON.stringify(newPhotos) })
       });
+      if (!res.ok) console.error('Error del servidor:', await res.text());
     } catch (err) {
       console.error(err);
     }

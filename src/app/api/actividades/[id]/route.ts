@@ -186,3 +186,36 @@ export async function DELETE(
     return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const body = await req.json();
+
+    // Partial update for specific fields (e.g., photos upload without touching other required fields)
+    const updateData: any = {};
+    if (body.manPowerPhotos !== undefined) {
+      updateData.manPowerPhotos = body.manPowerPhotos;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'Datos no proporcionados' }, { status: 400 });
+    }
+
+    const activity = await prisma.activity.update({
+      where: { id: params.id },
+      data: updateData
+    });
+
+    return NextResponse.json(activity);
+  } catch (error) {
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
+  }
+}
