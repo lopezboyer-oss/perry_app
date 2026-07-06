@@ -71,8 +71,7 @@ export default async function ManPowerPage() {
 
   let where: any = {
     AND: [
-      { id: { in: manPowerIds } },
-      { OR: dateRanges }
+      { id: { in: manPowerIds } }
     ]
   };
 
@@ -152,7 +151,7 @@ export default async function ManPowerPage() {
         parts: true,
         timeRegistryEntries: { select: { id: true, phase: true, time: true, registeredBy: true, userId: true, registeredAt: true }, orderBy: { registeredAt: 'asc' } },
       },
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }, { id: 'asc' }],
+      orderBy: [{ date: 'desc' }, { startTime: 'desc' }, { id: 'desc' }],
     }),
     prisma.technician.findMany({ where: { isActive: true }, select: { id: true, name: true, type: true, isCruzVerde: true, phone: true, contractorId: true, contractor: { select: { id: true, name: true } } }, orderBy: { name: 'asc' } }),
     prisma.safetyDedicado.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
@@ -181,8 +180,10 @@ export default async function ManPowerPage() {
     }),
   ]);
 
-  // Build plan days info for client
-  const planDays = allDates.map(dateStr => {
+  // Build plan days info for client based on fetched activities dates
+  const fetchedDates = [...new Set(activities.map(a => a.date.toISOString().substring(0, 10)))];
+
+  const planDays = fetchedDates.map(dateStr => {
     const isExtra = extraDays.some(d => d.date === dateStr);
     const extraInfo = extraDays.find(d => d.date === dateStr);
     const dayActivities = activities.filter(a => a.date.toISOString().startsWith(dateStr));

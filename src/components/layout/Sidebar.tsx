@@ -36,6 +36,7 @@ export const navItems = [
   { href: '/summer-shut-down', label: 'Summer Shut Down', icon: Sun },
   { href: '/planes-pasados', label: 'Planes Pasados', icon: Clock },
   { href: '/alarma-tera', label: 'Alarma TERA', icon: AlertTriangle },
+  { href: '/man-power', label: 'Man Power', icon: Target },
   { href: '/registro-equipos', label: 'Reg. Equipos', icon: Forklift },
   { href: '/registro-personal', label: 'Asistencia', icon: Timer },
   { href: '/cobranza', label: 'Recibos', icon: DollarSign },
@@ -45,7 +46,6 @@ export const navItems = [
   { href: '/oportunidades', label: 'Oportunidades', icon: Target, disabled: true },
   { href: '/analitica', label: 'Analítica', icon: BarChart3, disabled: true },
   { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
-  { href: '/man-power', label: 'Man Power', icon: Target },
   { href: '/dashboard-cliente', label: 'Cliente Tier 1', icon: BarChart3 },
 ];
 
