@@ -38,6 +38,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
           role: user.role,
           isSafetyAuditor: user.isSafetyAuditor,
+          accessManPower: user.accessManPower,
         };
       },
     }),

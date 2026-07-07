@@ -37,6 +37,12 @@ export default async function ManPowerPage() {
 
   const role = session.user.role;
   const userId = session.user.id;
+
+  // Verify access at page level
+  if (role !== 'ADMIN' && role !== 'ADMINISTRACION' && !(session.user as any).accessManPower) {
+    redirect('/dashboard');
+  }
+
   const { allWeekDates, saturdayStr: saturday } = getCurrentWeekAndSaturday();
 
   // Get extra days for this weekend's plan (if any)
