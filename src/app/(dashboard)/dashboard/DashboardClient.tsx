@@ -495,27 +495,14 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         </div>
       </div>
 
-      {/* KPI Cards — Row 1: Activities + Opportunities */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Cards — Row 1: Activities */}
+      <div className="grid grid-cols-2 gap-4">
         <KPICard
           title="Actividades Periodo"
           value={data.totalActivities}
           icon={ClipboardList}
           color="indigo"
           subtitle={periodLabel}
-        />
-        <KPICard
-          title="Oportunidades"
-          value={data.totalOpportunities}
-          icon={Target}
-          color="amber"
-        />
-        <KPICard
-          title="Lead Time Prom."
-          value={data.avgLeadTime}
-          suffix="días"
-          icon={TrendingUp}
-          color="purple"
         />
         <KPICard
           title="Personas Activas"
@@ -554,31 +541,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
         />
       </div>
 
-      {/* Alert cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="card p-4 border-l-4 border-l-amber-500">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-50 rounded-lg">
-              <Clock className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Pendientes de Cotizar</p>
-              <p className="text-2xl font-bold text-slate-800">{data.pendingQuotation}</p>
-            </div>
-          </div>
-        </div>
-        <div className="card p-4 border-l-4 border-l-violet-500">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-violet-50 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Lead Time Promedio</p>
-              <p className="text-2xl font-bold text-slate-800">{data.avgLeadTime > 0 ? `${data.avgLeadTime}d` : '—'}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { RegistroPersonalClient } from './RegistroPersonalClient';
 import { getTijuanaToday, parseLocalDate } from '@/lib/timezone';
+import { getCompanyFilterFromCookies } from '@/lib/company-context';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,9 +31,18 @@ function getImmediateWeekendDates(): { saturday: string; sunday: string } {
   return { saturday: fmt(saturday), sunday: fmt(sunday) };
 }
 
-export default async function RegistroPersonalPage() {
+export default async function RegistroPersonalPage({ searchParams }: { searchParams: { company?: string } }) {
   const session = await auth();
   if (!session) redirect('/login');
+
+  const companyFilter = await getCompanyFilterFromCookies(session.user.role, session.user.id);
+  const companyId = 'companyId' in companyFilter ? companyFilter.companyId : null;
+
+  let companyName = 'Todas';
+  if (companyId) {
+    const comp = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+    if (comp) companyName = comp.name;
+  }
 
   const { saturday, sunday } = getImmediateWeekendDates();
 
@@ -88,7 +98,10 @@ export default async function RegistroPersonalPage() {
   // Fetch active users list for supervisor/admin filters
   const users = isManager
     ? await prisma.user.findMany({
-        where: { isActive: true },
+        where: { 
+          isActive: true,
+          ...(companyId ? { companies: { some: { companyId } } } : {})
+        },
         select: {
           id: true,
           name: true,
@@ -132,6 +145,8 @@ export default async function RegistroPersonalPage() {
       currentUser={session.user}
       activities={serializedActivities}
       users={usersWithPhone}
+      companyId={companyId}
+      companyName={companyName}
     />
   );
 }

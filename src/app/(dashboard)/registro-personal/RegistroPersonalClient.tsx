@@ -9,6 +9,7 @@ import {
 import { playSuccessSound } from '@/lib/audio';
 import QRCode from 'qrcode';
 import { Html5Qrcode } from 'html5-qrcode';
+import * as XLSX from 'xlsx';
 
 interface ActivityOption {
   id: string;
@@ -41,9 +42,11 @@ interface RegistroPersonalClientProps {
   };
   activities: ActivityOption[];
   users: UserOption[];
+  companyId?: string | null;
+  companyName?: string;
 }
 
-export function RegistroPersonalClient({ currentUser, activities, users }: RegistroPersonalClientProps) {
+export function RegistroPersonalClient({ currentUser, activities, users, companyId, companyName }: RegistroPersonalClientProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'registro' | 'qr-generator' | 'historial'>('registro');
   
@@ -104,6 +107,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
   const [checkingLastEntry, setCheckingLastEntry] = useState(true);
 
   const isSupervisorOrAdmin = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(currentUser.role);
+  const isAdminOrAdministracion = ['ADMIN', 'ADMINISTRACION'].includes(currentUser.role);
   const canGenerateQr = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'INGENIERO'].includes(currentUser.role);
 
   // ----------------------------------------------------
@@ -417,6 +421,7 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
     setLogsLoading(true);
     try {
       let url = '/api/time-clock?';
+      if (companyId) url += `companyId=${companyId}&`;
       if (filterUser) url += `userId=${filterUser}&`;
       if (filterType) url += `type=${filterType}&`;
       if (filterStartDate) url += `startDate=${filterStartDate}&`;
@@ -882,6 +887,13 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
       )}
 
       {/* ---------------------------------------------------- */}
+      {/* EXPORT TO EXCEL */}
+      {/* ---------------------------------------------------- */}
+      {(() => {
+        // defined here to keep the code organized, but can be called by the button
+      })()}
+
+      {/* ---------------------------------------------------- */}
       {/* HISTORIAL LOGS TAB */}
       {/* ---------------------------------------------------- */}
       {activeTab === 'historial' && (
@@ -986,24 +998,27 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                 </select>
               </div>
 
-              {/* Start Date */}
-              <div className="w-[150px]">
-                <input
-                  type="date"
-                  className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2"
-                  value={filterStartDate}
-                  onChange={(e) => setFilterStartDate(e.target.value)}
-                />
-              </div>
-
-               {/* End Date */}
-              <div className="w-[150px]">
-                <input
-                  type="date"
-                  className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2"
-                  value={filterEndDate}
-                  onChange={(e) => setFilterEndDate(e.target.value)}
-                />
+              {/* Date Filters Group */}
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-1.5 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase ml-2">Inicio</span>
+                  <input
+                    type="date"
+                    className="w-[125px] text-xs border border-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                    value={filterStartDate}
+                    onChange={(e) => setFilterStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase">Fin</span>
+                  <input
+                    type="date"
+                    className="w-[125px] text-xs border border-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white mr-1"
+                    value={filterEndDate}
+                    onChange={(e) => setFilterEndDate(e.target.value)}
+                  />
+                </div>
               </div>
 
               {/* WhatsApp Share Credentials Button (for specific selected user) */}
@@ -1051,6 +1066,108 @@ export function RegistroPersonalClient({ currentUser, activities, users }: Regis
                   </button>
                 );
               })()}
+
+              {/* Export to Excel Button (Admin/Administración Only) */}
+              {isAdminOrAdministracion && (
+                <button
+                  onClick={() => {
+                    if (!logs || logs.length === 0) {
+                      alert("No hay datos para exportar.");
+                      return;
+                    }
+
+                    const groupedLogs = logs.reduce((acc: any, log: any) => {
+                      if (!acc[log.userId]) {
+                        acc[log.userId] = { user: log.user, logs: [] };
+                      }
+                      acc[log.userId].logs.push(log);
+                      return acc;
+                    }, {});
+
+                    const exportData: any[][] = [];
+                    exportData.push(["Empleado", "Entrada", "Salida", "Horas trabajadas"]);
+
+                    Object.values(groupedLogs).forEach(({ user, logs: userLogs }: any) => {
+                      const sortedLogs = [...userLogs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                      
+                      const shifts: any[] = [];
+                      let currentIn: any = null;
+
+                      sortedLogs.forEach(log => {
+                        if (log.type === 'CHECK_IN') {
+                          if (currentIn) {
+                            shifts.push({ in: new Date(currentIn.timestamp), out: null, hours: 0 });
+                          }
+                          currentIn = log;
+                        } else if (log.type === 'CHECK_OUT') {
+                          if (currentIn) {
+                            const inDate = new Date(currentIn.timestamp);
+                            const outDate = new Date(log.timestamp);
+                            const rawHours = (outDate.getTime() - inDate.getTime()) / (1000 * 60 * 60);
+                            const hours = Number(rawHours.toFixed(1));
+                            shifts.push({ in: inDate, out: outDate, hours });
+                            currentIn = null;
+                          } else {
+                            shifts.push({ in: null, out: new Date(log.timestamp), hours: 0 });
+                          }
+                        }
+                      });
+                      if (currentIn) {
+                        shifts.push({ in: new Date(currentIn.timestamp), out: null, hours: 0 });
+                      }
+
+                      const totalHours = Number(shifts.reduce((sum, shift) => sum + shift.hours, 0).toFixed(1));
+
+                      // Group Header Row
+                      exportData.push([`${user.name} (${shifts.length})`, null, null, totalHours]);
+
+                      // Details Rows
+                      shifts.forEach(shift => {
+                        exportData.push([
+                          user.name,
+                          shift.in || null,
+                          shift.out || null,
+                          shift.hours
+                        ]);
+                      });
+
+                      // Fila vacía para separar entre empleados
+                      exportData.push([]);
+                    });
+
+                    const ws = XLSX.utils.aoa_to_sheet(exportData, { cellDates: true });
+                    
+                    // Ajustar el ancho de las columnas
+                    ws['!cols'] = [
+                      { wch: 35 }, // Empleado
+                      { wch: 22 }, // Entrada
+                      { wch: 22 }, // Salida
+                      { wch: 18 }  // Horas trabajadas
+                    ];
+
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
+                    
+                    const compName = companyName || 'Todas';
+                    const startDateStr = filterStartDate || 'Inicio';
+                    const endDateStr = filterEndDate || 'Final';
+                    const fileName = `Asistencia_${compName}_${startDateStr}_${endDateStr}.xlsx`;
+                    
+                    XLSX.writeFile(wb, fileName);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition-colors rounded-lg shadow-sm ml-auto"
+                  title="Exportar a Excel"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                  </svg>
+                  Exportar a Excel
+                </button>
+              )}
             </div>
           )}
 

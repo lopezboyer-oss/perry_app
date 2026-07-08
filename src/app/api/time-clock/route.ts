@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const startParam = searchParams.get('startDate');
     const endParam = searchParams.get('endDate');
     const typeParam = searchParams.get('type');
+    const companyId = searchParams.get('companyId');
 
     const role = session.user.role;
     const isManager = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role);
@@ -22,6 +23,11 @@ export async function GET(req: NextRequest) {
     if (isManager) {
       if (userIdParam) {
         where.userId = userIdParam;
+      }
+      if (companyId) {
+        where.user = {
+          companies: { some: { companyId } }
+        };
       }
     } else {
       // Ingenieros only see their own records
