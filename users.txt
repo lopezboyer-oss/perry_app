@@ -1,0 +1,5 @@
+cmntxn14w000023m6r4zgjbym|Carlos Administrador|admin@perryapp.com|$2a$10$DaP52BcMdmUxI7.Hsy9maupoyzTuoKNrCbkq0OkYhHLRkoOxWEjBK|ADMIN||1775887624832|1775887624832
+cmntxn14z000123m66xpeyiwj|María García|supervisor@perryapp.com|$2a$10$c8oqymf3W65TPWRFx4lSlOzJ.TGfKTOOFVZT1U1deCc8Dv4ipNDAW|SUPERVISOR||1775887624835|1775887624835
+cmntxn150000323m68ubehthc|Pedro López|pedro@perryapp.com|$2a$10$GpJpZHERc/d81R1ewayGQ.qdto4fWvoReXyveVt/YQ8TI/7N6VGEe|INGENIERO|cmntxn14z000123m66xpeyiwj|1775887624836|1775887624836
+cmntxn150000523m620lpzs2e|Ana Martínez|ana@perryapp.com|$2a$10$GpJpZHERc/d81R1ewayGQ.qdto4fWvoReXyveVt/YQ8TI/7N6VGEe|INGENIERO|cmntxn14z000123m66xpeyiwj|1775887624837|1775887624837
+cmntxn151000723m6y24nid7w|Ricardo Hernández|ricardo@perryapp.com|$2a$10$GpJpZHERc/d81R1ewayGQ.qdto4fWvoReXyveVt/YQ8TI/7N6VGEe|INGENIERO|cmntxn14z000123m66xpeyiwj|1775887624838|1775887624838

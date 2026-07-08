@@ -5,6 +5,7 @@ import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, Ha
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
+import { GanttViewModal } from '@/components/ui/GanttViewModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
 
 // ─── TYPES ──────────────────────────────────────────────────────
@@ -280,6 +281,7 @@ export function SummerShutDownClient({
   const [extraDayDate, setExtraDayDate] = useState('');
   const [extraDayLabel, setExtraDayLabel] = useState('');
   const [extraDaySaving, setExtraDaySaving] = useState(false);
+  const [showGanttModal, setShowGanttModal] = useState(false);
 
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -1334,7 +1336,7 @@ export function SummerShutDownClient({
   };
 
   return (
-    <div className="space-y-5 pb-20 md:pb-0 animate-fade-in">
+    <div className={`space-y-5 pb-20 md:pb-0 animate-fade-in ${showGanttModal ? 'print-gantt-mode' : ''}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -1366,6 +1368,9 @@ export function SummerShutDownClient({
               {exportingMulti ? <><Loader2 size={12} className="animate-spin" /> Generando...</> : <><Download size={12} /> Excel<br/>Multiempresa</>}
             </button>
           )}
+          <button onClick={() => setShowGanttModal(true)} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-indigo-50 !text-indigo-700 !border-indigo-300 hover:!bg-indigo-100 leading-tight text-center">
+            <CalendarDays size={12} /> Vista<br/>Gantt
+          </button>
         </div>
       </div>
 
@@ -2604,6 +2609,30 @@ export function SummerShutDownClient({
           </div>
         </div>
       )}
+
+      {/* GANTT VIEW MODAL */}
+      {showGanttModal && (() => {
+        const companyNames = new Set<string>();
+        activities.forEach(a => {
+          const aca = allCompanyActivities.find(ac => ac.id === a.id);
+          if (aca?.company?.name) companyNames.add(aca.company.name);
+        });
+        const dynamicCompanyName = companyNames.size === 1 ? Array.from(companyNames)[0] : companyName;
+
+        return (
+          <GanttViewModal
+            activities={activities}
+            techAssignments={techAssignments}
+            safetyAssignments={safetyAssignments}
+            equipAssignments={equipAssignments}
+            userSafetyAssignments={userSafetyAssignments}
+            lotoState={lotoState}
+            folioState={folioState}
+            companyName={dynamicCompanyName}
+            onClose={() => setShowGanttModal(false)}
+          />
+        );
+      })()}
     </div>
   );
 }
