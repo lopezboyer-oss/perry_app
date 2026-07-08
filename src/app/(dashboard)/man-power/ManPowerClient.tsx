@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
@@ -299,6 +299,11 @@ export function ManPowerClient({
   const [reportEndDate, setReportEndDate] = useState('');
   const [reportActivities, setReportActivities] = useState<Activity[]>([]);
   const [reportLabel, setReportLabel] = useState('');
+
+  // Expandable cards state
+  const [showVehiclesCard, setShowVehiclesCard] = useState(false);
+  const [showDriversCard, setShowDriversCard] = useState(false);
+  const [showEquipsCard, setShowEquipsCard] = useState(false);
 
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -1922,77 +1927,113 @@ export function ManPowerClient({
       {/* Per-day resource cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Vehículos por Día */}
-        <div className="bg-white rounded-xl border border-violet-200 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600 text-sm">🚗</span>
-            <p className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Vehículos por Día</p>
-          </div>
-          {resourceDayStats.map(d => (
-            <div key={d.date} className="mb-2 last:mb-0">
-              <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-violet-500'}`}>{d.dayLabel}</span>
-              {d.vehicles.length === 0 ? (
-                <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
-              ) : (
-                <div className="flex flex-wrap gap-1 mt-0.5">
-                  {d.vehicles.map(v => (
-                    <span key={v} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">{v}</span>
-                  ))}
-                </div>
-              )}
+        <div className="bg-white rounded-xl border border-violet-200 p-4 shadow-sm transition-all duration-200">
+          <div 
+            className="flex items-center justify-between cursor-pointer group"
+            onClick={() => setShowVehiclesCard(!showVehiclesCard)}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600 text-sm">🚗</span>
+              <p className="text-xs font-semibold text-violet-600 uppercase tracking-wider">Vehículos por Día</p>
             </div>
-          ))}
+            <button className="text-violet-400 group-hover:text-violet-600 transition-colors">
+              {showVehiclesCard ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+          </div>
+          {showVehiclesCard && (
+            <div className="mt-4 pt-4 border-t border-violet-100">
+              {resourceDayStats.map(d => (
+                <div key={d.date} className="mb-2 last:mb-0">
+                  <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-violet-500'}`}>{d.dayLabel}</span>
+                  {d.vehicles.length === 0 ? (
+                    <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {d.vehicles.map(v => (
+                        <span key={v} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">{v}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Choferes por Día */}
-        <div className="bg-white rounded-xl border border-cyan-200 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-7 h-7 rounded-lg bg-cyan-100 flex items-center justify-center text-cyan-600 text-sm">👤</span>
-            <p className="text-xs font-semibold text-cyan-600 uppercase tracking-wider">Choferes por Día</p>
-          </div>
-          {resourceDayStats.map(d => (
-            <div key={d.date} className="mb-2 last:mb-0">
-              <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-cyan-500'}`}>{d.dayLabel}</span>
-              {d.drivers.length === 0 ? (
-                <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
-              ) : (
-                <div className="flex flex-wrap gap-1 mt-0.5">
-                  {d.drivers.map(dr => (
-                    <span key={dr} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700 border border-cyan-200">{dr}</span>
-                  ))}
-                </div>
-              )}
+        <div className="bg-white rounded-xl border border-cyan-200 p-4 shadow-sm transition-all duration-200">
+          <div 
+            className="flex items-center justify-between cursor-pointer group"
+            onClick={() => setShowDriversCard(!showDriversCard)}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-cyan-100 flex items-center justify-center text-cyan-600 text-sm">👤</span>
+              <p className="text-xs font-semibold text-cyan-600 uppercase tracking-wider">Choferes por Día</p>
             </div>
-          ))}
+            <button className="text-cyan-400 group-hover:text-cyan-600 transition-colors">
+              {showDriversCard ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+          </div>
+          {showDriversCard && (
+            <div className="mt-4 pt-4 border-t border-cyan-100">
+              {resourceDayStats.map(d => (
+                <div key={d.date} className="mb-2 last:mb-0">
+                  <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-cyan-500'}`}>{d.dayLabel}</span>
+                  {d.drivers.length === 0 ? (
+                    <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {d.drivers.map(dr => (
+                        <span key={dr} className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-700 border border-cyan-200">{dr}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Equipos Elevación por Día */}
-        <div className="bg-white rounded-xl border border-orange-200 p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 text-sm">🏗️</span>
-            <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Eq. Elevación por Día</p>
-          </div>
-          {resourceDayStats.map(d => (
-            <div key={d.date} className="mb-2 last:mb-0">
-              <div className="flex items-center justify-between mb-1">
-                <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-orange-500'}`}>{d.dayLabel}</span>
-                <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">{d.equips.length} equipo{d.equips.length !== 1 ? 's' : ''}</span>
-              </div>
-              {d.equips.length === 0 ? (
-                <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
-              ) : (
-                <div className="flex flex-wrap gap-1 mt-0.5">
-                  {d.equips.map(eq => (
-                    <span key={eq.name} className="inline-flex items-center gap-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
-                      {eq.name}
-                      <span className={`text-[8px] px-1 rounded-sm font-bold ${eq.ownership === 'PROPIO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-500 text-white'}`}>
-                        {eq.ownership === 'PROPIO' ? 'P' : 'R'}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              )}
+        <div className="bg-white rounded-xl border border-orange-200 p-4 shadow-sm transition-all duration-200">
+          <div 
+            className="flex items-center justify-between cursor-pointer group"
+            onClick={() => setShowEquipsCard(!showEquipsCard)}
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 text-sm">🏗️</span>
+              <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Eq. Elevación por Día</p>
             </div>
-          ))}
+            <button className="text-orange-400 group-hover:text-orange-600 transition-colors">
+              {showEquipsCard ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </button>
+          </div>
+          {showEquipsCard && (
+            <div className="mt-4 pt-4 border-t border-orange-100">
+              {resourceDayStats.map(d => (
+                <div key={d.date} className="mb-2 last:mb-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-[10px] font-bold uppercase ${d.isExtra ? 'text-amber-600' : 'text-orange-500'}`}>{d.dayLabel}</span>
+                    <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">{d.equips.length} equipo{d.equips.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  {d.equips.length === 0 ? (
+                    <p className="text-xs text-slate-300 ml-2">— Sin asignar</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {d.equips.map(eq => (
+                        <span key={eq.name} className="inline-flex items-center gap-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
+                          {eq.name}
+                          <span className={`text-[8px] px-1 rounded-sm font-bold ${eq.ownership === 'PROPIO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-500 text-white'}`}>
+                            {eq.ownership === 'PROPIO' ? 'P' : 'R'}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

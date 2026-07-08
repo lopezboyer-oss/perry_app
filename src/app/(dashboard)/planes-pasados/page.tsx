@@ -43,20 +43,21 @@ export default async function PlanesPasadosPage({
     });
 
     // Build all dates: Saturday, Sunday + extra days
-    const satDate = new Date(`${selectedWeekend}T00:00:00Z`);
+    const [y, m, d] = selectedWeekend.split('-').map(Number);
+    const satDate = new Date(y, m - 1, d);
     const sunDateStr = (() => {
-      const d = new Date(satDate);
-      d.setDate(d.getDate() + 1);
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const sun = new Date(satDate);
+      sun.setDate(sun.getDate() + 1);
+      return `${sun.getFullYear()}-${String(sun.getMonth()+1).padStart(2,'0')}-${String(sun.getDate()).padStart(2,'0')}`;
     })();
-    const allDates = [...new Set([selectedWeekend, sunDateStr, ...extraDays.map(d => d.date)])];
+    const allDates = [...new Set([selectedWeekend, sunDateStr, ...extraDays.map(dayInfo => dayInfo.date)])];
     allDates.sort();
 
     // Build date ranges for query
     const dateRanges = allDates.map(dateStr => {
-      const d = new Date(`${dateStr}T00:00:00Z`);
-      const start = new Date(d); start.setHours(0, 0, 0, 0);
-      const end = new Date(d); end.setHours(23, 59, 59, 999);
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+      const end = new Date(year, month - 1, day, 23, 59, 59, 999);
       return { date: { gte: start, lte: end } };
     });
 
