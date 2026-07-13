@@ -1271,11 +1271,12 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                       exportData.push([`${user.name} (${shifts.length})`, null, null, totalHours]);
 
                       // Details Rows
+                      const fmtDate = (d: Date | null) => d ? d.toLocaleString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
                       shifts.forEach(shift => {
                         exportData.push([
                           user.name,
-                          shift.in || null,
-                          shift.out || null,
+                          fmtDate(shift.in),
+                          fmtDate(shift.out),
                           shift.hours
                         ]);
                       });
@@ -1284,7 +1285,7 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                       exportData.push([]);
                     });
 
-                    const ws = XLSX.utils.aoa_to_sheet(exportData, { cellDates: true });
+                    const ws = XLSX.utils.aoa_to_sheet(exportData);
                     
                     // Ajustar el ancho de las columnas
                     ws['!cols'] = [
