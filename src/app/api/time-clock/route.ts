@@ -25,8 +25,10 @@ export async function GET(req: NextRequest) {
         where.userId = userIdParam;
       }
       if (companyId) {
+        // When filtering by company, exclude users flagged with excludeFromCompanyLogs
         where.user = {
-          companies: { some: { companyId } }
+          companies: { some: { companyId } },
+          excludeFromCompanyLogs: false,
         };
       }
     } else {
@@ -73,7 +75,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Fetch all users to map verifiedByUserId to their name
+    // Fetch all users to map verifiedByUserId and registeredByUserId to their name
     const allUsers = await prisma.user.findMany({
       select: {
         id: true,
@@ -85,6 +87,7 @@ export async function GET(req: NextRequest) {
     const serializedEntries = entries.map(entry => ({
       ...entry,
       verifiedByUserName: entry.verifiedByUserId ? (userMap.get(entry.verifiedByUserId) || 'Supervisor') : null,
+      registeredByUserName: entry.registeredByUserId ? (userMap.get(entry.registeredByUserId) || 'Admin') : null,
     }));
 
     return NextResponse.json(serializedEntries);
@@ -109,43 +112,65 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const { type, method, latitude, longitude, accuracy, photo, activityId } = await req.json();
+    const { type, method, latitude, longitude, accuracy, photo, activityId, targetUserId, manualTimestamp, manualNotes } = await req.json();
 
     if (!type || !['CHECK_IN', 'CHECK_OUT'].includes(type)) {
       return NextResponse.json({ error: 'Tipo de registro inválido (CHECK_IN/CHECK_OUT)' }, { status: 400 });
     }
 
-    if (!method || !['GPS', 'SELFIE'].includes(method)) {
-      return NextResponse.json({ error: 'Método inválido (GPS/SELFIE)' }, { status: 400 });
+    if (!method || !['GPS', 'SELFIE', 'MANUAL'].includes(method)) {
+      return NextResponse.json({ error: 'Método inválido (GPS/SELFIE/MANUAL)' }, { status: 400 });
+    }
+
+    // MANUAL method: only ADMIN/ADMINISTRACION can use it
+    const isAdminOrAdministracion = ['ADMIN', 'ADMINISTRACION'].includes(session.user.role);
+    if (method === 'MANUAL' && !isAdminOrAdministracion) {
+      return NextResponse.json({ error: 'Solo administradores pueden registrar asistencia manual' }, { status: 403 });
+    }
+
+    // Determine the target user (for manual registration, admin can register on behalf of another user)
+    const effectiveUserId = (method === 'MANUAL' && targetUserId) ? targetUserId : session.user.id;
+
+    // Validate target user exists and is active
+    if (method === 'MANUAL' && targetUserId) {
+      const targetUser = await prisma.user.findFirst({
+        where: { id: targetUserId, isActive: true },
+      });
+      if (!targetUser) {
+        return NextResponse.json({ error: 'El usuario destino no existe o está desactivado' }, { status: 400 });
+      }
     }
 
     // Validate sequence order (CHECK_IN -> CHECK_OUT -> CHECK_IN -> CHECK_OUT)
     const lastEntry = await prisma.timeClockEntry.findFirst({
-      where: { userId: session.user.id },
+      where: { userId: effectiveUserId },
       orderBy: { timestamp: 'desc' },
     });
 
-    if (lastEntry) {
-      if (lastEntry.type === type) {
-        const lastTypeStr = lastEntry.type === 'CHECK_IN' ? 'Entrada' : 'Salida';
-        const expectedTypeStr = type === 'CHECK_IN' ? 'Salida' : 'Entrada';
-        return NextResponse.json({
-          error: `Secuencia incorrecta. Tu último registro fue una ${lastTypeStr}. Debes registrar una ${expectedTypeStr} ahora.`
-        }, { status: 400 });
-      }
-    } else {
-      if (type === 'CHECK_OUT') {
-        return NextResponse.json({
-          error: 'Secuencia incorrecta. Tu primer registro debe ser una Entrada (CHECK_IN).'
-        }, { status: 400 });
+    // Skip sequence validation for MANUAL method (admin may need to fix out-of-order entries)
+    if (method !== 'MANUAL') {
+      if (lastEntry) {
+        if (lastEntry.type === type) {
+          const lastTypeStr = lastEntry.type === 'CHECK_IN' ? 'Entrada' : 'Salida';
+          const expectedTypeStr = type === 'CHECK_IN' ? 'Salida' : 'Entrada';
+          return NextResponse.json({
+            error: `Secuencia incorrecta. Tu último registro fue una ${lastTypeStr}. Debes registrar una ${expectedTypeStr} ahora.`
+          }, { status: 400 });
+        }
+      } else {
+        if (type === 'CHECK_OUT') {
+          return NextResponse.json({
+            error: 'Secuencia incorrecta. Tu primer registro debe ser una Entrada (CHECK_IN).'
+          }, { status: 400 });
+        }
       }
     }
 
     const data: any = {
-      userId: session.user.id,
+      userId: effectiveUserId,
       type,
       method,
-      timestamp: new Date(),
+      timestamp: (method === 'MANUAL' && manualTimestamp) ? new Date(manualTimestamp) : new Date(),
     };
 
     if (method === 'GPS') {
@@ -160,6 +185,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Foto selfie requerida' }, { status: 400 });
       }
       data.photo = photo;
+    } else if (method === 'MANUAL') {
+      // Store who registered manually and optional notes
+      data.registeredByUserId = session.user.id;
+      data.manualNotes = manualNotes || null;
     }
 
     if (activityId && activityId !== 'undefined' && activityId !== 'null') {

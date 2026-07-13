@@ -34,6 +34,7 @@ model User {
   accessDrivers        Boolean @default(false)
   accessElevationEquip Boolean @default(false)
   accessManPower       Boolean @default(false) // Permiso para acceder al dashboard Man Power
+  excludeFromCompanyLogs Boolean @default(false) // Hide from company-filtered attendance logs (for transversal roles like Safety)
   supervisorId      String?
   supervisor        User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])
   team              User[]    @relation("SupervisorTeam")
@@ -458,7 +459,7 @@ model TimeClockEntry {
   userId           String
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type             String    // "CHECK_IN" | "CHECK_OUT"
-  method           String    // "GPS" | "SELFIE" | "QR"
+  method           String    // "GPS" | "SELFIE" | "QR" | "MANUAL"
   timestamp        DateTime  @default(now())
   
   // Geolocation
@@ -472,6 +473,10 @@ model TimeClockEntry {
   // QR validation metadata
   verifiedByUserId String?   // ID of the supervisor who generated QR
   activityId       String?
+  
+  // Manual registration metadata (when admin registers on behalf of user)
+  registeredByUserId String?  // ID of the admin who created this manual entry
+  manualNotes        String?  // Justification note (e.g. "Sin datos en campo")
   activity         Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
 
   createdAt        DateTime  @default(now())

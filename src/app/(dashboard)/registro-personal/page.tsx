@@ -96,11 +96,15 @@ export default async function RegistroPersonalPage({ searchParams }: { searchPar
     : [];
 
   // Fetch active users list for supervisor/admin filters
+  // When filtering by company, exclude users flagged with excludeFromCompanyLogs (e.g. Naudy - transversal Safety role)
   const users = isManager
     ? await prisma.user.findMany({
         where: { 
           isActive: true,
-          ...(companyId ? { companies: { some: { companyId } } } : {})
+          ...(companyId ? { 
+            companies: { some: { companyId } },
+            excludeFromCompanyLogs: false,
+          } : {})
         },
         select: {
           id: true,

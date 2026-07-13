@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin, Camera, QrCode, LogIn, LogOut, Calendar, User, Clock,
-  ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map, HelpCircle, X
+  ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map, HelpCircle, X,
+  Plus, Pencil, Trash2, UserPlus
 } from 'lucide-react';
 import { playSuccessSound } from '@/lib/audio';
 import QRCode from 'qrcode';
@@ -90,10 +91,37 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Manual Registration Modal State
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualUserId, setManualUserId] = useState<string>('');
+  const [manualType, setManualType] = useState<'CHECK_IN' | 'CHECK_OUT'>('CHECK_IN');
+  const [manualTimestamp, setManualTimestamp] = useState<string>('');
+  const [manualNotes, setManualNotes] = useState<string>('');
+  const [manualLoading, setManualLoading] = useState(false);
+  const [manualUserSearch, setManualUserSearch] = useState('');
+  const [isManualUserDropdownOpen, setIsManualUserDropdownOpen] = useState(false);
+  const manualUserDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Edit Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editEntryId, setEditEntryId] = useState<string>('');
+  const [editType, setEditType] = useState<'CHECK_IN' | 'CHECK_OUT'>('CHECK_IN');
+  const [editTimestamp, setEditTimestamp] = useState<string>('');
+  const [editNotes, setEditNotes] = useState<string>('');
+  const [editLoading, setEditLoading] = useState(false);
+  const [editUserName, setEditUserName] = useState<string>('');
+
+  // Delete Confirmation State
+  const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
         setIsUserDropdownOpen(false);
+      }
+      if (manualUserDropdownRef.current && !manualUserDropdownRef.current.contains(e.target as Node)) {
+        setIsManualUserDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -437,6 +465,109 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
     } finally {
       setLogsLoading(false);
     }
+  };
+
+  // --- Manual Registration Handler ---
+  const handleManualRegister = async () => {
+    if (!manualUserId) { setErrorMsg('Selecciona un colaborador'); return; }
+    setManualLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/time-clock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: manualType,
+          method: 'MANUAL',
+          targetUserId: manualUserId,
+          manualTimestamp: manualTimestamp || undefined,
+          manualNotes: manualNotes || undefined,
+        }),
+      });
+      if (res.ok) {
+        playSuccessSound();
+        setShowManualModal(false);
+        setManualUserId(''); setManualNotes(''); setManualTimestamp(''); setManualUserSearch('');
+        setSuccessMsg('Registro manual creado exitosamente');
+        setTimeout(() => setSuccessMsg(null), 4000);
+        fetchLogs();
+      } else {
+        const err = await res.json();
+        setErrorMsg(err.error || 'Error al crear registro manual');
+      }
+    } catch (err) {
+      setErrorMsg('Error de red al crear registro manual');
+    } finally {
+      setManualLoading(false);
+    }
+  };
+
+  // --- Edit Entry Handler ---
+  const handleEditEntry = async () => {
+    if (!editEntryId) return;
+    setEditLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/time-clock/${editEntryId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: editType,
+          timestamp: editTimestamp || undefined,
+          manualNotes: editNotes || undefined,
+        }),
+      });
+      if (res.ok) {
+        playSuccessSound();
+        setShowEditModal(false);
+        setSuccessMsg('Registro actualizado exitosamente');
+        setTimeout(() => setSuccessMsg(null), 4000);
+        fetchLogs();
+      } else {
+        const err = await res.json();
+        setErrorMsg(err.error || 'Error al editar registro');
+      }
+    } catch (err) {
+      setErrorMsg('Error de red al editar registro');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // --- Delete Entry Handler ---
+  const handleDeleteEntry = async (entryId: string) => {
+    setDeleteLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/time-clock/${entryId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setDeleteEntryId(null);
+        setSuccessMsg('Registro eliminado exitosamente');
+        setTimeout(() => setSuccessMsg(null), 4000);
+        fetchLogs();
+      } else {
+        const err = await res.json();
+        setErrorMsg(err.error || 'Error al eliminar registro');
+      }
+    } catch (err) {
+      setErrorMsg('Error de red al eliminar registro');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // --- Open Edit Modal ---
+  const openEditModal = (log: any) => {
+    setEditEntryId(log.id);
+    setEditType(log.type);
+    setEditUserName(log.user?.name || 'Colaborador');
+    // Format timestamp for datetime-local input
+    const d = new Date(log.timestamp);
+    const offset = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - offset * 60000);
+    setEditTimestamp(local.toISOString().slice(0, 16));
+    setEditNotes(log.manualNotes || '');
+    setShowEditModal(true);
   };
 
   useEffect(() => {
@@ -1067,6 +1198,24 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                 );
               })()}
 
+              {/* Manual Registration Button (Admin/Administración Only) */}
+              {isAdminOrAdministracion && (
+                <button
+                  onClick={() => {
+                    setManualType('CHECK_IN');
+                    setManualTimestamp(new Date().toISOString().slice(0, 16));
+                    setManualNotes('');
+                    setManualUserId('');
+                    setManualUserSearch('');
+                    setShowManualModal(true);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 transition-colors rounded-lg shadow-sm"
+                  title="Registrar asistencia manual"
+                >
+                  <Plus size={14} strokeWidth={3} /> Registrar Asistencia
+                </button>
+              )}
+
               {/* Export to Excel Button (Admin/Administración Only) */}
               {isAdminOrAdministracion && (
                 <button
@@ -1196,6 +1345,9 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                       <th className="px-4 py-3 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider">Fecha / Hora</th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider">Actividad</th>
                       <th className="px-4 py-3 text-center font-semibold text-slate-600 text-xs uppercase tracking-wider">Verificación</th>
+                      {isAdminOrAdministracion && (
+                        <th className="px-4 py-3 text-center font-semibold text-slate-600 text-xs uppercase tracking-wider">Acciones</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
@@ -1233,6 +1385,19 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-100">
                               <QrCode size={10} /> QR
                             </span>
+                          )}
+                          {log.method === 'MANUAL' && (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-100">
+                                <UserPlus size={10} /> Manual
+                              </span>
+                              {log.registeredByUserName && (
+                                <span className="text-[9px] text-slate-500">Por: {log.registeredByUserName}</span>
+                              )}
+                              {log.manualNotes && (
+                                <span className="text-[9px] text-slate-400 italic max-w-[120px] truncate" title={log.manualNotes}>{log.manualNotes}</span>
+                              )}
+                            </div>
                           )}
                         </td>
 
@@ -1291,6 +1456,28 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                             </div>
                           )}
                         </td>
+
+                        {/* Admin Action Buttons */}
+                        {isAdminOrAdministracion && (
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => openEditModal(log)}
+                                className="p-1.5 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
+                                title="Editar registro"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <button
+                                onClick={() => setDeleteEntryId(log.id)}
+                                className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                                title="Eliminar registro"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        )}
 
                       </tr>
                     ))}
@@ -1369,6 +1556,224 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
           </div>
         </div>
       )}
+      {/* Manual Registration Modal */}
+      {showManualModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative shadow-2xl animate-fade-in border border-slate-200 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl text-white"><UserPlus size={18} /></div>
+                Registro Manual de Asistencia
+              </h3>
+              <button onClick={() => setShowManualModal(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">✕</button>
+            </div>
+
+            {/* User Selector */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Colaborador *</label>
+              <div className="relative" ref={manualUserDropdownRef}>
+                <input
+                  type="text"
+                  placeholder="Buscar colaborador..."
+                  className="w-full text-sm border border-slate-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                  value={manualUserSearch}
+                  onFocus={() => setIsManualUserDropdownOpen(true)}
+                  onChange={(e) => {
+                    setManualUserSearch(e.target.value);
+                    setIsManualUserDropdownOpen(true);
+                    if (e.target.value === '') setManualUserId('');
+                  }}
+                />
+                {isManualUserDropdownOpen && (
+                  <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1">
+                    {users.filter(u => u.name.toLowerCase().includes(manualUserSearch.toLowerCase())).map((u) => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          setManualUserId(u.id);
+                          setManualUserSearch(u.name);
+                          setIsManualUserDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2.5 text-xs transition-colors flex justify-between items-center ${
+                          manualUserId === u.id ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{u.name}</span>
+                        <span className="text-[10px] text-slate-400 uppercase">{roleLabels[u.role] || u.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Type */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tipo de Registro</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setManualType('CHECK_IN')}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-bold transition-all ${
+                    manualType === 'CHECK_IN' ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-2 ring-emerald-500/20' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <LogIn size={16} /> Entrada
+                </button>
+                <button
+                  onClick={() => setManualType('CHECK_OUT')}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-bold transition-all ${
+                    manualType === 'CHECK_OUT' ? 'bg-rose-50 border-rose-300 text-rose-700 ring-2 ring-rose-500/20' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <LogOut size={16} /> Salida
+                </button>
+              </div>
+            </div>
+
+            {/* Timestamp */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Fecha y Hora</label>
+              <input
+                type="datetime-local"
+                className="w-full text-sm border border-slate-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                value={manualTimestamp}
+                onChange={(e) => setManualTimestamp(e.target.value)}
+              />
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Notas / Justificación</label>
+              <textarea
+                className="w-full text-sm border border-slate-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-none"
+                rows={2}
+                placeholder="Ej: Sin datos móviles en campo, registro reportado por WhatsApp"
+                value={manualNotes}
+                onChange={(e) => setManualNotes(e.target.value)}
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              onClick={handleManualRegister}
+              disabled={manualLoading || !manualUserId}
+              className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20"
+            >
+              {manualLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check size={16} strokeWidth={3} />}
+              Confirmar Registro Manual
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Entry Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full relative shadow-2xl animate-fade-in border border-slate-200 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl text-white"><Pencil size={18} /></div>
+                Editar Registro
+              </h3>
+              <button onClick={() => setShowEditModal(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">✕</button>
+            </div>
+
+            <div className="text-xs text-slate-500 bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <span className="font-bold text-slate-700">{editUserName}</span>
+            </div>
+
+            {/* Type */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tipo de Registro</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setEditType('CHECK_IN')}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-bold transition-all ${
+                    editType === 'CHECK_IN' ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-2 ring-emerald-500/20' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <LogIn size={16} /> Entrada
+                </button>
+                <button
+                  onClick={() => setEditType('CHECK_OUT')}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-bold transition-all ${
+                    editType === 'CHECK_OUT' ? 'bg-rose-50 border-rose-300 text-rose-700 ring-2 ring-rose-500/20' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <LogOut size={16} /> Salida
+                </button>
+              </div>
+            </div>
+
+            {/* Timestamp */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Fecha y Hora</label>
+              <input
+                type="datetime-local"
+                className="w-full text-sm border border-slate-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                value={editTimestamp}
+                onChange={(e) => setEditTimestamp(e.target.value)}
+              />
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Notas de Edición</label>
+              <textarea
+                className="w-full text-sm border border-slate-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
+                rows={2}
+                placeholder="Motivo de la edición..."
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              onClick={handleEditEntry}
+              disabled={editLoading}
+              className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+            >
+              {editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check size={16} strokeWidth={3} />}
+              Guardar Cambios
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteEntryId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full relative shadow-2xl animate-fade-in border border-slate-200 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-red-100 rounded-2xl">
+                <Trash2 className="text-red-600" size={24} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-800">Eliminar Registro</h3>
+                <p className="text-xs text-slate-500">Esta acción no se puede deshacer.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteEntryId(null)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteEntry(deleteEntryId)}
+                disabled={deleteLoading}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 size={14} />}
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Guía de Uso Modal */}
       {showGuideModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
