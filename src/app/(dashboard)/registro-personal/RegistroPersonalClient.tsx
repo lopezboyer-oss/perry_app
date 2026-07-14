@@ -13,6 +13,17 @@ import { Html5Qrcode } from 'html5-qrcode';
 import * as XLSX from 'xlsx';
 import { WeeklyScheduleModal } from '@/components/ui/WeeklyScheduleModal';
 
+// Convert datetime-local value ("2026-07-14T08:00") to ISO with timezone offset ("2026-07-14T08:00:00-07:00")
+// so the server interprets the time in the user's local timezone, not UTC.
+function appendTimezoneOffset(datetimeLocalValue: string): string {
+  const d = new Date(datetimeLocalValue);
+  const offset = -d.getTimezoneOffset(); // in minutes, positive = ahead of UTC
+  const sign = offset >= 0 ? '+' : '-';
+  const absH = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
+  const absM = String(Math.abs(offset) % 60).padStart(2, '0');
+  return `${datetimeLocalValue}:00${sign}${absH}:${absM}`;
+}
+
 interface ActivityOption {
   id: string;
   title: string;
@@ -493,7 +504,7 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
           type: manualType,
           method: 'MANUAL',
           targetUserId: manualUserId,
-          manualTimestamp: manualTimestamp || undefined,
+          manualTimestamp: manualTimestamp ? appendTimezoneOffset(manualTimestamp) : undefined,
           manualNotes: manualNotes || undefined,
         }),
       });
@@ -526,7 +537,7 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: editType,
-          timestamp: editTimestamp || undefined,
+          timestamp: editTimestamp ? appendTimezoneOffset(editTimestamp) : undefined,
           manualNotes: editNotes || undefined,
         }),
       });
