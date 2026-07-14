@@ -242,8 +242,9 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
     try {
       const dataUrl = await toPng(captureRef.current, {
         backgroundColor: '#ffffff',
-        pixelRatio: 2,
-        style: { borderRadius: '0' },
+        pixelRatio: 1.5,
+        width: Math.min(captureRef.current.scrollWidth, 600),
+        style: { borderRadius: '0', maxWidth: '600px' },
       });
       const res = await fetch(dataUrl);
       return await res.blob();
