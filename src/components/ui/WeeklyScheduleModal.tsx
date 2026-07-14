@@ -55,6 +55,15 @@ function formatDateRange(weekStart: Date): string {
   return `${startStr} — ${endStr}`;
 }
 
+// ISO 8601 week number
+function getISOWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
 // Convert a Date to fractional hours within a specific day (0-24)
 function toHourFraction(date: Date, dayStart: Date): number {
   const ms = date.getTime() - dayStart.getTime();
@@ -223,7 +232,8 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
     const we = new Date(ws); we.setDate(ws.getDate() + 6);
     const fmtRange = (d: Date) => d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
     const dayLines = days.map(d => `${d.dayShort}: ${d.hours > 0 ? d.hours + 'h' : '—'}`).join(' | ');
-    return `📊 *Semana Laboral — ${userName}*\n📅 ${fmtRange(ws)} — ${fmtRange(we)}, ${ws.getFullYear()}\n\n${dayLines}\n\n⏱️ *Total Semana: ${totalHours}h*`;
+    const wn = getISOWeekNumber(new Date(weekStart + 'T12:00:00'));
+    return `📊 *Semana Laboral — ${userName}*\n📅 Semana ${wn} | ${fmtRange(ws)} — ${fmtRange(we)}, ${ws.getFullYear()}\n\n${dayLines}\n\n⏱️ *Total Semana: ${totalHours}h*`;
   };
 
   // Capture chart as PNG
@@ -260,24 +270,14 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
     }
   };
 
-  // WhatsApp share handler
+  // WhatsApp share handler — always download image + open WhatsApp directly
   const handleWhatsApp = async () => {
     setCapturing(true);
     try {
       const blob = await captureImage();
       const text = buildTextSummary();
 
-      // Try Web Share API (mobile-friendly, supports images)
-      if (blob && navigator.share && navigator.canShare) {
-        const file = new File([blob], `${getFileName()}.png`, { type: 'image/png' });
-        const shareData = { text, files: [file] };
-        if (navigator.canShare(shareData)) {
-          await navigator.share(shareData);
-          return;
-        }
-      }
-
-      // Fallback: download image + open WhatsApp with text
+      // Download the image first
       if (blob) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -286,8 +286,12 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
         a.click();
         URL.revokeObjectURL(url);
       }
+
+      // Open WhatsApp with the text summary
       const encodedText = encodeURIComponent(text);
-      window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+      setTimeout(() => {
+        window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+      }, 500);
     } finally {
       setCapturing(false);
     }
@@ -318,9 +322,14 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
             >
               <ChevronLeft size={18} />
             </button>
-            <span className="text-xs font-bold text-slate-700 min-w-[160px] text-center">
-              {formatDateRange(new Date(weekStart + 'T12:00:00'))}
-            </span>
+            <div className="text-center min-w-[180px]">
+              <span className="text-xs font-bold text-slate-700 block">
+                {formatDateRange(new Date(weekStart + 'T12:00:00'))}
+              </span>
+              <span className="text-[10px] font-bold text-indigo-600">
+                Semana {getISOWeekNumber(new Date(weekStart + 'T12:00:00'))}
+              </span>
+            </div>
             <button
               onClick={() => navigateWeek(1)}
               className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
@@ -350,6 +359,7 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-bold text-slate-700">{formatDateRange(new Date(weekStart + 'T12:00:00'))}</p>
+                  <p className="text-[10px] font-bold text-indigo-600">Semana {getISOWeekNumber(new Date(weekStart + 'T12:00:00'))}</p>
                 </div>
               </div>
               {/* Hour Labels Header */}
