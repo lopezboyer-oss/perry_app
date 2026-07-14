@@ -1449,90 +1449,96 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider">Colaborador</th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-600 text-xs uppercase tracking-wider">Tipo</th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-600 text-xs uppercase tracking-wider">Método</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider">Fecha / Hora</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider">Actividad</th>
-                      <th className="px-4 py-3 text-center font-semibold text-slate-600 text-xs uppercase tracking-wider">Verificación</th>
+                      <th className="px-2.5 py-2 text-left font-semibold text-slate-600 text-[10px] uppercase tracking-wider">Colaborador</th>
+                      <th className="px-2 py-2 text-center font-semibold text-slate-600 text-[10px] uppercase tracking-wider">Tipo</th>
+                      <th className="px-2 py-2 text-center font-semibold text-slate-600 text-[10px] uppercase tracking-wider">Método</th>
+                      <th className="px-2 py-2 text-left font-semibold text-slate-600 text-[10px] uppercase tracking-wider">Fecha / Hora</th>
+                      <th className="px-2 py-2 text-left font-semibold text-slate-600 text-[10px] uppercase tracking-wider">Actividad</th>
+                      <th className="px-2 py-2 text-center font-semibold text-slate-600 text-[10px] uppercase tracking-wider">Verificación</th>
                       {isAdminOrAdministracion && (
-                        <th className="px-4 py-3 text-center font-semibold text-slate-600 text-xs uppercase tracking-wider">Acciones</th>
+                        <th className="px-1.5 py-2 text-center font-semibold text-slate-600 text-[10px] uppercase tracking-wider">Acc.</th>
                       )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
                     {logs.map((log) => (
                       <tr key={log.id} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-3">
-                          <div className="font-semibold text-slate-800">{log.user?.name}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">{log.user?.email}</div>
+                        <td className="px-2.5 py-2">
+                          <div className="font-semibold text-slate-800 text-xs leading-tight">{log.user?.name}</div>
                         </td>
                         
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-2 py-2 text-center">
                           {log.type === 'CHECK_IN' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <LogIn size={10} /> Entrada
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <LogIn size={9} /> Entrada
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                              <LogOut size={10} /> Salida
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                              <LogOut size={9} /> Salida
                             </span>
                           )}
                         </td>
 
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-2 py-2 text-center">
                           {log.method === 'GPS' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                              <MapPin size={10} /> GPS
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              <MapPin size={9} /> GPS
                             </span>
                           )}
                           {log.method === 'SELFIE' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-pink-50 text-pink-700 border border-pink-100">
-                              <Camera size={10} /> Selfie
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-pink-50 text-pink-700 border border-pink-100">
+                              <Camera size={9} /> Selfie
                             </span>
                           )}
                           {log.method === 'QR' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-100">
-                              <QrCode size={10} /> QR
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-teal-50 text-teal-700 border border-teal-100">
+                              <QrCode size={9} /> QR
                             </span>
                           )}
                           {log.method === 'MANUAL' && (
                             <div className="flex flex-col items-center gap-0.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-100">
-                                <UserPlus size={10} /> Manual
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-violet-50 text-violet-700 border border-violet-100">
+                                <UserPlus size={9} /> Manual
                               </span>
                               {log.registeredByUserName && (
-                                <span className="text-[9px] text-slate-500">Por: {log.registeredByUserName}</span>
-                              )}
-                              {log.manualNotes && (
-                                <span className="text-[9px] text-slate-400 italic max-w-[120px] truncate" title={log.manualNotes}>{log.manualNotes}</span>
+                                <span className="text-[8px] text-slate-500">Por: {log.registeredByUserName}</span>
                               )}
                             </div>
                           )}
                         </td>
 
-                        <td className="px-4 py-3 text-slate-600 font-medium text-xs whitespace-nowrap">
-                          {formatDateTime(log.timestamp)}
+                        <td className="px-2 py-2">
+                          {(() => {
+                            const d = new Date(log.timestamp);
+                            const date = d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+                            const time = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            return (
+                              <div className="leading-tight">
+                                <div className="text-[11px] font-semibold text-slate-700">{date}</div>
+                                <div className="text-[10px] text-slate-500 font-mono">{time}</div>
+                              </div>
+                            );
+                          })()}
                         </td>
 
-                        <td className="px-4 py-3 text-slate-600 max-w-[200px] truncate">
+                        <td className="px-2 py-2 text-slate-600 max-w-[140px] truncate">
                           {log.activity ? (
                             <div>
-                              <span className="font-semibold text-slate-800">
+                              <span className="font-semibold text-slate-800 text-[11px] leading-tight">
                                 {log.activity.title}
                               </span>
                               {log.activity.workOrderFolio && (
-                                <span className="block text-[10px] text-slate-400 font-mono">
-                                  Folio: {log.activity.workOrderFolio}
+                                <span className="block text-[9px] text-slate-400 font-mono">
+                                  {log.activity.workOrderFolio}
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-400 italic text-xs">Sin actividad vinculada</span>
+                            <span className="text-slate-400 italic text-[10px]">—</span>
                           )}
                         </td>
 
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-2 py-2 text-center">
                           {log.method === 'GPS' && log.latitude && log.longitude && (
                             <button
                               onClick={() => setSelectedMapCoords({
@@ -1540,27 +1546,27 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                                 longitude: log.longitude!,
                                 name: log.user?.name || 'Colaborador'
                               })}
-                              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                              className="inline-flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
                             >
-                              <Map size={12} /> Ver Mapa
+                              <Map size={10} /> Mapa
                             </button>
                           )}
                           {log.method === 'SELFIE' && log.photo && (
                             <button
                               onClick={() => setSelectedPhotoModal(log.photo)}
-                              className="inline-flex items-center gap-1 text-xs font-bold text-pink-600 hover:text-pink-800 hover:underline"
+                              className="inline-flex items-center gap-0.5 text-[10px] font-bold text-pink-600 hover:text-pink-800 hover:underline"
                             >
-                              <Eye size={12} /> Ver Foto
+                              <Eye size={10} /> Foto
                             </button>
                           )}
                           {log.method === 'QR' && (
                             <div className="flex flex-col items-center">
-                              <span className="text-xs text-teal-600 font-bold flex items-center justify-center gap-0.5">
-                                <Check size={12} /> Verificado QR
+                              <span className="text-[10px] text-teal-600 font-bold flex items-center justify-center gap-0.5">
+                                <Check size={10} /> QR
                               </span>
                               {log.verifiedByUserName && (
-                                <span className="block text-[10px] text-slate-500 font-semibold mt-0.5">
-                                  Por: {log.verifiedByUserName}
+                                <span className="block text-[8px] text-slate-500 font-semibold">
+                                  {log.verifiedByUserName}
                                 </span>
                               )}
                             </div>
@@ -1569,21 +1575,21 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
 
                         {/* Admin Action Buttons */}
                         {isAdminOrAdministracion && (
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-1">
+                          <td className="px-1.5 py-2 text-center">
+                            <div className="flex items-center justify-center gap-0.5">
                               <button
                                 onClick={() => openEditModal(log)}
-                                className="p-1.5 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
+                                className="p-1 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
                                 title="Editar registro"
                               >
-                                <Pencil size={13} />
+                                <Pencil size={12} />
                               </button>
                               <button
                                 onClick={() => setDeleteEntryId(log.id)}
-                                className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                                className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
                                 title="Eliminar registro"
                               >
-                                <Trash2 size={13} />
+                                <Trash2 size={12} />
                               </button>
                             </div>
                           </td>
