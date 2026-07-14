@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import {
   MapPin, Camera, QrCode, LogIn, LogOut, Calendar, User, Clock,
   ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map, HelpCircle, X,
-  Plus, Pencil, Trash2, UserPlus, AlertTriangle, Users, MessageCircle
+  Plus, Pencil, Trash2, UserPlus, AlertTriangle, Users, MessageCircle, CalendarDays
 } from 'lucide-react';
 import { playSuccessSound } from '@/lib/audio';
 import QRCode from 'qrcode';
 import { Html5Qrcode } from 'html5-qrcode';
 import * as XLSX from 'xlsx';
+import { WeeklyScheduleModal } from '@/components/ui/WeeklyScheduleModal';
 
 interface ActivityOption {
   id: string;
@@ -123,6 +124,9 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
   // Delete Confirmation State
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Weekly Schedule Modal State
+  const [weeklyModal, setWeeklyModal] = useState<{ userId: string; userName: string; weekStart: string } | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1578,6 +1582,25 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                           <td className="px-1.5 py-2 text-center">
                             <div className="flex items-center justify-center gap-0.5">
                               <button
+                                onClick={() => {
+                                  // Calculate Monday of the week containing this log's timestamp
+                                  const d = new Date(log.timestamp);
+                                  const day = d.getDay();
+                                  const diffToMon = day === 0 ? -6 : 1 - day;
+                                  const monday = new Date(d);
+                                  monday.setDate(d.getDate() + diffToMon);
+                                  setWeeklyModal({
+                                    userId: log.userId,
+                                    userName: log.user?.name || 'Colaborador',
+                                    weekStart: monday.toISOString().slice(0, 10),
+                                  });
+                                }}
+                                className="p-1 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
+                                title="Ver semana laboral"
+                              >
+                                <CalendarDays size={12} />
+                              </button>
+                              <button
                                 onClick={() => openEditModal(log)}
                                 className="p-1 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors"
                                 title="Editar registro"
@@ -1888,6 +1911,16 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
             </div>
           </div>
         </div>
+      )}
+
+      {/* Weekly Schedule Modal */}
+      {weeklyModal && (
+        <WeeklyScheduleModal
+          userId={weeklyModal.userId}
+          userName={weeklyModal.userName}
+          initialWeekStart={weeklyModal.weekStart}
+          onClose={() => setWeeklyModal(null)}
+        />
       )}
 
       {/* Sin Registro Hoy Modal */}
