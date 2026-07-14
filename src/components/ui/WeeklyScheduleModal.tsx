@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Loader2, Clock, CalendarDays } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, ChevronLeft, ChevronRight, Loader2, Clock, CalendarDays, Download, MessageCircle } from 'lucide-react';
+import { toPng } from 'html-to-image';
 
 interface WeeklyScheduleModalProps {
   userId: string;
@@ -69,6 +70,8 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState<DayData[]>([]);
   const [totalHours, setTotalHours] = useState(0);
+  const [capturing, setCapturing] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
 
   const fetchWeeklyData = async (ws: string) => {
     setLoading(true);
@@ -205,6 +208,91 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
   // Hour labels for the grid
   const hourLabels = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 
+  // Generate filename
+  const getFileName = () => {
+    const safeName = userName.replace(/\s+/g, '_');
+    const ws = new Date(weekStart + 'T12:00:00');
+    const we = new Date(ws); we.setDate(ws.getDate() + 6);
+    const fmt = (d: Date) => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }).replace(/\s/g, '');
+    return `Semana_${safeName}_${fmt(ws)}-${fmt(we)}_${ws.getFullYear()}`;
+  };
+
+  // Build text summary for WhatsApp
+  const buildTextSummary = () => {
+    const ws = new Date(weekStart + 'T12:00:00');
+    const we = new Date(ws); we.setDate(ws.getDate() + 6);
+    const fmtRange = (d: Date) => d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    const dayLines = days.map(d => `${d.dayShort}: ${d.hours > 0 ? d.hours + 'h' : '—'}`).join(' | ');
+    return `📊 *Semana Laboral — ${userName}*\n📅 ${fmtRange(ws)} — ${fmtRange(we)}, ${ws.getFullYear()}\n\n${dayLines}\n\n⏱️ *Total Semana: ${totalHours}h*`;
+  };
+
+  // Capture chart as PNG
+  const captureImage = async (): Promise<Blob | null> => {
+    if (!captureRef.current) return null;
+    try {
+      const dataUrl = await toPng(captureRef.current, {
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        style: { borderRadius: '0' },
+      });
+      const res = await fetch(dataUrl);
+      return await res.blob();
+    } catch (err) {
+      console.error('Error capturing image:', err);
+      return null;
+    }
+  };
+
+  // Download handler
+  const handleDownload = async () => {
+    setCapturing(true);
+    try {
+      const blob = await captureImage();
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${getFileName()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setCapturing(false);
+    }
+  };
+
+  // WhatsApp share handler
+  const handleWhatsApp = async () => {
+    setCapturing(true);
+    try {
+      const blob = await captureImage();
+      const text = buildTextSummary();
+
+      // Try Web Share API (mobile-friendly, supports images)
+      if (blob && navigator.share && navigator.canShare) {
+        const file = new File([blob], `${getFileName()}.png`, { type: 'image/png' });
+        const shareData = { text, files: [file] };
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      }
+
+      // Fallback: download image + open WhatsApp with text
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${getFileName()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      const encodedText = encodeURIComponent(text);
+      window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
+    } finally {
+      setCapturing(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col animate-fade-in">
@@ -253,7 +341,17 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
               <p className="text-xs text-slate-500">Cargando horario semanal...</p>
             </div>
           ) : (
-            <div className="space-y-1">
+            <div ref={captureRef} className="space-y-1 bg-white p-4">
+              {/* Capture Header (visible in image) */}
+              <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-100">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800">📊 Semana Laboral</h4>
+                  <p className="text-xs text-slate-600 font-semibold">{userName}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-slate-700">{formatDateRange(new Date(weekStart + 'T12:00:00'))}</p>
+                </div>
+              </div>
               {/* Hour Labels Header */}
               <div className="flex items-center">
                 <div className="w-[52px] shrink-0"></div>
@@ -368,12 +466,30 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-100 shrink-0">
-          <button
-            onClick={onClose}
-            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all"
-          >
-            Cerrar
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownload}
+              disabled={capturing || loading}
+              className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/15"
+            >
+              {capturing ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              Descargar PNG
+            </button>
+            <button
+              onClick={handleWhatsApp}
+              disabled={capturing || loading}
+              className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15"
+            >
+              {capturing ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />}
+              WhatsApp
+            </button>
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </div>
     </div>
