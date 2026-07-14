@@ -1589,10 +1589,14 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                                   const diffToMon = day === 0 ? -6 : 1 - day;
                                   const monday = new Date(d);
                                   monday.setDate(d.getDate() + diffToMon);
+                                  // Use local timezone getters (not toISOString which is UTC)
+                                  const yyyy = monday.getFullYear();
+                                  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+                                  const dd = String(monday.getDate()).padStart(2, '0');
                                   setWeeklyModal({
                                     userId: log.userId,
                                     userName: log.user?.name || 'Colaborador',
-                                    weekStart: monday.toISOString().slice(0, 10),
+                                    weekStart: `${yyyy}-${mm}-${dd}`,
                                   });
                                 }}
                                 className="p-1 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
