@@ -1327,7 +1327,9 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                 <button
                   onClick={() => {
                     setManualType('CHECK_IN');
-                    setManualTimestamp(new Date().toISOString().slice(0, 16));
+                    const now = new Date();
+                    const localISO = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                    setManualTimestamp(localISO);
                     setManualNotes('');
                     setManualUserId('');
                     setManualUserSearch('');
