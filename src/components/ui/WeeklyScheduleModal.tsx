@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Loader2, Clock, CalendarDays, Download, MessageCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Loader2, Clock, CalendarDays, Download, Share2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
 interface WeeklyScheduleModalProps {
@@ -270,14 +270,29 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
     }
   };
 
-  // WhatsApp share handler — always download image + open WhatsApp directly
-  const handleWhatsApp = async () => {
+  // Export/Share handler — Web Share API on mobile (with image), fallback to download + WhatsApp text on desktop
+  const handleExport = async () => {
     setCapturing(true);
     try {
       const blob = await captureImage();
       const text = buildTextSummary();
 
-      // Download the image first
+      // Try Web Share API with image (works on mobile — user picks WhatsApp, Telegram, etc.)
+      if (blob && navigator.share && navigator.canShare) {
+        const file = new File([blob], `${getFileName()}.png`, { type: 'image/png' });
+        const shareData = { text, files: [file] };
+        if (navigator.canShare(shareData)) {
+          try {
+            await navigator.share(shareData);
+            return;
+          } catch (e) {
+            // User cancelled share — that's ok
+            return;
+          }
+        }
+      }
+
+      // Desktop fallback: download image + open WhatsApp with text
       if (blob) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -286,8 +301,6 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
         a.click();
         URL.revokeObjectURL(url);
       }
-
-      // Open WhatsApp with the text summary
       const encodedText = encodeURIComponent(text);
       setTimeout(() => {
         window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank');
@@ -350,33 +363,33 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
               <p className="text-xs text-slate-500">Cargando horario semanal...</p>
             </div>
           ) : (
-            <div ref={captureRef} className="space-y-1 bg-white p-4">
+            <div ref={captureRef} className="space-y-0.5 bg-white px-3 py-2">
               {/* Capture Header (visible in image) */}
-              <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-100">
+              <div className="flex items-center justify-between pb-2 mb-1.5 border-b border-slate-100">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-800">📊 Semana Laboral</h4>
-                  <p className="text-xs text-slate-600 font-semibold">{userName}</p>
+                  <h4 className="text-xs font-bold text-slate-800">📊 Semana Laboral</h4>
+                  <p className="text-[10px] text-slate-600 font-semibold">{userName}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold text-slate-700">{formatDateRange(new Date(weekStart + 'T12:00:00'))}</p>
-                  <p className="text-[10px] font-bold text-indigo-600">Semana {getISOWeekNumber(new Date(weekStart + 'T12:00:00'))}</p>
+                  <p className="text-[10px] font-bold text-slate-700">{formatDateRange(new Date(weekStart + 'T12:00:00'))}</p>
+                  <p className="text-[9px] font-bold text-indigo-600">Semana {getISOWeekNumber(new Date(weekStart + 'T12:00:00'))}</p>
                 </div>
               </div>
               {/* Hour Labels Header */}
               <div className="flex items-center">
-                <div className="w-[52px] shrink-0"></div>
-                <div className="flex-1 relative h-5">
+                <div className="w-[44px] shrink-0"></div>
+                <div className="flex-1 relative h-4">
                   {hourLabels.map(h => (
                     <span
                       key={h}
-                      className="absolute text-[9px] text-slate-400 font-mono -translate-x-1/2"
+                      className="absolute text-[8px] text-slate-400 font-mono -translate-x-1/2"
                       style={{ left: `${(h / 24) * 100}%` }}
                     >
                       {h.toString().padStart(2, '0')}
                     </span>
                   ))}
                 </div>
-                <div className="w-[52px] shrink-0"></div>
+                <div className="w-[44px] shrink-0"></div>
               </div>
 
               {/* Day Rows */}
@@ -385,22 +398,22 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
                 return (
                   <div
                     key={idx}
-                    className={`flex items-center gap-0 rounded-xl transition-colors ${
+                    className={`flex items-center gap-0 rounded-lg transition-colors ${
                       isToday ? 'bg-blue-50/60 ring-1 ring-blue-200' : 'hover:bg-slate-50/80'
                     }`}
                   >
                     {/* Day Label */}
-                    <div className="w-[52px] shrink-0 text-right pr-2.5 py-2.5">
-                      <div className={`text-[11px] font-bold ${isToday ? 'text-blue-700' : 'text-slate-600'}`}>
+                    <div className="w-[44px] shrink-0 text-right pr-2 py-1.5">
+                      <div className={`text-[10px] font-bold ${isToday ? 'text-blue-700' : 'text-slate-600'}`}>
                         {day.dayShort}
                       </div>
-                      <div className="text-[9px] text-slate-400">
+                      <div className="text-[8px] text-slate-400">
                         {day.date.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' })}
                       </div>
                     </div>
 
                     {/* Timeline Bar */}
-                    <div className="flex-1 relative h-[36px] bg-slate-100 rounded-lg overflow-hidden border border-slate-200/60">
+                    <div className="flex-1 relative h-[28px] bg-slate-100 rounded-md overflow-hidden border border-slate-200/60">
                       {/* Grid lines */}
                       {hourLabels.slice(1, -1).map(h => (
                         <div
@@ -417,21 +430,21 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
                         return (
                           <div
                             key={sIdx}
-                            className="absolute top-[4px] bottom-[4px] rounded-md bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm cursor-default group"
+                            className="absolute top-[3px] bottom-[3px] rounded-sm bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm cursor-default group"
                             style={{ left: `${left}%`, width: `${Math.max(width, 0.5)}%` }}
                             title={`${shift.startTime} — ${shift.endTime}`}
                           >
                             {/* Tooltip on hover */}
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-10">
-                              <div className="bg-slate-800 text-white text-[9px] font-mono px-2 py-1 rounded-lg shadow-lg whitespace-nowrap">
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
+                              <div className="bg-slate-800 text-white text-[8px] font-mono px-1.5 py-0.5 rounded-md shadow-lg whitespace-nowrap">
                                 {shift.startTime} — {shift.endTime}
                               </div>
-                              <div className="w-2 h-2 bg-slate-800 rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1" />
+                              <div className="w-1.5 h-1.5 bg-slate-800 rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-0.5" />
                             </div>
 
                             {/* Inline time label (only if shift is wide enough) */}
-                            {width > 8 && (
-                              <span className="absolute inset-0 flex items-center justify-center text-[8px] text-white/90 font-bold tracking-wide">
+                            {width > 10 && (
+                              <span className="absolute inset-0 flex items-center justify-center text-[7px] text-white/90 font-bold tracking-wide">
                                 {shift.startTime}–{shift.endTime}
                               </span>
                             )}
@@ -445,14 +458,14 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
                           className="absolute top-0 bottom-0 w-px bg-red-500 z-[5]"
                           style={{ left: `${(currentHourFraction / 24) * 100}%` }}
                         >
-                          <div className="absolute -top-0.5 -left-[3px] w-[7px] h-[7px] rounded-full bg-red-500" />
+                          <div className="absolute -top-0.5 -left-[2px] w-[5px] h-[5px] rounded-full bg-red-500" />
                         </div>
                       )}
                     </div>
 
                     {/* Daily Hours */}
-                    <div className="w-[52px] shrink-0 text-right pr-3 py-2.5">
-                      <span className={`text-[11px] font-bold tabular-nums ${
+                    <div className="w-[44px] shrink-0 text-right pr-2 py-1.5">
+                      <span className={`text-[10px] font-bold tabular-nums ${
                         day.hours > 0 ? 'text-emerald-700' : 'text-slate-300'
                       }`}>
                         {day.hours > 0 ? `${day.hours}h` : '—'}
@@ -463,11 +476,11 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
               })}
 
               {/* Total Footer */}
-              <div className="flex items-center justify-end pt-3 mt-2 border-t border-slate-200">
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-                  <Clock size={14} className="text-blue-600" />
-                  <span className="text-xs font-bold text-blue-800">Total Semana:</span>
-                  <span className="text-sm font-black text-blue-700 tabular-nums">{totalHours}h</span>
+              <div className="flex items-center justify-end pt-2 mt-1.5 border-t border-slate-200">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  <Clock size={12} className="text-blue-600" />
+                  <span className="text-[10px] font-bold text-blue-800">Total Semana:</span>
+                  <span className="text-xs font-black text-blue-700 tabular-nums">{totalHours}h</span>
                 </div>
               </div>
             </div>
@@ -486,12 +499,12 @@ export function WeeklyScheduleModal({ userId, userName, initialWeekStart, onClos
               Descargar PNG
             </button>
             <button
-              onClick={handleWhatsApp}
+              onClick={handleExport}
               disabled={capturing || loading}
               className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold rounded-xl text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15"
             >
-              {capturing ? <Loader2 size={14} className="animate-spin" /> : <MessageCircle size={14} />}
-              WhatsApp
+              {capturing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+              Exportar
             </button>
             <button
               onClick={onClose}
