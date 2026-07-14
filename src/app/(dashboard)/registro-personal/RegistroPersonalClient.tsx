@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   MapPin, Camera, QrCode, LogIn, LogOut, Calendar, User, Clock,
   ExternalLink, Eye, RefreshCw, Check, Loader2, Play, Circle, ListFilter, Map, HelpCircle, X,
-  Plus, Pencil, Trash2, UserPlus
+  Plus, Pencil, Trash2, UserPlus, AlertTriangle, Users, MessageCircle
 } from 'lucide-react';
 import { playSuccessSound } from '@/lib/audio';
 import QRCode from 'qrcode';
@@ -84,12 +84,21 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
   const [logs, setLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [filterUser, setFilterUser] = useState<string>('');
-  const [filterStartDate, setFilterStartDate] = useState<string>('');
-  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [filterStartDate, setFilterStartDate] = useState<string>(todayStr);
+  const [filterEndDate, setFilterEndDate] = useState<string>(todayStr);
   const [filterType, setFilterType] = useState<string>('');
+  const [datePreset, setDatePreset] = useState<'today' | 'yesterday' | 'this-week' | 'last-7-days' | 'custom'>('today');
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  // "Sin Registro Hoy" Modal State
+  const [showMissingModal, setShowMissingModal] = useState(false);
+  const [missingUsers, setMissingUsers] = useState<any[]>([]);
+  const [missingLoading, setMissingLoading] = useState(false);
+  const [missingTotal, setMissingTotal] = useState(0);
+  const [missingTotalActive, setMissingTotalActive] = useState(0);
 
   // Manual Registration Modal State
   const [showManualModal, setShowManualModal] = useState(false);
@@ -568,6 +577,71 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
     setEditTimestamp(local.toISOString().slice(0, 16));
     setEditNotes(log.manualNotes || '');
     setShowEditModal(true);
+  };
+
+  // --- Quick Date Preset Helper ---
+  const applyDatePreset = (preset: 'today' | 'yesterday' | 'this-week' | 'last-7-days') => {
+    const now = new Date();
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    setDatePreset(preset);
+    switch (preset) {
+      case 'today': {
+        const t = fmt(now);
+        setFilterStartDate(t);
+        setFilterEndDate(t);
+        break;
+      }
+      case 'yesterday': {
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        const ys = fmt(y);
+        setFilterStartDate(ys);
+        setFilterEndDate(ys);
+        break;
+      }
+      case 'this-week': {
+        const day = now.getDay(); // 0=Sun, 1=Mon...
+        const diffToMon = day === 0 ? -6 : 1 - day;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diffToMon);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        setFilterStartDate(fmt(monday));
+        setFilterEndDate(fmt(sunday));
+        break;
+      }
+      case 'last-7-days': {
+        const start = new Date(now);
+        start.setDate(now.getDate() - 6);
+        setFilterStartDate(fmt(start));
+        setFilterEndDate(fmt(now));
+        break;
+      }
+    }
+  };
+
+  // --- Missing Today Handler ---
+  const fetchMissingToday = async () => {
+    setMissingLoading(true);
+    try {
+      let url = '/api/time-clock/missing-today';
+      if (companyId) url += `?companyId=${companyId}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setMissingUsers(data.users);
+        setMissingTotal(data.total);
+        setMissingTotalActive(data.totalActive);
+        setShowMissingModal(true);
+      } else {
+        const err = await res.json();
+        setErrorMsg(err.error || 'Error al obtener reporte');
+      }
+    } catch (err) {
+      setErrorMsg('Error de red al obtener reporte');
+    } finally {
+      setMissingLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -1137,7 +1211,7 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                     type="date"
                     className="w-[125px] text-xs border border-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
                     value={filterStartDate}
-                    onChange={(e) => setFilterStartDate(e.target.value)}
+                    onChange={(e) => { setFilterStartDate(e.target.value); setDatePreset('custom'); }}
                   />
                 </div>
                 <div className="w-px h-6 bg-slate-200 mx-1"></div>
@@ -1147,10 +1221,45 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
                     type="date"
                     className="w-[125px] text-xs border border-slate-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white mr-1"
                     value={filterEndDate}
-                    onChange={(e) => setFilterEndDate(e.target.value)}
+                    onChange={(e) => { setFilterEndDate(e.target.value); setDatePreset('custom'); }}
                   />
                 </div>
               </div>
+
+              {/* Quick Date Presets */}
+              <div className="flex items-center gap-1.5">
+                {[
+                  { id: 'yesterday' as const, label: 'Ayer' },
+                  { id: 'today' as const, label: 'Hoy' },
+                  { id: 'this-week' as const, label: 'Esta Semana' },
+                  { id: 'last-7-days' as const, label: 'Últimos 7 Días' },
+                ].map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => applyDatePreset(p.id)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all ${
+                      datePreset === p.id
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+                        : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-700'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sin Registro Hoy Button (Admin/Administración Only) */}
+              {isAdminOrAdministracion && (
+                <button
+                  onClick={fetchMissingToday}
+                  disabled={missingLoading}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 transition-colors rounded-lg shadow-sm disabled:opacity-50"
+                  title="Ver colaboradores sin registro hoy"
+                >
+                  {missingLoading ? <Loader2 size={13} className="animate-spin" /> : <AlertTriangle size={13} />}
+                  Sin Registro Hoy
+                </button>
+              )}
 
               {/* WhatsApp Share Credentials Button (for specific selected user) */}
               {filterUser && (() => {
@@ -1769,6 +1878,113 @@ export function RegistroPersonalClient({ currentUser, activities, users, company
               >
                 {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 size={14} />}
                 Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sin Registro Hoy Modal */}
+      {showMissingModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full relative shadow-2xl animate-fade-in border border-slate-200 flex flex-col max-h-[85vh]">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl text-white shadow-lg shadow-amber-500/20">
+                  <AlertTriangle size={22} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">Sin Registro Hoy</h3>
+                  <p className="text-[11px] text-slate-500">
+                    {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {companyName && <span className="ml-1 font-semibold text-slate-600">• {companyName}</span>}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl">
+                  <Users size={13} className="text-amber-600" />
+                  <span className="text-xs font-bold text-amber-700">{missingTotal} / {missingTotalActive}</span>
+                  <span className="text-[10px] text-amber-600">sin registro</span>
+                </div>
+                <button onClick={() => setShowMissingModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">✕</button>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-y-auto flex-1 mt-4">
+              {missingUsers.length === 0 ? (
+                <div className="p-12 text-center space-y-2">
+                  <Check size={40} className="mx-auto text-emerald-400 stroke-[1.5]" />
+                  <h4 className="font-bold text-slate-600">¡Todos registrados!</h4>
+                  <p className="text-xs text-slate-400">Todos los colaboradores han registrado asistencia hoy.</p>
+                </div>
+              ) : (
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-4 py-2.5 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider">Colaborador</th>
+                      <th className="px-4 py-2.5 text-left font-semibold text-slate-600 text-xs uppercase tracking-wider">Último Registro</th>
+                      <th className="px-4 py-2.5 text-center font-semibold text-slate-600 text-xs uppercase tracking-wider">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {missingUsers.map((u) => (
+                      <tr key={u.id} className="hover:bg-amber-50/30">
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-slate-800">{u.name}</div>
+                          <div className="text-[10px] text-slate-400">{roleLabels[u.role] || u.role}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {u.lastEntry ? (
+                            <div>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                                u.lastEntry.type === 'CHECK_IN' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                              }`}>
+                                {u.lastEntry.type === 'CHECK_IN' ? <LogIn size={9} /> : <LogOut size={9} />}
+                                {u.lastEntry.type === 'CHECK_IN' ? 'Entrada' : 'Salida'}
+                              </span>
+                              <div className="text-[10px] text-slate-500 mt-0.5">
+                                {new Date(u.lastEntry.timestamp).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 italic">Sin registros previos</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => {
+                              const message = `¡Hola ${u.name}! 👋\n\nTe recordamos que hoy no tienes registro de asistencia en la app.\n\n🌐 Enlace: https://perryapp.netlify.app\n📋 Sección: Asistencia\n\nPor favor ponte en contacto para regularizar tu registro. ¡Gracias! 🙏`;
+                              const encodedText = encodeURIComponent(message);
+                              const phone = u.phone ? u.phone.replace(/[^0-9]/g, '') : '';
+                              const url = phone
+                                ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`
+                                : `https://api.whatsapp.com/send?text=${encodedText}`;
+                              window.open(url, '_blank');
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-sm"
+                            title="Enviar recordatorio por WhatsApp"
+                          >
+                            <MessageCircle size={11} /> Recordar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-4 border-t border-slate-100 shrink-0">
+              <button
+                onClick={() => setShowMissingModal(false)}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all"
+              >
+                Cerrar
               </button>
             </div>
           </div>
