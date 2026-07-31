@@ -162,6 +162,17 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
     setNotesText(act.weekendNotes || '');
   };
 
+  const handleSaveBitacoraAndReturn = async () => {
+    if (!selectedActivity) {
+      setSelectedActivityId(null);
+      return;
+    }
+    if (notesText !== (selectedActivity.weekendNotes || '')) {
+      await postAction({ actionType: 'NOTES', activityId: selectedActivity.id, notes: notesText });
+    }
+    setSelectedActivityId(null);
+  };
+
   const handleSaveManualTimes = () => {
     if (!selectedActivity) return;
     if (manualStartTime) {
@@ -634,33 +645,10 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
               )}
             </div>
 
-            {/* 4) BITÁCORA / OBSERVACIONES + BOTÓN GUARDAR Y VOLVER AL INICIO */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
-              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <FileText size={15} className="text-indigo-600" /> Bitácora / Observaciones de Campo
-              </div>
-
-              <textarea
-                value={notesText}
-                onChange={(e) => setNotesText(e.target.value)}
-                rows={3}
-                placeholder="Observaciones adicionales..."
-                className="w-full p-3 text-xs bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-500 font-medium"
-              />
-
-              <button
-                onClick={() => postAction({ actionType: 'NOTES', activityId: selectedActivity.id, notes: notesText }, true)}
-                disabled={loading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                <Check size={16} /> GUARDAR BITÁCORA Y VOLVER AL INICIO
-              </button>
-            </div>
-
-            {/* 5) ESTATUS DEL EQUIPO ATENDIDO (AL FINAL DE LA PANTALLA) */}
+            {/* 4) ESTATUS DEL EQUIPO ATENDIDO */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3 border-t-4 border-t-amber-500">
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <AlertTriangle size={15} className="text-amber-500" /> Estatus del Equipo Atendido (Al Final del Servicio)
+                <AlertTriangle size={15} className="text-amber-500" /> Estatus del Equipo Atendido
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -690,6 +678,29 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
                   <span>FUERA DE SERVICIO</span>
                 </button>
               </div>
+            </div>
+
+            {/* 5) BITÁCORA / OBSERVACIONES + BOTÓN GUARDAR Y VOLVER AL INICIO */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <FileText size={15} className="text-indigo-600" /> Bitácora / Observaciones de Campo
+              </div>
+
+              <textarea
+                value={notesText}
+                onChange={(e) => setNotesText(e.target.value)}
+                rows={3}
+                placeholder="Observaciones adicionales..."
+                className="w-full p-3 text-xs bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-500 font-medium"
+              />
+
+              <button
+                onClick={handleSaveBitacoraAndReturn}
+                disabled={loading}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <Check size={16} /> GUARDAR BITÁCORA Y VOLVER AL INICIO
+              </button>
             </div>
           </>
         )}
