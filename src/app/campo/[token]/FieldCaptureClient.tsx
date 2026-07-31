@@ -167,16 +167,17 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
     if (photoType === 'AFTER') setUploadingAfter(true);
 
     try {
-      const compressed = await compressImage(files[0]);
+      const fileList = Array.from(files);
+      const compressedUrls = await Promise.all(fileList.map((f) => compressImage(f)));
       await postAction({
-        actionType: 'ADD_PHOTO',
+        actionType: 'ADD_PHOTOS_BATCH',
         activityId: selectedActivity.id,
         photoType,
-        photoUrl: compressed,
+        photoUrls: compressedUrls,
       });
     } catch (err) {
       console.error(err);
-      alert('Error al procesar la imagen');
+      alert('Error al procesar las imágenes');
     } finally {
       if (photoType === 'BEFORE') setUploadingBefore(false);
       if (photoType === 'AFTER') setUploadingAfter(false);
@@ -391,11 +392,11 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
               </div>
 
               {/* Hidden file inputs */}
-              <input type="file" accept="image/*" capture="environment" ref={beforeCameraRef} onChange={(e) => processFileUpload(e, 'BEFORE')} className="hidden" />
-              <input type="file" accept="image/*" ref={beforeFileRef} onChange={(e) => processFileUpload(e, 'BEFORE')} className="hidden" />
+              <input type="file" accept="image/*" multiple capture="environment" ref={beforeCameraRef} onChange={(e) => processFileUpload(e, 'BEFORE')} className="hidden" />
+              <input type="file" accept="image/*" multiple ref={beforeFileRef} onChange={(e) => processFileUpload(e, 'BEFORE')} className="hidden" />
 
-              <input type="file" accept="image/*" capture="environment" ref={afterCameraRef} onChange={(e) => processFileUpload(e, 'AFTER')} className="hidden" />
-              <input type="file" accept="image/*" ref={afterFileRef} onChange={(e) => processFileUpload(e, 'AFTER')} className="hidden" />
+              <input type="file" accept="image/*" multiple capture="environment" ref={afterCameraRef} onChange={(e) => processFileUpload(e, 'AFTER')} className="hidden" />
+              <input type="file" accept="image/*" multiple ref={afterFileRef} onChange={(e) => processFileUpload(e, 'AFTER')} className="hidden" />
 
               {/* Fotos ANTES */}
               <div className="space-y-2">

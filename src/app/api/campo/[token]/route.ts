@@ -226,19 +226,28 @@ export async function POST(
       dataToUpdate.suggestedAction = suggestedAction;
     }
 
-    // 5) Photos (Before / After)
-    if (actionType === 'ADD_PHOTO' && photoType && photoUrl) {
-      const fieldName = photoType === 'BEFORE' ? 'photosBefore' : 'photosAfter';
-      const existingStr = (activity as any)[fieldName] || '[]';
-      const existingPhotos = JSON.parse(existingStr);
-      const newPhoto = {
-        id: crypto.randomBytes(6).toString('hex'),
-        url: photoUrl,
-        uploadedBy: authorName,
-        uploadedAt: new Date().toISOString(),
-      };
-      existingPhotos.push(newPhoto);
-      dataToUpdate[fieldName] = JSON.stringify(existingPhotos);
+    // 5) Photos (Before / After) - Single or Batch upload
+    if ((actionType === 'ADD_PHOTO' || actionType === 'ADD_PHOTOS_BATCH') && photoType) {
+      const urls: string[] = Array.isArray(body.photoUrls)
+        ? body.photoUrls
+        : photoUrl
+        ? [photoUrl]
+        : [];
+
+      if (urls.length > 0) {
+        const fieldName = photoType === 'BEFORE' ? 'photosBefore' : 'photosAfter';
+        const existingStr = (activity as any)[fieldName] || '[]';
+        const existingPhotos = JSON.parse(existingStr);
+        urls.forEach((url) => {
+          existingPhotos.push({
+            id: crypto.randomBytes(6).toString('hex'),
+            url,
+            uploadedBy: authorName,
+            uploadedAt: new Date().toISOString(),
+          });
+        });
+        dataToUpdate[fieldName] = JSON.stringify(existingPhotos);
+      }
     }
 
     if (actionType === 'DELETE_PHOTO' && photoType && photoId) {
