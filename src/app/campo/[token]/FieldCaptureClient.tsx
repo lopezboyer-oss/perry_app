@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Camera, Clock, CheckCircle2, AlertTriangle, Send, Trash2, Plus, RefreshCw, Sparkles, HardHat, FileText, Check, ShieldCheck, ChevronRight, X, Layers, Upload, Eye } from 'lucide-react';
+import { Camera, Clock, CheckCircle2, AlertTriangle, Send, Trash2, Plus, RefreshCw, HardHat, FileText, Check, ShieldCheck, ChevronRight, X, Layers, Upload, Eye, ArrowLeft, ChevronRight as ArrowRight } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface PhotoItem {
@@ -70,9 +70,8 @@ function compressImage(file: File): Promise<string> {
 
 export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrillaLabel, token }: FieldCaptureClientProps) {
   const [activities, setActivities] = useState<any[]>(initialActivities);
-  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
-    initialActivities.length > 0 ? initialActivities[0].id : null
-  );
+  // Starts on home list screen (null) by default
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [techName, setTechName] = useState('Técnico de Campo');
 
@@ -86,25 +85,25 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
 
   // Selected Activity
-  const selectedActivity = activities.find((a) => a.id === selectedActivityId) || activities[0];
+  const selectedActivity = activities.find((a) => a.id === selectedActivityId) || null;
 
   // Manual Time Input state
-  const [manualStartTime, setManualStartTime] = useState(selectedActivity?.actualStartTime || selectedActivity?.startTime || '');
-  const [manualEndTime, setManualEndTime] = useState(selectedActivity?.actualEndTime || selectedActivity?.endTime || '');
+  const [manualStartTime, setManualStartTime] = useState('');
+  const [manualEndTime, setManualEndTime] = useState('');
 
   // Inputs for selected activity
-  const [notesText, setNotesText] = useState(selectedActivity?.weekendNotes || '');
+  const [notesText, setNotesText] = useState('');
   const [newPendingTitle, setNewPendingTitle] = useState('');
   const [uploadingBefore, setUploadingBefore] = useState(false);
   const [uploadingAfter, setUploadingAfter] = useState(false);
 
-  // File input refs for camera vs file upload
+  // File input refs
   const beforeCameraRef = useRef<HTMLInputElement>(null);
   const beforeFileRef = useRef<HTMLInputElement>(null);
   const afterCameraRef = useRef<HTMLInputElement>(null);
   const afterFileRef = useRef<HTMLInputElement>(null);
 
-  const postAction = async (payload: any) => {
+  const postAction = async (payload: any, returnToHomeOnSuccess = false) => {
     setLoading(true);
     try {
       const res = await fetch(`/api/campo/${token}`, {
@@ -116,7 +115,11 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
       if (res.ok) {
         if (payload.actionType === 'CREATE_ACTIVITY') {
           setActivities((prev) => [data.activity, ...prev]);
+          // Open the newly created activity
           setSelectedActivityId(data.activity.id);
+          setManualStartTime(data.activity.actualStartTime || data.activity.startTime || '');
+          setManualEndTime(data.activity.actualEndTime || data.activity.endTime || '');
+          setNotesText(data.activity.weekendNotes || '');
           setShowCreateModal(false);
           setNewTitle('');
           setNewEquipo('');
@@ -124,6 +127,9 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
           setActivities((prev) =>
             prev.map((a) => (a.id === data.activity.id ? { ...a, ...data.activity } : a))
           );
+          if (returnToHomeOnSuccess) {
+            setSelectedActivityId(null); // Return technician to home list view
+          }
         }
       } else {
         alert('Error: ' + (data.error || 'No se pudo guardar la información'));
@@ -147,6 +153,13 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
       manPowerEquipo: newEquipo,
       equipmentStatus: newStatus,
     });
+  };
+
+  const handleSelectActivity = (act: any) => {
+    setSelectedActivityId(act.id);
+    setManualStartTime(act.actualStartTime || act.startTime || '');
+    setManualEndTime(act.actualEndTime || act.endTime || '');
+    setNotesText(act.weekendNotes || '');
   };
 
   const handleSaveManualTimes = () => {
@@ -185,21 +198,6 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
     }
   };
 
-  if (!selectedActivity && activities.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-50 text-slate-800 p-6 flex flex-col items-center justify-center text-center">
-        <h2 className="text-xl font-black mb-2">Orden Odoo #{workOrderFolio}</h2>
-        <p className="text-xs text-slate-500 mb-4">No hay actividades registradas en esta orden de trabajo aún.</p>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md"
-        >
-          + Crear Primera Actividad de Campo
-        </button>
-      </div>
-    );
-  }
-
   const photosBefore: PhotoItem[] = selectedActivity?.photosBefore ? JSON.parse(selectedActivity.photosBefore) : [];
   const photosAfter: PhotoItem[] = selectedActivity?.photosAfter ? JSON.parse(selectedActivity.photosAfter) : [];
   const pendingItems: PendingItem[] = selectedActivity?.pendingItems ? JSON.parse(selectedActivity.pendingItems) : [];
@@ -210,9 +208,18 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
       <div className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-30 shadow-xs">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shadow-xs">
-              P
-            </div>
+            {selectedActivityId ? (
+              <button
+                onClick={() => setSelectedActivityId(null)}
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1 font-bold text-xs"
+              >
+                <ArrowLeft size={16} /> Volver
+              </button>
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shadow-xs">
+                P
+              </div>
+            )}
             <div>
               <div className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider">{cuadrillaLabel}</div>
               <h1 className="font-extrabold text-sm leading-tight text-slate-900">Orden Odoo #{workOrderFolio}</h1>
@@ -234,61 +241,139 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
       {/* Main Container */}
       <div className="max-w-md mx-auto p-4 space-y-4">
         
-        {/* Activity Selector & Create Button */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-slate-700 flex items-center gap-1.5">
-              <Layers size={16} className="text-indigo-600" /> Actividades ({activities.length})
-            </span>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-1 transition-colors shadow-2xs"
-            >
-              <Plus size={14} /> Nueva Actividad
-            </button>
-          </div>
+        {/* ── VISTA 1: PANTALLA DE INICIO (LISTADO DE ACTIVIDADES MANPOWER) ── */}
+        {!selectedActivityId && (
+          <div className="space-y-4">
+            {/* Action Banner */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                    Módulo de Campo
+                  </span>
+                  <h2 className="text-lg font-black text-slate-900 mt-1">Actividades de ManPower</h2>
+                </div>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-colors shadow-md shadow-indigo-600/20"
+                >
+                  <Plus size={16} /> Nueva Actividad
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">
+                Selecciona una actividad registrada para capturar horas, fotos y estatus, o presiona el botón para agregar una nueva.
+              </p>
+            </div>
 
-          {/* Activity tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {activities.map((act) => (
-              <button
-                key={act.id}
-                onClick={() => {
-                  setSelectedActivityId(act.id);
-                  setManualStartTime(act.actualStartTime || act.startTime || '');
-                  setManualEndTime(act.actualEndTime || act.endTime || '');
-                  setNotesText(act.weekendNotes || '');
-                }}
-                className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap border transition-all shrink-0 flex items-center gap-1.5 ${
-                  selectedActivityId === act.id
-                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                {act.manPowerEquipo && <span className="font-mono text-[10px] bg-slate-900/10 px-1.5 py-0.5 rounded">#{act.manPowerEquipo}</span>}
-                <span className="truncate max-w-[130px]">{act.title}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+            {/* List of Registered Manpower Activities */}
+            <div className="space-y-3">
+              <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 px-1">
+                <Layers size={15} className="text-indigo-600" /> Listado de Actividades ({activities.length})
+              </div>
 
-        {/* Selected Activity Content */}
+              {activities.length === 0 ? (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto text-xl font-bold">
+                    📋
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-800">Sin actividades de ManPower registradas</h3>
+                  <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                    Aún no hay actividades registradas para esta Orden Odoo #{workOrderFolio}. Presiona el botón para crear la primera.
+                  </p>
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md"
+                  >
+                    + Crear Nueva Actividad de Campo
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {activities.map((act) => {
+                    const isClosed = act.status === 'COMPLETADA' || act.status === 'CERRADA';
+                    const start = act.actualStartTime || act.startTime || 'S/H';
+                    const end = act.actualEndTime || act.endTime || 'S/H';
+
+                    return (
+                      <div
+                        key={act.id}
+                        onClick={() => handleSelectActivity(act)}
+                        className="bg-white border border-slate-200 hover:border-indigo-400 rounded-2xl p-4 shadow-xs cursor-pointer transition-all hover:shadow-md active:scale-[0.99] flex items-center justify-between gap-3"
+                      >
+                        <div className="space-y-1.5 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {act.manPowerEquipo && (
+                              <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                                #{act.manPowerEquipo}
+                              </span>
+                            )}
+                            <h3 className="font-extrabold text-sm text-slate-900 leading-snug truncate">
+                              {act.title}
+                            </h3>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                            <span>Horarios: <strong className="font-mono text-slate-700">{start} - {end}</strong></span>
+                            <span>• Fecha: <strong>{formatDate(act.date.substring(0, 10))}</strong></span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              isClosed ? 'bg-emerald-100 text-emerald-800' : act.status === 'EN_PROGRESO' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {act.status}
+                            </span>
+
+                            {act.equipmentStatus === 'OPERATIVO' && (
+                              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                🟢 Operativo
+                              </span>
+                            )}
+                            {act.equipmentStatus === 'FUERA_DE_SERVICIO' && (
+                              <span className="text-[9px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 animate-pulse">
+                                🔴 Fuera Servicio
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                          <ArrowRight size={18} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── VISTA 2: FORMULARIO DE CAPTURA DE ACTIVIDAD SELECCIONADA ── */}
         {selectedActivity && (
           <>
-            {/* Summary Card */}
+            {/* Header / Summary */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    {selectedActivity.client?.name || 'Cliente'}
-                  </span>
-                  <h2 className="text-base font-extrabold text-slate-900 mt-1 leading-snug">{selectedActivity.title}</h2>
-                </div>
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setSelectedActivityId(null)}
+                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
+                >
+                  <ArrowLeft size={14} /> Volver al Listado
+                </button>
+
                 {selectedActivity.manPowerEquipo && (
-                  <span className="font-mono font-black text-xs px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-2xs shrink-0">
+                  <span className="font-mono font-black text-xs px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-2xs">
                     #{selectedActivity.manPowerEquipo}
                   </span>
                 )}
+              </div>
+
+              <div className="pt-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {selectedActivity.client?.name || 'Cliente'}
+                </span>
+                <h2 className="text-base font-extrabold text-slate-900 mt-1 leading-snug">{selectedActivity.title}</h2>
               </div>
 
               {selectedActivity.clientAcknowledged && (
@@ -308,7 +393,6 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
                 <Clock size={15} className="text-indigo-600" /> Registro y Edición de Horarios
               </div>
 
-              {/* Instant 1-tap buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => {
@@ -550,7 +634,7 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
               )}
             </div>
 
-            {/* 4) BITÁCORA / OBSERVACIONES */}
+            {/* 4) BITÁCORA / OBSERVACIONES + BOTÓN GUARDAR Y VOLVER AL INICIO */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <FileText size={15} className="text-indigo-600" /> Bitácora / Observaciones de Campo
@@ -565,11 +649,11 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
               />
 
               <button
-                onClick={() => postAction({ actionType: 'NOTES', activityId: selectedActivity.id, notes: notesText })}
+                onClick={() => postAction({ actionType: 'NOTES', activityId: selectedActivity.id, notes: notesText }, true)}
                 disabled={loading}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-xs"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                Guardar Bitácora
+                <Check size={16} /> GUARDAR BITÁCORA Y VOLVER AL INICIO
               </button>
             </div>
 

@@ -47,6 +47,7 @@ export default async function FieldPage({ params }: Props) {
         equals: workOrderFolio.trim(),
         mode: 'insensitive',
       },
+      OR: [{ isManPower: true }, { type: 'MAN_POWER' }],
     },
     orderBy: { date: 'desc' },
     select: {
