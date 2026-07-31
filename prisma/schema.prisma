@@ -147,6 +147,18 @@ model Activity {
   isManPower      Boolean      @default(false)
   manPowerEquipo  String?      // 6-character alphanumeric ID for Man Power
   manPowerPhotos  String?      @db.Text // JSON array of uploaded photos [{id, url, uploadedBy, uploadedAt}]
+  techToken1            String?             // Token for Cuadrilla/Tech 1 public access link
+  techToken2            String?             // Token for Cuadrilla/Tech 2 public access link
+  clientToken           String?             // Token for Client public view link
+  equipmentStatus       String?             // OPERATIVO | FUERA_DE_SERVICIO | DEGRADADO
+  suggestedAction       String?             // Suggested action for client
+  photosBefore          String?      @db.Text // JSON array [{id, url, uploadedAt, uploadedBy}]
+  photosAfter           String?      @db.Text // JSON array [{id, url, uploadedAt, uploadedBy}]
+  clientAcknowledged    Boolean      @default(false) // Client "Enterado" flag
+  clientAcknowledgedAt  DateTime?           // When client clicked "Enterado"
+  clientAcknowledgedBy  String?             // Name/Author of client representative
+  clientComments        String?      @db.Text // JSON array [{id, author, comment, createdAt}]
+  pendingItems          String?      @db.Text // JSON array [{id, title, status, createdBy, createdAt, closedAt, closedBy}]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 

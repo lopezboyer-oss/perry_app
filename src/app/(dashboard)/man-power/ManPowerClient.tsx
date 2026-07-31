@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw, ChevronDown, ChevronUp, FileText, UserCheck } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw, ChevronDown, ChevronUp, FileText, UserCheck, Link } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
 import { ExecutiveSummaryPDF } from '@/components/reports/ExecutiveSummaryPDF';
 import { OdooOrderReportModal } from '@/components/reports/OdooOrderReportModal';
+import { ActivityLinksModal } from '@/components/ui/ActivityLinksModal';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 
@@ -47,6 +48,15 @@ interface Activity {
   cancelNotes?: string | null;
   manPowerEquipo?: string | null;
   manPowerPhotos?: string | null;
+  techToken1?: string | null;
+  techToken2?: string | null;
+  clientToken?: string | null;
+  equipmentStatus?: string | null;
+  suggestedAction?: string | null;
+  photosBefore?: string | null;
+  photosAfter?: string | null;
+  clientAcknowledged?: boolean;
+  pendingItems?: string | null;
   parts?: any[];
 }
 
@@ -323,6 +333,9 @@ export function ManPowerClient({
     clientName: string | null;
     activities: Activity[];
   } | null>(null);
+
+  // Activity Public Links Modal state
+  const [linksModalActivity, setLinksModalActivity] = useState<any | null>(null);
 
   const odooGroups = React.useMemo(() => {
     const groupsMap = new Map<string, {
@@ -2388,6 +2401,7 @@ export function ManPowerClient({
                               <th className="px-3 py-2">Equipo</th>
                               <th className="px-3 py-2">Responsable</th>
                               <th className="px-3 py-2 text-center">Estado</th>
+                              <th className="px-3 py-2 text-center">Cliente / Enlaces</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -2419,17 +2433,41 @@ export function ManPowerClient({
                                     {act.user?.name || 'Sin asignación'}
                                   </td>
                                   <td className="px-3 py-2 text-center whitespace-nowrap">
-                                    <span
-                                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                        act.status === 'COMPLETADA' || act.status === 'CERRADA'
-                                          ? 'bg-emerald-100 text-emerald-800'
-                                          : act.status === 'EN_PROGRESO'
-                                          ? 'bg-indigo-100 text-indigo-800'
-                                          : 'bg-amber-100 text-amber-800'
+                                    <div className="flex flex-col items-center gap-1">
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                          act.status === 'COMPLETADA' || act.status === 'CERRADA'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : act.status === 'EN_PROGRESO'
+                                            ? 'bg-indigo-100 text-indigo-800'
+                                            : 'bg-amber-100 text-amber-800'
+                                        }`}
+                                      >
+                                        {act.status}
+                                      </span>
+                                      {act.equipmentStatus === 'OPERATIVO' && (
+                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">🟢 Operativo</span>
+                                      )}
+                                      {act.equipmentStatus === 'FUERA_DE_SERVICIO' && (
+                                        <span className="text-[9px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 animate-pulse">🔴 Fuera de Servicio</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2 text-center whitespace-nowrap">
+                                    <button
+                                      onClick={() => setLinksModalActivity(act)}
+                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1 shadow-2xs ${
+                                        act.clientAcknowledged
+                                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                          : act.techToken1 || act.clientToken
+                                          ? 'bg-indigo-100 text-indigo-800 border border-indigo-300'
+                                          : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
                                       }`}
+                                      title="Gestionar enlaces de campo y cliente"
                                     >
-                                      {act.status}
-                                    </span>
+                                      <Link size={12} />
+                                      {act.clientAcknowledged ? '✅ Enterado' : act.techToken1 || act.clientToken ? '🔗 Activo' : '🔗 Enlaces'}
+                                    </button>
                                   </td>
                                 </tr>
                               );
@@ -2476,6 +2514,7 @@ export function ManPowerClient({
                 {canViewAlertNotes && <th className="font-semibold min-w-[120px]">Notas Alertas</th>}
                 <th className="font-semibold w-[90px] text-center">TERA</th>
                 <th className="font-semibold w-[90px] text-center">TERA Auditor</th>
+                <th className="font-semibold w-[100px] text-center">Enlaces</th>
               </tr>
             </thead>
             <tbody>
@@ -2974,48 +3013,65 @@ export function ManPowerClient({
 
                     {/* CANCEL / UNDO BUTTON */}
                     <td className="text-center">
-                      {cancelledIds.has(act.id) ? (
-                        <div className="flex flex-col items-center gap-0.5">
-                          {cancelledByMap[act.id] && (
-                            <span className="text-[9px] text-red-400 leading-tight">por {cancelledByMap[act.id]}</span>
-                          )}
-                          {(canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
-                            <button
-                              onClick={async () => {
-                                if (!confirm('¿Restaurar actividad y recuperar recursos?')) return;
-                                setUncancelLoading(p => ({ ...p, [act.id]: true }));
-                                try {
-                                  const res = await fetch(`/api/activities/${act.id}/uncancel`, { method: 'POST' });
-                                  const data = await res.json();
-                                  if (!res.ok) { alert(data.error || 'Error'); setUncancelLoading(p => ({ ...p, [act.id]: false })); return; }
-                                  setCancelledIds(prev => { const next = new Set(prev); next.delete(act.id); return next; });
-                                  const msg = [
-                                    '✅ Actividad restaurada',
-                                    data.restored.length > 0 ? `\nRecursos restaurados:\n${data.restored.join('\n')}` : '',
-                                    data.conflicts.length > 0 ? `\n⚠️ No se pudieron restaurar:\n${data.conflicts.join('\n')}` : '',
-                                  ].filter(Boolean).join('');
-                                  alert(msg);
-                                  router.refresh();
-                                } catch { alert('Error de conexión'); }
-                                setUncancelLoading(p => ({ ...p, [act.id]: false }));
-                              }}
-                              disabled={uncancelLoading[act.id]}
-                              className="p-1 rounded hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 transition-colors disabled:opacity-50"
-                              title="Deshacer cancelación"
-                            >
-                              {uncancelLoading[act.id] ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
-                            </button>
-                          )}
-                        </div>
-                      ) : (canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
+                      <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() => { setCancelModal({ activity: act }); setCancelReason(''); setCancelNotes(''); setCancelHasCharges(false); setCancelResult(null); setCancelCopied(false); }}
-                          className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors text-[10px]"
-                          title="Cancelar actividad"
+                          onClick={() => setLinksModalActivity(act)}
+                          className={`px-2 py-1 rounded text-[10px] font-bold transition-all inline-flex items-center gap-1 ${
+                            act.clientAcknowledged
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : act.techToken1 || act.clientToken
+                              ? 'bg-indigo-100 text-indigo-800 border border-indigo-300'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
+                          }`}
+                          title="Gestionar enlaces públicos de campo y cliente"
                         >
-                          <Ban size={12} /> <span className="font-medium">Cancelar</span>
+                          <Link size={12} />
+                          {act.clientAcknowledged ? '✅ Enterado' : act.techToken1 || act.clientToken ? '🔗 Activo' : '🔗 Enlaces'}
                         </button>
-                      )}
+
+                        {cancelledIds.has(act.id) ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            {cancelledByMap[act.id] && (
+                              <span className="text-[9px] text-red-400 leading-tight">por {cancelledByMap[act.id]}</span>
+                            )}
+                            {(canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
+                              <button
+                                onClick={async () => {
+                                  if (!confirm('¿Restaurar actividad y recuperar recursos?')) return;
+                                  setUncancelLoading(p => ({ ...p, [act.id]: true }));
+                                  try {
+                                    const res = await fetch(`/api/activities/${act.id}/uncancel`, { method: 'POST' });
+                                    const data = await res.json();
+                                    if (!res.ok) { alert(data.error || 'Error'); setUncancelLoading(p => ({ ...p, [act.id]: false })); return; }
+                                    setCancelledIds(prev => { const next = new Set(prev); next.delete(act.id); return next; });
+                                    const msg = [
+                                      '✅ Actividad restaurada',
+                                      data.restored.length > 0 ? `\nRecursos restaurados:\n${data.restored.join('\n')}` : '',
+                                      data.conflicts.length > 0 ? `\n⚠️ No se pudieron restaurar:\n${data.conflicts.join('\n')}` : '',
+                                    ].filter(Boolean).join('');
+                                    alert(msg);
+                                    router.refresh();
+                                  } catch { alert('Error de conexión'); }
+                                  setUncancelLoading(p => ({ ...p, [act.id]: false }));
+                                }}
+                                disabled={uncancelLoading[act.id]}
+                                className="p-1 rounded hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 transition-colors disabled:opacity-50"
+                                title="Deshacer cancelación"
+                              >
+                                {uncancelLoading[act.id] ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                              </button>
+                            )}
+                          </div>
+                        ) : (canCancelAny || (canCancelOwn && act.user?.id === userId)) && (
+                          <button
+                            onClick={() => { setCancelModal({ activity: act }); setCancelReason(''); setCancelNotes(''); setCancelHasCharges(false); setCancelResult(null); setCancelCopied(false); }}
+                            className="inline-flex items-center gap-1 px-1.5 py-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors text-[10px]"
+                            title="Cancelar actividad"
+                          >
+                            <Ban size={12} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                   </React.Fragment>
@@ -3429,6 +3485,18 @@ export function ManPowerClient({
           techAssignments={techAssignments}
           userName={userName}
           onClose={() => setReportingGroup(null)}
+        />
+      )}
+
+      {/* ── PUBLIC LINKS MANAGEMENT MODAL ── */}
+      {linksModalActivity && (
+        <ActivityLinksModal
+          activity={linksModalActivity}
+          onClose={() => setLinksModalActivity(null)}
+          onLinksUpdated={(actId, updatedFields) => {
+            setLinksModalActivity((prev: any) => (prev ? { ...prev, ...updatedFields } : null));
+            router.refresh();
+          }}
         />
       )}
     </div>
