@@ -91,10 +91,10 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
   const [manualStartTime, setManualStartTime] = useState('');
   const [manualEndTime, setManualEndTime] = useState('');
 
-  // Inputs for selected activity
+  // Form Inputs for selected activity
   const [notesText, setNotesText] = useState('');
-  const [newPendingTitle, setNewPendingTitle] = useState('');
-  const [newPendingPhotoUrls, setNewPendingPhotoUrls] = useState<string[]>([]);
+  const [pendingText, setPendingText] = useState('');
+  const [pendingPhotoUrls, setPendingPhotoUrls] = useState<string[]>([]);
   const [uploadingPendingPhotos, setUploadingPendingPhotos] = useState(false);
 
   const [uploadingBefore, setUploadingBefore] = useState(false);
@@ -126,10 +126,7 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
       if (res.ok) {
         if (payload.actionType === 'CREATE_ACTIVITY') {
           setActivities((prev) => [data.activity, ...prev]);
-          setSelectedActivityId(data.activity.id);
-          setManualStartTime(data.activity.actualStartTime || data.activity.startTime || '');
-          setManualEndTime(data.activity.actualEndTime || data.activity.endTime || '');
-          setNotesText(data.activity.weekendNotes || '');
+          handleSelectActivity(data.activity);
           setShowCreateModal(false);
           setNewTitle('');
           setNewEquipo('');
@@ -174,7 +171,16 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
     setManualStartTime(act.actualStartTime || act.startTime || '');
     setManualEndTime(act.actualEndTime || act.endTime || '');
     setNotesText(act.weekendNotes || '');
-    setNewPendingPhotoUrls([]);
+
+    // Parse single pending log if present
+    const parsedPending: PendingItem[] = act.pendingItems ? JSON.parse(act.pendingItems) : [];
+    if (parsedPending.length > 0) {
+      setPendingText(parsedPending[0].title || '');
+      setPendingPhotoUrls(parsedPending[0].photos?.map((p) => p.url) || []);
+    } else {
+      setPendingText('');
+      setPendingPhotoUrls([]);
+    }
   };
 
   const handleSaveBitacoraAndReturn = async () => {
@@ -182,10 +188,15 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
       setSelectedActivityId(null);
       return;
     }
-    if (notesText !== (selectedActivity.weekendNotes || '')) {
-      await postAction({ actionType: 'NOTES', activityId: selectedActivity.id, notes: notesText });
-    }
-    setSelectedActivityId(null);
+
+    // Save both Notes & Pending Log in a single unified action
+    await postAction({
+      actionType: 'SAVE_ACTIVITY_SUMMARY',
+      activityId: selectedActivity.id,
+      notes: notesText,
+      pendingTitle: pendingText,
+      pendingPhotoUrls: pendingPhotoUrls,
+    }, true);
   };
 
   const handleSaveManualTimes = () => {
@@ -224,7 +235,7 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
     }
   };
 
-  const processPendingFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, pendingId?: string) => {
+  const processPendingFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setUploadingPendingPhotos(true);
@@ -232,19 +243,7 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
     try {
       const fileList = Array.from(files);
       const compressedUrls = await Promise.all(fileList.map((f) => compressImage(f)));
-
-      if (pendingId && selectedActivity) {
-        // Upload directly to an existing pending item
-        await postAction({
-          actionType: 'ADD_PENDING_PHOTOS',
-          activityId: selectedActivity.id,
-          pendingId,
-          photoUrls: compressedUrls,
-        });
-      } else {
-        // Attach to draft new pending item
-        setNewPendingPhotoUrls((prev) => [...prev, ...compressedUrls]);
-      }
+      setPendingPhotoUrls((prev) => [...prev, ...compressedUrls]);
     } catch (err) {
       console.error(err);
       alert('Error al procesar fotos del pendiente');
@@ -256,7 +255,6 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
 
   const photosBefore: PhotoItem[] = selectedActivity?.photosBefore ? JSON.parse(selectedActivity.photosBefore) : [];
   const photosAfter: PhotoItem[] = selectedActivity?.photosAfter ? JSON.parse(selectedActivity.photosAfter) : [];
-  const pendingItems: PendingItem[] = selectedActivity?.pendingItems ? JSON.parse(selectedActivity.pendingItems) : [];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-12 font-sans">
@@ -632,79 +630,60 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
               </div>
             </div>
 
-            {/* 3) LOG DE PENDIENTES / RECOMENDACIONES (CON SOPORTE DE FOTOS MULTIPLES) */}
+            {/* 3) PENDIENTES Y RECOMENDACIONES (UNIFICADO) */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <FileText size={15} className="text-amber-500" /> Log de Pendientes / Recomendaciones
+                <FileText size={15} className="text-amber-500" /> Pendientes / Recomendaciones
               </div>
 
               {/* Hidden file inputs for pending items */}
               <input type="file" accept="image/*" multiple capture="environment" ref={pendingCameraRef} onChange={(e) => processPendingFileUpload(e)} className="hidden" />
               <input type="file" accept="image/*" multiple ref={pendingFileRef} onChange={(e) => processPendingFileUpload(e)} className="hidden" />
 
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newPendingTitle}
-                    onChange={(e) => setNewPendingTitle(e.target.value)}
-                    placeholder="Agregar pendiente o recomendación..."
-                    className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-amber-500 font-medium"
-                  />
-                  <button
-                    onClick={() => {
-                      if (!newPendingTitle.trim()) return;
-                      postAction({
-                        actionType: 'ADD_PENDING',
-                        activityId: selectedActivity.id,
-                        pendingTitle: newPendingTitle,
-                        pendingPhotoUrls: newPendingPhotoUrls,
-                      });
-                      setNewPendingTitle('');
-                      setNewPendingPhotoUrls([]);
-                    }}
-                    disabled={loading}
-                    className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs shrink-0 transition-colors"
-                  >
-                    + Agregar
-                  </button>
-                </div>
+              <div className="space-y-3 text-xs">
+                <textarea
+                  value={pendingText}
+                  onChange={(e) => setPendingText(e.target.value)}
+                  rows={2}
+                  placeholder="Pendientes o recomendaciones para esta actividad..."
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-amber-500 font-medium"
+                />
 
-                {/* Attach photos to new pending draft */}
-                <div className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-xl border border-slate-200">
-                  <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                    <ImageIcon size={13} className="text-amber-500" /> Adjuntar fotos al pendiente:
+                {/* Upload pending photos */}
+                <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                    <ImageIcon size={14} className="text-amber-500" /> Fotos de Pendientes
                   </span>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => pendingCameraRef.current?.click()}
                       disabled={uploadingPendingPhotos}
-                      className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[10px] font-bold border border-amber-200 flex items-center gap-1"
+                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-bold border border-amber-200 flex items-center gap-1"
                     >
-                      <Camera size={12} /> {uploadingPendingPhotos ? '...' : 'Cámara'}
+                      <Camera size={13} /> {uploadingPendingPhotos ? '...' : 'Cámara'}
                     </button>
                     <button
                       type="button"
                       onClick={() => pendingFileRef.current?.click()}
                       disabled={uploadingPendingPhotos}
-                      className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[10px] font-bold flex items-center gap-1"
+                      className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1"
                     >
-                      <Upload size={12} /> Archivo
+                      <Upload size={13} /> Archivo
                     </button>
                   </div>
                 </div>
 
-                {/* Previews of attached draft photos */}
-                {newPendingPhotoUrls.length > 0 && (
-                  <div className="grid grid-cols-4 gap-1.5 pt-1">
-                    {newPendingPhotoUrls.map((url, idx) => (
-                      <div key={idx} className="relative rounded-lg overflow-hidden aspect-square border border-slate-300">
-                        <img src={url} alt="Pendiente" className="w-full h-full object-cover" onClick={() => setPreviewPhoto(url)} />
+                {/* Photo Previews */}
+                {pendingPhotoUrls.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 pt-1">
+                    {pendingPhotoUrls.map((url, idx) => (
+                      <div key={idx} className="relative rounded-xl overflow-hidden aspect-square border border-slate-300 group">
+                        <img src={url} alt="Foto Pendiente" className="w-full h-full object-cover cursor-pointer" onClick={() => setPreviewPhoto(url)} />
                         <button
                           type="button"
-                          onClick={() => setNewPendingPhotoUrls((prev) => prev.filter((_, i) => i !== idx))}
-                          className="absolute top-0.5 right-0.5 p-0.5 bg-red-600 text-white rounded-full"
+                          onClick={() => setPendingPhotoUrls((prev) => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full shadow-xs"
                         >
                           <Trash2 size={10} />
                         </button>
@@ -713,64 +692,6 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
                   </div>
                 )}
               </div>
-
-              {pendingItems.length === 0 ? (
-                <div className="text-xs text-slate-400 text-center py-1 italic">Sin pendientes registrados</div>
-              ) : (
-                <div className="space-y-2 pt-1">
-                  {pendingItems.map((item) => (
-                    <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <div className="font-semibold text-xs text-slate-800">{item.title}</div>
-                          <div className="text-[10px] text-slate-400">Por {item.createdBy}</div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {item.status === 'ABIERTO' ? (
-                            <>
-                              <button
-                                onClick={() => postAction({ actionType: 'TOGGLE_PENDING', activityId: selectedActivity.id, pendingId: item.id, pendingStatus: 'CERRADO' })}
-                                className="px-2.5 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold"
-                              >
-                                Cerrar
-                              </button>
-                              <button
-                                onClick={() => postAction({ actionType: 'TOGGLE_PENDING', activityId: selectedActivity.id, pendingId: item.id, pendingStatus: 'CANCELADO' })}
-                                className="px-2 py-1 bg-slate-200 text-slate-600 rounded text-[10px] font-bold"
-                              >
-                                Cancelar
-                              </button>
-                            </>
-                          ) : (
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
-                              {item.status}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Fotos asociadas a este pendiente */}
-                      {item.photos && item.photos.length > 0 && (
-                        <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-slate-200">
-                          {item.photos.map((p) => (
-                            <div key={p.id} className="relative rounded-lg overflow-hidden aspect-square border border-slate-200 cursor-pointer">
-                              <img src={p.url} alt="Foto pendiente" className="w-full h-full object-cover" onClick={() => setPreviewPhoto(p.url)} />
-                              {item.status === 'ABIERTO' && (
-                                <button
-                                  onClick={() => postAction({ actionType: 'DELETE_PENDING_PHOTO', activityId: selectedActivity.id, pendingId: item.id, photoId: p.id })}
-                                  className="absolute top-0.5 right-0.5 p-0.5 bg-red-600 text-white rounded-full opacity-90 hover:opacity-100"
-                                >
-                                  <Trash2 size={10} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* 4) ESTATUS DEL EQUIPO ATENDIDO */}
@@ -808,7 +729,7 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
               </div>
             </div>
 
-            {/* 5) BITÁCORA / OBSERVACIONES + BOTÓN GUARDAR Y VOLVER AL INICIO */}
+            {/* 5) BITÁCORA / OBSERVACIONES + BOTÓN DE GUARDADO UNIFICADO */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <FileText size={15} className="text-indigo-600" /> Bitácora / Observaciones de Campo
@@ -818,14 +739,14 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
                 value={notesText}
                 onChange={(e) => setNotesText(e.target.value)}
                 rows={3}
-                placeholder="Observaciones adicionales..."
+                placeholder="Observaciones adicionales de bitácora..."
                 className="w-full p-3 text-xs bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-500 font-medium"
               />
 
               <button
                 onClick={handleSaveBitacoraAndReturn}
                 disabled={loading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20 active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Check size={16} /> GUARDAR BITÁCORA Y VOLVER AL INICIO
               </button>

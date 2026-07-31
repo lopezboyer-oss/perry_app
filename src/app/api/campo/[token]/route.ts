@@ -278,7 +278,39 @@ export async function POST(
       dataToUpdate[fieldName] = JSON.stringify(filtered);
     }
 
-    // 6) Notes
+    // 6) Unified Save (Notes & Single Pending Log)
+    if (actionType === 'SAVE_ACTIVITY_SUMMARY') {
+      if (typeof notes === 'string') {
+        dataToUpdate.weekendNotes = notes.trim();
+      }
+      if (typeof pendingTitle === 'string') {
+        const pendingPhotosList = Array.isArray(body.pendingPhotoUrls)
+          ? body.pendingPhotoUrls.map((url: string) => ({
+              id: crypto.randomBytes(6).toString('hex'),
+              url,
+              uploadedAt: new Date().toISOString(),
+            }))
+          : [];
+
+        if (pendingTitle.trim() || pendingPhotosList.length > 0) {
+          const singlePending = [{
+            id: 'single',
+            title: pendingTitle.trim(),
+            status: 'ABIERTO',
+            photos: pendingPhotosList,
+            createdBy: authorName,
+            createdAt: new Date().toISOString(),
+            closedAt: null,
+            closedBy: null,
+          }];
+          dataToUpdate.pendingItems = JSON.stringify(singlePending);
+        } else {
+          dataToUpdate.pendingItems = JSON.stringify([]);
+        }
+      }
+    }
+
+    // 6b) Legacy Notes handler
     if (actionType === 'NOTES' && typeof notes === 'string') {
       dataToUpdate.weekendNotes = notes;
     }
