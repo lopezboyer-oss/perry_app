@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw, ChevronDown, ChevronUp, FileText, UserCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
 import { ExecutiveSummaryPDF } from '@/components/reports/ExecutiveSummaryPDF';
+import { OdooOrderReportModal } from '@/components/reports/OdooOrderReportModal';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 
@@ -304,6 +305,159 @@ export function ManPowerClient({
   const [showVehiclesCard, setShowVehiclesCard] = useState(false);
   const [showDriversCard, setShowDriversCard] = useState(false);
   const [showEquipsCard, setShowEquipsCard] = useState(false);
+
+  // View mode tab state ('POR_DIAS' | 'POR_ODOO_PO')
+  const [viewModeTab, setViewModeTab] = useState<'POR_DIAS' | 'POR_ODOO_PO'>('POR_DIAS');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedOdooGroups, setExpandedOdooGroups] = useState<Record<string, boolean>>({});
+
+  // Batch PO update state
+  const [editingPoFolio, setEditingPoFolio] = useState<string | null>(null);
+  const [editingPoValue, setEditingPoValue] = useState('');
+  const [updatingPoLoading, setUpdatingPoLoading] = useState(false);
+
+  // Odoo Order Report Modal state
+  const [reportingGroup, setReportingGroup] = useState<{
+    workOrderFolio: string;
+    purchaseOrder: string | null;
+    clientName: string | null;
+    activities: Activity[];
+  } | null>(null);
+
+  const odooGroups = React.useMemo(() => {
+    const groupsMap = new Map<string, {
+      key: string;
+      workOrderFolio: string | null;
+      purchaseOrder: string | null;
+      clientName: string | null;
+      activities: Activity[];
+    }>();
+
+    activities.forEach((act) => {
+      const folio = folioState[act.id] !== undefined ? folioState[act.id] : act.workOrderFolio;
+      const po = poState[act.id] !== undefined ? poState[act.id] : act.purchaseOrder;
+      const rawFolio = folio ? folio.trim().toUpperCase() : null;
+      const rawPo = po ? po.trim().toUpperCase() : null;
+      const client = act.client?.name || null;
+
+      const groupKey = rawFolio || (rawPo ? `PO:${rawPo}` : 'SIN_ORDEN');
+
+      if (!groupsMap.has(groupKey)) {
+        groupsMap.set(groupKey, {
+          key: groupKey,
+          workOrderFolio: rawFolio,
+          purchaseOrder: rawPo,
+          clientName: client,
+          activities: [],
+        });
+      }
+
+      const grp = groupsMap.get(groupKey)!;
+      grp.activities.push(act);
+      if (!grp.purchaseOrder && rawPo) grp.purchaseOrder = rawPo;
+      if (!grp.clientName && client) grp.clientName = client;
+    });
+
+    return Array.from(groupsMap.values()).map((g) => {
+      const sortedActs = [...g.activities].sort((a, b) => a.date.localeCompare(b.date));
+      const dates = [...new Set(sortedActs.map((a) => a.date.substring(0, 10)))].sort();
+      const startDate = dates.length > 0 ? dates[0] : '';
+      const endDate = dates.length > 0 ? dates[dates.length - 1] : '';
+
+      let totalHours = 0;
+      sortedActs.forEach((act) => {
+        const entries = timeRegistries[act.id] || act.timeRegistryEntries || [];
+        let regMins = entries.reduce((sum, e) => sum + (e.time || 0), 0);
+        if (regMins > 0) {
+          totalHours += regMins / 60;
+        } else {
+          const startStr = act.actualStartTime || act.startTime;
+          const endStr = act.actualEndTime || act.endTime;
+          if (startStr && endStr) {
+            const [sh, sm] = startStr.split(':').map(Number);
+            const [eh, em] = endStr.split(':').map(Number);
+            let sMins = sh * 60 + sm;
+            let eMins = eh * 60 + em;
+            if (eMins < sMins) eMins += 1440;
+            totalHours += (eMins - sMins) / 60;
+          }
+        }
+      });
+
+      const techNamesSet = new Set<string>();
+      const engNamesSet = new Set<string>();
+      sortedActs.forEach((a) => {
+        if (a.user?.name) engNamesSet.add(a.user.name);
+        const assigned = techAssignments.filter((ta) => ta.activityId === a.id);
+        assigned.forEach((ta) => techNamesSet.add(ta.technician.name));
+      });
+
+      return {
+        ...g,
+        activities: sortedActs,
+        dates,
+        startDate,
+        endDate,
+        totalDays: dates.length,
+        totalHours,
+        techList: Array.from(techNamesSet),
+        engList: Array.from(engNamesSet),
+      };
+    }).sort((a, b) => {
+      if (a.workOrderFolio && !b.workOrderFolio) return -1;
+      if (!a.workOrderFolio && b.workOrderFolio) return 1;
+      return (a.workOrderFolio || '').localeCompare(b.workOrderFolio || '');
+    });
+  }, [activities, folioState, poState, timeRegistries, techAssignments]);
+
+  const filteredOdooGroups = React.useMemo(() => {
+    if (!searchQuery.trim()) return odooGroups;
+    const q = searchQuery.trim().toLowerCase();
+    return odooGroups.filter((g) => {
+      const matchFolio = (g.workOrderFolio || '').toLowerCase().includes(q);
+      const matchPo = (g.purchaseOrder || '').toLowerCase().includes(q);
+      const matchClient = (g.clientName || '').toLowerCase().includes(q);
+      const matchTitle = g.activities.some((a) => a.title.toLowerCase().includes(q) || (a.user?.name || '').toLowerCase().includes(q));
+      return matchFolio || matchPo || matchClient || matchTitle;
+    });
+  }, [odooGroups, searchQuery]);
+
+  const handleBatchUpdatePo = async (workOrderFolio: string, newPo: string) => {
+    if (!workOrderFolio || workOrderFolio === 'SIN_ORDEN') return;
+    setUpdatingPoLoading(true);
+    try {
+      const res = await fetch('/api/actividades/update-po', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workOrderFolio, purchaseOrder: newPo }),
+      });
+      if (res.ok) {
+        const folioUpper = workOrderFolio.toUpperCase();
+        const poUpper = newPo.trim().toUpperCase();
+        setPoState((prev) => {
+          const next = { ...prev };
+          activities.forEach((a) => {
+            const currentFolio = folioState[a.id] !== undefined ? folioState[a.id] : a.workOrderFolio;
+            if (currentFolio?.trim().toUpperCase() === folioUpper) {
+              next[a.id] = poUpper;
+            }
+          });
+          return next;
+        });
+        setEditingPoFolio(null);
+        setEditingPoValue('');
+        router.refresh();
+      } else {
+        const err = await res.json();
+        alert('Error al actualizar PO: ' + (err.error || 'Error en servidor'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión al actualizar PO');
+    } finally {
+      setUpdatingPoLoading(false);
+    }
+  };
 
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -2037,7 +2191,263 @@ export function ManPowerClient({
         </div>
       </div>
 
-      {/* Table */}
+      {/* ── VIEW MODE SWITCHER & SEARCH BAR ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+          <button
+            onClick={() => setViewModeTab('POR_DIAS')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              viewModeTab === 'POR_DIAS'
+                ? 'bg-white text-indigo-600 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <CalendarDays size={15} /> Vista por Días ({activities.length})
+          </button>
+          <button
+            onClick={() => setViewModeTab('POR_ODOO_PO')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              viewModeTab === 'POR_ODOO_PO'
+                ? 'bg-white text-indigo-600 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <FileText size={15} /> Agrupar por Orden Odoo / PO ({odooGroups.length})
+          </button>
+        </div>
+
+        {/* Search Bar (e.g. S02306) */}
+        <div className="relative w-full sm:w-80">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar Folio (ej. S02306), PO, Cliente..."
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── ODOO ORDER GROUPS VIEW MODE ── */}
+      {viewModeTab === 'POR_ODOO_PO' && (
+        <div className="space-y-4">
+          {filteredOdooGroups.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <h3 className="font-bold text-slate-700 text-base">No se encontraron Órdenes de Odoo o PO</h3>
+              <p className="text-xs text-slate-400 mt-1">Prueba cambiando tu término de búsqueda o registra folios Odoo en tus actividades.</p>
+            </div>
+          ) : (
+            filteredOdooGroups.map((grp) => {
+              const isExpanded = expandedOdooGroups[grp.key] !== false; // expanded by default
+              const isEditingThisPo = editingPoFolio === grp.workOrderFolio;
+
+              return (
+                <div key={grp.key} className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden transition-all">
+                  {/* Card Header */}
+                  <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex items-start md:items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-mono font-black flex items-center justify-center text-sm shadow-sm shrink-0">
+                        {grp.workOrderFolio ? '#' : 'PO'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-extrabold text-slate-900 text-base">
+                            {grp.workOrderFolio ? `#${grp.workOrderFolio}` : 'Sin Orden Odoo'}
+                          </span>
+                          {grp.purchaseOrder ? (
+                            <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-md font-mono text-xs font-bold">
+                              PO: {grp.purchaseOrder}
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-md text-xs font-medium">
+                              Sin PO de Cliente
+                            </span>
+                          )}
+                          <span className="text-xs font-bold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-md">
+                            {grp.clientName || 'Sin Cliente'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                          <span>📅 Periodo: <strong>{grp.startDate ? `${formatDate(grp.startDate)} al ${formatDate(grp.endDate)}` : 'S/H'}</strong></span>
+                          <span>•</span>
+                          <span>⏳ <strong>{grp.totalDays}</strong> {grp.totalDays === 1 ? 'día' : 'días'} de ManPower</span>
+                          <span>•</span>
+                          <span>⏱️ <strong>{grp.totalHours.toFixed(1)}</strong> hrs trabajadas</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Header Action Buttons */}
+                    <div className="flex items-center gap-2 flex-wrap shrink-0">
+                      {grp.workOrderFolio && grp.workOrderFolio !== 'SIN_ORDEN' && (
+                        <button
+                          onClick={() => {
+                            setEditingPoFolio(grp.workOrderFolio);
+                            setEditingPoValue(grp.purchaseOrder || '');
+                          }}
+                          className="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                          <Copy size={13} /> {grp.purchaseOrder ? 'Editar PO' : 'Vincular PO'}
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() =>
+                          setReportingGroup({
+                            workOrderFolio: grp.workOrderFolio || grp.key,
+                            purchaseOrder: grp.purchaseOrder,
+                            clientName: grp.clientName,
+                            activities: grp.activities,
+                          })
+                        }
+                        className="px-3.5 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-2xs flex items-center gap-1.5"
+                      >
+                        <FileText size={14} /> Reporte Odoo / PO
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          setExpandedOdooGroups((prev) => ({
+                            ...prev,
+                            [grp.key]: !isExpanded,
+                          }))
+                        }
+                        className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-lg transition-colors"
+                      >
+                        {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Batch PO Editing Inline Form */}
+                  {isEditingThisPo && (
+                    <div className="p-3 bg-indigo-50/70 border-b border-indigo-100 flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-indigo-800">
+                        Vincular PO de Cliente para todas las actividades del Folio #{grp.workOrderFolio}:
+                      </span>
+                      <input
+                        type="text"
+                        value={editingPoValue}
+                        onChange={(e) => setEditingPoValue(e.target.value.toUpperCase())}
+                        placeholder="Ej. PO-998877"
+                        className="px-2.5 py-1 text-xs border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                      />
+                      <button
+                        onClick={() => handleBatchUpdatePo(grp.workOrderFolio!, editingPoValue)}
+                        disabled={updatingPoLoading}
+                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-md disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {updatingPoLoading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                        Guardar PO
+                      </button>
+                      <button
+                        onClick={() => setEditingPoFolio(null)}
+                        className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Body Content (when expanded) */}
+                  {isExpanded && (
+                    <div className="p-4 space-y-4">
+                      {/* Summary Chips */}
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {grp.techList.length > 0 && (
+                          <div className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg">
+                            <HardHat size={13} className="text-slate-500" />
+                            <span className="font-semibold">Técnicos ({grp.techList.length}):</span>
+                            <span>{grp.techList.join(', ')}</span>
+                          </div>
+                        )}
+                        {grp.engList.length > 0 && (
+                          <div className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg">
+                            <UserCheck size={13} className="text-slate-500" />
+                            <span className="font-semibold">Ingenieros ({grp.engList.length}):</span>
+                            <span>{grp.engList.join(', ')}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Activities Table inside Odoo Order Group */}
+                      <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                            <tr>
+                              <th className="px-3 py-2">Día / Fecha</th>
+                              <th className="px-3 py-2">Horario</th>
+                              <th className="px-3 py-2">Actividad</th>
+                              <th className="px-3 py-2">Equipo</th>
+                              <th className="px-3 py-2">Responsable</th>
+                              <th className="px-3 py-2 text-center">Estado</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {grp.activities.map((act) => {
+                              const start = act.actualStartTime || act.startTime || 'S/H';
+                              const end = act.actualEndTime || act.endTime || 'S/H';
+
+                              return (
+                                <tr key={act.id} className="hover:bg-slate-50/50">
+                                  <td className="px-3 py-2 font-medium text-slate-700 whitespace-nowrap">
+                                    {formatDate(act.date.substring(0, 10))}
+                                  </td>
+                                  <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
+                                    {start} - {end}
+                                  </td>
+                                  <td className="px-3 py-2 font-semibold text-slate-800">
+                                    {act.title}
+                                  </td>
+                                  <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
+                                    {act.manPowerEquipo ? (
+                                      <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded font-bold">
+                                        {act.manPowerEquipo}
+                                      </span>
+                                    ) : (
+                                      '—'
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-slate-700 whitespace-nowrap">
+                                    {act.user?.name || 'Sin asignación'}
+                                  </td>
+                                  <td className="px-3 py-2 text-center whitespace-nowrap">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                        act.status === 'COMPLETADA' || act.status === 'CERRADA'
+                                          ? 'bg-emerald-100 text-emerald-800'
+                                          : act.status === 'EN_PROGRESO'
+                                          ? 'bg-indigo-100 text-indigo-800'
+                                          : 'bg-amber-100 text-amber-800'
+                                      }`}
+                                    >
+                                      {act.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Table (when viewModeTab === 'POR_DIAS') */}
+      {viewModeTab === 'POR_DIAS' && (
       <div className="card overflow-hidden shadow-md">
         <div className="overflow-x-auto">
           <table className="data-table">
@@ -2616,6 +3026,7 @@ export function ManPowerClient({
           </table>
         </div>
       </div>
+      )}
 
       {/* Image Preview Modal */}
       {previewImage && (
@@ -3004,6 +3415,20 @@ export function ManPowerClient({
           reportContext={reportLabel}
           reportEquipo={reportEquipo}
           userName={userName}
+        />
+      )}
+
+      {/* ── ODOO ORDER REPORT PDF MODAL ── */}
+      {reportingGroup && (
+        <OdooOrderReportModal
+          workOrderFolio={reportingGroup.workOrderFolio}
+          purchaseOrder={reportingGroup.purchaseOrder}
+          clientName={reportingGroup.clientName}
+          companyName={companyName}
+          activities={reportingGroup.activities}
+          techAssignments={techAssignments}
+          userName={userName}
+          onClose={() => setReportingGroup(null)}
         />
       )}
     </div>

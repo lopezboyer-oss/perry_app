@@ -72,8 +72,8 @@ export default async function ManPowerPage() {
   }
 
   // Get Man Power IDs using raw query to bypass missing prisma schema generation cache
-  const rawManPowerIds = await prisma.$queryRaw<{id: string}>`SELECT id FROM "Activity" WHERE "isManPower" = true`;
-  const manPowerIds = rawManPowerIds.map(r => r.id);
+  const rawManPowerIds = await prisma.$queryRaw<{id: string}[]>`SELECT id FROM "Activity" WHERE "isManPower" = true`;
+  const manPowerIds = Array.isArray(rawManPowerIds) ? rawManPowerIds.map(r => r.id) : [];
 
   let where: any = {
     AND: [
