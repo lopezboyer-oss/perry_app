@@ -158,7 +158,7 @@ Seguido de las siguientes secciones en ESTRICTO ORDEN:
 
 Cierre del reporte (al final de todo):
 Debe incluir la frase literal de cierre:
-Servicio ejecutado por la cuadrilla de ManPower de la empresa Drobotz.
+Servicio de Manpower By DROBOTS
 
 REGLA CRÍTICA DE ESTILO: NO uses ningún ícono ni emoji en todo el documento. El tono debe ser altamente formal y profesional.`;
 

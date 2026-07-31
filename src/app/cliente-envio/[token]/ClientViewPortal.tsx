@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, ShieldCheck, AlertTriangle, MessageSquare, Camera, Send, FileText, Check, Eye, X, ChevronDown, ChevronUp, Layers, AlertCircle, Bot, Sparkles, Calendar, RefreshCw, Copy, CheckCheck } from 'lucide-react';
+import { CheckCircle2, Clock, ShieldCheck, AlertTriangle, MessageSquare, Camera, Send, FileText, Check, Eye, X, ChevronDown, ChevronUp, Layers, AlertCircle, Bot, Sparkles, Calendar, RefreshCw, Copy, CheckCheck, Download, Printer } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface PhotoItem {
@@ -52,7 +52,7 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
   // 🤖 AI Executive Summary Modal & State
   const [showAiModal, setShowAiModal] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<'HOY' | 'AYER' | 'CUSTOM'>('CUSTOM');
-  
+
   // Calculate Min and Max dates from existing activities
   const activityDates = activities.map((a) => a.date.substring(0, 10)).sort();
   const minDate = activityDates.length > 0 ? activityDates[0] : new Date().toISOString().substring(0, 10);
@@ -66,6 +66,145 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
 
   const clientName = initialActivities[0]?.client?.name || 'Cliente';
   const purchaseOrder = purchaseOrderOverride || initialActivities.find((a) => a.purchaseOrder)?.purchaseOrder || null;
+
+  // Collect all pending items across activities
+  const allPendingItems: { activityId: string; activityTitle: string; item: PendingItem }[] = [];
+  activities.forEach((act) => {
+    if (act.pendingItems) {
+      const parsed: PendingItem[] = JSON.parse(act.pendingItems);
+      parsed.forEach((item) => {
+        allPendingItems.push({ activityId: act.id, activityTitle: act.title, item });
+      });
+    }
+  });
+
+  const handleExportPendingExcel = async () => {
+    if (allPendingItems.length === 0) {
+      alert('No hay pendientes registrados para exportar.');
+      return;
+    }
+
+    try {
+      const XLSX = await import('xlsx');
+      const rows = allPendingItems.map(({ activityTitle, item }) => {
+        const act = activities.find((a) => a.id === item.id || a.title === activityTitle);
+        return {
+          '# Equipo': act?.manPowerEquipo || 'N/A',
+          'Actividad': activityTitle,
+          'Pendiente / Recomendación': item.title,
+          'Estatus': item.status,
+          'Registrado Por': item.createdBy || 'Técnico de Campo',
+          'Fecha Registro': item.createdAt ? item.createdAt.substring(0, 10) : 'N/A',
+          'Cerrado/Atendido Por': item.closedBy || 'N/A',
+          'Fecha Cierre': item.closedAt ? item.closedAt.substring(0, 10) : 'N/A',
+          'Cantidad de Fotos Evidencia': item.photos ? item.photos.length : 0,
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Log_de_Pendientes');
+      XLSX.writeFile(workbook, `Log_de_Pendientes_Odoo_${workOrderFolio}.xlsx`);
+    } catch (err) {
+      console.error(err);
+      alert('Error al generar archivo Excel');
+    }
+  };
+
+  const handleExportPendingPDF = () => {
+    if (allPendingItems.length === 0) {
+      alert('No hay pendientes registrados para exportar.');
+      return;
+    }
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert('Por favor permite las ventanas emergentes (popups) para ver el reporte PDF.');
+      return;
+    }
+
+    const rowsHtml = allPendingItems
+      .map(({ activityTitle, item }) => {
+        const act = activities.find((a) => a.id === item.id || a.title === activityTitle);
+        const photosHtml = item.photos && item.photos.length > 0
+          ? item.photos.map((p: any) => `<img src="${p.url}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;margin-right:4px;margin-bottom:4px;border:1px solid #ccc;" />`).join('')
+          : '<span style="color:#999;font-style:italic;font-size:11px;">Sin fotos</span>';
+
+        return `
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <td style="padding:10px;font-family:monospace;font-weight:bold;font-size:12px;">#${act?.manPowerEquipo || 'N/A'}</td>
+            <td style="padding:10px;font-size:12px;font-weight:600;">${activityTitle}</td>
+            <td style="padding:10px;font-size:12px;">${item.title}</td>
+            <td style="padding:10px;font-size:11px;">
+              <span style="padding:3px 8px;border-radius:12px;font-weight:bold;${
+                item.status === 'CERRADO' ? 'background:#d1fae5;color:#065f46;' : item.status === 'ABIERTO' ? 'background:#fef3c7;color:#92400e;' : 'background:#f3f4f6;color:#374151;'
+              }">${item.status}</span>
+            </td>
+            <td style="padding:10px;font-size:11px;color:#64748b;">${item.createdBy}<br/><small>${item.createdAt ? item.createdAt.substring(0, 10) : ''}</small></td>
+            <td style="padding:10px;">${photosHtml}</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Reporte de Pendientes - Orden Odoo #${workOrderFolio}</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; margin: 30px; color: #1e293b; }
+            h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background: #f8fafc; text-align: left; padding: 10px; font-size: 11px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #e2e8f0; }
+            .footer { margin-top: 40px; border-top: 1px solid #cbd5e1; padding-top: 15px; text-align: right; font-weight: bold; font-size: 12px; color: #0f172a; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div style="font-size:10px;font-weight:800;color:#4f46e5;letter-spacing:1px;text-transform:uppercase;">PERRY APP • REPORTE OFICIAL DE CAMPO</div>
+              <h1>Log de Pendientes y Recomendaciones</h1>
+              <div style="font-size:12px;color:#64748b;">Orden Odoo #${workOrderFolio} ${purchaseOrder ? `• PO Cliente: ${purchaseOrder}` : ''}</div>
+            </div>
+            <div style="text-align:right;font-size:11px;color:#64748b;">
+              Fecha de Emisión: ${new Date().toLocaleDateString('es-MX')}
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th># Equipo</th>
+                <th>Actividad</th>
+                <th>Pendiente / Recomendación</th>
+                <th>Estatus</th>
+                <th>Registrado Por</th>
+                <th>Evidencias Fotográficas</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Servicio de Manpower By DROBOTS
+          </div>
+
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWin.document.close();
+  };
 
   const postAction = async (payload: any) => {
     setLoading(true);
@@ -157,17 +296,6 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
 
   // Collect all out-of-service equipment activities
   const outOfServiceActivities = activities.filter((a) => a.equipmentStatus === 'FUERA_DE_SERVICIO');
-
-  // Collect all pending items across activities
-  const allPendingItems: { activityId: string; activityTitle: string; item: PendingItem }[] = [];
-  activities.forEach((act) => {
-    if (act.pendingItems) {
-      const parsed: PendingItem[] = JSON.parse(act.pendingItems);
-      parsed.forEach((item) => {
-        allPendingItems.push({ activityId: act.id, activityTitle: act.title, item });
-      });
-    }
-  });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-12 font-sans">
@@ -495,14 +623,30 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
 
         {/* Consolidado Log de Pendientes */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
-          <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+            <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
               <FileText size={15} className="text-amber-500" /> Log de Pendientes / Recomendaciones
-            </span>
-            <span className="text-[10px] text-slate-400 font-normal">
-              {allPendingItems.filter((i) => i.item.status === 'ABIERTO').length} Abiertos
-            </span>
-          </h3>
+            </h3>
+
+            {allPendingItems.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleExportPendingExcel}
+                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors shadow-2xs"
+                  title="Exportar a Excel"
+                >
+                  <Download size={13} /> Excel
+                </button>
+                <button
+                  onClick={handleExportPendingPDF}
+                  className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors shadow-2xs"
+                  title="Imprimir / Exportar PDF"
+                >
+                  <Printer size={13} /> PDF
+                </button>
+              </div>
+            )}
+          </div>
 
           {allPendingItems.length === 0 ? (
             <div className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
