@@ -2429,7 +2429,8 @@ export function ManPowerClient({
                               <th className="px-3 py-2">Equipo</th>
                               <th className="px-3 py-2">Responsable</th>
                               <th className="px-3 py-2 text-center">Estado</th>
-                              <th className="px-3 py-2 text-center">Cliente / Enlaces</th>
+                              <th className="px-3 py-2 text-center">Enlaces</th>
+                              <th className="px-3 py-2 text-center">Acciones</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -2438,14 +2439,18 @@ export function ManPowerClient({
                               const end = act.actualEndTime || act.endTime || 'S/H';
 
                               return (
-                                <tr key={act.id} className="hover:bg-slate-50/50">
+                                <tr
+                                  key={act.id}
+                                  onClick={() => router.push(`/actividades/${act.id}`)}
+                                  className="hover:bg-indigo-50/60 cursor-pointer transition-colors group"
+                                >
                                   <td className="px-3 py-2 font-medium text-slate-700 whitespace-nowrap">
                                     {formatDate(act.date.substring(0, 10))}
                                   </td>
                                   <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
                                     {start} - {end}
                                   </td>
-                                  <td className="px-3 py-2 font-semibold text-slate-800">
+                                  <td className="px-3 py-2 font-bold text-indigo-950 group-hover:text-indigo-600 group-hover:underline transition-colors">
                                     {act.title}
                                   </td>
                                   <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
@@ -2483,7 +2488,12 @@ export function ManPowerClient({
                                   </td>
                                   <td className="px-3 py-2 text-center whitespace-nowrap">
                                     <button
-                                      onClick={() => act.workOrderFolio && setSelectedOdooLinkGroup({ workOrderFolio: act.workOrderFolio, purchaseOrder: act.purchaseOrder, clientName: act.client?.name })}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (act.workOrderFolio) {
+                                          setSelectedOdooLinkGroup({ workOrderFolio: act.workOrderFolio, purchaseOrder: act.purchaseOrder, clientName: act.client?.name });
+                                        }
+                                      }}
                                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1 shadow-2xs ${
                                         act.clientAcknowledged
                                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
@@ -2495,6 +2505,18 @@ export function ManPowerClient({
                                     >
                                       <Link size={12} />
                                       {act.clientAcknowledged ? '✅ Enterado' : act.techToken1 || act.clientToken ? '🔗 Activo' : '🔗 Enlaces'}
+                                    </button>
+                                  </td>
+                                  <td className="px-3 py-2 text-center whitespace-nowrap">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        router.push(`/actividades/${act.id}`);
+                                      }}
+                                      className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1 shadow-2xs"
+                                      title="Ver detalle completo y editar actividad"
+                                    >
+                                      <ExternalLink size={12} /> Ver / Editar
                                     </button>
                                   </td>
                                 </tr>

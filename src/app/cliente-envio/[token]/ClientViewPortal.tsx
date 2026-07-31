@@ -65,7 +65,8 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
   const [copiedSummary, setCopiedSummary] = useState(false);
 
   const clientName = initialActivities[0]?.client?.name || 'Cliente';
-  const purchaseOrder = purchaseOrderOverride || initialActivities.find((a) => a.purchaseOrder)?.purchaseOrder || null;
+  const rawPo = purchaseOrderOverride || initialActivities.find((a) => a.purchaseOrder && a.purchaseOrder !== 'SIN PO' && a.purchaseOrder !== 'SIN_PO')?.purchaseOrder || null;
+  const purchaseOrder = rawPo && rawPo !== 'SIN PO' && rawPo !== 'SIN_PO' ? rawPo : null;
 
   // Collect all pending items across activities
   const allPendingItems: { activityId: string; activityTitle: string; item: PendingItem }[] = [];

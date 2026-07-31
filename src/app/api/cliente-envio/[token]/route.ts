@@ -68,7 +68,19 @@ export async function GET(
       },
     });
 
-    const purchaseOrder = activities.find((a) => a.purchaseOrder)?.purchaseOrder || null;
+    // Search for a valid PO across ALL activities for this Odoo Order (ignoring "SIN PO", "S/N", etc.)
+    const validPoAct = await prisma.activity.findFirst({
+      where: {
+        workOrderFolio: { equals: workOrderFolio.trim(), mode: 'insensitive' },
+        purchaseOrder: {
+          notIn: ['', 'SIN PO', 'SIN_PO', 'S/N', 'SN', 'null', 'undefined'],
+          not: null,
+        },
+      },
+      select: { purchaseOrder: true },
+    });
+
+    const purchaseOrder = validPoAct?.purchaseOrder || activities.find((a) => a.purchaseOrder && a.purchaseOrder !== 'SIN PO' && a.purchaseOrder !== 'SIN_PO')?.purchaseOrder || null;
 
     return NextResponse.json({
       workOrderFolio,
