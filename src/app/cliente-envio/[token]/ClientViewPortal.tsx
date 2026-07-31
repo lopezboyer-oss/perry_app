@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, ShieldCheck, AlertTriangle, MessageSquare, Camera, Send, FileText, Check, Eye, X, ChevronDown, ChevronUp, Layers, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Clock, ShieldCheck, AlertTriangle, MessageSquare, Camera, Send, FileText, Check, Eye, X, ChevronDown, ChevronUp, Layers, AlertCircle, Bot, Sparkles, Calendar, RefreshCw, Copy, CheckCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface PhotoItem {
   id: string;
   url: string;
-  uploadedBy: string;
+  uploadedBy?: string;
   uploadedAt: string;
 }
 
@@ -31,12 +31,13 @@ interface PendingItem {
 
 interface ClientViewPortalProps {
   workOrderFolio: string;
+  purchaseOrderOverride?: string | null;
   initialActivities: any[];
   initialComments: ClientComment[];
   token: string;
 }
 
-export function ClientViewPortal({ workOrderFolio, initialActivities, initialComments, token }: ClientViewPortalProps) {
+export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initialActivities, initialComments, token }: ClientViewPortalProps) {
   const [activities, setActivities] = useState<any[]>(initialActivities);
   const [comments, setComments] = useState<ClientComment[]>(initialComments);
   const [expandedActivityId, setExpandedActivityId] = useState<string | null>(
@@ -48,8 +49,23 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
   const [newComment, setNewComment] = useState('');
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
 
+  // 🤖 AI Executive Summary Modal & State
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState<'HOY' | 'AYER' | 'CUSTOM'>('CUSTOM');
+  
+  // Calculate Min and Max dates from existing activities
+  const activityDates = activities.map((a) => a.date.substring(0, 10)).sort();
+  const minDate = activityDates.length > 0 ? activityDates[0] : new Date().toISOString().substring(0, 10);
+  const maxDate = activityDates.length > 0 ? activityDates[activityDates.length - 1] : new Date().toISOString().substring(0, 10);
+
+  const [startDate, setStartDate] = useState(minDate);
+  const [endDate, setEndDate] = useState(maxDate);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryResult, setAiSummaryResult] = useState<{ summary: string; periodLabel: string; activityCount: number } | null>(null);
+  const [copiedSummary, setCopiedSummary] = useState(false);
+
   const clientName = initialActivities[0]?.client?.name || 'Cliente';
-  const purchaseOrder = initialActivities[0]?.purchaseOrder || null;
+  const purchaseOrder = purchaseOrderOverride || initialActivities.find((a) => a.purchaseOrder)?.purchaseOrder || null;
 
   const postAction = async (payload: any) => {
     setLoading(true);
@@ -86,6 +102,39 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGenerateAiSummary = async () => {
+    setAiSummaryLoading(true);
+    try {
+      const res = await fetch(`/api/cliente-envio/${token}/ai-summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          periodFilter,
+          startDate,
+          endDate,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAiSummaryResult(data);
+      } else {
+        alert('Error: ' + (data.error || 'No se pudo generar el resumen ejecutivo'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión al procesar con IA');
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  };
+
+  const handleCopyAiSummary = () => {
+    if (!aiSummaryResult?.summary) return;
+    navigator.clipboard.writeText(aiSummaryResult.summary);
+    setCopiedSummary(true);
+    setTimeout(() => setCopiedSummary(false), 2000);
   };
 
   const handleEnteradoActivity = (activityId: string) => {
@@ -154,24 +203,40 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
       {/* Main Container */}
       <div className="max-w-xl mx-auto p-4 space-y-4">
 
-        {/* Order Summary Card */}
+        {/* Order Summary Card with AI Summary Button & PO Display */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-2 flex-wrap">
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
                 {clientName}
               </span>
               <h2 className="text-lg font-black text-slate-900 mt-1">Reporte de ManPower Odoo #{workOrderFolio}</h2>
             </div>
-            {purchaseOrder && (
-              <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs">
-                PO: {purchaseOrder}
+            
+            {purchaseOrder ? (
+              <span className="font-mono text-xs font-black text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-300 shadow-2xs">
+                PO CLIENTE: {purchaseOrder}
+              </span>
+            ) : (
+              <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                PO: S/N
               </span>
             )}
           </div>
 
-          <div className="text-xs text-slate-500 flex items-center gap-2 border-t border-slate-100 pt-2.5">
-            <span>Total de Actividades: <strong className="text-slate-800">{activities.length}</strong></span>
+          <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+            <div className="text-xs text-slate-500">
+              Total Actividades: <strong className="text-slate-800 font-bold">{activities.length}</strong>
+            </div>
+
+            {/* AI Executive Summary Trigger Button */}
+            <button
+              onClick={() => setShowAiModal(true)}
+              className="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-[0.98] transition-all"
+            >
+              <Bot size={16} className="text-amber-300 animate-bounce" />
+              <span>RESUMEN EJECUTIVO IA</span>
+            </button>
           </div>
         </div>
 
@@ -204,6 +269,48 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* AI SUMMARY RESULT CARD (WHEN GENERATED) */}
+        {aiSummaryResult && (
+          <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white rounded-2xl p-5 shadow-xl space-y-4 border border-indigo-700/50 relative overflow-hidden">
+            <div className="flex items-center justify-between border-b border-indigo-800/80 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-amber-300 shadow-md">
+                  <Bot size={18} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                    Resumen Ejecutivo IA <Sparkles size={14} className="text-amber-400" />
+                  </h3>
+                  <div className="text-[10px] text-indigo-300 font-medium">
+                    {aiSummaryResult.periodLabel} • {aiSummaryResult.activityCount} actividades evaluadas
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleCopyAiSummary}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
+                >
+                  {copiedSummary ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                  <span>{copiedSummary ? 'Copiado' : 'Copiar'}</span>
+                </button>
+                <button
+                  onClick={() => setAiSummaryResult(null)}
+                  className="p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Structured Report Text */}
+            <div className="text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+              {aiSummaryResult.summary}
             </div>
           </div>
         )}
@@ -509,6 +616,131 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
                 <X size={18} />
               </button>
               <img src={previewPhoto} alt="Evidencia" className="max-w-full max-h-[85vh] object-contain mx-auto" />
+            </div>
+          </div>
+        )}
+
+        {/* Modal: AI Executive Summary Period Filter */}
+        {showAiModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-amber-300 flex items-center justify-center shadow-xs">
+                    <Bot size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900">Generar Resumen Ejecutivo IA</h3>
+                    <p className="text-[10px] text-slate-500">Formato conciso para Gerentes de Mantenimiento Tier 1</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowAiModal(false)} className="text-slate-400 hover:text-slate-600">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Period Selectors */}
+              <div className="space-y-3 text-xs">
+                <label className="block text-slate-700 font-bold">Seleccionar Periodo de Análisis:</label>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setPeriodFilter('HOY')}
+                    className={`py-2 px-3 rounded-xl font-bold border transition-all text-center ${
+                      periodFilter === 'HOY'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    Hoy
+                  </button>
+
+                  <button
+                    onClick={() => setPeriodFilter('AYER')}
+                    className={`py-2 px-3 rounded-xl font-bold border transition-all text-center ${
+                      periodFilter === 'AYER'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    Ayer
+                  </button>
+
+                  <button
+                    onClick={() => setPeriodFilter('CUSTOM')}
+                    className={`py-2 px-3 rounded-xl font-bold border transition-all text-center ${
+                      periodFilter === 'CUSTOM'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    Periodo Orden
+                  </button>
+                </div>
+
+                {/* Custom Period Constrained to Odoo Order bounds */}
+                {periodFilter === 'CUSTOM' && (
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                    <div className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                      <Calendar size={13} className="text-indigo-600" /> Rango de Fechas (Vigencia de la Orden):
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label className="block text-[10px] text-slate-500 font-semibold mb-0.5">Desde</label>
+                        <input
+                          type="date"
+                          min={minDate}
+                          max={maxDate}
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-500 font-semibold mb-0.5">Hasta</label>
+                        <input
+                          type="date"
+                          min={minDate}
+                          max={maxDate}
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-800 font-mono text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-slate-400 italic">
+                      Fechas acotadas al periodo de actividades del folio (#{workOrderFolio}): {minDate} a {maxDate}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => setShowAiModal(false)}
+                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAiModal(false);
+                    handleGenerateAiSummary();
+                  }}
+                  disabled={aiSummaryLoading}
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5"
+                >
+                  {aiSummaryLoading ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" /> Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={14} className="text-amber-300" /> Generar Resumen
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}

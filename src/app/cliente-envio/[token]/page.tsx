@@ -45,6 +45,7 @@ export default async function ClientEnvioPage({ params }: Props) {
         equals: workOrderFolio.trim(),
         mode: 'insensitive',
       },
+      OR: [{ isManPower: true }, { type: 'MAN_POWER' }],
     },
     orderBy: { date: 'desc' },
     select: {
@@ -76,11 +77,13 @@ export default async function ClientEnvioPage({ params }: Props) {
     },
   });
 
+  const purchaseOrder = activities.find((a) => a.purchaseOrder)?.purchaseOrder || null;
   const clientComments = odooLink?.clientComments ? JSON.parse(odooLink.clientComments) : [];
 
   return (
     <ClientViewPortal
       workOrderFolio={workOrderFolio}
+      purchaseOrderOverride={purchaseOrder}
       initialActivities={activities.map((a) => ({
         ...a,
         date: a.date.toISOString(),

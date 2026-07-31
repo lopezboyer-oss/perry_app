@@ -35,6 +35,7 @@ export async function GET(
           equals: workOrderFolio.trim(),
           mode: 'insensitive',
         },
+        OR: [{ isManPower: true }, { type: 'MAN_POWER' }],
       },
       orderBy: { date: 'desc' },
       select: {
@@ -67,8 +68,11 @@ export async function GET(
       },
     });
 
+    const purchaseOrder = activities.find((a) => a.purchaseOrder)?.purchaseOrder || null;
+
     return NextResponse.json({
       workOrderFolio,
+      purchaseOrder,
       activities,
       clientComments: odooLink?.clientComments ? JSON.parse(odooLink.clientComments) : [],
     });
