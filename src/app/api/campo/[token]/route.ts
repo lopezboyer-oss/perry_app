@@ -34,7 +34,7 @@ export async function GET(
     // Fetch all activities for this Odoo Order
     const activities = await prisma.activity.findMany({
       where: { workOrderFolio },
-      orderBy: { date: 'asc' },
+      orderBy: { date: 'desc' },
       select: {
         id: true,
         title: true,

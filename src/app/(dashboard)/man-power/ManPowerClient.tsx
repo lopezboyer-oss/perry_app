@@ -376,7 +376,8 @@ export function ManPowerClient({
     });
 
     return Array.from(groupsMap.values()).map((g) => {
-      const sortedActs = [...g.activities].sort((a, b) => a.date.localeCompare(b.date));
+      // Sort activities inside group by most recent date first (descending)
+      const sortedActs = [...g.activities].sort((a, b) => b.date.localeCompare(a.date));
       const dates = [...new Set(sortedActs.map((a) => a.date.substring(0, 10)))].sort();
       const startDate = dates.length > 0 ? dates[0] : '';
       const endDate = dates.length > 0 ? dates[dates.length - 1] : '';
@@ -421,9 +422,17 @@ export function ManPowerClient({
         engList: Array.from(engNamesSet),
       };
     }).sort((a, b) => {
+      // 1. Groups with workOrderFolio first
       if (a.workOrderFolio && !b.workOrderFolio) return -1;
       if (!a.workOrderFolio && b.workOrderFolio) return 1;
-      return (a.workOrderFolio || '').localeCompare(b.workOrderFolio || '');
+
+      // 2. Most recent end date first (descending)
+      if (a.endDate && b.endDate && a.endDate !== b.endDate) {
+        return b.endDate.localeCompare(a.endDate);
+      }
+
+      // 3. Most recent order folio first (descending)
+      return (b.workOrderFolio || b.key).localeCompare(a.workOrderFolio || a.key);
     });
   }, [activities, folioState, poState, timeRegistries, techAssignments]);
 

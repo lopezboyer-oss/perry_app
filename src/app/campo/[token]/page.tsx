@@ -43,7 +43,7 @@ export default async function FieldPage({ params }: Props) {
 
   const activities = await prisma.activity.findMany({
     where: { workOrderFolio },
-    orderBy: { date: 'asc' },
+    orderBy: { date: 'desc' },
     select: {
       id: true,
       title: true,
