@@ -148,10 +148,14 @@ Seguido de las siguientes secciones en ESTRICTO ORDEN:
 
 ## 2. Estado Operativo de los Equipos
 - Indica los equipos en estado operativo.
-- Indica los equipos fuera de servicio con su motivo. IMPORTANTE: Si NO hay ningún equipo fuera de servicio, debes escribir textualmente "No hay equipos fuera de servicio".
+- Indica los equipos fuera de servicio con su motivo. IMPORTANTE: Si NO hay ningún equipo fuera de servicio, debes escribir exactamente la frase: "De los equipos intervenidos no quedó ninguno fuera de servicio."
 
 ## 3. Riesgos, Pendientes y Recomendaciones
 - Enumera con viñetas concisas los pendientes críticos, riesgos identificados y recomendaciones de mantenimiento.
+
+Cierre del reporte (al final de todo):
+Debe incluir la frase literal de cierre:
+Servicio ejecutado por la cuadrilla de ManPower de la empresa Drobotz.
 
 REGLA CRÍTICA DE ESTILO: NO uses ningún ícono ni emoji en todo el documento. El tono debe ser altamente formal y profesional.`;
 
