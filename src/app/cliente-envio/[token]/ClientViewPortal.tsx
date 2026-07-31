@@ -40,9 +40,7 @@ interface ClientViewPortalProps {
 export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initialActivities, initialComments, token }: ClientViewPortalProps) {
   const [activities, setActivities] = useState<any[]>(initialActivities);
   const [comments, setComments] = useState<ClientComment[]>(initialComments);
-  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(
-    initialActivities.length > 0 ? initialActivities[0].id : null
-  );
+  const [expandedActivityId, setExpandedActivityId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [clientAuthor, setClientAuthor] = useState('Representante del Cliente');

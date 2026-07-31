@@ -18,6 +18,10 @@ interface Activity {
   type: string;
   status: string;
   date: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  actualStartTime?: string | null;
+  actualEndTime?: string | null;
   durationMinutes: number | null;
   workOrderFolio: string | null;
   purchaseOrder: string | null;
@@ -465,6 +469,7 @@ export function ActividadesClient({ activities: initialActivities, users, client
               <tr>
                 <th>Fecha</th>
                 <th>Título</th>
+                <th className="hidden sm:table-cell">Horario</th>
                 <th>Tipo</th>
                 <th className="hidden sm:table-cell">Responsable</th>
                 <th className="hidden md:table-cell">Cliente</th>
@@ -476,7 +481,7 @@ export function ActividadesClient({ activities: initialActivities, users, client
             <tbody>
               {activities.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12">
+                  <td colSpan={9} className="text-center py-12">
                     <div className="text-slate-400">
                       <ClipboardIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
                       <p className="font-medium">No hay actividades</p>
@@ -485,54 +490,68 @@ export function ActividadesClient({ activities: initialActivities, users, client
                   </td>
                 </tr>
               ) : (
-                activities.map((act) => (
-                  <tr key={act.id} className="cursor-pointer" onClick={() => router.push(`/actividades/${act.id}`)}>
-                    <td className="whitespace-nowrap text-sm">{formatDate(act.date)}</td>
-                    <td>
-                      <p className="font-medium text-slate-800 text-sm">
-                        {act.continuedFromId && act.type === 'EJECUCION' && <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1.5 py-0.5 rounded-full mr-1.5 align-middle">🔄 CONT.</span>}
-                        {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
-                      </p>
-                      {act.workOrderFolio && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-indigo-500 font-mono">{act.workOrderFolio}</span>
-                          {act.type !== 'CAPACITACION' && act.type !== 'SOPORTE_INTERNO' && canViewEconomicAnalysis(currentUserEmail, userRole) && (
-                            <a
-                              href={`/analisis-economico?activityId=${act.id}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 px-1.5 py-0.5 rounded transition-all"
-                              title="Análisis Económico"
-                            >
-                              📊 $
-                            </a>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`badge ${activityTypeColors[act.type] || ''}`}>
-                        {activityTypeLabels[act.type] || act.type}
-                      </span>
-                    </td>
-                    <td className="hidden sm:table-cell text-sm">{act.user?.name || 'POR ASIGNAR'}</td>
-                    <td className="hidden md:table-cell text-sm">{act.client?.name || '-'}</td>
-                    <td className="hidden lg:table-cell">
-                      {act.purchaseOrder ? (
-                        <span className="text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">{act.purchaseOrder}</span>
-                      ) : act.workOrderFolio ? (
-                        <span className="text-[10px] font-bold text-amber-600">Sin P.O.</span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-red-500">Sin Cotización</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`badge ${activityStatusColors[act.status] || ''}`}>
-                        {activityStatusLabels[act.status] || act.status}
-                      </span>
-                    </td>
-                    <td className="hidden lg:table-cell text-sm">{formatDuration(act.durationMinutes)}</td>
-                  </tr>
-                ))
+                activities.map((act) => {
+                  const startStr = act.actualStartTime || act.startTime;
+                  const endStr = act.actualEndTime || act.endTime;
+
+                  return (
+                    <tr key={act.id} className="cursor-pointer" onClick={() => router.push(`/actividades/${act.id}`)}>
+                      <td className="whitespace-nowrap text-sm">{formatDate(act.date)}</td>
+                      <td>
+                        <p className="font-medium text-slate-800 text-sm">
+                          {act.continuedFromId && act.type === 'EJECUCION' && <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1.5 py-0.5 rounded-full mr-1.5 align-middle">🔄 CONT.</span>}
+                          {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
+                        </p>
+                        {act.workOrderFolio && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-indigo-500 font-mono">{act.workOrderFolio}</span>
+                            {act.type !== 'CAPACITACION' && act.type !== 'SOPORTE_INTERNO' && canViewEconomicAnalysis(currentUserEmail, userRole) && (
+                              <a
+                                href={`/analisis-economico?activityId=${act.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 px-1.5 py-0.5 rounded transition-all"
+                                title="Análisis Económico"
+                              >
+                                📊 $
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="hidden sm:table-cell whitespace-nowrap">
+                        {startStr ? (
+                          <span className="font-mono text-xs bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded font-bold">
+                            {startStr} - {endStr || 'S/H'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic">S/H</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`badge ${activityTypeColors[act.type] || ''}`}>
+                          {activityTypeLabels[act.type] || act.type}
+                        </span>
+                      </td>
+                      <td className="hidden sm:table-cell text-sm">{act.user?.name || 'POR ASIGNAR'}</td>
+                      <td className="hidden md:table-cell text-sm">{act.client?.name || '-'}</td>
+                      <td className="hidden lg:table-cell">
+                        {act.purchaseOrder ? (
+                          <span className="text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">{act.purchaseOrder}</span>
+                        ) : act.workOrderFolio ? (
+                          <span className="text-[10px] font-bold text-amber-600">Sin P.O.</span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-red-500">Sin Cotización</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`badge ${activityStatusColors[act.status] || ''}`}>
+                          {activityStatusLabels[act.status] || act.status}
+                        </span>
+                      </td>
+                      <td className="hidden lg:table-cell text-sm">{formatDuration(act.durationMinutes)}</td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

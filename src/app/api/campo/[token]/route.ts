@@ -165,7 +165,7 @@ export async function POST(
       const newActivity = await prisma.activity.create({
         data: {
           title: title.trim(),
-          type: 'MAN_POWER',
+          type: 'EJECUCION',
           isManPower: true,
           workOrderFolio,
           purchaseOrder: sampleActivity?.purchaseOrder || null,
@@ -203,6 +203,7 @@ export async function POST(
     // 1) Start Time
     if (actionType === 'START_TIME' && timeStr) {
       dataToUpdate.actualStartTime = timeStr;
+      dataToUpdate.startTime = timeStr;
       if (activity.status === 'PENDIENTE' || activity.status === 'ASIGNADA') {
         dataToUpdate.status = 'EN_PROGRESO';
       }
@@ -222,6 +223,7 @@ export async function POST(
     // 2) End Time
     if (actionType === 'END_TIME' && timeStr) {
       dataToUpdate.actualEndTime = timeStr;
+      dataToUpdate.endTime = timeStr;
       dataToUpdate.status = 'COMPLETADA';
       try {
         await prisma.timeRegistryEntry.create({
@@ -234,6 +236,18 @@ export async function POST(
           },
         });
       } catch (e) {}
+    }
+
+    // 2b) Manual Time Override
+    if (actionType === 'MANUAL_TIME' || actionType === 'UPDATE_MANUAL_TIME') {
+      if (body.startTimeStr) {
+        dataToUpdate.actualStartTime = body.startTimeStr;
+        dataToUpdate.startTime = body.startTimeStr;
+      }
+      if (body.endTimeStr) {
+        dataToUpdate.actualEndTime = body.endTimeStr;
+        dataToUpdate.endTime = body.endTimeStr;
+      }
     }
 
     // 3) Equipment Status

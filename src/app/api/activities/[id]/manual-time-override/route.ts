@@ -76,6 +76,23 @@ export async function POST(
       });
     }
 
+    // Sincronizar horarios en la actividad principal
+    const actUpdates: any = {};
+    if (inicioTime) {
+      actUpdates.actualStartTime = inicioTime;
+      actUpdates.startTime = inicioTime;
+    }
+    if (finalTime) {
+      actUpdates.actualEndTime = finalTime;
+      actUpdates.endTime = finalTime;
+    }
+    if (Object.keys(actUpdates).length > 0) {
+      await prisma.activity.update({
+        where: { id: activityId },
+        data: actUpdates,
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error en manual time override:', error);
