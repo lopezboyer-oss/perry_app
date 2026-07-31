@@ -232,15 +232,15 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
             {/* AI Executive Summary Trigger Button */}
             <button
               onClick={() => setShowAiModal(true)}
-              className="px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-[0.98] transition-all"
+              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-md active:scale-[0.98] transition-all border border-slate-700"
             >
-              <Bot size={16} className="text-amber-300 animate-bounce" />
+              <Bot size={16} className="text-indigo-400" />
               <span>RESUMEN EJECUTIVO IA</span>
             </button>
           </div>
         </div>
 
-        {/* 🚨 LISTA DE EQUIPOS INTERVENIDOS QUE QUEDARON FUERA DE SERVICIO */}
+        {/* LISTA DE EQUIPOS INTERVENIDOS QUE QUEDARON FUERA DE SERVICIO */}
         {outOfServiceActivities.length > 0 && (
           <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 shadow-sm space-y-3">
             <div className="flex items-center gap-2 text-rose-900 font-black text-xs uppercase tracking-wider">
@@ -265,7 +265,7 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
                     </div>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-2xs">
-                    🔴 FUERA DE SERVICIO
+                    FUERA DE SERVICIO
                   </span>
                 </div>
               ))}
@@ -275,17 +275,17 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
 
         {/* AI SUMMARY RESULT CARD (WHEN GENERATED) */}
         {aiSummaryResult && (
-          <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white rounded-2xl p-5 shadow-xl space-y-4 border border-indigo-700/50 relative overflow-hidden">
-            <div className="flex items-center justify-between border-b border-indigo-800/80 pb-3">
+          <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-xl space-y-4 border border-slate-700 relative overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-amber-300 shadow-md">
-                  <Bot size={18} />
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-extrabold text-xs shadow-md">
+                  IA
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                    Resumen Ejecutivo IA <Sparkles size={14} className="text-amber-400" />
+                  <h3 className="font-extrabold text-sm text-white">
+                    Resumen Ejecutivo
                   </h3>
-                  <div className="text-[10px] text-indigo-300 font-medium">
+                  <div className="text-[10px] text-slate-400 font-medium">
                     {aiSummaryResult.periodLabel} • {aiSummaryResult.activityCount} actividades evaluadas
                   </div>
                 </div>
@@ -309,7 +309,7 @@ export function ClientViewPortal({ workOrderFolio, purchaseOrderOverride, initia
             </div>
 
             {/* Structured Report Text */}
-            <div className="text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap space-y-2 max-h-[60vh] overflow-y-auto pr-1 font-mono">
               {aiSummaryResult.summary}
             </div>
           </div>

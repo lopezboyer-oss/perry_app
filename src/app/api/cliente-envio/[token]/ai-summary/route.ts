@@ -118,23 +118,42 @@ export async function POST(
       return NextResponse.json({ error: 'La API Key de Gemini no está configurada en el servidor' }, { status: 500 });
     }
 
-    const systemPrompt = `Eres un Asistente Ejecutivo de Inteligencia Artificial especializado en Gerencia de Mantenimiento Tier 1 (Automotriz e Industrial).
-Tu objetivo es redactar un Resumen Ejecutivo claro, profesional, conciso y directo para un Gerente de Mantenimiento.
+    // Title formatting based on period
+    const activityDates = activities.map((a) => a.date.toISOString().substring(0, 10)).sort();
+    let titleHeader = `Resumen Ejecutivo del Día ${todayStr}`;
+    if (periodFilter === 'HOY') {
+      titleHeader = `Resumen Ejecutivo del Día ${todayStr}`;
+    } else if (periodFilter === 'AYER') {
+      titleHeader = `Resumen Ejecutivo del Día ${yesterdayStr}`;
+    } else if (periodFilter === 'CUSTOM' && startDate && endDate) {
+      titleHeader = startDate === endDate ? `Resumen Ejecutivo del Día ${startDate}` : `Resumen Ejecutivo del Periodo ${startDate} al ${endDate}`;
+    } else if (activityDates.length > 0) {
+      const minD = activityDates[0];
+      const maxD = activityDates[activityDates.length - 1];
+      titleHeader = minD === maxD ? `Resumen Ejecutivo del Día ${minD}` : `Resumen Ejecutivo del Periodo ${minD} al ${maxD}`;
+    }
 
-ESTRUCTURA OBLIGATORIA DEL REPORTE (debes usar Markdown con estos encabezados):
+    const systemPrompt = `Eres un Asistente de Inteligencia Artificial especializado en informes ejecutivos para la Gerencia de Mantenimiento Tier 1 (Automotriz e Industrial).
+Tu objetivo es generar un informe formal, serio, directo y estrictamente estructurado sin utilizar íconos ni emojis.
 
-### 📊 1. Resumen Ejecutivo del Servicio
-Un párrafo sintetizado (máximo 4 líneas) reportando el avance global en la Orden Odoo #${workOrderFolio}, horas/jornadas evaluadas y nivel de cumplimiento.
+REGLAS DE FORMATO Y ESTRUCTURA OBLIGATORIA:
 
-### ⚙️ 2. Estado Operativo de Equipos
-- **Equipos Operativos:** Listar los equipos intervenidos que quedaron operativos.
-- **Equipos Fuera de Servicio (Atención Prioritaria):** Si hay equipos marcados como FUERA DE SERVICIO, destácalos claramente con el motivo o riesgo asociado. Si no hay ninguno, indicar "100% de los equipos intervenidos en condición Operativa".
+El título principal debe ser exactamente:
+# ${titleHeader}
 
-### 🛠️ 3. Principales Intervenciones Ejecutadas
-Enumera con viñetas concisas los trabajos técnicos clave realizados durante este periodo.
+Seguido de las siguientes secciones en ESTRICTO ORDEN:
 
-### ⚠️ 4. Riesgos, Pendientes y Recomendaciones Operativas
-Listar los pendientes o recomendaciones críticas dejados en campo y las acciones sugeridas para asegurar la continuidad operativa de la planta.`;
+## 1. Principales Intervenciones Ejecutadas
+- Enumera con viñetas concisas los trabajos técnicos clave y mantenimientos ejecutados en el periodo.
+
+## 2. Estado Operativo de los Equipos
+- Indica los equipos en estado operativo.
+- Indica los equipos fuera de servicio con su motivo. IMPORTANTE: Si NO hay ningún equipo fuera de servicio, debes escribir textualmente "No hay equipos fuera de servicio".
+
+## 3. Riesgos, Pendientes y Recomendaciones
+- Enumera con viñetas concisas los pendientes críticos, riesgos identificados y recomendaciones de mantenimiento.
+
+REGLA CRÍTICA DE ESTILO: NO uses ningún ícono ni emoji en todo el documento. El tono debe ser altamente formal y profesional.`;
 
     const text = `${systemPrompt}\n\nDATOS EXTRAÍDOS DE CAMPO:\n${promptData}`;
 
