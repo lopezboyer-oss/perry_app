@@ -146,9 +146,12 @@ Seguido de las siguientes secciones en ESTRICTO ORDEN:
 ## 1. Principales Intervenciones Ejecutadas
 - Enumera con viñetas concisas los trabajos técnicos clave y mantenimientos ejecutados en el periodo.
 
-## 2. Estado Operativo de los Equipos
-- Indica los equipos en estado operativo.
-- Indica los equipos fuera de servicio con su motivo. IMPORTANTE: Si NO hay ningún equipo fuera de servicio, debes escribir exactamente la frase: "De los equipos intervenidos no quedó ninguno fuera de servicio."
+## 2. Estado operativo de los equipos intervenidos
+- Lista en viñetas cada uno de los equipos intervenidos con este formato exacto:
+  - Equipo #[NUMERO_O_NOMBRE_DE_EQUIPO]: Operativo
+  (Si un equipo quedó fuera de servicio, indica: "- Equipo #[NUMERO]: Fuera de Servicio - [Motivo]")
+- Al final de la lista de esta sección 2, si NO quedaron equipos fuera de servicio, debes escribir exactamente la leyenda:
+  "De los equipos intervenidos no quedó ninguno fuera de servicio."
 
 ## 3. Riesgos, Pendientes y Recomendaciones
 - Enumera con viñetas concisas los pendientes críticos, riesgos identificados y recomendaciones de mantenimiento.
