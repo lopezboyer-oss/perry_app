@@ -9,13 +9,32 @@ export async function GET(
   try {
     const { token } = params;
 
-    const activity = await prisma.activity.findFirst({
+    // 1) Find Odoo Order Link
+    const odooLink = await prisma.odooOrderAccessLink.findFirst({
       where: {
-        OR: [
-          { techToken1: token },
-          { techToken2: token },
-        ],
+        OR: [{ techToken1: token }, { techToken2: token }],
       },
+    });
+
+    let workOrderFolio = odooLink?.workOrderFolio;
+
+    // Fallback: check Activity table for legacy activity token
+    if (!workOrderFolio) {
+      const act = await prisma.activity.findFirst({
+        where: { OR: [{ techToken1: token }, { techToken2: token }] },
+        select: { workOrderFolio: true },
+      });
+      if (act?.workOrderFolio) workOrderFolio = act.workOrderFolio;
+    }
+
+    if (!workOrderFolio) {
+      return NextResponse.json({ error: 'Enlace inválido o revocado por el supervisor' }, { status: 404 });
+    }
+
+    // Fetch all activities for this Odoo Order
+    const activities = await prisma.activity.findMany({
+      where: { workOrderFolio },
+      orderBy: { date: 'asc' },
       select: {
         id: true,
         title: true,
@@ -37,31 +56,26 @@ export async function GET(
         photosAfter: true,
         clientAcknowledged: true,
         clientAcknowledgedAt: true,
+        clientAcknowledgedBy: true,
         clientComments: true,
         pendingItems: true,
-        techToken1: true,
-        techToken2: true,
         client: { select: { id: true, name: true } },
         user: { select: { id: true, name: true } },
         timeRegistryEntries: { select: { id: true, phase: true, time: true, registeredAt: true }, orderBy: { registeredAt: 'asc' } },
       },
     });
 
-    if (!activity) {
-      return NextResponse.json({ error: 'Enlace inválido o cancelado por el supervisor' }, { status: 404 });
-    }
-
-    const isTech1 = activity.techToken1 === token;
-    const isTech2 = activity.techToken2 === token;
-    const cuadrillaLabel = isTech1 ? 'Cuadrilla / Técnico 1' : isTech2 ? 'Cuadrilla / Técnico 2' : 'Campo';
+    const isTech1 = odooLink?.techToken1 === token;
+    const cuadrillaLabel = isTech1 ? 'Cuadrilla 1' : 'Cuadrilla 2';
 
     return NextResponse.json({
-      activity,
+      workOrderFolio,
       cuadrillaLabel,
+      activities,
     });
   } catch (error: any) {
-    console.error('Error fetching field activity by token:', error);
-    return NextResponse.json({ error: 'Error al consultar actividad en campo' }, { status: 500 });
+    console.error('Error fetching field activities by token:', error);
+    return NextResponse.json({ error: 'Error al consultar actividades en campo' }, { status: 500 });
   }
 }
 
@@ -73,33 +87,91 @@ export async function POST(
     const { token } = params;
     const body = await req.json();
 
-    const activity = await prisma.activity.findFirst({
-      where: {
-        OR: [
-          { techToken1: token },
-          { techToken2: token },
-        ],
-      },
+    // 1) Resolve token
+    const odooLink = await prisma.odooOrderAccessLink.findFirst({
+      where: { OR: [{ techToken1: token }, { techToken2: token }] },
     });
 
-    if (!activity) {
-      return NextResponse.json({ error: 'Enlace inválido o cancelado' }, { status: 404 });
+    let workOrderFolio = odooLink?.workOrderFolio;
+
+    if (!workOrderFolio) {
+      const act = await prisma.activity.findFirst({
+        where: { OR: [{ techToken1: token }, { techToken2: token }] },
+        select: { workOrderFolio: true },
+      });
+      if (act?.workOrderFolio) workOrderFolio = act.workOrderFolio;
+    }
+
+    if (!workOrderFolio) {
+      return NextResponse.json({ error: 'Enlace de campo inválido o revocado' }, { status: 404 });
     }
 
     const {
-      actionType, // 'START_TIME' | 'END_TIME' | 'EQUIPMENT_STATUS' | 'SUGGESTED_ACTION' | 'ADD_PHOTO' | 'DELETE_PHOTO' | 'NOTES' | 'ADD_PENDING' | 'TOGGLE_PENDING'
+      actionType, // 'CREATE_ACTIVITY' | 'START_TIME' | 'END_TIME' | 'EQUIPMENT_STATUS' | 'SUGGESTED_ACTION' | 'ADD_PHOTO' | 'DELETE_PHOTO' | 'NOTES' | 'ADD_PENDING' | 'TOGGLE_PENDING'
+      activityId,
+      title,
+      manPowerEquipo,
       timeStr,
       equipmentStatus,
       suggestedAction,
-      photoType, // 'BEFORE' | 'AFTER'
+      photoType,
       photoUrl,
       photoId,
       notes,
       pendingTitle,
       pendingId,
-      pendingStatus, // 'ABIERTO' | 'CERRADO' | 'CANCELADO'
+      pendingStatus,
       authorName = 'Técnico de Campo',
     } = body;
+
+    // ── ACTION: CREATE NEW ACTIVITY IN FIELD ──
+    if (actionType === 'CREATE_ACTIVITY') {
+      if (!title || !title.trim()) {
+        return NextResponse.json({ error: 'El título de la actividad es requerido' }, { status: 400 });
+      }
+
+      // Inherit client, company, PO from existing activity of this Odoo Order
+      const sampleActivity = await prisma.activity.findFirst({
+        where: { workOrderFolio },
+        select: { clientId: true, companyId: true, purchaseOrder: true, projectArea: true },
+      });
+
+      const newActivity = await prisma.activity.create({
+        data: {
+          title: title.trim(),
+          type: 'MAN_POWER',
+          isManPower: true,
+          workOrderFolio,
+          purchaseOrder: sampleActivity?.purchaseOrder || null,
+          clientId: sampleActivity?.clientId || null,
+          companyId: sampleActivity?.companyId || null,
+          projectArea: sampleActivity?.projectArea || 'CAMPO',
+          date: new Date(),
+          status: 'PENDIENTE',
+          manPowerEquipo: manPowerEquipo ? manPowerEquipo.trim().toUpperCase() : null,
+          equipmentStatus: equipmentStatus || 'OPERATIVO',
+          weekendNotes: notes ? notes.trim() : null,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        activity: newActivity,
+      });
+    }
+
+    // ── ACTIONS ON EXISTING ACTIVITY ──
+    if (!activityId) {
+      return NextResponse.json({ error: 'ID de actividad requerido' }, { status: 400 });
+    }
+
+    const activity = await prisma.activity.findFirst({
+      where: { id: activityId, workOrderFolio },
+    });
+
+    if (!activity) {
+      return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 });
+    }
 
     const dataToUpdate: any = {};
 
@@ -109,7 +181,6 @@ export async function POST(
       if (activity.status === 'PENDIENTE' || activity.status === 'ASIGNADA') {
         dataToUpdate.status = 'EN_PROGRESO';
       }
-      // Add TimeRegistryEntry
       try {
         await prisma.timeRegistryEntry.create({
           data: {
@@ -120,16 +191,13 @@ export async function POST(
             userId: activity.userId || 'PUBLIC_TECH',
           },
         });
-      } catch (e) {
-        // Ignorar si ya existe registro de esa fase
-      }
+      } catch (e) {}
     }
 
     // 2) End Time
     if (actionType === 'END_TIME' && timeStr) {
       dataToUpdate.actualEndTime = timeStr;
       dataToUpdate.status = 'COMPLETADA';
-      // Add TimeRegistryEntry
       try {
         await prisma.timeRegistryEntry.create({
           data: {
@@ -140,9 +208,7 @@ export async function POST(
             userId: activity.userId || 'PUBLIC_TECH',
           },
         });
-      } catch (e) {
-        // Ignorar si ya existe registro de esa fase
-      }
+      } catch (e) {}
     }
 
     // 3) Equipment Status
@@ -217,18 +283,6 @@ export async function POST(
     const updatedActivity = await prisma.activity.update({
       where: { id: activity.id },
       data: dataToUpdate,
-      select: {
-        id: true,
-        actualStartTime: true,
-        actualEndTime: true,
-        status: true,
-        equipmentStatus: true,
-        suggestedAction: true,
-        photosBefore: true,
-        photosAfter: true,
-        weekendNotes: true,
-        pendingItems: true,
-      },
     });
 
     return NextResponse.json({
@@ -236,7 +290,7 @@ export async function POST(
       activity: updatedActivity,
     });
   } catch (error: any) {
-    console.error('Error updating field activity:', error);
-    return NextResponse.json({ error: 'Error al registrar información de campo' }, { status: 500 });
+    console.error('Error in field POST API:', error);
+    return NextResponse.json({ error: 'Error al procesar acción de campo' }, { status: 500 });
   }
 }

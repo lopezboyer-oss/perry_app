@@ -9,10 +9,29 @@ export async function GET(
   try {
     const { token } = params;
 
-    const activity = await prisma.activity.findFirst({
-      where: {
-        clientToken: token,
-      },
+    // 1) Find Odoo Order Link
+    const odooLink = await prisma.odooOrderAccessLink.findFirst({
+      where: { clientToken: token },
+    });
+
+    let workOrderFolio = odooLink?.workOrderFolio;
+
+    // Fallback: check Activity table for legacy activity token
+    if (!workOrderFolio) {
+      const act = await prisma.activity.findFirst({
+        where: { clientToken: token },
+        select: { workOrderFolio: true },
+      });
+      if (act?.workOrderFolio) workOrderFolio = act.workOrderFolio;
+    }
+
+    if (!workOrderFolio) {
+      return NextResponse.json({ error: 'Enlace de cliente inválido o revocado' }, { status: 404 });
+    }
+
+    const activities = await prisma.activity.findMany({
+      where: { workOrderFolio },
+      orderBy: { date: 'asc' },
       select: {
         id: true,
         title: true,
@@ -43,15 +62,13 @@ export async function GET(
       },
     });
 
-    if (!activity) {
-      return NextResponse.json({ error: 'Enlace de cliente inválido o expirado' }, { status: 404 });
-    }
-
     return NextResponse.json({
-      activity,
+      workOrderFolio,
+      activities,
+      clientComments: odooLink?.clientComments ? JSON.parse(odooLink.clientComments) : [],
     });
   } catch (error: any) {
-    console.error('Error fetching client portal activity:', error);
+    console.error('Error fetching client portal activities by token:', error);
     return NextResponse.json({ error: 'Error al consultar portal del cliente' }, { status: 500 });
   }
 }
@@ -64,81 +81,129 @@ export async function POST(
     const { token } = params;
     const body = await req.json();
 
-    const activity = await prisma.activity.findFirst({
-      where: {
-        clientToken: token,
-      },
+    // 1) Find Odoo Order Link
+    const odooLink = await prisma.odooOrderAccessLink.findFirst({
+      where: { clientToken: token },
     });
 
-    if (!activity) {
-      return NextResponse.json({ error: 'Enlace de cliente inválido o expirado' }, { status: 404 });
+    let workOrderFolio = odooLink?.workOrderFolio;
+
+    if (!workOrderFolio) {
+      const act = await prisma.activity.findFirst({
+        where: { clientToken: token },
+        select: { workOrderFolio: true },
+      });
+      if (act?.workOrderFolio) workOrderFolio = act.workOrderFolio;
+    }
+
+    if (!workOrderFolio) {
+      return NextResponse.json({ error: 'Enlace de cliente inválido o revocado' }, { status: 404 });
     }
 
     const {
-      actionType, // 'ENTERADO' | 'COMMENT' | 'TOGGLE_PENDING'
+      actionType, // 'ENTERADO_ACTIVITY' | 'COMMENT' | 'TOGGLE_PENDING'
+      activityId,
       authorName = 'Representante de Cliente',
       commentText,
       pendingId,
-      pendingStatus, // 'ABIERTO' | 'CERRADO' | 'CANCELADO'
+      pendingStatus,
     } = body;
 
-    const dataToUpdate: any = {};
+    // ── 1) ENTERADO EN ACTIVIDAD ESPECÍFICA CERRADA/COMPLETADA ──
+    if (actionType === 'ENTERADO_ACTIVITY' && activityId) {
+      const activity = await prisma.activity.findFirst({
+        where: { id: activityId, workOrderFolio },
+      });
 
-    // 1) Mark Enterado
-    if (actionType === 'ENTERADO') {
-      dataToUpdate.clientAcknowledged = true;
-      dataToUpdate.clientAcknowledgedAt = new Date();
-      dataToUpdate.clientAcknowledgedBy = authorName.trim();
+      if (!activity) {
+        return NextResponse.json({ error: 'Actividad no encontrada' }, { status: 404 });
+      }
+
+      const updatedActivity = await prisma.activity.update({
+        where: { id: activityId },
+        data: {
+          clientAcknowledged: true,
+          clientAcknowledgedAt: new Date(),
+          clientAcknowledgedBy: authorName.trim(),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        activity: updatedActivity,
+      });
     }
 
-    // 2) Client Comment
+    // ── 2) COMENTARIOS GENERALES DE LA ORDEN DE TRABAJO O ACTIVIDAD ──
     if (actionType === 'COMMENT' && commentText) {
-      const existingStr = activity.clientComments || '[]';
-      const existingComments = JSON.parse(existingStr);
-      const newComment = {
-        id: crypto.randomBytes(6).toString('hex'),
-        author: authorName.trim(),
-        comment: commentText.trim(),
-        createdAt: new Date().toISOString(),
-      };
-      existingComments.push(newComment);
-      dataToUpdate.clientComments = JSON.stringify(existingComments);
+      if (activityId) {
+        const activity = await prisma.activity.findFirst({
+          where: { id: activityId, workOrderFolio },
+        });
+
+        if (activity) {
+          const existingStr = activity.clientComments || '[]';
+          const existingComments = JSON.parse(existingStr);
+          existingComments.push({
+            id: crypto.randomBytes(6).toString('hex'),
+            author: authorName.trim(),
+            comment: commentText.trim(),
+            createdAt: new Date().toISOString(),
+          });
+          const updated = await prisma.activity.update({
+            where: { id: activityId },
+            data: { clientComments: JSON.stringify(existingComments) },
+          });
+          return NextResponse.json({ success: true, activity: updated });
+        }
+      }
+
+      // Order-level comment
+      if (odooLink) {
+        const existingStr = odooLink.clientComments || '[]';
+        const existingComments = JSON.parse(existingStr);
+        existingComments.push({
+          id: crypto.randomBytes(6).toString('hex'),
+          author: authorName.trim(),
+          comment: commentText.trim(),
+          createdAt: new Date().toISOString(),
+        });
+        await prisma.odooOrderAccessLink.update({
+          where: { id: odooLink.id },
+          data: { clientComments: JSON.stringify(existingComments) },
+        });
+      }
+      return NextResponse.json({ success: true });
     }
 
-    // 3) Toggle Pending item from Client Portal
-    if (actionType === 'TOGGLE_PENDING' && pendingId && pendingStatus) {
-      const existingStr = activity.pendingItems || '[]';
-      const existingItems = JSON.parse(existingStr);
-      const itemIndex = existingItems.findIndex((i: any) => i.id === pendingId);
-      if (itemIndex !== -1) {
-        existingItems[itemIndex].status = pendingStatus;
-        if (pendingStatus === 'CERRADO' || pendingStatus === 'CANCELADO') {
-          existingItems[itemIndex].closedAt = new Date().toISOString();
-          existingItems[itemIndex].closedBy = authorName;
+    // ── 3) TOGGLE PENDING ITEM ──
+    if (actionType === 'TOGGLE_PENDING' && activityId && pendingId && pendingStatus) {
+      const activity = await prisma.activity.findFirst({
+        where: { id: activityId, workOrderFolio },
+      });
+
+      if (activity) {
+        const existingStr = activity.pendingItems || '[]';
+        const existingItems = JSON.parse(existingStr);
+        const itemIndex = existingItems.findIndex((i: any) => i.id === pendingId);
+        if (itemIndex !== -1) {
+          existingItems[itemIndex].status = pendingStatus;
+          if (pendingStatus === 'CERRADO' || pendingStatus === 'CANCELADO') {
+            existingItems[itemIndex].closedAt = new Date().toISOString();
+            existingItems[itemIndex].closedBy = authorName;
+          }
+          const updated = await prisma.activity.update({
+            where: { id: activityId },
+            data: { pendingItems: JSON.stringify(existingItems) },
+          });
+          return NextResponse.json({ success: true, activity: updated });
         }
-        dataToUpdate.pendingItems = JSON.stringify(existingItems);
       }
     }
 
-    const updatedActivity = await prisma.activity.update({
-      where: { id: activity.id },
-      data: dataToUpdate,
-      select: {
-        id: true,
-        clientAcknowledged: true,
-        clientAcknowledgedAt: true,
-        clientAcknowledgedBy: true,
-        clientComments: true,
-        pendingItems: true,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      activity: updatedActivity,
-    });
+    return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error updating client portal activity:', error);
-    return NextResponse.json({ error: 'Error al procesar acción del cliente' }, { status: 500 });
+    console.error('Error updating client portal POST API:', error);
+    return NextResponse.json({ error: 'Error al procesar respuesta del cliente' }, { status: 500 });
   }
 }

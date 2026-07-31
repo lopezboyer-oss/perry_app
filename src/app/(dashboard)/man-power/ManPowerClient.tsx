@@ -334,8 +334,12 @@ export function ManPowerClient({
     activities: Activity[];
   } | null>(null);
 
-  // Activity Public Links Modal state
-  const [linksModalActivity, setLinksModalActivity] = useState<any | null>(null);
+  // Odoo Order Links Modal state
+  const [selectedOdooLinkGroup, setSelectedOdooLinkGroup] = useState<{
+    workOrderFolio: string;
+    purchaseOrder?: string | null;
+    clientName?: string | null;
+  } | null>(null);
 
   const odooGroups = React.useMemo(() => {
     const groupsMap = new Map<string, {
@@ -2325,6 +2329,21 @@ export function ManPowerClient({
                         <FileText size={14} /> Reporte Odoo / PO
                       </button>
 
+                      {grp.workOrderFolio && grp.workOrderFolio !== 'SIN_ORDEN' && (
+                        <button
+                          onClick={() =>
+                            setSelectedOdooLinkGroup({
+                              workOrderFolio: grp.workOrderFolio!,
+                              purchaseOrder: grp.purchaseOrder,
+                              clientName: grp.clientName,
+                            })
+                          }
+                          className="px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <Link size={14} /> 🔗 Enlaces
+                        </button>
+                      )}
+
                       <button
                         onClick={() =>
                           setExpandedOdooGroups((prev) => ({
@@ -2455,7 +2474,7 @@ export function ManPowerClient({
                                   </td>
                                   <td className="px-3 py-2 text-center whitespace-nowrap">
                                     <button
-                                      onClick={() => setLinksModalActivity(act)}
+                                      onClick={() => act.workOrderFolio && setSelectedOdooLinkGroup({ workOrderFolio: act.workOrderFolio, purchaseOrder: act.purchaseOrder, clientName: act.client?.name })}
                                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1 shadow-2xs ${
                                         act.clientAcknowledged
                                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
@@ -3015,18 +3034,16 @@ export function ManPowerClient({
                     <td className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() => setLinksModalActivity(act)}
+                          onClick={() => act.workOrderFolio && setSelectedOdooLinkGroup({ workOrderFolio: act.workOrderFolio, purchaseOrder: act.purchaseOrder, clientName: act.client?.name })}
                           className={`px-2 py-1 rounded text-[10px] font-bold transition-all inline-flex items-center gap-1 ${
                             act.clientAcknowledged
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              : act.techToken1 || act.clientToken
-                              ? 'bg-indigo-100 text-indigo-800 border border-indigo-300'
                               : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
                           }`}
                           title="Gestionar enlaces públicos de campo y cliente"
                         >
                           <Link size={12} />
-                          {act.clientAcknowledged ? '✅ Enterado' : act.techToken1 || act.clientToken ? '🔗 Activo' : '🔗 Enlaces'}
+                          {act.clientAcknowledged ? '✅ Enterado' : '🔗 Enlaces'}
                         </button>
 
                         {cancelledIds.has(act.id) ? (
@@ -3489,14 +3506,12 @@ export function ManPowerClient({
       )}
 
       {/* ── PUBLIC LINKS MANAGEMENT MODAL ── */}
-      {linksModalActivity && (
+      {selectedOdooLinkGroup && (
         <ActivityLinksModal
-          activity={linksModalActivity}
-          onClose={() => setLinksModalActivity(null)}
-          onLinksUpdated={(actId, updatedFields) => {
-            setLinksModalActivity((prev: any) => (prev ? { ...prev, ...updatedFields } : null));
-            router.refresh();
-          }}
+          workOrderFolio={selectedOdooLinkGroup.workOrderFolio}
+          purchaseOrder={selectedOdooLinkGroup.purchaseOrder}
+          clientName={selectedOdooLinkGroup.clientName}
+          onClose={() => setSelectedOdooLinkGroup(null)}
         />
       )}
     </div>
