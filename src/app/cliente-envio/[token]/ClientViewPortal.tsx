@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, ShieldCheck, AlertTriangle, MessageSquare, Camera, Sparkles, Send, FileText, Check, Eye, X, ChevronDown, ChevronUp, Layers } from 'lucide-react';
+import { CheckCircle2, Clock, ShieldCheck, AlertTriangle, MessageSquare, Camera, Send, FileText, Check, Eye, X, ChevronDown, ChevronUp, Layers, AlertCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface PhotoItem {
@@ -69,7 +69,6 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
             prev.map((a) => (a.id === data.activity.id ? { ...a, ...data.activity } : a))
           );
         } else {
-          // Refresh comments/data
           const refreshRes = await fetch(`/api/cliente-envio/${token}`);
           const refreshData = await refreshRes.json();
           if (refreshRes.ok) {
@@ -106,6 +105,9 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
     postAction({ actionType: 'TOGGLE_PENDING', activityId, pendingId, pendingStatus });
   };
 
+  // Collect all out-of-service equipment activities
+  const outOfServiceActivities = activities.filter((a) => a.equipmentStatus === 'FUERA_DE_SERVICIO');
+
   // Collect all pending items across activities
   const allPendingItems: { activityId: string; activityTitle: string; item: PendingItem }[] = [];
   activities.forEach((act) => {
@@ -118,7 +120,7 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pb-12">
+    <div className="min-h-screen bg-slate-50 text-slate-800 pb-12 font-sans">
       {/* Top Banner */}
       <div className="bg-slate-900 text-white border-b border-slate-800 px-4 py-4 shadow-lg sticky top-0 z-30">
         <div className="max-w-xl mx-auto flex items-center justify-between">
@@ -152,7 +154,7 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
       <div className="max-w-xl mx-auto p-4 space-y-4">
 
         {/* Order Summary Card */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
           <div className="flex items-start justify-between">
             <div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -171,6 +173,39 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
             <span>Total de Actividades: <strong className="text-slate-800">{activities.length}</strong></span>
           </div>
         </div>
+
+        {/* 🚨 LISTA DE EQUIPOS INTERVENIDOS QUE QUEDARON FUERA DE SERVICIO */}
+        {outOfServiceActivities.length > 0 && (
+          <div className="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 text-rose-900 font-black text-xs uppercase tracking-wider">
+              <AlertCircle size={18} className="text-rose-600 animate-pulse" />
+              <span>Equipos Intervenidos Que Quedaron FUERA DE SERVICIO ({outOfServiceActivities.length})</span>
+            </div>
+
+            <div className="space-y-2">
+              {outOfServiceActivities.map((act) => (
+                <div key={act.id} className="bg-white border border-rose-200 rounded-xl p-3 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      {act.manPowerEquipo && (
+                        <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-rose-100 text-rose-800">
+                          #{act.manPowerEquipo}
+                        </span>
+                      )}
+                      <span className="font-extrabold text-xs text-slate-900">{act.title}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      Fecha: {formatDate(act.date.substring(0, 10))}
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-2xs">
+                    🔴 FUERA DE SERVICIO
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Activities List */}
         <div className="space-y-3">
@@ -191,7 +226,7 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
             return (
               <div
                 key={act.id}
-                className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all"
+                className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden transition-all"
               >
                 {/* Header Row */}
                 <div
@@ -215,7 +250,6 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Equipment status badge */}
                     {act.equipmentStatus === 'OPERATIVO' && (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         🟢 Operativo
@@ -227,7 +261,6 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
                       </span>
                     )}
 
-                    {/* Enterado Badge */}
                     {act.clientAcknowledged && (
                       <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300 flex items-center gap-1">
                         <CheckCircle2 size={12} /> Enterado
@@ -285,23 +318,12 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
                       </div>
                     </div>
 
-                    {/* Acción Sugerida */}
-                    {act.suggestedAction && (
-                      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 space-y-1">
-                        <div className="font-bold text-indigo-900 flex items-center gap-1">
-                          <Sparkles size={14} className="text-indigo-600" /> Acción Sugerida al Cliente
-                        </div>
-                        <p className="text-slate-800 font-semibold">{act.suggestedAction}</p>
-                      </div>
-                    )}
-
                     {/* Galería Fotos ANTES vs DESPUÉS */}
                     <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-3">
                       <div className="font-bold text-slate-800 flex items-center gap-1.5">
                         <Camera size={14} className="text-indigo-600" /> Evidencia Fotográfica
                       </div>
 
-                      {/* Fotos Antes */}
                       <div className="space-y-1.5">
                         <div className="text-[11px] font-bold text-slate-600">📸 Estado Inicial (ANTES)</div>
                         {photosBefore.length === 0 ? (
@@ -324,7 +346,6 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
                         )}
                       </div>
 
-                      {/* Fotos Después */}
                       <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
                         <div className="text-[11px] font-bold text-slate-600">✨ Trabajo Terminado (DESPUÉS)</div>
                         {photosAfter.length === 0 ? (
@@ -365,10 +386,10 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
         </div>
 
         {/* Consolidado Log de Pendientes */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
           <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <FileText size={15} className="text-amber-500" /> Log de Pendientes de la Orden Odoo
+              <FileText size={15} className="text-amber-500" /> Log de Pendientes / Recomendaciones
             </span>
             <span className="text-[10px] text-slate-400 font-normal">
               {allPendingItems.filter((i) => i.item.status === 'ABIERTO').length} Abiertos
@@ -418,7 +439,7 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
         </div>
 
         {/* Section: Client Comments */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
           <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
             <MessageSquare size={15} className="text-indigo-600" /> Comentarios del Cliente
           </h3>

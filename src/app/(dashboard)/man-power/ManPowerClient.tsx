@@ -317,7 +317,7 @@ export function ManPowerClient({
   const [showEquipsCard, setShowEquipsCard] = useState(false);
 
   // View mode tab state ('POR_DIAS' | 'POR_ODOO_PO')
-  const [viewModeTab, setViewModeTab] = useState<'POR_DIAS' | 'POR_ODOO_PO'>('POR_DIAS');
+  const [viewModeTab, setViewModeTab] = useState<'POR_DIAS' | 'POR_ODOO_PO'>('POR_ODOO_PO');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedOdooGroups, setExpandedOdooGroups] = useState<Record<string, boolean>>({});
 

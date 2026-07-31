@@ -30,7 +30,12 @@ export async function GET(
     }
 
     const activities = await prisma.activity.findMany({
-      where: { workOrderFolio },
+      where: {
+        workOrderFolio: {
+          equals: workOrderFolio.trim(),
+          mode: 'insensitive',
+        },
+      },
       orderBy: { date: 'desc' },
       select: {
         id: true,
