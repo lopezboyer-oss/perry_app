@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Camera, Clock, CheckCircle2, AlertTriangle, Send, Trash2, Plus, RefreshCw, HardHat, FileText, Check, ShieldCheck, ChevronRight, X, Layers, Upload, Eye, ArrowLeft, ChevronRight as ArrowRight } from 'lucide-react';
+import { Camera, Clock, CheckCircle2, AlertTriangle, Send, Trash2, Plus, RefreshCw, HardHat, FileText, Check, ShieldCheck, ChevronRight, X, Layers, Upload, Eye, ArrowLeft, ChevronRight as ArrowRight, Image as ImageIcon } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface PhotoItem {
   id: string;
   url: string;
-  uploadedBy: string;
+  uploadedBy?: string;
   uploadedAt: string;
 }
 
@@ -15,6 +15,7 @@ interface PendingItem {
   id: string;
   title: string;
   status: 'ABIERTO' | 'CERRADO' | 'CANCELADO';
+  photos?: PhotoItem[];
   createdBy: string;
   createdAt: string;
   closedAt: string | null;
@@ -26,6 +27,7 @@ interface FieldCaptureClientProps {
   initialActivities: any[];
   cuadrillaLabel: string;
   token: string;
+  existingEquipments?: string[];
 }
 
 function compressImage(file: File): Promise<string> {
@@ -68,9 +70,8 @@ function compressImage(file: File): Promise<string> {
   });
 }
 
-export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrillaLabel, token }: FieldCaptureClientProps) {
+export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrillaLabel, token, existingEquipments = [] }: FieldCaptureClientProps) {
   const [activities, setActivities] = useState<any[]>(initialActivities);
-  // Starts on home list screen (null) by default
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [techName, setTechName] = useState('Técnico de Campo');
@@ -79,7 +80,6 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newEquipo, setNewEquipo] = useState('');
-  const [newStatus, setNewStatus] = useState('OPERATIVO');
 
   // Lightbox photo preview
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
@@ -94,6 +94,9 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
   // Inputs for selected activity
   const [notesText, setNotesText] = useState('');
   const [newPendingTitle, setNewPendingTitle] = useState('');
+  const [newPendingPhotoUrls, setNewPendingPhotoUrls] = useState<string[]>([]);
+  const [uploadingPendingPhotos, setUploadingPendingPhotos] = useState(false);
+
   const [uploadingBefore, setUploadingBefore] = useState(false);
   const [uploadingAfter, setUploadingAfter] = useState(false);
 
@@ -102,6 +105,14 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
   const beforeFileRef = useRef<HTMLInputElement>(null);
   const afterCameraRef = useRef<HTMLInputElement>(null);
   const afterFileRef = useRef<HTMLInputElement>(null);
+  const pendingCameraRef = useRef<HTMLInputElement>(null);
+  const pendingFileRef = useRef<HTMLInputElement>(null);
+
+  // Dynamic list of equipment IDs (initial + created in this session)
+  const equipmentOptions = Array.from(new Set([
+    ...existingEquipments,
+    ...activities.map((a) => a.manPowerEquipo).filter(Boolean),
+  ])).sort();
 
   const postAction = async (payload: any, returnToHomeOnSuccess = false) => {
     setLoading(true);
@@ -115,7 +126,6 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
       if (res.ok) {
         if (payload.actionType === 'CREATE_ACTIVITY') {
           setActivities((prev) => [data.activity, ...prev]);
-          // Open the newly created activity
           setSelectedActivityId(data.activity.id);
           setManualStartTime(data.activity.actualStartTime || data.activity.startTime || '');
           setManualEndTime(data.activity.actualEndTime || data.activity.endTime || '');
@@ -128,7 +138,7 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
             prev.map((a) => (a.id === data.activity.id ? { ...a, ...data.activity } : a))
           );
           if (returnToHomeOnSuccess) {
-            setSelectedActivityId(null); // Return technician to home list view
+            setSelectedActivityId(null);
           }
         }
       } else {
@@ -147,11 +157,15 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
       alert('Por favor ingresa la descripción o título de la actividad');
       return;
     }
+    if (!newEquipo.trim()) {
+      alert('El campo # EQUIPO es obligatorio. Por favor selecciona o ingresa un número de equipo.');
+      return;
+    }
+
     postAction({
       actionType: 'CREATE_ACTIVITY',
       title: newTitle,
-      manPowerEquipo: newEquipo,
-      equipmentStatus: newStatus,
+      manPowerEquipo: newEquipo.trim().toUpperCase(),
     });
   };
 
@@ -160,6 +174,7 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
     setManualStartTime(act.actualStartTime || act.startTime || '');
     setManualEndTime(act.actualEndTime || act.endTime || '');
     setNotesText(act.weekendNotes || '');
+    setNewPendingPhotoUrls([]);
   };
 
   const handleSaveBitacoraAndReturn = async () => {
@@ -209,12 +224,49 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
     }
   };
 
+  const processPendingFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, pendingId?: string) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingPendingPhotos(true);
+
+    try {
+      const fileList = Array.from(files);
+      const compressedUrls = await Promise.all(fileList.map((f) => compressImage(f)));
+
+      if (pendingId && selectedActivity) {
+        // Upload directly to an existing pending item
+        await postAction({
+          actionType: 'ADD_PENDING_PHOTOS',
+          activityId: selectedActivity.id,
+          pendingId,
+          photoUrls: compressedUrls,
+        });
+      } else {
+        // Attach to draft new pending item
+        setNewPendingPhotoUrls((prev) => [...prev, ...compressedUrls]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error al procesar fotos del pendiente');
+    } finally {
+      setUploadingPendingPhotos(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const photosBefore: PhotoItem[] = selectedActivity?.photosBefore ? JSON.parse(selectedActivity.photosBefore) : [];
   const photosAfter: PhotoItem[] = selectedActivity?.photosAfter ? JSON.parse(selectedActivity.photosAfter) : [];
   const pendingItems: PendingItem[] = selectedActivity?.pendingItems ? JSON.parse(selectedActivity.pendingItems) : [];
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-12 font-sans">
+      {/* Datalist for Equipment Autocomplete */}
+      <datalist id="equipment-options">
+        {equipmentOptions.map((eq) => (
+          <option key={eq} value={eq} />
+        ))}
+      </datalist>
+
       {/* Light Theme Top Header */}
       <div className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-30 shadow-xs">
         <div className="max-w-md mx-auto flex items-center justify-between">
@@ -580,65 +632,141 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
               </div>
             </div>
 
-            {/* 3) LOG DE PENDIENTES */}
+            {/* 3) LOG DE PENDIENTES / RECOMENDACIONES (CON SOPORTE DE FOTOS MULTIPLES) */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <FileText size={15} className="text-amber-500" /> Log de Pendientes / Recomendaciones
               </div>
 
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newPendingTitle}
-                  onChange={(e) => setNewPendingTitle(e.target.value)}
-                  placeholder="Agregar pendiente o recomendación..."
-                  className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-amber-500 font-medium"
-                />
-                <button
-                  onClick={() => {
-                    if (!newPendingTitle.trim()) return;
-                    postAction({ actionType: 'ADD_PENDING', activityId: selectedActivity.id, pendingTitle: newPendingTitle });
-                    setNewPendingTitle('');
-                  }}
-                  disabled={loading}
-                  className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs shrink-0 transition-colors"
-                >
-                  + Agregar
-                </button>
+              {/* Hidden file inputs for pending items */}
+              <input type="file" accept="image/*" multiple capture="environment" ref={pendingCameraRef} onChange={(e) => processPendingFileUpload(e)} className="hidden" />
+              <input type="file" accept="image/*" multiple ref={pendingFileRef} onChange={(e) => processPendingFileUpload(e)} className="hidden" />
+
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPendingTitle}
+                    onChange={(e) => setNewPendingTitle(e.target.value)}
+                    placeholder="Agregar pendiente o recomendación..."
+                    className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-amber-500 font-medium"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!newPendingTitle.trim()) return;
+                      postAction({
+                        actionType: 'ADD_PENDING',
+                        activityId: selectedActivity.id,
+                        pendingTitle: newPendingTitle,
+                        pendingPhotoUrls: newPendingPhotoUrls,
+                      });
+                      setNewPendingTitle('');
+                      setNewPendingPhotoUrls([]);
+                    }}
+                    disabled={loading}
+                    className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl text-xs shrink-0 transition-colors"
+                  >
+                    + Agregar
+                  </button>
+                </div>
+
+                {/* Attach photos to new pending draft */}
+                <div className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-xl border border-slate-200">
+                  <span className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                    <ImageIcon size={13} className="text-amber-500" /> Adjuntar fotos al pendiente:
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => pendingCameraRef.current?.click()}
+                      disabled={uploadingPendingPhotos}
+                      className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[10px] font-bold border border-amber-200 flex items-center gap-1"
+                    >
+                      <Camera size={12} /> {uploadingPendingPhotos ? '...' : 'Cámara'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => pendingFileRef.current?.click()}
+                      disabled={uploadingPendingPhotos}
+                      className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-[10px] font-bold flex items-center gap-1"
+                    >
+                      <Upload size={12} /> Archivo
+                    </button>
+                  </div>
+                </div>
+
+                {/* Previews of attached draft photos */}
+                {newPendingPhotoUrls.length > 0 && (
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    {newPendingPhotoUrls.map((url, idx) => (
+                      <div key={idx} className="relative rounded-lg overflow-hidden aspect-square border border-slate-300">
+                        <img src={url} alt="Pendiente" className="w-full h-full object-cover" onClick={() => setPreviewPhoto(url)} />
+                        <button
+                          type="button"
+                          onClick={() => setNewPendingPhotoUrls((prev) => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-0.5 right-0.5 p-0.5 bg-red-600 text-white rounded-full"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {pendingItems.length === 0 ? (
                 <div className="text-xs text-slate-400 text-center py-1 italic">Sin pendientes registrados</div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 pt-1">
                   {pendingItems.map((item) => (
-                    <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
-                      <div>
-                        <div className="font-semibold text-xs text-slate-800">{item.title}</div>
-                        <div className="text-[10px] text-slate-400">Por {item.createdBy}</div>
+                    <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="font-semibold text-xs text-slate-800">{item.title}</div>
+                          <div className="text-[10px] text-slate-400">Por {item.createdBy}</div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {item.status === 'ABIERTO' ? (
+                            <>
+                              <button
+                                onClick={() => postAction({ actionType: 'TOGGLE_PENDING', activityId: selectedActivity.id, pendingId: item.id, pendingStatus: 'CERRADO' })}
+                                className="px-2.5 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold"
+                              >
+                                Cerrar
+                              </button>
+                              <button
+                                onClick={() => postAction({ actionType: 'TOGGLE_PENDING', activityId: selectedActivity.id, pendingId: item.id, pendingStatus: 'CANCELADO' })}
+                                className="px-2 py-1 bg-slate-200 text-slate-600 rounded text-[10px] font-bold"
+                              >
+                                Cancelar
+                              </button>
+                            </>
+                          ) : (
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                              {item.status}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {item.status === 'ABIERTO' ? (
-                          <>
-                            <button
-                              onClick={() => postAction({ actionType: 'TOGGLE_PENDING', activityId: selectedActivity.id, pendingId: item.id, pendingStatus: 'CERRADO' })}
-                              className="px-2.5 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold"
-                            >
-                              Cerrar
-                            </button>
-                            <button
-                              onClick={() => postAction({ actionType: 'TOGGLE_PENDING', activityId: selectedActivity.id, pendingId: item.id, pendingStatus: 'CANCELADO' })}
-                              className="px-2 py-1 bg-slate-200 text-slate-600 rounded text-[10px] font-bold"
-                            >
-                              Cancelar
-                            </button>
-                          </>
-                        ) : (
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
-                            {item.status}
-                          </span>
-                        )}
-                      </div>
+
+                      {/* Fotos asociadas a este pendiente */}
+                      {item.photos && item.photos.length > 0 && (
+                        <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-slate-200">
+                          {item.photos.map((p) => (
+                            <div key={p.id} className="relative rounded-lg overflow-hidden aspect-square border border-slate-200 cursor-pointer">
+                              <img src={p.url} alt="Foto pendiente" className="w-full h-full object-cover" onClick={() => setPreviewPhoto(p.url)} />
+                              {item.status === 'ABIERTO' && (
+                                <button
+                                  onClick={() => postAction({ actionType: 'DELETE_PENDING_PHOTO', activityId: selectedActivity.id, pendingId: item.id, photoId: p.id })}
+                                  className="absolute top-0.5 right-0.5 p-0.5 bg-red-600 text-white rounded-full opacity-90 hover:opacity-100"
+                                >
+                                  <Trash2 size={10} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -648,7 +776,7 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
             {/* 4) ESTATUS DEL EQUIPO ATENDIDO */}
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3 border-t-4 border-t-amber-500">
               <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <AlertTriangle size={15} className="text-amber-500" /> Estatus del Equipo Atendido
+                <AlertTriangle size={15} className="text-amber-500" /> Estatus del Equipo Atendido (Al Final del Servicio)
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -737,7 +865,26 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-600 font-semibold mb-1">Descripción / Título de Actividad *</label>
+                <label className="block text-slate-700 font-bold mb-1">
+                  # EQUIPO / Identificador <span className="text-red-500">* (Obligatorio)</span>
+                </label>
+                <input
+                  type="text"
+                  list="equipment-options"
+                  value={newEquipo}
+                  onChange={(e) => setNewEquipo(e.target.value.toUpperCase())}
+                  placeholder="Selecciona o escribe un # de equipo (ej. EQ-001)"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 font-mono font-bold focus:outline-none focus:border-indigo-500 uppercase"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Puedes seleccionar un equipo existente del menú o escribir uno nuevo.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Descripción / Título de Actividad <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={newTitle}
@@ -745,37 +892,6 @@ export function FieldCaptureClient({ workOrderFolio, initialActivities, cuadrill
                   placeholder="Ej. Cambio de manguera de presión..."
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-500"
                 />
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1"># Equipo / Identificador (Opcional)</label>
-                <input
-                  type="text"
-                  value={newEquipo}
-                  onChange={(e) => setNewEquipo(e.target.value)}
-                  placeholder="Ej. EQ-001"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:outline-none focus:border-indigo-500 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-semibold mb-1">Estado Inicial de Equipo</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNewStatus('OPERATIVO')}
-                    className={`py-2 rounded-xl font-bold border ${newStatus === 'OPERATIVO' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-600 border-slate-300'}`}
-                  >
-                    🟢 Operativo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewStatus('FUERA_DE_SERVICIO')}
-                    className={`py-2 rounded-xl font-bold border ${newStatus === 'FUERA_DE_SERVICIO' ? 'bg-rose-600 text-white border-rose-600' : 'bg-slate-50 text-slate-600 border-slate-300'}`}
-                  >
-                    🔴 Fuera Servicio
-                  </button>
-                </div>
               </div>
             </div>
 

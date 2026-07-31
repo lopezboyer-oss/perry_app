@@ -74,9 +74,23 @@ export async function GET(
     const isTech1 = odooLink?.techToken1 === token;
     const cuadrillaLabel = isTech1 ? 'Cuadrilla 1' : 'Cuadrilla 2';
 
+    // Fetch existing distinct equipment IDs for autocomplete
+    const existingEquipmentsRaw = await prisma.activity.findMany({
+      where: { manPowerEquipo: { not: null } },
+      select: { manPowerEquipo: true },
+      distinct: ['manPowerEquipo'],
+      take: 100,
+    });
+    const existingEquipments = Array.from(new Set(
+      existingEquipmentsRaw
+        .map((e) => e.manPowerEquipo?.trim().toUpperCase())
+        .filter((e): e is string => Boolean(e))
+    ));
+
     return NextResponse.json({
       workOrderFolio,
       cuadrillaLabel,
+      existingEquipments,
       activities,
     });
   } catch (error: any) {
@@ -113,7 +127,7 @@ export async function POST(
     }
 
     const {
-      actionType, // 'CREATE_ACTIVITY' | 'START_TIME' | 'END_TIME' | 'EQUIPMENT_STATUS' | 'SUGGESTED_ACTION' | 'ADD_PHOTO' | 'DELETE_PHOTO' | 'NOTES' | 'ADD_PENDING' | 'TOGGLE_PENDING'
+      actionType, // 'CREATE_ACTIVITY' | 'START_TIME' | 'END_TIME' | 'EQUIPMENT_STATUS' | 'SUGGESTED_ACTION' | 'ADD_PHOTO' | 'DELETE_PHOTO' | 'NOTES' | 'ADD_PENDING' | 'TOGGLE_PENDING' | 'ADD_PENDING_PHOTOS' | 'DELETE_PENDING_PHOTO'
       activityId,
       title,
       manPowerEquipo,
@@ -136,6 +150,12 @@ export async function POST(
         return NextResponse.json({ error: 'El título de la actividad es requerido' }, { status: 400 });
       }
 
+      if (!manPowerEquipo || !manPowerEquipo.trim()) {
+        return NextResponse.json({ error: 'El # EQUIPO es obligatorio' }, { status: 400 });
+      }
+
+      const normalizedEquipo = manPowerEquipo.trim().toUpperCase();
+
       // Inherit client, company, PO from existing activity of this Odoo Order
       const sampleActivity = await prisma.activity.findFirst({
         where: { workOrderFolio },
@@ -154,8 +174,7 @@ export async function POST(
           projectArea: sampleActivity?.projectArea || 'CAMPO',
           date: new Date(),
           status: 'PENDIENTE',
-          manPowerEquipo: manPowerEquipo ? manPowerEquipo.trim().toUpperCase() : null,
-          equipmentStatus: equipmentStatus || 'OPERATIVO',
+          manPowerEquipo: normalizedEquipo,
           weekendNotes: notes ? notes.trim() : null,
         },
       });
@@ -264,14 +283,21 @@ export async function POST(
       dataToUpdate.weekendNotes = notes;
     }
 
-    // 7) Pending items
+    // 7) Pending items (with optional photo support)
     if (actionType === 'ADD_PENDING' && pendingTitle) {
       const existingStr = activity.pendingItems || '[]';
       const existingItems = JSON.parse(existingStr);
+      const pendingPhotos = Array.isArray(body.pendingPhotoUrls) ? body.pendingPhotoUrls.map((url: string) => ({
+        id: crypto.randomBytes(6).toString('hex'),
+        url,
+        uploadedAt: new Date().toISOString(),
+      })) : [];
+
       const newItem = {
         id: crypto.randomBytes(6).toString('hex'),
         title: pendingTitle.trim(),
         status: 'ABIERTO',
+        photos: pendingPhotos,
         createdBy: authorName,
         createdAt: new Date().toISOString(),
         closedAt: null,
@@ -279,6 +305,38 @@ export async function POST(
       };
       existingItems.push(newItem);
       dataToUpdate.pendingItems = JSON.stringify(existingItems);
+    }
+
+    if (actionType === 'ADD_PENDING_PHOTOS' && pendingId && (body.photoUrls || body.photoUrl)) {
+      const urls: string[] = Array.isArray(body.photoUrls)
+        ? body.photoUrls
+        : body.photoUrl
+        ? [body.photoUrl]
+        : [];
+      const existingStr = activity.pendingItems || '[]';
+      const existingItems = JSON.parse(existingStr);
+      const itemIndex = existingItems.findIndex((i: any) => i.id === pendingId);
+      if (itemIndex !== -1) {
+        if (!existingItems[itemIndex].photos) existingItems[itemIndex].photos = [];
+        urls.forEach((url: string) => {
+          existingItems[itemIndex].photos.push({
+            id: crypto.randomBytes(6).toString('hex'),
+            url,
+            uploadedAt: new Date().toISOString(),
+          });
+        });
+        dataToUpdate.pendingItems = JSON.stringify(existingItems);
+      }
+    }
+
+    if (actionType === 'DELETE_PENDING_PHOTO' && pendingId && photoId) {
+      const existingStr = activity.pendingItems || '[]';
+      const existingItems = JSON.parse(existingStr);
+      const itemIndex = existingItems.findIndex((i: any) => i.id === pendingId);
+      if (itemIndex !== -1 && existingItems[itemIndex].photos) {
+        existingItems[itemIndex].photos = existingItems[itemIndex].photos.filter((p: any) => p.id !== photoId);
+        dataToUpdate.pendingItems = JSON.stringify(existingItems);
+      }
     }
 
     if (actionType === 'TOGGLE_PENDING' && pendingId && pendingStatus) {

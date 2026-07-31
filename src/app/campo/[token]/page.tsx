@@ -82,6 +82,18 @@ export default async function FieldPage({ params }: Props) {
   const isTech1 = odooLink?.techToken1 === token;
   const cuadrillaLabel = isTech1 ? 'Cuadrilla 1' : 'Cuadrilla 2';
 
+  const existingEquipmentsRaw = await prisma.activity.findMany({
+    where: { manPowerEquipo: { not: null } },
+    select: { manPowerEquipo: true },
+    distinct: ['manPowerEquipo'],
+    take: 100,
+  });
+  const existingEquipments = Array.from(new Set(
+    existingEquipmentsRaw
+      .map((e) => e.manPowerEquipo?.trim().toUpperCase())
+      .filter((e): e is string => Boolean(e))
+  ));
+
   return (
     <FieldCaptureClient
       workOrderFolio={workOrderFolio}
@@ -92,6 +104,7 @@ export default async function FieldPage({ params }: Props) {
       }))}
       cuadrillaLabel={cuadrillaLabel}
       token={token}
+      existingEquipments={existingEquipments}
     />
   );
 }

@@ -22,6 +22,7 @@ interface PendingItem {
   id: string;
   title: string;
   status: 'ABIERTO' | 'CERRADO' | 'CANCELADO';
+  photos?: PhotoItem[];
   createdBy: string;
   createdAt: string;
   closedAt: string | null;
@@ -403,35 +404,47 @@ export function ClientViewPortal({ workOrderFolio, initialActivities, initialCom
           ) : (
             <div className="space-y-2">
               {allPendingItems.map(({ activityId, activityTitle, item }) => (
-                <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-2">
-                  <div>
-                    <div className="font-semibold text-xs text-slate-800">{item.title}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">
-                      Actividad: {activityTitle} • Por {item.createdBy}
+                <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="font-semibold text-xs text-slate-800">{item.title}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">
+                        Actividad: {activityTitle} • Por {item.createdBy}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {item.status === 'ABIERTO' ? (
+                        <>
+                          <button
+                            onClick={() => handleTogglePending(activityId, item.id, 'CERRADO')}
+                            className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition-colors"
+                          >
+                            Marcar Cerrado
+                          </button>
+                          <button
+                            onClick={() => handleTogglePending(activityId, item.id, 'CANCELADO')}
+                            className="px-2 py-1 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-300 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+                          {item.status}
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {item.status === 'ABIERTO' ? (
-                      <>
-                        <button
-                          onClick={() => handleTogglePending(activityId, item.id, 'CERRADO')}
-                          className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition-colors"
-                        >
-                          Marcar Cerrado
-                        </button>
-                        <button
-                          onClick={() => handleTogglePending(activityId, item.id, 'CANCELADO')}
-                          className="px-2 py-1 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-300 transition-colors"
-                        >
-                          Cancelar
-                        </button>
-                      </>
-                    ) : (
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'CERRADO' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
-                        {item.status}
-                      </span>
-                    )}
-                  </div>
+
+                  {item.photos && item.photos.length > 0 && (
+                    <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-slate-200">
+                      {item.photos.map((p: any) => (
+                        <div key={p.id} className="relative rounded-lg overflow-hidden aspect-square border border-slate-200 cursor-pointer group">
+                          <img src={p.url} alt="Foto pendiente" className="w-full h-full object-cover group-hover:scale-105 transition-transform" onClick={() => setPreviewPhoto(p.url)} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
