@@ -23,6 +23,7 @@ import {
   Timer,
   PieChart,
   TrendingUp,
+  Bot,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -191,6 +192,22 @@ export function Sidebar({ user }: SidebarProps) {
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
               {!collapsed && 'Gestión de Clientes'}
+            </Link>
+          )}
+
+          {(user.email === 'lopezboyer@gmail.com' || user.name?.toLowerCase().includes('ivan lopez')) && (
+            <Link
+              href="/configuracion/whatsapp"
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                pathname === '/configuracion/whatsapp'
+                  ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              )}
+              title={collapsed ? 'Perry Co-Pilot' : undefined}
+            >
+              <Bot className="w-5 h-5 flex-shrink-0 text-emerald-400" />
+              {!collapsed && 'Perry Co-Pilot (WA)'}
             </Link>
           )}
         </nav>

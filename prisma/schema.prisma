@@ -159,6 +159,7 @@ model Activity {
   clientAcknowledgedBy  String?             // Name/Author of client representative
   clientComments        String?      @db.Text // JSON array [{id, author, comment, createdAt}]
   pendingItems          String?      @db.Text // JSON array [{id, title, status, createdBy, createdAt, closedAt, closedBy}]
+  reportSource          String?      @default("MANUAL") // MANUAL | WHATSAPP_BOT | CAMPO_WEB
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -172,6 +173,7 @@ model Activity {
   timeClockEntries             TimeClockEntry[]
   equipRecords                 EquipRecord[]
   parts                        ActivityPart[]
+  whatsappLogs                 WhatsappMessageLog[]
 }
 
 model OdooOrderAccessLink {
@@ -538,3 +540,38 @@ model ActivityPart {
 
   @@index([activityId])
 }
+
+// ─── INTEGRACIÓN WHATSAPP (PERRY CO-PILOT) ──────────────────────────
+
+model WhatsappGroupMapping {
+  id             String   @id @default(cuid())
+  groupId        String   @unique // WhatsApp JID / Group ID e.g. "120363049123456789@g.us"
+  groupName      String?
+  workOrderFolio String?  // Default Work Order Folio for this group (e.g. "S06447")
+  companyId      String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model WhatsappMessageLog {
+  id           String    @id @default(cuid())
+  messageId    String    @unique // WhatsApp Msg ID for deduplication
+  groupId      String?
+  senderPhone  String
+  senderName   String?
+  rawMessage   String?   @db.Text
+  mediaUrls    String?   @db.Text // JSON array of uploaded URLs
+  parsedData   String?   @db.Text // JSON extracted by Gemini
+  activityId   String?
+  activity     Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  status       String    @default("PROCESSED") // PROCESSED | PENDING_INFO | FAILED
+  missingField String?   // Name of missing field if status is PENDING_INFO (e.g. "manPowerEquipo")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([groupId])
+  @@index([senderPhone])
+  @@index([activityId])
+}
+
