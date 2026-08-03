@@ -1,7 +1,16 @@
 /**
  * Servicio para interactuar con la API del proveedor de WhatsApp (UltraMsg / Evolution API / etc.)
- * Soporta envio de reacciones (emoji) y mensajes de texto para peticiones de información.
+ * Soporta envío de reacciones (emoji) y mensajes de texto para peticiones de información.
  */
+
+function buildUltraMsgUrl(apiUrl: string, instanceId: string | undefined, path: string): string {
+  let cleanUrl = apiUrl.trim().replace(/\/+$/, '');
+  // If user provided base URL like https://api.ultramsg.com and instanceId instanceXXXXX
+  if (instanceId && instanceId.trim() && !cleanUrl.includes(instanceId.trim())) {
+    cleanUrl = `${cleanUrl}/${instanceId.trim()}`;
+  }
+  return `${cleanUrl}/${path.replace(/^\/+/, '')}`;
+}
 
 export async function sendWhatsappReaction(params: {
   messageId: string;
@@ -18,27 +27,28 @@ export async function sendWhatsappReaction(params: {
   }
 
   try {
-    // UltraMsg format: POST https://api.ultramsg.com/instanceXXXXX/messages/reaction or standard API
-    const url = instanceId 
-      ? `${apiUrl}/${instanceId}/messages/reaction`
-      : `${apiUrl}/messages/reaction`;
+    const url = buildUltraMsgUrl(apiUrl, instanceId, 'messages/reaction');
 
-    const res = await fetch(`${url}?token=${apiToken}`, {
+    // Form data payload for UltraMsg API (UltraMsg expects token, msgId, icon)
+    const bodyParams = new URLSearchParams();
+    bodyParams.append('token', apiToken);
+    bodyParams.append('msgId', params.messageId);
+    bodyParams.append('icon', params.emoji);
+    bodyParams.append('reaction', params.emoji);
+
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        token: apiToken,
-        msgId: params.messageId,
-        messageId: params.messageId,
-        chatId: params.groupId,
-        groupId: params.groupId,
-        reaction: params.emoji,
-        emoji: params.emoji,
-      }),
+      body: bodyParams.toString(),
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('UltraMsg Reaction API Error:', res.status, errText);
+    }
+
     return res.ok;
   } catch (error) {
     console.error('Error enviando reacción a WhatsApp:', error);
@@ -61,27 +71,29 @@ export async function sendWhatsappGroupMessage(params: {
   }
 
   try {
-    // UltraMsg format: POST https://api.ultramsg.com/instanceXXXXX/messages/chat
-    const url = instanceId 
-      ? `${apiUrl}/${instanceId}/messages/chat`
-      : `${apiUrl}/messages/chat`;
+    const url = buildUltraMsgUrl(apiUrl, instanceId, 'messages/chat');
 
-    const res = await fetch(`${url}?token=${apiToken}`, {
+    const bodyParams = new URLSearchParams();
+    bodyParams.append('token', apiToken);
+    bodyParams.append('to', params.groupId);
+    bodyParams.append('body', params.messageText);
+    if (params.replyToMessageId) {
+      bodyParams.append('msgId', params.replyToMessageId);
+    }
+
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        token: apiToken,
-        to: params.groupId,
-        chatId: params.groupId,
-        groupId: params.groupId,
-        body: params.messageText,
-        message: params.messageText,
-        quotedMessageId: params.replyToMessageId,
-      }),
+      body: bodyParams.toString(),
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('UltraMsg Chat API Error:', res.status, errText);
+    }
+
     return res.ok;
   } catch (error) {
     console.error('Error enviando mensaje a WhatsApp:', error);
