@@ -404,7 +404,8 @@ export default function WhatsappConfigPage() {
                   placeholder="ej. OT S06447 - Mantenimiento Planta"
                   value={groupNameInput}
                   onChange={(e) => setGroupNameInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-inner"
+                  style={{ color: '#ffffff', backgroundColor: '#020617' }}
                   required
                 />
               </div>
@@ -418,7 +419,8 @@ export default function WhatsappConfigPage() {
                   placeholder="ej. 120363049123456789@g.us (Se genera al añadir el bot)"
                   value={groupIdInput}
                   onChange={(e) => setGroupIdInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-emerald-300 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium text-emerald-300 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-inner"
+                  style={{ color: '#6ee7b7', backgroundColor: '#020617' }}
                   required
                 />
               </div>
@@ -432,7 +434,8 @@ export default function WhatsappConfigPage() {
                   placeholder="ej. S06447 (Opcional - Si todas las fotos de este grupo corresponden a una OT)"
                   value={folioInput}
                   onChange={(e) => setFolioInput(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-inner"
+                  style={{ color: '#ffffff', backgroundColor: '#020617' }}
                 />
               </div>
 
