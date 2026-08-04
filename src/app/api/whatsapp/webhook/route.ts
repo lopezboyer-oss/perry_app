@@ -142,8 +142,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. TRIGGER TAG / EQUIPO CHECK: Process messages tagged with @Perry, #reporte, #equipo OR specifying an equipment code (C-10, EQ-01, etc.)
+    // 4. TRIGGER TAG / EQUIPO CHECK
     const isTaggedMessage = hasBotTriggerTag(messageText, body);
+
+    // If message has NO tag, NO equipo, and NO media -> Ignore cleanly (chat general)
     if (!isTaggedMessage && mediaUrls.length === 0) {
       await prisma.whatsappMessageLog.create({
         data: {
@@ -152,13 +154,33 @@ export async function POST(req: NextRequest) {
           senderPhone: payload.senderPhone,
           senderName: payload.senderName || 'Usuario',
           rawMessage: messageText,
-          mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+          mediaUrls: null,
           parsedData: JSON.stringify({ triggerTagPresent: false }),
           status: 'CHAT_IGNORED',
         },
       });
 
       return NextResponse.json({ status: 'Ignored: No bot trigger tag or equipment' }, { status: 200 });
+    }
+
+    // If photo is sent WITHOUT caption / tag first (e.g. Photo sent 5s before text description):
+    // Save in PENDING_INFO silently (NO instant prompt) so when description arrives, we claim the photo!
+    if (mediaUrls.length > 0 && !isTaggedMessage) {
+      const log = await prisma.whatsappMessageLog.create({
+        data: {
+          messageId: payload.messageId,
+          groupId: payload.groupId,
+          senderPhone: payload.senderPhone,
+          senderName: payload.senderName || 'Técnico',
+          rawMessage: messageText || '[Foto pendiente de descripción]',
+          mediaUrls: JSON.stringify(mediaUrls),
+          parsedData: JSON.stringify({ pendingMediaForUpcomingText: true }),
+          status: 'PENDING_INFO',
+          missingField: 'manPowerEquipo',
+        },
+      });
+
+      return NextResponse.json({ status: 'Buffered pending photo for description', logId: log.id });
     }
 
     // Clean trigger tags from message before passing to Gemini
@@ -175,7 +197,7 @@ export async function POST(req: NextRequest) {
     });
 
     let combinedText = cleanedText;
-    if (pendingLog && pendingLog.rawMessage) {
+    if (pendingLog && pendingLog.rawMessage && !pendingLog.rawMessage.includes('[Foto pendiente')) {
       combinedText = `${pendingLog.rawMessage}\n[Dato Adicional enviado]: ${cleanedText}`;
     }
 
@@ -424,8 +446,8 @@ function hasBotTriggerTag(text: string, rawBody: any): boolean {
     return true;
   }
 
-  // 2. Explicit equipment mention (e.g. C-10, EQ-0105, G-02, A20, EQUIPO 102)
-  if (/\b(equipo|eq-?|c-|g-|a-?|grúa|grua)\s*([a-z0-9-]{1,10})/i.test(text)) {
+  // 2. Explicit equipment mention (e.g. C-10, EQ-0105, G-02, A20, A-20, EQUIPO 102, GRÚA 3)
+  if (/\b(equipo|eq-?|c-|g-|a-?|grúa|grua)\s*([a-z0-9-]{1,10})/i.test(text) || /\b(a\d{1,3}|c\d{1,3}|g\d{1,3}|eq\d{1,4})\b/i.test(text)) {
     return true;
   }
 
