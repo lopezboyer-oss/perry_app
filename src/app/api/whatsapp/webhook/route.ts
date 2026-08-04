@@ -406,7 +406,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 9. Silent confirmation: React with 🤖 emoji on tech's message!
+    // 9. Interactive confirmation message + Reaction
+    const successMessage = `🤖 Gracias ${payload.senderName || 'Técnico'}, he registrado tu reporte exitosamente para el equipo *${parsed.manPowerEquipo}*!`;
+    await sendWhatsappGroupMessage({
+      groupId: payload.groupId,
+      messageText: successMessage,
+      replyToMessageId: payload.messageId,
+    });
+
     await sendWhatsappReaction({
       messageId: payload.messageId,
       groupId: payload.groupId,
