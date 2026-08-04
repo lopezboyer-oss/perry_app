@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || 'perry_whatsapp_bot_secret';
+  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_API_TOKEN || 'perry_whatsapp_bot_secret';
 
   if (mode === 'subscribe' && token === verifyToken) {
     return new NextResponse(challenge, { status: 200 });
@@ -68,7 +68,81 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'Empty message' }, { status: 200 });
     }
 
-    // 3. Check for pending context thread (if tech is replying to a missing info prompt)
+    // 3. ALBUM BURST HANDLING (< 60 seconds)
+    // If a technician sends multiple photos (album burst), WhatsApp sends multiple events milliseconds apart.
+    // The 1st event carries text, while subsequent photo events carry empty captions.
+    const sixtySecondsAgo = new Date(Date.now() - 60 * 1000);
+    const recentActivityLog = await prisma.whatsappMessageLog.findFirst({
+      where: {
+        groupId: payload.groupId,
+        senderPhone: payload.senderPhone,
+        status: 'PROCESSED',
+        activityId: { not: null },
+        createdAt: { gte: sixtySecondsAgo },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { activity: true },
+    });
+
+    // If there is an active activity created in the last 60s for this tech in this group, AND this message has media or no explicit new equipo
+    if (recentActivityLog && recentActivityLog.activity && (mediaUrls.length > 0 || !messageText)) {
+      const formattedPhotos = mediaUrls.map((url, idx) => ({
+        id: `wa_${Date.now()}_${idx}`,
+        url,
+        uploadedBy: payload.senderName || 'Técnico via WhatsApp',
+        uploadedAt: new Date().toISOString(),
+      }));
+
+      let existingPhotos: any[] = [];
+      if (recentActivityLog.activity.manPowerPhotos) {
+        try { existingPhotos = JSON.parse(recentActivityLog.activity.manPowerPhotos); } catch {}
+      }
+      const updatedPhotos = [...existingPhotos, ...formattedPhotos];
+
+      let updatedNotes = recentActivityLog.activity.weekendNotes || '';
+      if (messageText && !updatedNotes.includes(messageText)) {
+        updatedNotes += `\n[WhatsApp - ${payload.senderName || 'Técnico'}]: ${messageText}`;
+      }
+
+      await prisma.activity.update({
+        where: { id: recentActivityLog.activity.id },
+        data: {
+          manPowerPhotos: JSON.stringify(updatedPhotos),
+          weekendNotes: updatedNotes,
+          reportSource: 'WHATSAPP_BOT',
+        },
+      });
+
+      // Log secondary burst photo
+      await prisma.whatsappMessageLog.create({
+        data: {
+          messageId: payload.messageId,
+          groupId: payload.groupId,
+          senderPhone: payload.senderPhone,
+          senderName: payload.senderName || 'Técnico',
+          rawMessage: messageText || '[Foto de ráfaga / álbum]',
+          mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+          parsedData: JSON.stringify({ isBurstMedia: true, targetActivityId: recentActivityLog.activity.id }),
+          activityId: recentActivityLog.activity.id,
+          status: 'PROCESSED',
+        },
+      });
+
+      // Silent reaction with 🤖 emoji
+      await sendWhatsappReaction({
+        messageId: payload.messageId,
+        groupId: payload.groupId,
+        emoji: '🤖',
+      });
+
+      return NextResponse.json({
+        status: 'Success (Appended to 60s burst album)',
+        activityId: recentActivityLog.activity.id,
+        manPowerEquipo: recentActivityLog.activity.manPowerEquipo,
+      });
+    }
+
+    // 4. Check for pending context thread (if tech is replying to a missing info prompt)
     const pendingLog = await prisma.whatsappMessageLog.findFirst({
       where: {
         groupId: payload.groupId,
@@ -83,7 +157,7 @@ export async function POST(req: NextRequest) {
       combinedText = `${pendingLog.rawMessage}\n[Dato Adicional enviado]: ${messageText}`;
     }
 
-    // 4. AI Parse using Gemini 2.5 Flash
+    // 5. AI Parse using Gemini 2.5 Flash
     const parsed = await parseWhatsappMessageWithGemini({
       messageText: combinedText,
       senderName: payload.senderName,
@@ -93,7 +167,7 @@ export async function POST(req: NextRequest) {
 
     const workOrderFolio = parsed.workOrderFolio || groupMap.workOrderFolio || null;
 
-    // 5. If missing vital info (manPowerEquipo), request info non-invasively
+    // 6. If missing vital info (manPowerEquipo), request info using simplified prompt
     if (!parsed.isComplete || !parsed.manPowerEquipo) {
       const log = await prisma.whatsappMessageLog.create({
         data: {
@@ -109,8 +183,8 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Prompt technician interactively in WhatsApp group
-      const promptText = `🤖 Hola ${payload.senderName || 'Técnico'}, recibí tu reporte ("${parsed.title}"). Para guardarlo en Perry App, por favor respóndeme con el *# de EQUIPO* o matrícula (ej. EQ-0105).`;
+      // Simplified prompt requested by user
+      const promptText = `🤖 Gracias ${payload.senderName || 'Técnico'}, apóyame con el NÚMERO DE EQUIPO para registrar tu reporte`;
       await sendWhatsappGroupMessage({
         groupId: payload.groupId,
         messageText: promptText,
@@ -120,7 +194,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'Prompted for missing info', logId: log.id });
     }
 
-    // 6. Complete Data: Create/Update Activity in Perry App
+    // 7. Complete Data: Create/Update Activity in Perry App
     let sampleActivity = null;
     if (workOrderFolio) {
       sampleActivity = await prisma.activity.findFirst({
@@ -233,7 +307,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 7. Non-invasive silent confirmation: React with 🤖 emoji on tech's message!
+    // 8. Non-invasive silent confirmation: React with 🤖 emoji on tech's message!
     await sendWhatsappReaction({
       messageId: payload.messageId,
       groupId: payload.groupId,
