@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     // 3. ALBUM BURST HANDLING (< 60 seconds)
     // If a technician sends multiple photos (album burst), WhatsApp sends multiple events milliseconds apart.
-    // The 1st event carries text with tag, while subsequent photo events carry empty captions.
+    // The 1st event carries text with tag/equipo, while subsequent photo events carry empty captions.
     const sixtySecondsAgo = new Date(Date.now() - 60 * 1000);
     const recentActivityLog = await prisma.whatsappMessageLog.findFirst({
       where: {
@@ -142,9 +142,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. TRIGGER TAG CHECK: Only process messages tagged with @Perry, #reporte, @copilot, #equipo, etc.
+    // 4. TRIGGER TAG / EQUIPO CHECK: Process messages tagged with @Perry, #reporte, #equipo OR specifying an equipment code (C-10, EQ-01, etc.)
     const isTaggedMessage = hasBotTriggerTag(messageText, body);
-    if (!isTaggedMessage) {
+    if (!isTaggedMessage && mediaUrls.length === 0) {
       await prisma.whatsappMessageLog.create({
         data: {
           messageId: payload.messageId,
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      return NextResponse.json({ status: 'Ignored: No bot trigger tag (@Perry / #reporte)' }, { status: 200 });
+      return NextResponse.json({ status: 'Ignored: No bot trigger tag or equipment' }, { status: 200 });
     }
 
     // Clean trigger tags from message before passing to Gemini
@@ -402,12 +402,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Check if message text or raw payload contains bot trigger tag (@Perry, #reporte, @copilot, #equipo, etc.)
+// Check if message text or raw payload contains bot trigger tag (@Perry, #reporte, @copilot, #equipo, etc.) OR an equipment code
 function hasBotTriggerTag(text: string, rawBody: any): boolean {
   if (!text) return false;
   const lower = text.toLowerCase().trim();
 
-  // Explicit Trigger Keywords & Hashtags
+  // 1. Explicit Trigger Keywords & Hashtags
   const triggerKeywords = [
     '@perry',
     '@copilot',
@@ -424,14 +424,14 @@ function hasBotTriggerTag(text: string, rawBody: any): boolean {
     return true;
   }
 
-  // Check if raw message contains @mentions array or phone number tags
-  const botPhone = (process.env.WHATSAPP_BOT_PHONE || '').replace(/\D/g, '');
-  if (botPhone && lower.includes(botPhone)) {
+  // 2. Explicit equipment mention (e.g. C-10, EQ-0105, G-02, A20, EQUIPO 102)
+  if (/\b(equipo|eq-?|c-|g-|a-?|grúa|grua)\s*([a-z0-9-]{1,10})/i.test(text)) {
     return true;
   }
 
-  // Match hashtags with equipo prefixes like #C-10, #EQ-0105, #G-02, #A20
-  if (/#(eq-?|c-|g-|a-?|equipo)/i.test(text)) {
+  // 3. Check if raw message contains @mentions array or phone number tags
+  const botPhone = (process.env.WHATSAPP_BOT_PHONE || '').replace(/\D/g, '');
+  if (botPhone && lower.includes(botPhone)) {
     return true;
   }
 
