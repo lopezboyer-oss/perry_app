@@ -16,6 +16,7 @@ export interface ExtractedPart {
 }
 
 export interface GeminiParsedReport {
+  messageType: 'WORK_REPORT' | 'CLIENT_REQUEST' | 'SOCIAL_CHAT';
   manPowerEquipo: string | null; // e.g. "EQ-0105", "G-02"
   workOrderFolio: string | null; // e.g. "S06447"
   title: string;

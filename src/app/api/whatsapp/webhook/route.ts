@@ -167,7 +167,72 @@ export async function POST(req: NextRequest) {
 
     const workOrderFolio = parsed.workOrderFolio || groupMap.workOrderFolio || null;
 
-    // 6. If missing vital info (manPowerEquipo), request info using simplified prompt (with 15s burst throttling)
+    // 5.1 Handle SOCIAL_CHAT: Greetings, thanks, confirmations -> Silent ignore
+    if (parsed.messageType === 'SOCIAL_CHAT') {
+      await prisma.whatsappMessageLog.create({
+        data: {
+          messageId: payload.messageId,
+          groupId: payload.groupId,
+          senderPhone: payload.senderPhone,
+          senderName: payload.senderName || 'Usuario',
+          rawMessage: combinedText,
+          mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+          parsedData: JSON.stringify(parsed),
+          status: 'CHAT_IGNORED',
+        },
+      });
+
+      return NextResponse.json({ status: 'Ignored social chat / greeting' }, { status: 200 });
+    }
+
+    // 5.2 Handle CLIENT_REQUEST: Client asking for service/attention -> Create pending task, stay quiet in chat
+    if (parsed.messageType === 'CLIENT_REQUEST') {
+      let sampleActivity = null;
+      if (workOrderFolio) {
+        sampleActivity = await prisma.activity.findFirst({
+          where: { workOrderFolio: workOrderFolio.trim() },
+          select: { clientId: true, companyId: true, purchaseOrder: true, projectArea: true },
+        });
+      }
+
+      const clientReqActivity = await prisma.activity.create({
+        data: {
+          title: `[Solicitud Cliente] ${parsed.title}`,
+          type: 'EJECUCION',
+          isManPower: true,
+          workOrderFolio: workOrderFolio ? workOrderFolio.trim() : null,
+          purchaseOrder: sampleActivity?.purchaseOrder || null,
+          clientId: sampleActivity?.clientId || null,
+          companyId: sampleActivity?.companyId || null,
+          projectArea: sampleActivity?.projectArea || 'CAMPO',
+          date: new Date(),
+          status: 'PENDIENTE',
+          manPowerEquipo: parsed.manPowerEquipo,
+          weekendNotes: `Solicitado por ${payload.senderName || 'Cliente'} en WhatsApp:\n${parsed.weekendNotes || messageText}`,
+          equipmentStatus: parsed.equipmentStatus || 'DEGRADADO',
+          startTime: parsed.startTime || null,
+          reportSource: 'WHATSAPP_BOT',
+        },
+      });
+
+      await prisma.whatsappMessageLog.create({
+        data: {
+          messageId: payload.messageId,
+          groupId: payload.groupId,
+          senderPhone: payload.senderPhone,
+          senderName: payload.senderName || 'Cliente',
+          rawMessage: combinedText,
+          mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+          parsedData: JSON.stringify(parsed),
+          activityId: clientReqActivity.id,
+          status: 'PROCESSED',
+        },
+      });
+
+      return NextResponse.json({ status: 'Client request logged', activityId: clientReqActivity.id });
+    }
+
+    // 6. If missing vital info (manPowerEquipo) in a WORK_REPORT, request info using simplified prompt (with 15s burst throttling)
     if (!parsed.isComplete || !parsed.manPowerEquipo) {
       const log = await prisma.whatsappMessageLog.create({
         data: {

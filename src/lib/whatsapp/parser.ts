@@ -26,28 +26,34 @@ export async function parseWhatsappMessageWithGemini(params: {
     return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime);
   }
 
-  const systemPrompt = `Eres el motor de IA de Perry Co-Pilot, un asistente para técnicos de mantenimiento en campo.
-Tu función es analizar un mensaje enviado por un técnico en WhatsApp y convertirlo en un objeto JSON perfectamente estructurado para la base de datos de Perry App.
+  const systemPrompt = `Eres el motor de IA de Perry Co-Pilot, un asistente inteligente para grupos de mantenimiento técnico en WhatsApp donde participan técnicos y clientes.
+Tu función es analizar un mensaje y clasificarlo con precisión.
 
 DATOS DEL ENTORNO:
-- Técnico remitente: "${senderName || 'Técnico'}"
+- Remitente: "${senderName || 'Usuario'}"
 - Orden de Trabajo (OT) asignada al grupo: "${groupWorkOrderFolio || 'Sin asignar'}"
 - Hora del mensaje: "${formattedTime || 'No especificada'}"
 
-REGLAS DE EXTRACCIÓN:
-1. "manPowerEquipo": Busca el código de equipo o matrícula (ejemplos: "EQ-0105", "G-02", "#EQUIPO 102", "GRÚA 3", "EQ 04"). Si NO se menciona ningún código ni matrícula de equipo, establece manPowerEquipo en null.
-2. "workOrderFolio": Si el mensaje menciona una OT (ej: "S06447", "OT-1234"), úsala. De lo contrario, usa la OT asignada al grupo ("${groupWorkOrderFolio || ''}").
-3. "title": Un título breve (máx 60 caracteres) que resuma la actividad (ej: "Mantenimiento preventivo y cambio de empaques").
-4. "weekendNotes": Descripción completa de los trabajos realizados, observaciones y detalles mencionados por el técnico.
-5. "equipmentStatus": Debe ser uno de: "OPERATIVO", "DEGRADADO", "FUERA_DE_SERVICIO" o null si no se especifica.
-6. "startTime": Si se menciona la hora de inicio o la hora del mensaje es válida, usa el formato "HH:MM".
-7. "endTime": Si se menciona la hora de finalización, usa el formato "HH:MM", de lo contrario null.
-8. "parts": Arreglo de refacciones/materiales mencionados. Estructura: [{"name": string, "quantity": number, "providerType": "COTIZAR" | "CLIENTE"}].
-9. "isComplete": boolean. Debe ser false SI Y SOLO SI "manPowerEquipo" es null o vacío.
-10. "missingFields": Si "manPowerEquipo" es null, incluye ["manPowerEquipo"]. De lo contrario, arreglo vacío [].
+REGLAS DE CLASIFICACIÓN Y EXTRACCIÓN:
+1. "messageType": Clasifica estrictamente el mensaje en uno de estos tres valores:
+   - "WORK_REPORT": Reportes de trabajo ejecutados por técnicos (mantenimiento, reparaciones, inspecciones, cambio de refacciones o evidencias de trabajo).
+   - "CLIENT_REQUEST": Peticiones del cliente o de usuarios solicitando atención a un equipo o reportando una falla (ej: "Favor de checar equipo C-10", "La grúa 2 tiene ruido", "Revisar aire acondicionado").
+   - "SOCIAL_CHAT": Saludos ("Buenos días", "Hola a todos"), agradecimientos ("Gracias", "Excelente"), confirmaciones de chat ("Ok", "Enterado", "De acuerdo"), o charla social sin reporte de trabajo.
+
+2. "manPowerEquipo": Busca el código de equipo o matrícula (ejemplos: "EQ-0105", "G-02", "C-10", "#EQUIPO 102", "GRÚA 3", "EQ 04"). Si NO se menciona ningún código ni matrícula de equipo, establece manPowerEquipo en null.
+3. "workOrderFolio": Si el mensaje menciona una OT (ej: "S06447", "OT-1234"), úsala. De lo contrario, usa la OT asignada al grupo ("${groupWorkOrderFolio || ''}").
+4. "title": Un título breve (máx 60 caracteres) que resuma la actividad o petición.
+5. "weekendNotes": Descripción completa del mensaje u observaciones.
+6. "equipmentStatus": Debe ser uno de: "OPERATIVO", "DEGRADADO", "FUERA_DE_SERVICIO" o null si no se especifica.
+7. "parts": Arreglo de refacciones/materiales mencionados. Estructura: [{"name": string, "quantity": number, "providerType": "COTIZAR" | "CLIENTE"}].
+8. "isComplete": boolean. 
+   - Para "WORK_REPORT": Debe ser false SI Y SOLO SI "manPowerEquipo" es null o vacío.
+   - Para "CLIENT_REQUEST" y "SOCIAL_CHAT": Debe ser true (no debe marcar falta de información).
+9. "missingFields": Si "messageType" es "WORK_REPORT" y "manPowerEquipo" es null, incluye ["manPowerEquipo"]. De lo contrario, arreglo vacío [].
 
 DEBES RESPONDER ÚNICAMENTE CON UN OBJETO JSON VÁLIDO CON EL SIGUIENTE FORMATO (SIN MARKDOWN NI TEXTO EXTRA):
 {
+  "messageType": "WORK_REPORT" | "CLIENT_REQUEST" | "SOCIAL_CHAT",
   "manPowerEquipo": string | null,
   "workOrderFolio": string | null,
   "title": string,
@@ -63,7 +69,7 @@ DEBES RESPONDER ÚNICAMENTE CON UN OBJETO JSON VÁLIDO CON EL SIGUIENTE FORMATO 
   "missingFields": string[]
 }`;
 
-  const prompt = `${systemPrompt}\n\nMENSAJE DEL TÉCNICO EN WHATSAPP:\n"${messageText}"`;
+  const prompt = `${systemPrompt}\n\nMENSAJE EN WHATSAPP:\n"${messageText}"`;
 
   try {
     const res = await fetch(
@@ -105,14 +111,30 @@ DEBES RESPONDER ÚNICAMENTE CON UN OBJETO JSON VÁLIDO CON EL SIGUIENTE FORMATO 
       parsed.startTime = formattedTime;
     }
 
-    if (!parsed.manPowerEquipo || !parsed.manPowerEquipo.trim()) {
+    if (!parsed.messageType) {
+      parsed.messageType = 'WORK_REPORT';
+    }
+
+    if (parsed.messageType === 'SOCIAL_CHAT') {
       parsed.manPowerEquipo = null;
-      parsed.isComplete = false;
-      parsed.missingFields = ['manPowerEquipo'];
-    } else {
-      parsed.manPowerEquipo = parsed.manPowerEquipo.trim().toUpperCase();
       parsed.isComplete = true;
       parsed.missingFields = [];
+    } else if (parsed.messageType === 'CLIENT_REQUEST') {
+      parsed.isComplete = true;
+      parsed.missingFields = [];
+      if (parsed.manPowerEquipo) {
+        parsed.manPowerEquipo = parsed.manPowerEquipo.trim().toUpperCase();
+      }
+    } else {
+      if (!parsed.manPowerEquipo || !parsed.manPowerEquipo.trim()) {
+        parsed.manPowerEquipo = null;
+        parsed.isComplete = false;
+        parsed.missingFields = ['manPowerEquipo'];
+      } else {
+        parsed.manPowerEquipo = parsed.manPowerEquipo.trim().toUpperCase();
+        parsed.isComplete = true;
+        parsed.missingFields = [];
+      }
     }
 
     return parsed;
@@ -128,24 +150,47 @@ function fallbackRegexParser(
   groupFolio?: string | null,
   formattedTime?: string | null
 ): GeminiParsedReport {
-  // Regex to match EQ-1234, EQ1234, G-01, EQUIPO 102, #EQ-01
-  const equipoMatch = text.match(/(?:#|\bEQUIPO\b|\bEQ-?|\bG-)\s*([A-Z0-9-]{2,10})/i);
+  const lower = text.toLowerCase().trim();
+  const isSocial = /^(buenos días|buenos dias|buenas tardes|buenas noches|hola|gracias|ok|enterado|de acuerdo|saludos)/i.test(lower) && text.length < 40;
+
+  if (isSocial) {
+    return {
+      messageType: 'SOCIAL_CHAT',
+      manPowerEquipo: null,
+      workOrderFolio: groupFolio || null,
+      title: 'Saludo / Chat Social',
+      weekendNotes: text,
+      equipmentStatus: null,
+      suggestedAction: null,
+      startTime: formattedTime || null,
+      endTime: null,
+      parts: [],
+      isComplete: true,
+      missingFields: [],
+    };
+  }
+
+  const isClientReq = lower.includes('favor de') || lower.includes('apóyennos') || lower.includes('apoyennos') || lower.includes('revisar') || lower.includes('checar');
+
+  // Regex to match EQ-1234, EQ1234, G-01, C-10, EQUIPO 102, #EQ-01
+  const equipoMatch = text.match(/(?:#|\bEQUIPO\b|\bEQ-?|\bG-|\bC-)\s*([A-Z0-9-]{2,10})/i);
   let equipo: string | null = null;
   if (equipoMatch) {
     const raw = equipoMatch[0].toUpperCase().replace(/\s+/g, '');
     equipo = raw.startsWith('#') ? raw.slice(1) : raw;
-    if (!equipo.startsWith('EQ') && !equipo.startsWith('G-')) {
+    if (!equipo.startsWith('EQ') && !equipo.startsWith('G-') && !equipo.startsWith('C-')) {
       equipo = `EQ-${equipoMatch[1].toUpperCase()}`;
     }
   }
 
-  // Regex to match Work Order S06447, OT-1234, etc.
   const folioMatch = text.match(/\b(S\d{5}|V\d{3,5}|OT-?\d+)\b/i);
   const folio = folioMatch ? folioMatch[1].toUpperCase() : groupFolio || null;
 
-  const isComplete = Boolean(equipo);
+  const messageType = isClientReq ? 'CLIENT_REQUEST' : 'WORK_REPORT';
+  const isComplete = messageType === 'CLIENT_REQUEST' ? true : Boolean(equipo);
 
   return {
+    messageType,
     manPowerEquipo: equipo,
     workOrderFolio: folio,
     title: text.length > 50 ? `${text.slice(0, 50)}...` : text,
