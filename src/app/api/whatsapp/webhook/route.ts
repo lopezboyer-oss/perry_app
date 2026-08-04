@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
 
     const workOrderFolio = parsed.workOrderFolio || groupMap.workOrderFolio || null;
 
-    // 6. If missing vital info (manPowerEquipo), request info using simplified prompt
+    // 6. If missing vital info (manPowerEquipo), request info using simplified prompt (with 15s burst throttling)
     if (!parsed.isComplete || !parsed.manPowerEquipo) {
       const log = await prisma.whatsappMessageLog.create({
         data: {
@@ -183,13 +183,27 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Simplified prompt requested by user
-      const promptText = `🤖 Gracias ${payload.senderName || 'Técnico'}, apóyame con el NÚMERO DE EQUIPO para registrar tu reporte`;
-      await sendWhatsappGroupMessage({
-        groupId: payload.groupId,
-        messageText: promptText,
-        replyToMessageId: payload.messageId,
+      // Check if another PENDING_INFO log was created for this tech/group in the last 15 seconds (to avoid prompt spam during multi-photo burst)
+      const fifteenSecondsAgo = new Date(Date.now() - 15 * 1000);
+      const previousRecentPending = await prisma.whatsappMessageLog.findFirst({
+        where: {
+          groupId: payload.groupId,
+          senderPhone: payload.senderPhone,
+          status: 'PENDING_INFO',
+          id: { not: log.id },
+          createdAt: { gte: fifteenSecondsAgo },
+        },
       });
+
+      // Only send prompt message if no prompt was sent in the last 15 seconds
+      if (!previousRecentPending) {
+        const promptText = `🤖 Gracias ${payload.senderName || 'Técnico'}, apóyame con el NÚMERO DE EQUIPO para registrar tu reporte`;
+        await sendWhatsappGroupMessage({
+          groupId: payload.groupId,
+          messageText: promptText,
+          replyToMessageId: payload.messageId,
+        });
+      }
 
       return NextResponse.json({ status: 'Prompted for missing info', logId: log.id });
     }
@@ -204,12 +218,41 @@ export async function POST(req: NextRequest) {
     }
 
     // Format photos array for manPowerPhotos
-    const formattedPhotos = mediaUrls.map((url, idx) => ({
+    let formattedPhotos = mediaUrls.map((url, idx) => ({
       id: `wa_${Date.now()}_${idx}`,
       url,
       uploadedBy: payload.senderName || 'Técnico via WhatsApp',
       uploadedAt: new Date().toISOString(),
     }));
+
+    // RETROACTIVE MEDIA CLAIM: Claim any pending photos sent by this tech in the last 120s before text arrived
+    const twoMinutesAgo = new Date(Date.now() - 120 * 1000);
+    const unattachedPendingLogs = await prisma.whatsappMessageLog.findMany({
+      where: {
+        groupId: payload.groupId,
+        senderPhone: payload.senderPhone,
+        status: 'PENDING_INFO',
+        createdAt: { gte: twoMinutesAgo },
+      },
+    });
+
+    for (const pLog of unattachedPendingLogs) {
+      if (pLog.mediaUrls) {
+        try {
+          const pendingMediaArr: string[] = JSON.parse(pLog.mediaUrls);
+          pendingMediaArr.forEach((pUrl, pIdx) => {
+            if (!formattedPhotos.some(fp => fp.url === pUrl)) {
+              formattedPhotos.push({
+                id: `wa_pending_${Date.now()}_${pIdx}`,
+                url: pUrl,
+                uploadedBy: payload.senderName || 'Técnico via WhatsApp',
+                uploadedAt: new Date().toISOString(),
+              });
+            }
+          });
+        } catch {}
+      }
+    }
 
     // Find existing activity for this workOrder + equipo or create new one
     let targetActivity = null;
@@ -284,11 +327,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Resolve any previous pending log for this thread
+    // Resolve all previous pending logs for this thread & react 🤖 to pending messages
+    for (const pLog of unattachedPendingLogs) {
+      await prisma.whatsappMessageLog.update({
+        where: { id: pLog.id },
+        data: { status: 'RESOLVED', activityId: targetActivity.id },
+      });
+      await sendWhatsappReaction({
+        messageId: pLog.messageId,
+        groupId: payload.groupId,
+        emoji: '🤖',
+      });
+    }
+
     if (pendingLog) {
       await prisma.whatsappMessageLog.update({
         where: { id: pendingLog.id },
-        data: { status: 'RESOLVED' },
+        data: { status: 'RESOLVED', activityId: targetActivity.id },
       });
     }
 
