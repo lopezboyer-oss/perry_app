@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     // 3. ALBUM BURST HANDLING (< 60 seconds)
     // If a technician sends multiple photos (album burst), WhatsApp sends multiple events milliseconds apart.
-    // The 1st event carries text, while subsequent photo events carry empty captions.
+    // The 1st event carries text with tag, while subsequent photo events carry empty captions.
     const sixtySecondsAgo = new Date(Date.now() - 60 * 1000);
     const recentActivityLog = await prisma.whatsappMessageLog.findFirst({
       where: {
@@ -142,7 +142,29 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Check for pending context thread (if tech is replying to a missing info prompt)
+    // 4. TRIGGER TAG CHECK: Only process messages tagged with @Perry, #reporte, @copilot, #equipo, etc.
+    const isTaggedMessage = hasBotTriggerTag(messageText, body);
+    if (!isTaggedMessage) {
+      await prisma.whatsappMessageLog.create({
+        data: {
+          messageId: payload.messageId,
+          groupId: payload.groupId,
+          senderPhone: payload.senderPhone,
+          senderName: payload.senderName || 'Usuario',
+          rawMessage: messageText,
+          mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+          parsedData: JSON.stringify({ triggerTagPresent: false }),
+          status: 'CHAT_IGNORED',
+        },
+      });
+
+      return NextResponse.json({ status: 'Ignored: No bot trigger tag (@Perry / #reporte)' }, { status: 200 });
+    }
+
+    // Clean trigger tags from message before passing to Gemini
+    const cleanedText = cleanTriggerTags(messageText);
+
+    // 5. Check for pending context thread (if tech is replying to a missing info prompt)
     const pendingLog = await prisma.whatsappMessageLog.findFirst({
       where: {
         groupId: payload.groupId,
@@ -152,12 +174,12 @@ export async function POST(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    let combinedText = messageText;
+    let combinedText = cleanedText;
     if (pendingLog && pendingLog.rawMessage) {
-      combinedText = `${pendingLog.rawMessage}\n[Dato Adicional enviado]: ${messageText}`;
+      combinedText = `${pendingLog.rawMessage}\n[Dato Adicional enviado]: ${cleanedText}`;
     }
 
-    // 5. AI Parse using Gemini 2.5 Flash
+    // 6. AI Parse using Gemini 2.5 Flash
     const parsed = await parseWhatsappMessageWithGemini({
       messageText: combinedText,
       senderName: payload.senderName,
@@ -167,72 +189,7 @@ export async function POST(req: NextRequest) {
 
     const workOrderFolio = parsed.workOrderFolio || groupMap.workOrderFolio || null;
 
-    // 5.1 Handle SOCIAL_CHAT: Greetings, thanks, confirmations -> Silent ignore
-    if (parsed.messageType === 'SOCIAL_CHAT') {
-      await prisma.whatsappMessageLog.create({
-        data: {
-          messageId: payload.messageId,
-          groupId: payload.groupId,
-          senderPhone: payload.senderPhone,
-          senderName: payload.senderName || 'Usuario',
-          rawMessage: combinedText,
-          mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
-          parsedData: JSON.stringify(parsed),
-          status: 'CHAT_IGNORED',
-        },
-      });
-
-      return NextResponse.json({ status: 'Ignored social chat / greeting' }, { status: 200 });
-    }
-
-    // 5.2 Handle CLIENT_REQUEST: Client asking for service/attention -> Create pending task, stay quiet in chat
-    if (parsed.messageType === 'CLIENT_REQUEST') {
-      let sampleActivity = null;
-      if (workOrderFolio) {
-        sampleActivity = await prisma.activity.findFirst({
-          where: { workOrderFolio: workOrderFolio.trim() },
-          select: { clientId: true, companyId: true, purchaseOrder: true, projectArea: true },
-        });
-      }
-
-      const clientReqActivity = await prisma.activity.create({
-        data: {
-          title: `[Solicitud Cliente] ${parsed.title}`,
-          type: 'EJECUCION',
-          isManPower: true,
-          workOrderFolio: workOrderFolio ? workOrderFolio.trim() : null,
-          purchaseOrder: sampleActivity?.purchaseOrder || null,
-          clientId: sampleActivity?.clientId || null,
-          companyId: sampleActivity?.companyId || null,
-          projectArea: sampleActivity?.projectArea || 'CAMPO',
-          date: new Date(),
-          status: 'PENDIENTE',
-          manPowerEquipo: parsed.manPowerEquipo,
-          weekendNotes: `Solicitado por ${payload.senderName || 'Cliente'} en WhatsApp:\n${parsed.weekendNotes || messageText}`,
-          equipmentStatus: parsed.equipmentStatus || 'DEGRADADO',
-          startTime: parsed.startTime || null,
-          reportSource: 'WHATSAPP_BOT',
-        },
-      });
-
-      await prisma.whatsappMessageLog.create({
-        data: {
-          messageId: payload.messageId,
-          groupId: payload.groupId,
-          senderPhone: payload.senderPhone,
-          senderName: payload.senderName || 'Cliente',
-          rawMessage: combinedText,
-          mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
-          parsedData: JSON.stringify(parsed),
-          activityId: clientReqActivity.id,
-          status: 'PROCESSED',
-        },
-      });
-
-      return NextResponse.json({ status: 'Client request logged', activityId: clientReqActivity.id });
-    }
-
-    // 6. If missing vital info (manPowerEquipo) in a WORK_REPORT, request info using simplified prompt (with 15s burst throttling)
+    // 7. If missing vital info (manPowerEquipo), request info using simplified prompt (with 15s burst throttling)
     if (!parsed.isComplete || !parsed.manPowerEquipo) {
       const log = await prisma.whatsappMessageLog.create({
         data: {
@@ -273,7 +230,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'Prompted for missing info', logId: log.id });
     }
 
-    // 7. Complete Data: Create/Update Activity in Perry App
+    // 8. Complete Data: Create/Update Activity in Perry App
     let sampleActivity = null;
     if (workOrderFolio) {
       sampleActivity = await prisma.activity.findFirst({
@@ -427,7 +384,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 8. Non-invasive silent confirmation: React with 🤖 emoji on tech's message!
+    // 9. Silent confirmation: React with 🤖 emoji on tech's message!
     await sendWhatsappReaction({
       messageId: payload.messageId,
       groupId: payload.groupId,
@@ -443,6 +400,50 @@ export async function POST(req: NextRequest) {
     console.error('Error procesando Webhook de WhatsApp:', error);
     return NextResponse.json({ error: error.message || 'Server Error' }, { status: 500 });
   }
+}
+
+// Check if message text or raw payload contains bot trigger tag (@Perry, #reporte, @copilot, #equipo, etc.)
+function hasBotTriggerTag(text: string, rawBody: any): boolean {
+  if (!text) return false;
+  const lower = text.toLowerCase().trim();
+
+  // Explicit Trigger Keywords & Hashtags
+  const triggerKeywords = [
+    '@perry',
+    '@copilot',
+    '@co-pilot',
+    '@perrybot',
+    '#reporte',
+    '#reporte',
+    '#manpower',
+    '#equipo',
+    '#actividad',
+  ];
+
+  if (triggerKeywords.some(kw => lower.includes(kw))) {
+    return true;
+  }
+
+  // Check if raw message contains @mentions array or phone number tags
+  const botPhone = (process.env.WHATSAPP_BOT_PHONE || '').replace(/\D/g, '');
+  if (botPhone && lower.includes(botPhone)) {
+    return true;
+  }
+
+  // Match hashtags with equipo prefixes like #C-10, #EQ-0105, #G-02, #A20
+  if (/#(eq-?|c-|g-|a-?|equipo)/i.test(text)) {
+    return true;
+  }
+
+  return false;
+}
+
+// Clean trigger tags like @Perry, @copilot, #reporte from text before passing to Gemini
+function cleanTriggerTags(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/@perrybot|@perry|@copilot|@co-pilot|#reporte|#manpower/gi, '')
+    .trim();
 }
 
 // Normalizer to convert different WhatsApp API payload formats (UltraMsg, Evolution, etc.) to standard structure
