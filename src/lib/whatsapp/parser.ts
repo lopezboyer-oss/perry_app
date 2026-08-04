@@ -36,11 +36,11 @@ DATOS DEL ENTORNO:
 
 REGLAS DE CLASIFICACIÓN Y EXTRACCIÓN:
 1. "messageType": Clasifica estrictamente el mensaje en uno de estos tres valores:
-   - "WORK_REPORT": Reportes de trabajo ejecutados por técnicos (mantenimiento, reparaciones, inspecciones, cambio de refacciones o evidencias de trabajo).
+   - "WORK_REPORT": Reportes de trabajo ejecutados por técnicos (mantenimiento, reparaciones, inspecciones, cambio de refacciones o fotos/evidencias de trabajo). Si el mensaje contiene fotos o es un mensaje técnico, DEBE SER "WORK_REPORT".
    - "CLIENT_REQUEST": Peticiones del cliente o de usuarios solicitando atención a un equipo o reportando una falla (ej: "Favor de checar equipo C-10", "La grúa 2 tiene ruido", "Revisar aire acondicionado").
-   - "SOCIAL_CHAT": Saludos ("Buenos días", "Hola a todos"), agradecimientos ("Gracias", "Excelente"), confirmaciones de chat ("Ok", "Enterado", "De acuerdo"), o charla social sin reporte de trabajo.
+   - "SOCIAL_CHAT": ÚNICAMENTE para saludos explícitos ("Buenos días", "Buenas tardes", "Hola a todos"), agradecimientos ("Gracias", "Excelente"), confirmaciones de chat ("Ok", "Enterado", "De acuerdo"), o charla social sin evidencia ni fotos. ¡UN MENSAJE CON FOTOGRAFÍA O SIN TEXTO NUNCA ES SOCIAL_CHAT!
 
-2. "manPowerEquipo": Busca el código de equipo o matrícula (ejemplos: "EQ-0105", "G-02", "C-10", "#EQUIPO 102", "GRÚA 3", "EQ 04"). Si NO se menciona ningún código ni matrícula de equipo, establece manPowerEquipo en null.
+2. "manPowerEquipo": Busca el código de equipo o matrícula (ejemplos: "EQ-0105", "G-02", "C-10", "#EQUIPO 102", "GRÚA 3", "EQ 04", "A20 Y A21", "A-20"). Si NO se menciona ningún código ni matrícula de equipo, establece manPowerEquipo en null.
 3. "workOrderFolio": Si el mensaje menciona una OT (ej: "S06447", "OT-1234"), úsala. De lo contrario, usa la OT asignada al grupo ("${groupWorkOrderFolio || ''}").
 4. "title": Un título breve (máx 60 caracteres) que resuma la actividad o petición.
 5. "weekendNotes": Descripción completa del mensaje u observaciones.
@@ -151,7 +151,9 @@ function fallbackRegexParser(
   formattedTime?: string | null
 ): GeminiParsedReport {
   const lower = text.toLowerCase().trim();
-  const isSocial = /^(buenos días|buenos dias|buenas tardes|buenas noches|hola|gracias|ok|enterado|de acuerdo|saludos)/i.test(lower) && text.length < 40;
+
+  // Social greetings must have non-empty text AND start with explicit greeting words
+  const isSocial = lower.length > 0 && /^(buenos días|buenos dias|buenas tardes|buenas noches|hola|gracias|saludos)/i.test(lower) && lower.length < 40;
 
   if (isSocial) {
     return {
@@ -172,15 +174,11 @@ function fallbackRegexParser(
 
   const isClientReq = lower.includes('favor de') || lower.includes('apóyennos') || lower.includes('apoyennos') || lower.includes('revisar') || lower.includes('checar');
 
-  // Regex to match EQ-1234, EQ1234, G-01, C-10, EQUIPO 102, #EQ-01
-  const equipoMatch = text.match(/(?:#|\bEQUIPO\b|\bEQ-?|\bG-|\bC-)\s*([A-Z0-9-]{2,10})/i);
+  // Regex to match EQ-1234, EQ1234, G-01, C-10, A20, A-20, EQUIPO 102, #EQ-01
+  const equipoMatch = text.match(/(?:#|\bEQUIPO\b|\bEQ-?|\bG-|\bC-|\bA-?)\s*([A-Z0-9-]{1,10}(?:\s*Y\s*[A-Z0-9-]{1,10})?)/i);
   let equipo: string | null = null;
   if (equipoMatch) {
-    const raw = equipoMatch[0].toUpperCase().replace(/\s+/g, '');
-    equipo = raw.startsWith('#') ? raw.slice(1) : raw;
-    if (!equipo.startsWith('EQ') && !equipo.startsWith('G-') && !equipo.startsWith('C-')) {
-      equipo = `EQ-${equipoMatch[1].toUpperCase()}`;
-    }
+    equipo = equipoMatch[0].toUpperCase().replace(/^#/, '').trim();
   }
 
   const folioMatch = text.match(/\b(S\d{5}|V\d{3,5}|OT-?\d+)\b/i);
@@ -193,8 +191,8 @@ function fallbackRegexParser(
     messageType,
     manPowerEquipo: equipo,
     workOrderFolio: folio,
-    title: text.length > 50 ? `${text.slice(0, 50)}...` : text,
-    weekendNotes: text,
+    title: text.length > 50 ? `${text.slice(0, 50)}...` : (text || 'Evidencia de trabajo'),
+    weekendNotes: text || 'Evidencia de trabajo enviada por WhatsApp',
     equipmentStatus: text.toLowerCase().includes('fuera de servicio') 
       ? 'FUERA_DE_SERVICIO' 
       : text.toLowerCase().includes('degradado') 
