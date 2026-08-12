@@ -46,6 +46,11 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     continuedFromId: initialData?.continuedFromId || '',
     isManPower: initialData?.isManPower || false,
     manPowerEquipo: initialData?.manPowerEquipo || '',
+    actualStartTime: initialData?.actualStartTime || initialData?.startTime || '',
+    actualEndTime: initialData?.actualEndTime || initialData?.endTime || '',
+    equipmentStatus: initialData?.equipmentStatus || '',
+    suggestedAction: initialData?.suggestedAction || '',
+    weekendNotes: initialData?.weekendNotes || '',
   });
 
   const [equiposList, setEquiposList] = useState<string[]>([]);
@@ -150,9 +155,10 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-calculate duration
+  // Auto-calculate duration and sync actual execution times
   const handleTimeChange = (field: 'startTime' | 'endTime', value: string) => {
-    const newForm = { ...form, [field]: value };
+    const actualField = field === 'startTime' ? 'actualStartTime' : 'actualEndTime';
+    const newForm = { ...form, [field]: value, [actualField]: value };
     const start = field === 'startTime' ? value : form.startTime;
     const end = field === 'endTime' ? value : form.endTime;
     if (start && end) {
@@ -191,11 +197,16 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         commitmentDate: form.commitmentDate || null,
         startTime: form.startTime || null,
         endTime: form.endTime || null,
+        actualStartTime: form.actualStartTime || form.startTime || null,
+        actualEndTime: form.actualEndTime || form.endTime || null,
         durationMinutes: form.durationMinutes ? parseInt(form.durationMinutes) : null,
         location: form.location || null,
         notes: form.notes || null,
         isManPower: form.isManPower,
         manPowerEquipo: form.isManPower ? (form.manPowerEquipo || null) : null,
+        equipmentStatus: form.equipmentStatus || null,
+        suggestedAction: form.suggestedAction || null,
+        weekendNotes: form.weekendNotes || null,
       };
 
       const url = isEdit ? `/api/actividades/${initialData.id}` : '/api/actividades';
@@ -495,6 +506,47 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
               value={form.durationMinutes}
               onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })}
               placeholder="Auto-calculado"
+              className="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="card p-6 border border-indigo-200">
+        <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          👷 Registro y Estatus de Campo (ManPower)
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Estatus del Equipo Atendido</label>
+            <select
+              value={form.equipmentStatus}
+              onChange={(e) => setForm({ ...form, equipmentStatus: e.target.value })}
+              className="w-full"
+            >
+              <option value="">Seleccionar estatus...</option>
+              <option value="OPERATIVO">🟢 OPERATIVO</option>
+              <option value="FUERA_DE_SERVICIO">🔴 FUERA DE SERVICIO</option>
+              <option value="DEGRADADO">🟡 DEGRADADO</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Acción Sugerida al Cliente</label>
+            <input
+              type="text"
+              value={form.suggestedAction}
+              onChange={(e) => setForm({ ...form, suggestedAction: e.target.value })}
+              placeholder="Ej. Realizar mantenimiento preventivo en 30 días"
+              className="w-full"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Bitácora / Observaciones de Campo</label>
+            <textarea
+              value={form.weekendNotes}
+              onChange={(e) => setForm({ ...form, weekendNotes: e.target.value })}
+              placeholder="Notas detalladas capturadas en campo..."
+              rows={3}
               className="w-full"
             />
           </div>

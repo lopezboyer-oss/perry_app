@@ -83,6 +83,14 @@ export async function PUT(
         isManPower: data.isManPower !== undefined ? data.isManPower : undefined,
         manPowerEquipo: data.manPowerEquipo !== undefined ? (data.manPowerEquipo ? data.manPowerEquipo.toUpperCase().slice(0, 6) : null) : undefined,
         manPowerPhotos: data.manPowerPhotos !== undefined ? data.manPowerPhotos : undefined,
+        actualStartTime: data.actualStartTime !== undefined ? data.actualStartTime : undefined,
+        actualEndTime: data.actualEndTime !== undefined ? data.actualEndTime : undefined,
+        equipmentStatus: data.equipmentStatus !== undefined ? data.equipmentStatus : undefined,
+        suggestedAction: data.suggestedAction !== undefined ? data.suggestedAction : undefined,
+        weekendNotes: data.weekendNotes !== undefined ? data.weekendNotes : undefined,
+        photosBefore: data.photosBefore !== undefined ? data.photosBefore : undefined,
+        photosAfter: data.photosAfter !== undefined ? data.photosAfter : undefined,
+        pendingItems: data.pendingItems !== undefined ? data.pendingItems : undefined,
       },
     });
 
@@ -199,11 +207,17 @@ export async function PATCH(
 
     const body = await req.json();
 
-    // Partial update for specific fields (e.g., photos upload without touching other required fields)
     const updateData: any = {};
-    if (body.manPowerPhotos !== undefined) {
-      updateData.manPowerPhotos = body.manPowerPhotos;
-    }
+    if (body.manPowerPhotos !== undefined) updateData.manPowerPhotos = body.manPowerPhotos;
+    if (body.photosBefore !== undefined) updateData.photosBefore = body.photosBefore;
+    if (body.photosAfter !== undefined) updateData.photosAfter = body.photosAfter;
+    if (body.pendingItems !== undefined) updateData.pendingItems = body.pendingItems;
+    if (body.equipmentStatus !== undefined) updateData.equipmentStatus = body.equipmentStatus;
+    if (body.suggestedAction !== undefined) updateData.suggestedAction = body.suggestedAction;
+    if (body.weekendNotes !== undefined) updateData.weekendNotes = body.weekendNotes;
+    if (body.actualStartTime !== undefined) updateData.actualStartTime = body.actualStartTime;
+    if (body.actualEndTime !== undefined) updateData.actualEndTime = body.actualEndTime;
+    if (body.manPowerEquipo !== undefined) updateData.manPowerEquipo = body.manPowerEquipo;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'Datos no proporcionados' }, { status: 400 });

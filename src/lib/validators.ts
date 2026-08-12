@@ -32,6 +32,14 @@ export const activitySchema = z.object({
   isManPower: z.boolean().optional().default(false),
   manPowerEquipo: z.string().optional().nullable(),
   manPowerPhotos: z.string().optional().nullable(),
+  actualStartTime: z.string().optional().nullable(),
+  actualEndTime: z.string().optional().nullable(),
+  equipmentStatus: z.string().optional().nullable(),
+  suggestedAction: z.string().optional().nullable(),
+  weekendNotes: z.string().optional().nullable(),
+  photosBefore: z.string().optional().nullable(),
+  photosAfter: z.string().optional().nullable(),
+  pendingItems: z.string().optional().nullable(),
 }).refine((data) => {
   if (data.status === 'EN_PROGRESO' && data.type !== 'COTIZACION') {
     return false;
