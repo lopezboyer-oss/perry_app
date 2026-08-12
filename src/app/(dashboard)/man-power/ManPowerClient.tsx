@@ -2302,10 +2302,6 @@ export function ManPowerClient({
                         </div>
                         <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
                           <span>📅 Periodo: <strong>{grp.startDate ? `${formatDate(grp.startDate)} al ${formatDate(grp.endDate)}` : 'S/H'}</strong></span>
-                          <span>•</span>
-                          <span>⏳ <strong>{grp.totalDays}</strong> {grp.totalDays === 1 ? 'día' : 'días'} de ManPower</span>
-                          <span>•</span>
-                          <span>⏱️ <strong>{grp.totalHours.toFixed(1)}</strong> hrs trabajadas</span>
                         </div>
                       </div>
                     </div>
@@ -2441,7 +2437,9 @@ export function ManPowerClient({
                               return (
                                 <tr
                                   key={act.id}
-                                  onClick={() => router.push(`/actividades/${act.id}`)}
+                                  onClick={() => {
+                                    window.location.href = `/actividades/${act.id}`;
+                                  }}
                                   className="hover:bg-indigo-50/60 cursor-pointer transition-colors group"
                                 >
                                   <td className="px-3 py-2 font-medium text-slate-700 whitespace-nowrap">
@@ -2450,8 +2448,14 @@ export function ManPowerClient({
                                   <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
                                     {start} - {end}
                                   </td>
-                                  <td className="px-3 py-2 font-bold text-indigo-950 group-hover:text-indigo-600 group-hover:underline transition-colors">
-                                    {act.title}
+                                  <td className="px-3 py-2 font-bold text-indigo-950 group-hover:text-indigo-600 transition-colors">
+                                    <a
+                                      href={`/actividades/${act.id}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="hover:underline text-indigo-950 group-hover:text-indigo-600"
+                                    >
+                                      {act.title}
+                                    </a>
                                   </td>
                                   <td className="px-3 py-2 font-mono text-slate-600 whitespace-nowrap">
                                     {act.manPowerEquipo ? (
@@ -2508,16 +2512,14 @@ export function ManPowerClient({
                                     </button>
                                   </td>
                                   <td className="px-3 py-2 text-center whitespace-nowrap">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        router.push(`/actividades/${act.id}`);
-                                      }}
+                                    <a
+                                      href={`/actividades/${act.id}`}
+                                      onClick={(e) => e.stopPropagation()}
                                       className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1 shadow-2xs"
                                       title="Ver detalle completo y editar actividad"
                                     >
                                       <ExternalLink size={12} /> Ver / Editar
-                                    </button>
+                                    </a>
                                   </td>
                                 </tr>
                               );

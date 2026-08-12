@@ -103,6 +103,18 @@ export function OdooOrderReportModal({
   const techList = Array.from(techNamesSet);
   const engList = Array.from(engNamesSet);
 
+  // Extract equipment intervention stats
+  const equipInterventionsMap: Record<string, number> = {};
+  sortedActivities.forEach((act) => {
+    if (act.manPowerEquipo && act.manPowerEquipo.trim()) {
+      const eq = act.manPowerEquipo.trim().toUpperCase();
+      equipInterventionsMap[eq] = (equipInterventionsMap[eq] || 0) + 1;
+    }
+  });
+
+  const uniqueEquips = Object.keys(equipInterventionsMap).sort();
+  const totalEquipInterventions = Object.values(equipInterventionsMap).reduce((a, b) => a + b, 0);
+
   // Group activities by date for readable daily breakdown
   const activitiesByDate: Record<string, Activity[]> = {};
   sortedActivities.forEach((act) => {
@@ -191,7 +203,7 @@ export function OdooOrderReportModal({
           </div>
 
           {/* Info Summary Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 flex flex-col justify-between">
               <div className="flex items-center gap-2 text-indigo-600 text-xs font-semibold mb-1">
                 <Calendar size={14} /> Periodo ManPower
@@ -213,6 +225,18 @@ export function OdooOrderReportModal({
               </div>
               <div className="text-[11px] text-emerald-700 font-medium mt-1">
                 {sortedActivities.length} actividades en total
+              </div>
+            </div>
+
+            <div className="bg-violet-50/60 border border-violet-100 rounded-xl p-3.5 flex flex-col justify-between">
+              <div className="flex items-center gap-2 text-violet-600 text-xs font-semibold mb-1">
+                <FileText size={14} /> Equipos Intervenidos
+              </div>
+              <div className="font-bold text-slate-800 text-lg">
+                {uniqueEquips.length} {uniqueEquips.length === 1 ? 'Equipo' : 'Equipos'}
+              </div>
+              <div className="text-[11px] text-violet-700 font-medium mt-1">
+                {totalEquipInterventions} intervenciones
               </div>
             </div>
 
@@ -240,6 +264,39 @@ export function OdooOrderReportModal({
               </div>
             </div>
           </div>
+
+          {/* KPI: Desglose de Intervenciones por Equipo */}
+          {uniqueEquips.length > 0 && (
+            <div className="bg-indigo-50/40 border border-indigo-100 rounded-xl p-4 space-y-2">
+              <div className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <FileText size={15} className="text-indigo-600" /> KPI — Intervenciones por Equipo en el Periodo ({uniqueEquips.length} Equipos Atendidos)
+                </span>
+                <span className="text-[11px] text-indigo-700 font-normal">
+                  Total: <strong>{totalEquipInterventions}</strong> intervenciones
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                {uniqueEquips.map((eq) => {
+                  const count = equipInterventionsMap[eq];
+                  return (
+                    <div key={eq} className="bg-white border border-indigo-200/80 rounded-xl p-2.5 flex items-center justify-between shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                          #{eq}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-black text-slate-900">{count}</span>
+                        <span className="text-[10px] text-slate-500 block leading-none">{count === 1 ? 'intervención' : 'intervenciones'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Technicians List Tag Bar */}
           {techList.length > 0 && (
