@@ -16,12 +16,14 @@ interface UserData {
   isSafetyAuditor: boolean;
   accessSafetyDedicado: boolean;
   accessVehicles: boolean;
+  accessDrivers?: boolean;
   accessElevationEquip: boolean;
   accessManPower: boolean;
   supervisorId: string | null;
   supervisor: { name: string } | null;
   isActive: boolean;
   baseCompanyId: string | null;
+  baseCompany?: { id: string; name: string; shortName: string | null; color: string | null } | null;
   companies: { companyId: string; isDefault: boolean; company: { id: string; name: string; shortName: string | null; color: string | null } }[];
   weeklySalary?: number | null;
 }
@@ -694,6 +696,37 @@ export default function UsuariosPage() {
             <div ref={driverFormRef} className="card p-6 mb-4 border-l-4 border-l-cyan-500">
               <h3 className="font-semibold text-slate-800 mb-4">{driverFormData.id ? 'Editar' : 'Nuevo'} Chofer</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {driverFormData.type === 'PROPIO' && users.length > 0 && !driverFormData.id && (
+                  <div className="md:col-span-2 bg-sky-50/80 p-3 rounded-lg border border-sky-100">
+                    <label className="block text-xs font-semibold text-sky-900 mb-1">
+                      💡 Seleccionar de Usuarios / Ingenieros Registrados (Opcional)
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        const selectedUser = users.find((u) => u.id === e.target.value);
+                        if (selectedUser) {
+                          setDriverFormData((prev) => ({
+                            ...prev,
+                            name: selectedUser.name,
+                            baseCompanyId: selectedUser.baseCompanyId || prev.baseCompanyId,
+                          }));
+                        }
+                      }}
+                      className="w-full text-sm bg-white border border-slate-300 rounded-lg p-2 text-slate-800"
+                      defaultValue=""
+                    >
+                      <option value="">— Seleccionar para autocompletar datos —</option>
+                      {users.map((u) => {
+                        const compName = u.companies?.find((c) => c.isDefault)?.company?.name || u.baseCompany?.name || '';
+                        return (
+                          <option key={u.id} value={u.id}>
+                            {u.name} ({u.role}{compName ? ` - ${compName}` : ''})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
                   <input type="text" value={driverFormData.name} onChange={(e) => setDriverFormData({ ...driverFormData, name: e.target.value })} className="w-full" />

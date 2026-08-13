@@ -16,6 +16,7 @@ export interface UserFormData {
   isSafetyAuditor?: boolean;
   accessSafetyDedicado?: boolean;
   accessVehicles?: boolean;
+  accessDrivers?: boolean;
   accessElevationEquip?: boolean;
   accessManPower?: boolean;
   baseCompanyId?: string | null;
