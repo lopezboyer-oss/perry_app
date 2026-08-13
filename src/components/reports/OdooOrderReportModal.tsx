@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Printer, Calendar, Clock, UserCheck, HardHat, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Printer, Calendar, FileText, CheckCircle2, AlertCircle, Building2, UserCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 interface Activity {
@@ -62,58 +62,6 @@ export function OdooOrderReportModal({
   const dates = [...new Set(sortedActivities.map((a) => a.date.substring(0, 10)))].sort();
   const startDateStr = dates.length > 0 ? dates[0] : '';
   const endDateStr = dates.length > 0 ? dates[dates.length - 1] : '';
-  const totalDays = dates.length;
-
-  // Calculate total hours worked
-  let totalHours = 0;
-  sortedActivities.forEach((act) => {
-    // 1) From timeRegistryEntries if available
-    let regMinutes = 0;
-    if (act.timeRegistryEntries && act.timeRegistryEntries.length > 0) {
-      regMinutes = act.timeRegistryEntries.reduce((acc, entry) => acc + (entry.time || 0), 0);
-    }
-
-    if (regMinutes > 0) {
-      totalHours += regMinutes / 60;
-    } else {
-      // 2) Fallback to scheduled / actual start and end time
-      const startStr = act.actualStartTime || act.startTime;
-      const endStr = act.actualEndTime || act.endTime;
-      if (startStr && endStr) {
-        const [sh, sm] = startStr.split(':').map(Number);
-        const [eh, em] = endStr.split(':').map(Number);
-        let sMins = sh * 60 + sm;
-        let eMins = eh * 60 + em;
-        if (eMins < sMins) eMins += 1440;
-        totalHours += (eMins - sMins) / 60;
-      }
-    }
-  });
-
-  // Extract unique technicians & engineers
-  const techNamesSet = new Set<string>();
-  const engNamesSet = new Set<string>();
-
-  sortedActivities.forEach((act) => {
-    if (act.user?.name) engNamesSet.add(act.user.name);
-    const assigned = techAssignments.filter((ta) => ta.activityId === act.id);
-    assigned.forEach((ta) => techNamesSet.add(ta.technician.name));
-  });
-
-  const techList = Array.from(techNamesSet);
-  const engList = Array.from(engNamesSet);
-
-  // Extract equipment intervention stats
-  const equipInterventionsMap: Record<string, number> = {};
-  sortedActivities.forEach((act) => {
-    if (act.manPowerEquipo && act.manPowerEquipo.trim()) {
-      const eq = act.manPowerEquipo.trim().toUpperCase();
-      equipInterventionsMap[eq] = (equipInterventionsMap[eq] || 0) + 1;
-    }
-  });
-
-  const uniqueEquips = Object.keys(equipInterventionsMap).sort();
-  const totalEquipInterventions = Object.values(equipInterventionsMap).reduce((a, b) => a + b, 0);
 
   // Group activities by date for readable daily breakdown
   const activitiesByDate: Record<string, Activity[]> = {};
@@ -202,121 +150,40 @@ export function OdooOrderReportModal({
             </div>
           </div>
 
-          {/* Info Summary Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 flex flex-col justify-between">
-              <div className="flex items-center gap-2 text-indigo-600 text-xs font-semibold mb-1">
-                <Calendar size={14} /> Periodo ManPower
+          {/* Encabezado Informativo de la Orden */}
+          <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                <Building2 size={18} />
               </div>
-              <div className="font-bold text-slate-800 text-sm">
-                {dates.length > 0 ? `${formatDate(startDateStr)} — ${formatDate(endDateStr)}` : 'Sin fechas'}
-              </div>
-              <div className="text-[11px] text-indigo-700 font-medium mt-1">
-                {totalDays} {totalDays === 1 ? 'día' : 'días'} de trabajo
+              <div>
+                <span className="text-[11px] font-semibold uppercase text-slate-400 block tracking-wider">Empresa</span>
+                <span className="text-sm font-bold text-slate-800">{companyName}</span>
               </div>
             </div>
 
-            <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3.5 flex flex-col justify-between">
-              <div className="flex items-center gap-2 text-emerald-600 text-xs font-semibold mb-1">
-                <Clock size={14} /> Total Horas Invertidas
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                <UserCheck size={18} />
               </div>
-              <div className="font-bold text-slate-800 text-lg">
-                {totalHours.toFixed(1)} hrs
-              </div>
-              <div className="text-[11px] text-emerald-700 font-medium mt-1">
-                {sortedActivities.length} actividades en total
+              <div>
+                <span className="text-[11px] font-semibold uppercase text-slate-400 block tracking-wider">Cliente</span>
+                <span className="text-sm font-bold text-slate-800">{clientName || 'Sin asignar'}</span>
               </div>
             </div>
 
-            <div className="bg-violet-50/60 border border-violet-100 rounded-xl p-3.5 flex flex-col justify-between">
-              <div className="flex items-center gap-2 text-violet-600 text-xs font-semibold mb-1">
-                <FileText size={14} /> Equipos Intervenidos
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                <Calendar size={18} />
               </div>
-              <div className="font-bold text-slate-800 text-lg">
-                {uniqueEquips.length} {uniqueEquips.length === 1 ? 'Equipo' : 'Equipos'}
-              </div>
-              <div className="text-[11px] text-violet-700 font-medium mt-1">
-                {totalEquipInterventions} intervenciones
-              </div>
-            </div>
-
-            <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3.5 flex flex-col justify-between">
-              <div className="flex items-center gap-2 text-amber-700 text-xs font-semibold mb-1">
-                <UserCheck size={14} /> Cliente
-              </div>
-              <div className="font-bold text-slate-800 text-sm truncate" title={clientName || 'N/A'}>
-                {clientName || 'No asignado'}
-              </div>
-              <div className="text-[11px] text-amber-800 font-medium mt-1">
-                PO: {purchaseOrder || 'Pendiente'}
-              </div>
-            </div>
-
-            <div className="bg-slate-100/70 border border-slate-200 rounded-xl p-3.5 flex flex-col justify-between">
-              <div className="flex items-center gap-2 text-slate-600 text-xs font-semibold mb-1">
-                <HardHat size={14} /> Personal Involucrado
-              </div>
-              <div className="font-bold text-slate-800 text-sm truncate">
-                {techList.length} Técnicos
-              </div>
-              <div className="text-[11px] text-slate-500 font-medium mt-1 truncate" title={engList.join(', ')}>
-                Eng: {engList.join(', ') || 'N/A'}
+              <div>
+                <span className="text-[11px] font-semibold uppercase text-slate-400 block tracking-wider">Periodo de Trabajo</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {dates.length > 0 ? `${formatDate(startDateStr)} — ${formatDate(endDateStr)}` : 'Sin fechas'}
+                </span>
               </div>
             </div>
           </div>
-
-          {/* KPI: Desglose de Intervenciones por Equipo */}
-          {uniqueEquips.length > 0 && (
-            <div className="bg-indigo-50/40 border border-indigo-100 rounded-xl p-4 space-y-2">
-              <div className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <FileText size={15} className="text-indigo-600" /> KPI — Intervenciones por Equipo en el Periodo ({uniqueEquips.length} Equipos Atendidos)
-                </span>
-                <span className="text-[11px] text-indigo-700 font-normal">
-                  Total: <strong>{totalEquipInterventions}</strong> intervenciones
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                {uniqueEquips.map((eq) => {
-                  const count = equipInterventionsMap[eq];
-                  return (
-                    <div key={eq} className="bg-white border border-indigo-200/80 rounded-xl p-2.5 flex items-center justify-between shadow-2xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                          #{eq}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-black text-slate-900">{count}</span>
-                        <span className="text-[10px] text-slate-500 block leading-none">{count === 1 ? 'intervención' : 'intervenciones'}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Technicians List Tag Bar */}
-          {techList.length > 0 && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
-              <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <HardHat size={14} className="text-slate-500" />
-                Técnicos Asignados en esta Orden:
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {techList.map((tName) => (
-                  <span
-                    key={tName}
-                    className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 shadow-2xs"
-                  >
-                    👷‍♂️ {tName}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Daily Activity Breakdown Table */}
           <div className="space-y-4">
