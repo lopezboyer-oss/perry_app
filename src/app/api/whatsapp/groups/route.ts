@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 
-// GET all WhatsApp group mappings + recent message logs
+// GET all WhatsApp group mappings + statistics + recent message logs
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
@@ -10,12 +10,60 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const groups = await prisma.whatsappGroupMapping.findMany({
-      orderBy: { updatedAt: 'desc' },
-    });
+    const { searchParams } = new URL(req.url);
+    const filterGroupId = searchParams.get('groupId');
+
+    const [groups, companies] = await Promise.all([
+      prisma.whatsappGroupMapping.findMany({
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.company.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, shortName: true, color: true },
+        orderBy: { sortOrder: 'asc' },
+      }),
+    ]);
+
+    const companyMap = new Map(companies.map(c => [c.id, c]));
+
+    // Compute stats for each group
+    const groupsWithStats = await Promise.all(
+      groups.map(async (g) => {
+        const messageCount = await prisma.whatsappMessageLog.count({
+          where: { groupId: g.groupId },
+        });
+        const mediaCount = await prisma.whatsappMessageLog.count({
+          where: {
+            groupId: g.groupId,
+            mediaUrls: { not: null },
+          },
+        });
+        const lastLog = await prisma.whatsappMessageLog.findFirst({
+          where: { groupId: g.groupId },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true },
+        });
+
+        const company = g.companyId ? companyMap.get(g.companyId) || null : null;
+
+        return {
+          ...g,
+          company,
+          messageCount,
+          mediaCount,
+          lastActivityAt: lastLog?.createdAt || g.updatedAt,
+        };
+      })
+    );
+
+    const whereClause: any = {};
+    if (filterGroupId) {
+      whereClause.groupId = filterGroupId;
+    }
 
     const recentLogs = await prisma.whatsappMessageLog.findMany({
-      take: 50,
+      where: whereClause,
+      take: 100,
       orderBy: { createdAt: 'desc' },
       include: {
         activity: {
@@ -29,9 +77,20 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    const totalIngestedMessages = await prisma.whatsappMessageLog.count();
+    const totalMediaFiles = await prisma.whatsappMessageLog.count({
+      where: { mediaUrls: { not: null } },
+    });
+
     return NextResponse.json({
-      groups,
+      groups: groupsWithStats,
+      companies,
       recentLogs,
+      stats: {
+        totalGroups: groups.length,
+        totalIngestedMessages,
+        totalMediaFiles,
+      },
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Error de servidor' }, { status: 500 });
@@ -47,7 +106,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { groupId, groupName, workOrderFolio, isActive } = body;
+    const { groupId, groupName, workOrderFolio, companyId, isActive } = body;
 
     if (!groupId || !groupId.trim()) {
       return NextResponse.json({ error: 'El ID del grupo (groupId / JID) es obligatorio' }, { status: 400 });
@@ -57,13 +116,15 @@ export async function POST(req: NextRequest) {
       where: { groupId: groupId.trim() },
       create: {
         groupId: groupId.trim(),
-        groupName: groupName ? groupName.trim() : 'Grupo WhatsApp Campo',
+        groupName: groupName ? groupName.trim() : 'Grupo WhatsApp Operaciones',
         workOrderFolio: workOrderFolio ? workOrderFolio.trim() : null,
+        companyId: companyId ? companyId.trim() : null,
         isActive: isActive !== undefined ? isActive : true,
       },
       update: {
-        groupName: groupName !== undefined ? groupName.trim() : undefined,
+        groupName: groupName !== undefined ? (groupName ? groupName.trim() : null) : undefined,
         workOrderFolio: workOrderFolio !== undefined ? (workOrderFolio ? workOrderFolio.trim() : null) : undefined,
+        companyId: companyId !== undefined ? (companyId ? companyId.trim() : null) : undefined,
         isActive: isActive !== undefined ? isActive : undefined,
       },
     });

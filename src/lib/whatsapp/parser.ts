@@ -5,8 +5,9 @@ export async function parseWhatsappMessageWithGemini(params: {
   senderName?: string;
   groupWorkOrderFolio?: string | null;
   timestamp?: number; // epoch ms
+  hasMedia?: boolean;
 }): Promise<GeminiParsedReport> {
-  const { messageText, senderName, groupWorkOrderFolio, timestamp } = params;
+  const { messageText, senderName, groupWorkOrderFolio, timestamp, hasMedia } = params;
 
   // Determine timestamp formatted in HH:MM (Local Mexico time America/Mexico_City)
   let formattedTime: string | null = null;
@@ -23,40 +24,47 @@ export async function parseWhatsappMessageWithGemini(params: {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'Configurado_En_Netlify') {
     console.warn('GEMINI_API_KEY no configurada localmente. Ejecutando parser heurístico de respaldo.');
-    return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime);
+    return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime, hasMedia);
   }
 
-  const systemPrompt = `Eres el motor de IA de Perry Co-Pilot, un asistente inteligente para grupos de mantenimiento técnico en WhatsApp donde participan técnicos y clientes.
-Tu función es analizar un mensaje y clasificarlo con precisión.
+  const systemPrompt = `Eres el motor de IA analítico de Perry Intelligence para grupos de operaciones, ingeniería y mantenimiento en WhatsApp.
+Tu misión es extraer y estructurar el contexto operativo de cada mensaje compartido por el equipo técnico y supervisores.
 
 DATOS DEL ENTORNO:
-- Remitente: "${senderName || 'Usuario'}"
-- Orden de Trabajo (OT) asignada al grupo: "${groupWorkOrderFolio || 'Sin asignar'}"
+- Remitente: "${senderName || 'Personal Operativo'}"
+- Orden de Trabajo (OT) predeterminada del grupo: "${groupWorkOrderFolio || 'Sin asignar'}"
 - Hora del mensaje: "${formattedTime || 'No especificada'}"
+- Contiene archivos/fotos: ${hasMedia ? 'SÍ' : 'NO'}
 
 REGLAS DE CLASIFICACIÓN Y EXTRACCIÓN:
-1. "messageType": Clasifica estrictamente el mensaje en uno de estos tres valores:
-   - "WORK_REPORT": Reportes de trabajo ejecutados por técnicos (mantenimiento, reparaciones, inspecciones, cambio de refacciones o fotos/evidencias de trabajo). Si el mensaje contiene fotos o es un mensaje técnico, DEBE SER "WORK_REPORT".
-   - "CLIENT_REQUEST": Peticiones del cliente o de usuarios solicitando atención a un equipo o reportando una falla (ej: "Favor de checar equipo C-10", "La grúa 2 tiene ruido", "Revisar aire acondicionado").
-   - "SOCIAL_CHAT": ÚNICAMENTE para saludos explícitos ("Buenos días", "Buenas tardes", "Hola a todos"), agradecimientos ("Gracias", "Excelente"), confirmaciones de chat ("Ok", "Enterado", "De acuerdo"), o charla social sin evidencia ni fotos. ¡UN MENSAJE CON FOTOGRAFÍA O SIN TEXTO NUNCA ES SOCIAL_CHAT!
+1. "messageType": Clasifica el mensaje en UNA de las siguientes categorías operativas:
+   - "WORK_REPORT": Reportes de avance de trabajo, bitácora de actividades, mantenimientos preventivos/correctivos, inspecciones técnicas o fotos de evidencia en obra.
+   - "ISSUE_ALERT": Reporte de fallas de equipos, descomposturas, paros de línea, alertas de seguridad o bloqueos en sitio.
+   - "MATERIAL_REQUEST": Solicitud o reporte de refacciones, consumibles, herramientas, compras, combustible o materiales.
+   - "COORDINATION": Coordinación logística, confirmación de horarios, asignación de cuadrillas, traslados o avisos de llegada/salida de sitio.
+   - "CLIENT_REQUEST": Peticiones de clientes o jefes solicitando atención especial a un equipo o área.
+   - "GENERAL_OPERATIONAL": Cualquier otra comunicación de trabajo relevante que no encaje en las anteriores.
+   - "SOCIAL_CHAT": ÚNICAMENTE para saludos aislados ("buenos días", "hola"), agradecimientos breves o charla no operativa. (¡Si contiene fotos o datos técnicos, NUNCA es SOCIAL_CHAT!).
 
-2. "manPowerEquipo": Busca el código de equipo o matrícula (ejemplos: "EQ-0105", "G-02", "C-10", "#EQUIPO 102", "GRÚA 3", "EQ 04", "A20 Y A21", "A-20"). Si NO se menciona ningún código ni matrícula de equipo, establece manPowerEquipo en null.
-3. "workOrderFolio": Si el mensaje menciona una OT (ej: "S06447", "OT-1234"), úsala. De lo contrario, usa la OT asignada al grupo ("${groupWorkOrderFolio || ''}").
-4. "title": Un título breve (máx 60 caracteres) que resuma la actividad o petición.
-5. "weekendNotes": Descripción completa del mensaje u observaciones.
-6. "equipmentStatus": Debe ser uno de: "OPERATIVO", "DEGRADADO", "FUERA_DE_SERVICIO" o null si no se especifica.
-7. "parts": Arreglo de refacciones/materiales mencionados. Estructura: [{"name": string, "quantity": number, "providerType": "COTIZAR" | "CLIENTE"}].
-8. "isComplete": boolean. 
-   - Para "WORK_REPORT": Debe ser false SI Y SOLO SI "manPowerEquipo" es null o vacío.
-   - Para "CLIENT_REQUEST" y "SOCIAL_CHAT": Debe ser true (no debe marcar falta de información).
-9. "missingFields": Si "messageType" es "WORK_REPORT" y "manPowerEquipo" es null, incluye ["manPowerEquipo"]. De lo contrario, arreglo vacío [].
+2. "manPowerEquipo": Identifica cualquier código, número o matrícula de equipo/maquinaria (ejemplos: "EQ-0105", "G-02", "C-10", "A-20", "GRÚA 3", "PLATAFORMA 4", "COMPRESOR 2"). Si no se menciona, retorna null.
+3. "workOrderFolio": Si el mensaje menciona una OT (ej: "S06447", "OT-1020", "FOLIO 554"), extráela. De lo contrario, si existe OT predeterminada ("${groupWorkOrderFolio || ''}"), úsala.
+4. "title": Resumen ejecutivo conciso de 1 línea (máx 60 caracteres).
+5. "summary": Explicación breve de 1 o 2 oraciones del contenido y contexto.
+6. "weekendNotes": Descripción completa de las observaciones o texto del mensaje.
+7. "equipmentStatus": "OPERATIVO", "FUERA_DE_SERVICIO", "DEGRADADO" o null.
+8. "parts": Arreglo de refacciones/materiales identificados: [{"name": string, "quantity": number, "providerType": "COTIZAR" | "CLIENTE"}].
+9. "tags": Arreglo de palabras clave relevantes (ej: ["mantenimiento", "falla_electrica", "bomba", "llegada_sitio", "evidencia_foto"]).
+10. "isOperationalEvent": boolean. true para cualquier mensaje que aporte valor operativo, técnico o logístico. false solo si es puramente social/irrelevante.
+11. "isComplete": boolean (siempre true para ingestión continua).
+12. "missingFields": siempre [].
 
-DEBES RESPONDER ÚNICAMENTE CON UN OBJETO JSON VÁLIDO CON EL SIGUIENTE FORMATO (SIN MARKDOWN NI TEXTO EXTRA):
+RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
 {
-  "messageType": "WORK_REPORT" | "CLIENT_REQUEST" | "SOCIAL_CHAT",
+  "messageType": "WORK_REPORT" | "ISSUE_ALERT" | "MATERIAL_REQUEST" | "COORDINATION" | "CLIENT_REQUEST" | "GENERAL_OPERATIONAL" | "SOCIAL_CHAT",
   "manPowerEquipo": string | null,
   "workOrderFolio": string | null,
   "title": string,
+  "summary": string | null,
   "weekendNotes": string | null,
   "equipmentStatus": "OPERATIVO" | "DEGRADADO" | "FUERA_DE_SERVICIO" | null,
   "suggestedAction": string | null,
@@ -65,11 +73,13 @@ DEBES RESPONDER ÚNICAMENTE CON UN OBJETO JSON VÁLIDO CON EL SIGUIENTE FORMATO 
   "parts": [
     { "name": string, "quantity": number, "providerType": "COTIZAR" | "CLIENTE" }
   ],
-  "isComplete": boolean,
-  "missingFields": string[]
+  "tags": string[],
+  "isOperationalEvent": boolean,
+  "isComplete": true,
+  "missingFields": []
 }`;
 
-  const prompt = `${systemPrompt}\n\nMENSAJE EN WHATSAPP:\n"${messageText}"`;
+  const prompt = `${systemPrompt}\n\nMENSAJE RECIBIDO EN WHATSAPP:\n"${messageText || (hasMedia ? '[Fotografía o documento de evidencia compartida]' : '')}"`;
 
   try {
     const res = await fetch(
@@ -96,14 +106,14 @@ DEBES RESPONDER ÚNICAMENTE CON UN OBJETO JSON VÁLIDO CON EL SIGUIENTE FORMATO 
 
     if (!res.ok) {
       console.warn('Gemini API respondió error. Usando fallback parser.');
-      return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime);
+      return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime, hasMedia);
     }
 
     const jsonResponse = await res.json();
     const rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!rawText) {
-      return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime);
+      return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime, hasMedia);
     }
 
     const parsed: GeminiParsedReport = JSON.parse(rawText);
@@ -112,35 +122,26 @@ DEBES RESPONDER ÚNICAMENTE CON UN OBJETO JSON VÁLIDO CON EL SIGUIENTE FORMATO 
     }
 
     if (!parsed.messageType) {
-      parsed.messageType = 'WORK_REPORT';
+      parsed.messageType = hasMedia ? 'WORK_REPORT' : 'GENERAL_OPERATIONAL';
     }
 
-    if (parsed.messageType === 'SOCIAL_CHAT') {
-      parsed.manPowerEquipo = null;
-      parsed.isComplete = true;
-      parsed.missingFields = [];
-    } else if (parsed.messageType === 'CLIENT_REQUEST') {
-      parsed.isComplete = true;
-      parsed.missingFields = [];
-      if (parsed.manPowerEquipo) {
-        parsed.manPowerEquipo = parsed.manPowerEquipo.trim().toUpperCase();
-      }
-    } else {
-      if (!parsed.manPowerEquipo || !parsed.manPowerEquipo.trim()) {
-        parsed.manPowerEquipo = null;
-        parsed.isComplete = false;
-        parsed.missingFields = ['manPowerEquipo'];
-      } else {
-        parsed.manPowerEquipo = parsed.manPowerEquipo.trim().toUpperCase();
-        parsed.isComplete = true;
-        parsed.missingFields = [];
-      }
+    if (parsed.manPowerEquipo) {
+      parsed.manPowerEquipo = parsed.manPowerEquipo.trim().toUpperCase();
+    }
+
+    parsed.isComplete = true;
+    parsed.missingFields = [];
+    if (parsed.isOperationalEvent === undefined) {
+      parsed.isOperationalEvent = parsed.messageType !== 'SOCIAL_CHAT';
+    }
+    if (!parsed.tags) {
+      parsed.tags = [];
     }
 
     return parsed;
   } catch (err) {
     console.error('Error procesando respuesta de Gemini:', err);
-    return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime);
+    return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime, hasMedia);
   }
 }
 
@@ -148,12 +149,13 @@ DEBES RESPONDER ÚNICAMENTE CON UN OBJETO JSON VÁLIDO CON EL SIGUIENTE FORMATO 
 function fallbackRegexParser(
   text: string,
   groupFolio?: string | null,
-  formattedTime?: string | null
+  formattedTime?: string | null,
+  hasMedia?: boolean
 ): GeminiParsedReport {
-  const lower = text.toLowerCase().trim();
+  const lower = (text || '').toLowerCase().trim();
 
   // Social greetings must have non-empty text AND start with explicit greeting words
-  const isSocial = lower.length > 0 && /^(buenos días|buenos dias|buenas tardes|buenas noches|hola|gracias|saludos)/i.test(lower) && lower.length < 40;
+  const isSocial = !hasMedia && lower.length > 0 && /^(buenos días|buenos dias|buenas tardes|buenas noches|hola|saludos|gracias|enterado|ok|de acuerdo)$/i.test(lower);
 
   if (isSocial) {
     return {
@@ -161,48 +163,69 @@ function fallbackRegexParser(
       manPowerEquipo: null,
       workOrderFolio: groupFolio || null,
       title: 'Saludo / Chat Social',
+      summary: 'Mensaje de saludo o confirmación rápida',
       weekendNotes: text,
       equipmentStatus: null,
       suggestedAction: null,
       startTime: formattedTime || null,
       endTime: null,
       parts: [],
+      tags: ['social'],
+      isOperationalEvent: false,
       isComplete: true,
       missingFields: [],
     };
   }
 
-  const isClientReq = lower.includes('favor de') || lower.includes('apóyennos') || lower.includes('apoyennos') || lower.includes('revisar') || lower.includes('checar');
+  // Check for issues / failures
+  const isIssue = /falla|daño|descompuesto|fuga|ruido|fuera de servicio|calentamiento|tirando aceite|alarma/i.test(lower);
+  // Check for material / parts
+  const isMaterial = /refacción|refaccion|material|aceite|filtro|manguera|compra|tornillo|solicito/i.test(lower);
+  // Check for coordination
+  const isCoord = /llegando|en camino|salida|turno|cuadrilla|hora de llegada|traslado|personal/i.test(lower);
 
   // Regex to match EQ-1234, EQ1234, G-01, C-10, A20, A-20, EQUIPO 102, #EQ-01
-  const equipoMatch = text.match(/(?:#|\bEQUIPO\b|\bEQ-?|\bG-|\bC-|\bA-?)\s*([A-Z0-9-]{1,10}(?:\s*Y\s*[A-Z0-9-]{1,10})?)/i);
+  const equipoMatch = (text || '').match(/(?:#|\bEQUIPO\b|\bEQ-?|\bG-|\bC-|\bA-?)\s*([A-Z0-9-]{1,10}(?:\s*Y\s*[A-Z0-9-]{1,10})?)/i);
   let equipo: string | null = null;
   if (equipoMatch) {
     equipo = equipoMatch[0].toUpperCase().replace(/^#/, '').trim();
   }
 
-  const folioMatch = text.match(/\b(S\d{5}|V\d{3,5}|OT-?\d+)\b/i);
+  const folioMatch = (text || '').match(/\b(S\d{5}|V\d{3,5}|OT-?\d+)\b/i);
   const folio = folioMatch ? folioMatch[1].toUpperCase() : groupFolio || null;
 
-  const messageType = isClientReq ? 'CLIENT_REQUEST' : 'WORK_REPORT';
-  const isComplete = messageType === 'CLIENT_REQUEST' ? true : Boolean(equipo);
+  let messageType: GeminiParsedReport['messageType'] = 'GENERAL_OPERATIONAL';
+  if (isIssue) messageType = 'ISSUE_ALERT';
+  else if (isMaterial) messageType = 'MATERIAL_REQUEST';
+  else if (isCoord) messageType = 'COORDINATION';
+  else if (hasMedia || equipo) messageType = 'WORK_REPORT';
+
+  const tags: string[] = [];
+  if (hasMedia) tags.push('evidencia_multimedia');
+  if (equipo) tags.push(`equipo_${equipo.toLowerCase().replace(/\s+/g, '_')}`);
+  if (isIssue) tags.push('alerta_falla');
+  if (isMaterial) tags.push('materiales');
 
   return {
     messageType,
     manPowerEquipo: equipo,
     workOrderFolio: folio,
-    title: text.length > 50 ? `${text.slice(0, 50)}...` : (text || 'Evidencia de trabajo'),
-    weekendNotes: text || 'Evidencia de trabajo enviada por WhatsApp',
-    equipmentStatus: text.toLowerCase().includes('fuera de servicio') 
+    title: text.length > 50 ? `${text.slice(0, 50)}...` : (text || (hasMedia ? 'Evidencia fotográfica' : 'Registro operativo')),
+    summary: text || (hasMedia ? 'Evidencia fotográfica compartida en grupo' : 'Mensaje operativo'),
+    weekendNotes: text || (hasMedia ? 'Evidencia fotográfica compartida en grupo' : 'Registro operativo'),
+    equipmentStatus: lower.includes('fuera de servicio') 
       ? 'FUERA_DE_SERVICIO' 
-      : text.toLowerCase().includes('degradado') 
+      : lower.includes('degradado') 
       ? 'DEGRADADO' 
       : 'OPERATIVO',
     suggestedAction: null,
     startTime: formattedTime || null,
     endTime: null,
     parts: [],
-    isComplete,
-    missingFields: isComplete ? [] : ['manPowerEquipo'],
+    tags,
+    isOperationalEvent: true,
+    isComplete: true,
+    missingFields: [],
   };
 }
+
