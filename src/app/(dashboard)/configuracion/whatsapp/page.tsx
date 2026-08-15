@@ -298,8 +298,8 @@ export default function WhatsappConfigPage() {
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs text-slate-400 font-medium">Grupos Conectados</span>
-              <div className="text-xl font-bold text-white">{stats.totalGroups}</div>
+              <span className="text-xs text-slate-400 font-medium">Grupos Operativos</span>
+              <div className="text-xl font-bold text-white">{groups.filter(g => g.groupId.endsWith('@g.us')).length}</div>
             </div>
           </div>
 
@@ -412,7 +412,8 @@ export default function WhatsappConfigPage() {
       {/* TAB 1: GRUPOS VINCULADOS */}
       {activeTab === 'groups' && (
         <div className="space-y-4">
-          {groups.length === 0 ? (
+          {/* ── GRUPOS OPERATIVOS (@g.us) ── */}
+          {groups.filter(g => g.groupId.endsWith('@g.us')).length === 0 ? (
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-12 text-center max-w-md mx-auto space-y-4">
               <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-emerald-400">
                 <Bot className="w-6 h-6" />
@@ -432,7 +433,7 @@ export default function WhatsappConfigPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {groups.map((g) => (
+              {groups.filter(g => g.groupId.endsWith('@g.us')).map((g) => (
                 <div 
                   key={g.id}
                   className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-5 transition-all shadow-md group relative flex flex-col justify-between hover:shadow-emerald-500/10 hover:shadow-xl"
@@ -533,6 +534,50 @@ export default function WhatsappConfigPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── CONVERSACIONES DIRECTAS (1 a 1 — @c.us) ── */}
+          {groups.filter(g => !g.groupId.endsWith('@g.us')).length > 0 && (
+            <div className="space-y-3 mt-8">
+              <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+                <div className="p-2 rounded-lg bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Conversaciones Directas (1 a 1)</h3>
+                  <p className="text-xs text-slate-400">Contactos que han escrito directamente al bot de Perry por chat privado.</p>
+                </div>
+                <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                  {groups.filter(g => !g.groupId.endsWith('@g.us')).length}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {groups.filter(g => !g.groupId.endsWith('@g.us')).map((c) => (
+                  <div
+                    key={c.id}
+                    className="bg-slate-900/60 border border-slate-800 hover:border-pink-500/30 rounded-xl p-4 transition-all flex items-center gap-3"
+                  >
+                    <div className="p-2 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 shrink-0">
+                      <MessageCircle className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-sm font-bold text-white truncate">
+                        {c.groupName || c.groupId.replace('@c.us', '')}
+                      </h4>
+                      <span className="text-[11px] font-mono text-slate-500 block truncate">{c.groupId}</span>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-[10px] text-slate-400">{c.messageCount ?? 0} mensajes</span>
+                        <span className="text-[10px] text-slate-500">{c.lastActivityAt ? safeFormatDateTime(c.lastActivityAt) : 'Sin actividad'}</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/10 text-pink-400 border border-pink-500/20 shrink-0">
+                      Auto-Reply
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

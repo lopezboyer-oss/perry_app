@@ -218,31 +218,35 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
 
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center space-y-4">
-        <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin" />
-        <p className="text-sm text-slate-400">Cargando Inteligencia Operativa del grupo...</p>
+      <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
+        <div className="min-h-[70vh] flex flex-col items-center justify-center space-y-4">
+          <RefreshCw className="w-8 h-8 text-emerald-400 animate-spin" />
+          <p className="text-sm text-slate-400">Cargando Inteligencia Operativa del grupo...</p>
+        </div>
       </div>
     );
   }
 
   if (!group) {
     return (
-      <div className="p-12 text-center bg-slate-900 border border-slate-800 rounded-3xl space-y-4">
-        <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
-        <h2 className="text-xl font-bold text-white">Grupo no encontrado</h2>
-        <p className="text-sm text-slate-400">El grupo solicitado no existe o fue desvinculado.</p>
-        <Link 
-          href="/configuracion/whatsapp"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Regresar al listado de grupos
-        </Link>
+      <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
+        <div className="p-12 text-center bg-slate-900 border border-slate-800 rounded-3xl space-y-4 max-w-md mx-auto mt-20">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
+          <h2 className="text-xl font-bold text-white">Grupo no encontrado</h2>
+          <p className="text-sm text-slate-400">El grupo solicitado no existe o fue desvinculado.</p>
+          <Link 
+            href="/configuracion/whatsapp"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Regresar al listado de grupos
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 space-y-6">
       {/* NAVEGACIÓN DE RETORNO Y HEADER */}
       <div className="space-y-4">
         <Link 
