@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const isPrivateChat = !payload.groupId.endsWith('@g.us');
 
     if (isPrivateChat) {
-      const privateAutoReply = `¡Hola! 🤖 Soy *Perry*, el asistente de inteligencia operativa del consorcio.\n\nActualmente me encuentro en proceso de entrenamiento y conociendo cómo están operando las empresas a través de los grupos de trabajo, por lo que en este momento no estoy en posibilidad de responderte de manera personalizada por este chat privado.\n\n¡Pero te prometo que muy próximamente sí podré hacerlo y podré ayudarte de manera directa! 🚀 Mientras tanto, continuaré recopilando y estructurando los reportes y avances en los grupos de operaciones.\n\n¡Muchas gracias por escribir y que tengas una excelente jornada! 👷🏽`;
+      const privateAutoReply = `¡Hola! 🤖 Soy *Perry*, tu copiloto de inteligencia operativa.\n\nEn este momento me encuentro en fase de entrenamiento dentro de los grupos de trabajo, pero muy pronto podré asistirte de forma directa por este medio.\n\n¡Gracias por escribir! 🚀`;
 
       // 1) Enviar respuesta cordial y profesional al usuario en privado por escrito
       await sendWhatsappGroupMessage({
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
       // 2) Enviar nota de voz con el mensaje hablado de Perry
       const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
-      const welcomeAudioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.mp3`;
+      const welcomeAudioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.wav`;
 
       try {
         await sendWhatsappVoiceNote({
