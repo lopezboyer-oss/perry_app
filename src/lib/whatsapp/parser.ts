@@ -6,8 +6,9 @@ export async function parseWhatsappMessageWithGemini(params: {
   groupWorkOrderFolio?: string | null;
   timestamp?: number; // epoch ms
   hasMedia?: boolean;
+  audioUrl?: string | null;
 }): Promise<GeminiParsedReport> {
-  const { messageText, senderName, groupWorkOrderFolio, timestamp, hasMedia } = params;
+  const { messageText, senderName, groupWorkOrderFolio, timestamp, hasMedia, audioUrl } = params;
 
   // Determine timestamp formatted in HH:MM (Local Mexico time America/Mexico_City)
   let formattedTime: string | null = null;
@@ -27,36 +28,75 @@ export async function parseWhatsappMessageWithGemini(params: {
     return fallbackRegexParser(messageText, groupWorkOrderFolio, formattedTime, hasMedia);
   }
 
+  // Pre-download audio buffer if an audioUrl is present for native multimodal audio transcription
+  let audioPart: { inlineData: { mimeType: string; data: string } } | null = null;
+  if (audioUrl) {
+    try {
+      const audioRes = await fetch(audioUrl);
+      if (audioRes.ok) {
+        const arrayBuffer = await audioRes.arrayBuffer();
+        const base64Data = Buffer.from(arrayBuffer).toString('base64');
+        const rawContentType = audioRes.headers.get('content-type') || '';
+        
+        let mimeType = 'audio/ogg';
+        if (rawContentType.includes('audio/')) {
+          mimeType = rawContentType.split(';')[0].trim();
+        } else if (audioUrl.endsWith('.mp3')) {
+          mimeType = 'audio/mp3';
+        } else if (audioUrl.endsWith('.wav')) {
+          mimeType = 'audio/wav';
+        } else if (audioUrl.endsWith('.m4a') || audioUrl.endsWith('.aac')) {
+          mimeType = 'audio/mp4';
+        }
+
+        audioPart = {
+          inlineData: {
+            mimeType,
+            data: base64Data,
+          },
+        };
+      }
+    } catch (audioErr) {
+      console.error('[WHATSAPP GEMINI AUDIO] Error descargando archivo de audio para Gemini:', audioErr);
+    }
+  }
+
   const systemPrompt = `Eres el motor de IA analítico de Perry Intelligence para grupos de operaciones, ingeniería y mantenimiento en WhatsApp.
-Tu misión es extraer y estructurar el contexto operativo de cada mensaje compartido por el equipo técnico y supervisores.
+Tu misión es extraer y estructurar el contexto operativo de cada mensaje compartido por el equipo técnico y supervisores (incluyendo notas de voz y audios de WhatsApp).
 
 DATOS DEL ENTORNO:
 - Remitente: "${senderName || 'Personal Operativo'}"
 - Orden de Trabajo (OT) predeterminada del grupo: "${groupWorkOrderFolio || 'Sin asignar'}"
 - Hora del mensaje: "${formattedTime || 'No especificada'}"
 - Contiene archivos/fotos: ${hasMedia ? 'SÍ' : 'NO'}
+- Es nota de voz / audio: ${audioPart ? 'SÍ (ADJUNTO)' : 'NO'}
 
 REGLAS DE CLASIFICACIÓN Y EXTRACCIÓN:
-1. "messageType": Clasifica el mensaje en UNA de las siguientes categorías operativas:
-   - "WORK_REPORT": Reportes de avance de trabajo, bitácora de actividades, mantenimientos preventivos/correctivos, inspecciones técnicas o fotos de evidencia en obra.
-   - "ISSUE_ALERT": Reporte de fallas de equipos, descomposturas, paros de línea, alertas de seguridad o bloqueos en sitio.
-   - "MATERIAL_REQUEST": Solicitud o reporte de refacciones, consumibles, herramientas, compras, combustible o materiales.
-   - "COORDINATION": Coordinación logística, confirmación de horarios, asignación de cuadrillas, traslados o avisos de llegada/salida de sitio.
-   - "CLIENT_REQUEST": Peticiones de clientes o jefes solicitando atención especial a un equipo o área.
-   - "GENERAL_OPERATIONAL": Cualquier otra comunicación de trabajo relevante que no encaje en las anteriores.
-   - "SOCIAL_CHAT": ÚNICAMENTE para saludos aislados ("buenos días", "hola"), agradecimientos breves o charla no operativa. (¡Si contiene fotos o datos técnicos, NUNCA es SOCIAL_CHAT!).
+1. AUDIO / NOTAS DE VOZ:
+   - Si se adjunta un audio, escúchalo con atención y transcríbelo palabra por palabra en el campo "transcription".
+   - Utiliza la información hablada para extraer la OT, el equipo, fallas, refacciones y estatus exactamente igual que en un mensaje de texto.
 
-2. "manPowerEquipo": Identifica cualquier código, número o matrícula de equipo/maquinaria (ejemplos: "EQ-0105", "G-02", "C-10", "A-20", "GRÚA 3", "PLATAFORMA 4", "COMPRESOR 2"). Si no se menciona, retorna null.
-3. "workOrderFolio": Si el mensaje menciona una OT (ej: "S06447", "OT-1020", "FOLIO 554"), extráela. De lo contrario, si existe OT predeterminada ("${groupWorkOrderFolio || ''}"), úsala.
-4. "title": Resumen ejecutivo conciso de 1 línea (máx 60 caracteres).
-5. "summary": Explicación breve de 1 o 2 oraciones del contenido y contexto.
-6. "weekendNotes": Descripción completa de las observaciones o texto del mensaje.
-7. "equipmentStatus": "OPERATIVO", "FUERA_DE_SERVICIO", "DEGRADADO" o null.
-8. "parts": Arreglo de refacciones/materiales identificados: [{"name": string, "quantity": number, "providerType": "COTIZAR" | "CLIENTE"}].
-9. "tags": Arreglo de palabras clave relevantes (ej: ["mantenimiento", "falla_electrica", "bomba", "llegada_sitio", "evidencia_foto"]).
-10. "isOperationalEvent": boolean. true para cualquier mensaje que aporte valor operativo, técnico o logístico. false solo si es puramente social/irrelevante.
-11. "isComplete": boolean (siempre true para ingestión continua).
-12. "missingFields": siempre [].
+2. "messageType": Clasifica en:
+   - "WORK_REPORT": Reportes de avance, bitácora de actividades, mantenimientos preventivos/correctivos, inspecciones técnicas, notas de voz de trabajo o fotos de evidencia.
+   - "ISSUE_ALERT": Fallas de equipos, descomposturas, paros de línea, alertas de seguridad o bloqueos en sitio.
+   - "MATERIAL_REQUEST": Solicitud o reporte de refacciones, consumibles, herramientas, compras o materiales.
+   - "COORDINATION": Coordinación logística, horarios, cuadrillas, traslados o llegadas/salidas.
+   - "CLIENT_REQUEST": Peticiones de clientes o jefes sobre atención a un equipo/área.
+   - "GENERAL_OPERATIONAL": Cualquier otra comunicación relevante de trabajo.
+   - "SOCIAL_CHAT": ÚNICAMENTE para saludos aislados ("buenos días", "hola") o charla no operativa sin datos técnicos ni fotos.
+
+3. "manPowerEquipo": Identifica cualquier código, número o matrícula de equipo/maquinaria (ej: "EQ-0105", "G-02", "C-10", "A-20", "GRÚA 3", "COMPRESOR 2"). Si no se menciona, retorna null.
+4. "workOrderFolio": Si se menciona una OT (ej: "S06447", "OT-1020"), extráela. Si no, usa la OT predeterminada "${groupWorkOrderFolio || ''}".
+5. "title": Resumen ejecutivo conciso de 1 línea (máx 60 caracteres).
+6. "summary": Explicación breve de 1 o 2 oraciones del contenido y contexto.
+7. "transcription": Transcripción exacta del audio si fue nota de voz, o null si fue solo texto.
+8. "weekendNotes": Descripción completa del reporte o texto transcrito.
+9. "equipmentStatus": "OPERATIVO", "FUERA_DE_SERVICIO", "DEGRADADO" o null.
+10. "parts": Arreglo de refacciones/materiales identificados: [{"name": string, "quantity": number, "providerType": "COTIZAR" | "CLIENTE"}].
+11. "tags": Arreglo de palabras clave relevantes (ej: ["mantenimiento", "falla_electrica", "nota_de_voz", "evidencia_foto"]).
+12. "isOperationalEvent": boolean (true para cualquier mensaje o audio que aporte valor operativo/técnico).
+13. "isComplete": boolean (siempre true).
+14. "missingFields": siempre [].
 
 RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
 {
@@ -65,6 +105,7 @@ RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
   "workOrderFolio": string | null,
   "title": string,
   "summary": string | null,
+  "transcription": string | null,
   "weekendNotes": string | null,
   "equipmentStatus": "OPERATIVO" | "DEGRADADO" | "FUERA_DE_SERVICIO" | null,
   "suggestedAction": string | null,
@@ -79,7 +120,13 @@ RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
   "missingFields": []
 }`;
 
-  const prompt = `${systemPrompt}\n\nMENSAJE RECIBIDO EN WHATSAPP:\n"${messageText || (hasMedia ? '[Fotografía o documento de evidencia compartida]' : '')}"`;
+  const promptText = `${systemPrompt}\n\nMENSAJE RECIBIDO EN WHATSAPP:\n"${messageText || (audioPart ? '[Nota de voz / Audio adjunto para transcribir y estructurar]' : hasMedia ? '[Fotografía o documento de evidencia compartida]' : '')}"`;
+
+  const contentParts: any[] = [];
+  if (audioPart) {
+    contentParts.push(audioPart);
+  }
+  contentParts.push({ text: promptText });
 
   try {
     const res = await fetch(
@@ -93,7 +140,7 @@ RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ text: prompt }],
+              parts: contentParts,
             },
           ],
           generationConfig: {
@@ -122,7 +169,7 @@ RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
     }
 
     if (!parsed.messageType) {
-      parsed.messageType = hasMedia ? 'WORK_REPORT' : 'GENERAL_OPERATIONAL';
+      parsed.messageType = hasMedia || audioPart ? 'WORK_REPORT' : 'GENERAL_OPERATIONAL';
     }
 
     if (parsed.manPowerEquipo) {
@@ -136,6 +183,9 @@ RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
     }
     if (!parsed.tags) {
       parsed.tags = [];
+    }
+    if (audioPart && !parsed.tags.includes('nota_de_voz')) {
+      parsed.tags.push('nota_de_voz');
     }
 
     return parsed;

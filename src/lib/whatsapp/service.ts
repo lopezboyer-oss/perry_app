@@ -100,3 +100,49 @@ export async function sendWhatsappGroupMessage(params: {
     return false;
   }
 }
+
+export async function sendWhatsappVoiceNote(params: {
+  groupId: string;
+  audioUrl: string;
+  replyToMessageId?: string;
+}): Promise<boolean> {
+  const apiUrl = process.env.WHATSAPP_API_URL;
+  const apiToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_API_TOKEN;
+  const instanceId = process.env.WHATSAPP_INSTANCE_ID;
+
+  if (!apiUrl || !apiToken) {
+    console.log(`[WHATSAPP BOT MOCK VOICE] Enviando nota de voz a ${params.groupId}: ${params.audioUrl}`);
+    return true;
+  }
+
+  try {
+    const url = buildUltraMsgUrl(apiUrl, instanceId, 'messages/voice');
+
+    const bodyParams = new URLSearchParams();
+    bodyParams.append('token', apiToken);
+    bodyParams.append('to', params.groupId);
+    bodyParams.append('audio', params.audioUrl);
+    if (params.replyToMessageId) {
+      bodyParams.append('msgId', params.replyToMessageId);
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: bodyParams.toString(),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('UltraMsg Voice API Error:', res.status, errText);
+    }
+
+    return res.ok;
+  } catch (error) {
+    console.error('Error enviando nota de voz a WhatsApp:', error);
+    return false;
+  }
+}
+

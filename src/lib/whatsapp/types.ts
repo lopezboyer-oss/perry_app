@@ -6,7 +6,7 @@ export interface IncomingWhatsappPayload {
   senderName?: string;
   messageText?: string;
   mediaUrls?: string[];
-  messageType?: 'text' | 'image' | 'audio' | 'document' | 'video' | 'sticker';
+  messageType?: 'text' | 'image' | 'audio' | 'ptt' | 'document' | 'video' | 'sticker';
   timestamp?: number; // Epoch seconds or ms
 }
 
@@ -17,11 +17,12 @@ export interface ExtractedPart {
 }
 
 export interface GeminiParsedReport {
-  messageType: 'WORK_REPORT' | 'ISSUE_ALERT' | 'MATERIAL_REQUEST' | 'COORDINATION' | 'CLIENT_REQUEST' | 'GENERAL_OPERATIONAL' | 'SOCIAL_CHAT';
+  messageType: 'WORK_REPORT' | 'ISSUE_ALERT' | 'MATERIAL_REQUEST' | 'COORDINATION' | 'CLIENT_REQUEST' | 'GENERAL_OPERATIONAL' | 'SOCIAL_CHAT' | 'DIRECT_PRIVATE_CHAT';
   manPowerEquipo: string | null; // e.g. "EQ-0105", "G-02", "C-10"
   workOrderFolio: string | null; // e.g. "S06447"
   title: string;
   summary: string | null;
+  transcription?: string | null; // Verbatim audio transcription from voice notes
   weekendNotes: string | null;
   equipmentStatus: 'OPERATIVO' | 'FUERA_DE_SERVICIO' | 'DEGRADADO' | null;
   suggestedAction: string | null;
@@ -33,4 +34,5 @@ export interface GeminiParsedReport {
   isComplete: boolean;
   missingFields: string[];
 }
+
 

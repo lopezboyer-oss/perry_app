@@ -40,7 +40,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'Already processed (deduplicated)' }, { status: 200 });
     }
 
-    // 3. Group mapping lookup & Auto-discovery
+    // 3. Manejo de Mensajes Privados Directos (1 a 1 - @c.us o sin @g.us)
+    const isPrivateChat = !payload.groupId.endsWith('@g.us');
+
+    if (isPrivateChat) {
+      const privateAutoReply = `¡Hola! 🤖 Soy *Perry*, el asistente de inteligencia operativa del consorcio.\n\nActualmente me encuentro en proceso de entrenamiento y conociendo cómo están operando las empresas a través de los grupos de trabajo, por lo que en este momento no estoy en posibilidad de responderte de manera personalizada por este chat privado.\n\n¡Pero te prometo que muy próximamente sí podré hacerlo y podré ayudarte de manera directa! 🚀 Mientras tanto, continuaré recopilando y estructurando los reportes y avances en los grupos de operaciones.\n\n¡Muchas gracias por escribir y que tengas una excelente jornada! 👷🏽`;
+
+      // Enviar respuesta cordial y profesional al usuario en privado
+      await sendWhatsappGroupMessage({
+        groupId: payload.groupId,
+        messageText: privateAutoReply,
+        replyToMessageId: payload.messageId,
+      });
+
+      // Registrar el contacto privado en logs para auditoría sin crear pseudo-grupos
+      await prisma.whatsappMessageLog.create({
+        data: {
+          messageId: payload.messageId,
+          groupId: payload.groupId,
+          senderPhone: payload.senderPhone,
+          senderName: payload.senderName || 'Contacto Directo',
+          rawMessage: payload.messageText || '[Mensaje privado 1 a 1]',
+          mediaUrls: payload.mediaUrls && payload.mediaUrls.length > 0 ? JSON.stringify(payload.mediaUrls) : null,
+          parsedData: JSON.stringify({
+            messageType: 'DIRECT_PRIVATE_CHAT',
+            title: 'Mensaje Privado 1 a 1',
+            summary: payload.messageText || 'Contacto directo en chat privado',
+            tags: ['chat_privado', 'auto_reply'],
+            isOperationalEvent: false,
+          }),
+          activityId: null,
+          status: 'AUTO_REPLIED',
+        },
+      });
+
+      return NextResponse.json({
+        status: 'Direct private message handled with auto-reply',
+        sender: payload.senderPhone,
+      });
+    }
+
+    // 4. Group mapping lookup & Auto-discovery (Solo para grupos reales @g.us)
     let groupMap = await prisma.whatsappGroupMapping.findUnique({
       where: { groupId: payload.groupId },
     });
@@ -69,13 +109,15 @@ export async function POST(req: NextRequest) {
     const messageText = payload.messageText?.trim() || '';
     const mediaUrls = payload.mediaUrls || [];
     const hasMedia = mediaUrls.length > 0;
+    const isAudio = payload.messageType === 'audio' || payload.messageType === 'ptt' || (mediaUrls.length > 0 && /\.(ogg|mp3|wav|m4a|opus)(\?|$)/i.test(mediaUrls[0]));
+    const audioUrl = isAudio ? mediaUrls[0] : null;
 
     // Check if message is completely empty
-    if (!messageText && !hasMedia) {
+    if (!messageText && !hasMedia && !audioUrl) {
       return NextResponse.json({ status: 'Ignored: Empty message' }, { status: 200 });
     }
 
-    // 4. Intelligent AI Parse with Gemini 2.5 Flash (Análisis informativo de contexto)
+    // 5. Intelligent AI Parse with Gemini 2.5 Flash (Análisis informativo de contexto + Transcripción de Audio)
     const cleanedText = cleanTriggerTags(messageText);
     const parsed = await parseWhatsappMessageWithGemini({
       messageText: cleanedText,
@@ -83,9 +125,20 @@ export async function POST(req: NextRequest) {
       groupWorkOrderFolio: groupMap.workOrderFolio,
       timestamp: payload.timestamp,
       hasMedia,
+      audioUrl,
     });
 
-    // 5. Registro 100% informativo en Supabase (WhatsappMessageLog)
+    // Determine representative raw message
+    let storedRawMessage = messageText;
+    if (parsed.transcription) {
+      storedRawMessage = `🎙️ [Nota de voz]: "${parsed.transcription}"`;
+    } else if (!storedRawMessage && isAudio) {
+      storedRawMessage = '[Nota de voz procesada]';
+    } else if (!storedRawMessage && hasMedia) {
+      storedRawMessage = '[Evidencia multimedia compartida]';
+    }
+
+    // 6. Registro 100% informativo en Supabase (WhatsappMessageLog)
     // NOTA: No se crea ni se altera ninguna Actividad en Perry App.
     const log = await prisma.whatsappMessageLog.create({
       data: {
@@ -93,7 +146,7 @@ export async function POST(req: NextRequest) {
         groupId: payload.groupId,
         senderPhone: payload.senderPhone,
         senderName: payload.senderName || 'Personal Operativo',
-        rawMessage: messageText || (hasMedia ? '[Evidencia multimedia compartida]' : ''),
+        rawMessage: storedRawMessage,
         mediaUrls: hasMedia ? JSON.stringify(mediaUrls) : null,
         parsedData: JSON.stringify(parsed),
         activityId: null, // Desacoplado de actividades
@@ -101,11 +154,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 6. Verificación si fue invocado explícitamente con @perry
+    // 7. Verificación si fue invocado explícitamente con @perry
     const isExplicitCall = hasExplicitBotCall(messageText, body);
 
     if (isExplicitCall) {
       let replyText = `🤖 *Perry Intelligence*\nMensaje registrado en la base de datos informativa.`;
+      if (parsed.transcription) {
+        replyText += `\n🎙️ Transcripción: _"${parsed.transcription}"_`;
+      }
       if (parsed.manPowerEquipo) {
         replyText += `\n📌 Equipo identificado: *${parsed.manPowerEquipo}*`;
       }
@@ -188,10 +244,22 @@ function normalizeWhatsappPayload(body: any): IncomingWhatsappPayload {
 
   // Type of message
   let msgType: IncomingWhatsappPayload['messageType'] = 'text';
-  if (d.type === 'image' || body.type === 'image' || media.length > 0) msgType = 'image';
-  else if (d.type === 'audio' || body.type === 'audio' || d.type === 'ptt') msgType = 'audio';
-  else if (d.type === 'document' || body.type === 'document') msgType = 'document';
-  else if (d.type === 'video' || body.type === 'video') msgType = 'video';
+  if (d.type === 'audio' || body.type === 'audio' || d.type === 'ptt' || body.type === 'ptt') {
+    msgType = 'audio';
+  } else if (d.type === 'image' || body.type === 'image') {
+    msgType = 'image';
+  } else if (d.type === 'video' || body.type === 'video') {
+    msgType = 'video';
+  } else if (d.type === 'document' || body.type === 'document') {
+    msgType = 'document';
+  } else if (media.length > 0) {
+    const firstUrl = (media[0] || '').toLowerCase();
+    if (/\.(ogg|mp3|wav|m4a|opus)(\?|$)/i.test(firstUrl)) {
+      msgType = 'audio';
+    } else {
+      msgType = 'image';
+    }
+  }
 
   return {
     messageId: String(msgId),
@@ -205,3 +273,4 @@ function normalizeWhatsappPayload(body: any): IncomingWhatsappPayload {
     timestamp: d.time || d.timestamp || Date.now(),
   };
 }
+

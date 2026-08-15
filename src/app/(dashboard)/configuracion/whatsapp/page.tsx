@@ -27,7 +27,9 @@ import {
   Calendar,
   Users,
   Building2,
-  Edit3
+  Edit3,
+  Mic,
+  MessageCircle
 } from 'lucide-react';
 
 interface CompanyInfo {
@@ -217,6 +219,8 @@ export default function WhatsappConfigPage() {
         return <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-semibold flex items-center gap-1"><Calendar className="w-3 h-3" /> Logística / Llegada</span>;
       case 'CLIENT_REQUEST':
         return <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-semibold flex items-center gap-1"><Users className="w-3 h-3" /> Petición Cliente</span>;
+      case 'DIRECT_PRIVATE_CHAT':
+        return <span className="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs font-semibold flex items-center gap-1"><MessageCircle className="w-3 h-3" /> Chat Privado (Auto-Reply)</span>;
       case 'SOCIAL_CHAT':
         return <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-xs font-medium">Social / Saludo</span>;
       default:
@@ -576,6 +580,16 @@ export default function WhatsappConfigPage() {
                         </div>
                       )}
 
+                      {/* Transcripción de Audio Gemini */}
+                      {parsed.transcription && (
+                        <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-xl p-3 text-xs text-emerald-200 space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
+                            <Mic className="w-3.5 h-3.5" /> Transcripción de Audio (Gemini IA):
+                          </div>
+                          <p className="italic">"{parsed.transcription}"</p>
+                        </div>
+                      )}
+
                       {/* Texto original recibido */}
                       {log.rawMessage && (
                         <p className="text-xs text-slate-300 bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 leading-relaxed whitespace-pre-wrap">
@@ -596,18 +610,30 @@ export default function WhatsappConfigPage() {
 
                       {/* Fotos / Archivos multimedia */}
                       {mediaList.length > 0 && (
-                        <div className="flex items-center gap-2 flex-wrap pt-2">
-                          {mediaList.map((url, idx) => (
-                            <a
-                              key={idx}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-16 h-16 rounded-xl overflow-hidden border border-slate-700 bg-slate-800 relative group cursor-pointer hover:border-emerald-400 transition-colors"
-                            >
-                              <img src={url} alt="Evidencia" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                            </a>
-                          ))}
+                        <div className="space-y-2 pt-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {mediaList.map((url, idx) => {
+                              const isAudioFile = /\.(ogg|mp3|wav|m4a|opus)(\?|$)/i.test(url);
+                              if (isAudioFile) {
+                                return (
+                                  <div key={idx} className="w-full max-w-xs bg-slate-950 p-2 rounded-xl border border-slate-800 flex items-center gap-2">
+                                    <audio controls src={url} className="w-full h-8" />
+                                  </div>
+                                );
+                              }
+                              return (
+                                <a
+                                  key={idx}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-16 h-16 rounded-xl overflow-hidden border border-slate-700 bg-slate-800 relative group cursor-pointer hover:border-emerald-400 transition-colors"
+                                >
+                                  <img src={url} alt="Evidencia" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                </a>
+                              );
+                            })}
+                          </div>
                           <span className="text-[11px] text-slate-400 font-mono">{mediaList.length} archivo(s) adjunto(s)</span>
                         </div>
                       )}
