@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Bot, 
   MessageSquare, 
@@ -29,7 +29,8 @@ import {
   Building2,
   Edit3,
   Mic,
-  MessageCircle
+  MessageCircle,
+  ChevronRight
 } from 'lucide-react';
 
 interface CompanyInfo {
@@ -90,7 +91,6 @@ export default function WhatsappConfigPage() {
   const [groupIdInput, setGroupIdInput] = useState('');
   const [groupNameInput, setGroupNameInput] = useState('');
   const [companyIdInput, setCompanyIdInput] = useState('');
-  const [folioInput, setFolioInput] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   const webhookUrl = typeof window !== 'undefined' 
@@ -130,7 +130,6 @@ export default function WhatsappConfigPage() {
     setGroupIdInput('');
     setGroupNameInput('');
     setCompanyIdInput('');
-    setFolioInput('');
     setShowModal(true);
   };
 
@@ -139,7 +138,6 @@ export default function WhatsappConfigPage() {
     setGroupIdInput(group.groupId);
     setGroupNameInput(group.groupName || '');
     setCompanyIdInput(group.companyId || '');
-    setFolioInput(group.workOrderFolio || '');
     setShowModal(true);
   };
 
@@ -156,7 +154,6 @@ export default function WhatsappConfigPage() {
           groupId: groupIdInput.trim(),
           groupName: groupNameInput.trim() || 'Grupo Operaciones',
           companyId: companyIdInput ? companyIdInput : null,
-          workOrderFolio: folioInput.trim() ? folioInput.trim().toUpperCase() : null,
           isActive: true,
         }),
       });
@@ -415,10 +412,13 @@ export default function WhatsappConfigPage() {
               {groups.map((g) => (
                 <div 
                   key={g.id}
-                  className="bg-slate-900 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-5 transition-all shadow-md group relative flex flex-col justify-between"
+                  className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-5 transition-all shadow-md group relative flex flex-col justify-between hover:shadow-emerald-500/10 hover:shadow-xl"
                 >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-3">
+                  <Link 
+                    href={`/configuracion/whatsapp/${encodeURIComponent(g.groupId)}`}
+                    className="block space-y-3 cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-2">
                       <div>
                         <h4 className="font-bold text-base text-white group-hover:text-emerald-400 transition-colors flex items-center gap-2">
                           {g.groupName || 'Grupo de WhatsApp'}
@@ -427,7 +427,7 @@ export default function WhatsappConfigPage() {
                           {g.groupId}
                         </span>
                       </div>
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 shrink-0 ${
                         g.isActive 
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
                           : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
@@ -438,7 +438,7 @@ export default function WhatsappConfigPage() {
                     </div>
 
                     {/* Company Badge */}
-                    <div className="mb-3">
+                    <div>
                       {g.company ? (
                         <span 
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border"
@@ -460,27 +460,24 @@ export default function WhatsappConfigPage() {
                     </div>
 
                     {/* Stats pill */}
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="bg-slate-950/70 p-2 rounded-lg border border-slate-800/80 text-center">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80 text-center">
                         <span className="text-[10px] uppercase font-bold text-slate-500 block">Mensajes</span>
-                        <span className="text-sm font-bold text-slate-200">{g.messageCount ?? 0}</span>
+                        <span className="text-base font-extrabold text-slate-200">{g.messageCount ?? 0}</span>
                       </div>
-                      <div className="bg-slate-950/70 p-2 rounded-lg border border-slate-800/80 text-center">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Evidencias / Fotos</span>
-                        <span className="text-sm font-bold text-emerald-400">{g.mediaCount ?? 0}</span>
+                      <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80 text-center">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 block">Fotos / Evidencias</span>
+                        <span className="text-base font-extrabold text-emerald-400">{g.mediaCount ?? 0}</span>
                       </div>
                     </div>
 
-                    <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800/80 mb-4 space-y-1">
-                      <div className="text-xs text-slate-400 font-medium">Orden de Trabajo (OT) predeterminada:</div>
-                      <div className="text-xs font-bold text-emerald-300 font-mono flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                        {g.workOrderFolio || 'Detección automática por mensaje'}
-                      </div>
+                    <div className="pt-2 text-xs font-semibold text-emerald-400 group-hover:text-emerald-300 flex items-center justify-between bg-emerald-950/30 border border-emerald-500/20 px-3 py-2 rounded-xl transition-colors">
+                      <span>Ver Inteligencia de Grupo</span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                  </div>
+                  </Link>
 
-                  <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
+                  <div className="pt-3 mt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {g.lastActivityAt ? new Date(g.lastActivityAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : 'Sin actividad'}
@@ -488,15 +485,23 @@ export default function WhatsappConfigPage() {
                     
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => openEditModal(g)}
-                        className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          openEditModal(g);
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
                         title="Editar grupo y empresa"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteGroup(g.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleDeleteGroup(g.id);
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                         title="Desvincular grupo"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -752,21 +757,6 @@ export default function WhatsappConfigPage() {
                       : 'bg-slate-950 border-slate-600 focus:border-emerald-500 text-white focus:ring-2 focus:ring-emerald-500/30'
                   }`}
                   required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5">
-                  Orden de Trabajo (OT predeterminada)
-                </label>
-                <input
-                  type="text"
-                  placeholder="ej. S06447 (Opcional)"
-                  value={folioInput}
-                  onChange={(e) => setFolioInput(e.target.value.toUpperCase())}
-                  autoComplete="off"
-                  style={{ backgroundColor: '#020617', color: '#ffffff' }}
-                  className="w-full bg-slate-950 border-2 border-slate-600 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-inner"
                 />
               </div>
 
