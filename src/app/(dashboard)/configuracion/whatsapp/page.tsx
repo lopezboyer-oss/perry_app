@@ -33,8 +33,41 @@ import {
   Edit3,
   Mic,
   MessageCircle,
-  ChevronRight
+  ChevronRight,
+  X,
+  ShieldAlert,
+  Briefcase
 } from 'lucide-react';
+
+interface DirectorSummaryData {
+  executiveSummary: string;
+  resolvedCrossIssues: Array<{
+    issue: string;
+    originGroup: string;
+    resolutionGroup: string;
+    resolutionDetails: string;
+  }>;
+  unresolvedCriticalPending: Array<{
+    issue: string;
+    reportedGroup: string;
+    status: string;
+  }>;
+  globalEquipmentStatus: Array<{
+    equipo: string;
+    status: string;
+    issue: string;
+  }>;
+  globalMaterialRequests: Array<{
+    name: string;
+    quantity: number;
+    providerType: string;
+    requestedInGroup: string;
+  }>;
+  directorRecommendations: string[];
+  period?: string;
+  messageCount?: number;
+  totalGroupsAnalyzed?: number;
+}
 
 interface CompanyInfo {
   id: string;
@@ -112,10 +145,37 @@ export default function WhatsappConfigPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [groupIdInput, setGroupIdInput] = useState('');
   const [groupNameInput, setGroupNameInput] = useState('');
-  const [companyIdInput, setCompanyIdInput] = useState('');
-  const [showModal, setShowModal] = useState(false);
-
   const [webhookUrl, setWebhookUrl] = useState('https://perryapp.netlify.app/api/whatsapp/webhook');
+
+  // Director Summary State
+  const [directorSummary, setDirectorSummary] = useState<DirectorSummaryData | null>(null);
+  const [generatingDirectorAI, setGeneratingDirectorAI] = useState(false);
+  const [activeDirectorPeriod, setActiveDirectorPeriod] = useState<string | null>(null);
+  const [showDirectorModal, setShowDirectorModal] = useState(false);
+
+  const handleGenerateDirectorSummary = async (period: string) => {
+    setGeneratingDirectorAI(true);
+    setActiveDirectorPeriod(period);
+    try {
+      const res = await fetch('/api/whatsapp/director-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDirectorSummary(data.summary);
+        setShowDirectorModal(true);
+      } else {
+        alert('No se pudo generar el Resumen para Dirección');
+      }
+    } catch (err) {
+      console.error('Error generando Resumen para Dirección:', err);
+    } finally {
+      setGeneratingDirectorAI(false);
+      setActiveDirectorPeriod(null);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -370,6 +430,68 @@ export default function WhatsappConfigPage() {
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
             {copied ? '¡Copiado!' : 'Copiar Endpoint'}
           </button>
+        </div>
+      </div>
+
+      {/* TARJETA DE INTELIGENCIA DIRECTIVA (SÍNTESIS MULTI-GRUPO C-LEVEL) */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-indigo-500/20 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-md">
+              <Briefcase className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-extrabold text-white tracking-tight">Resumen Ejecutivo para Dirección</h2>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold">
+                  Síntesis 360° Multi-Grupo
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Conciliación sintética cruzada entre chats de campo (técnicos) y grupos de gestión (coordinación).
+              </p>
+            </div>
+          </div>
+
+          {directorSummary && (
+            <button
+              onClick={() => setShowDirectorModal(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 text-xs font-semibold flex items-center gap-1.5 transition-colors self-end md:self-auto"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              Ver Último Resumen Directivo
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+          {[
+            { key: 'today', label: 'Día', icon: '📅', desc: 'Hoy' },
+            { key: 'yesterday', label: 'Ayer', icon: '⏪', desc: 'Día anterior' },
+            { key: 'week', label: '7 Días', icon: '📊', desc: 'Última semana' },
+            { key: 'month', label: 'Mes', icon: '📆', desc: 'Mes actual' },
+            { key: 'all', label: 'Histórico', icon: '⚡', desc: 'Todos los grupos' },
+          ].map((p) => (
+            <button
+              key={p.key}
+              onClick={() => handleGenerateDirectorSummary(p.key)}
+              disabled={generatingDirectorAI}
+              className={`p-3 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait ${
+                activeDirectorPeriod === p.key
+                  ? 'bg-indigo-500/30 border-indigo-400/60 shadow-lg shadow-indigo-500/20'
+                  : 'bg-slate-950/70 border-slate-800 hover:border-indigo-500/40 hover:bg-slate-900'
+              }`}
+            >
+              <div className="text-xl mb-1">{p.icon}</div>
+              <div className="text-sm font-bold text-white">{p.label}</div>
+              <div className="text-[10px] text-slate-400">{p.desc}</div>
+              {activeDirectorPeriod === p.key && (
+                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-indigo-300 font-medium">
+                  <RefreshCw className="w-3 h-3 animate-spin text-indigo-400" /> Conciliando...
+                </div>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -872,6 +994,174 @@ export default function WhatsappConfigPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL: RESUMEN EJECUTIVO PARA DIRECCIÓN */}
+      {showDirectorModal && directorSummary && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div 
+            style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}
+            className="bg-slate-900 border border-indigo-500/40 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl space-y-6 p-6"
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-indigo-500/20 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <Briefcase className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    Resumen Ejecutivo para Dirección (Síntesis Multi-Grupo)
+                  </h3>
+                  <p className="text-xs text-indigo-300 mt-0.5">
+                    Conciliación transversal de {directorSummary.totalGroupsAnalyzed || 0} grupos | {directorSummary.messageCount || 0} mensajes analizados
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDirectorModal(false)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Síntesis Ejecutiva */}
+            <div className="bg-slate-950/80 border border-indigo-500/20 rounded-xl p-4 space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-indigo-400" /> Síntesis Directiva General
+              </h4>
+              <p className="text-sm text-slate-200 leading-relaxed font-medium">
+                {directorSummary.executiveSummary}
+              </p>
+            </div>
+
+            {/* Grid 2 Columnas: Asuntos Resueltos Cruzados vs Pendientes Reales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Asuntos Resueltos Cruzados */}
+              <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Asuntos Resueltos Cruzados ({(directorSummary.resolvedCrossIssues || []).length})
+                  </h4>
+                  <span className="text-[10px] text-emerald-300/80 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    Conciliado Campo vs Gestión
+                  </span>
+                </div>
+                {(!directorSummary.resolvedCrossIssues || directorSummary.resolvedCrossIssues.length === 0) ? (
+                  <p className="text-xs text-slate-400 italic">No hay temas cruzados resueltos en este periodo.</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {directorSummary.resolvedCrossIssues.map((item, idx) => (
+                      <div key={idx} className="bg-slate-900/90 border border-emerald-500/20 rounded-lg p-3 space-y-1">
+                        <div className="text-xs font-bold text-emerald-300">🟢 {item.issue}</div>
+                        <div className="text-[11px] text-slate-300">{item.resolutionDetails}</div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                          <span>Reportado en: <strong className="text-slate-200">{item.originGroup}</strong></span>
+                          <span>Resuelto en: <strong className="text-emerald-400">{item.resolutionGroup}</strong></span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pendientes Críticos Reales */}
+              <div className="bg-rose-950/20 border border-rose-500/30 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-rose-500/20 pb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-rose-400" /> Pendientes Críticos Reales ({(directorSummary.unresolvedCriticalPending || []).length})
+                  </h4>
+                  <span className="text-[10px] text-rose-300/80 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                    Sin Seguimiento en Gestión
+                  </span>
+                </div>
+                {(!directorSummary.unresolvedCriticalPending || directorSummary.unresolvedCriticalPending.length === 0) ? (
+                  <p className="text-xs text-slate-400 italic">🎉 ¡Excelente! No hay pendientes críticos sin resolver.</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {directorSummary.unresolvedCriticalPending.map((item, idx) => (
+                      <div key={idx} className="bg-slate-900/90 border border-rose-500/20 rounded-lg p-3 space-y-1">
+                        <div className="text-xs font-bold text-rose-300">🔴 {item.issue}</div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                          <span>Grupo: <strong className="text-slate-200">{item.reportedGroup}</strong></span>
+                          <span className="text-amber-400 font-semibold">{item.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Estatus Global de Equipos y Refacciones */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Equipos */}
+              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <Wrench className="w-4 h-4 text-amber-400" /> Equipos Mencionados ({(directorSummary.globalEquipmentStatus || []).length})
+                </h4>
+                {(!directorSummary.globalEquipmentStatus || directorSummary.globalEquipmentStatus.length === 0) ? (
+                  <p className="text-xs text-slate-400 italic">Sin novedades de maquinaria o equipos.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {directorSummary.globalEquipmentStatus.map((eq, idx) => (
+                      <div key={idx} className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-xs font-bold text-white">{eq.equipo}</div>
+                          <div className="text-[11px] text-slate-400">{eq.issue}</div>
+                        </div>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0 ${
+                          eq.status?.toLowerCase().includes('operativo') ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {eq.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Materiales */}
+              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+                  <Package className="w-4 h-4 text-purple-400" /> Solicitudes de Materiales ({(directorSummary.globalMaterialRequests || []).length})
+                </h4>
+                {(!directorSummary.globalMaterialRequests || directorSummary.globalMaterialRequests.length === 0) ? (
+                  <p className="text-xs text-slate-400 italic">No hay solicitudes de refacciones o insumos.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {directorSummary.globalMaterialRequests.map((mat, idx) => (
+                      <div key={idx} className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-xs font-bold text-white">{mat.name}</div>
+                          <div className="text-[11px] text-slate-400">Grupo: {mat.requestedInGroup}</div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-xs font-bold text-purple-300">Cant: {mat.quantity}</span>
+                          <div className="text-[10px] text-slate-400">{mat.providerType}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recomendaciones de Dirección */}
+            {directorSummary.directorRecommendations && directorSummary.directorRecommendations.length > 0 && (
+              <div className="bg-indigo-950/30 border border-indigo-500/30 rounded-xl p-4 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                  <Bot className="w-4 h-4 text-indigo-400" /> Recomendaciones Perry Co-Pilot para la Dirección
+                </h4>
+                <ul className="space-y-1.5 pl-4 list-disc text-xs text-slate-200">
+                  {directorSummary.directorRecommendations.map((rec, idx) => (
+                    <li key={idx}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
