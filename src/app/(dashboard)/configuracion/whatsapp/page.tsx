@@ -127,7 +127,7 @@ const safeFormatDateTime = (dateStr?: string | null): string => {
 };
 
 export default function WhatsappConfigPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userEmail = (session?.user as any)?.email || '';
 
   const [activeTab, setActiveTab] = useState<'groups' | 'logs'>('groups');
@@ -145,6 +145,8 @@ export default function WhatsappConfigPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [groupIdInput, setGroupIdInput] = useState('');
   const [groupNameInput, setGroupNameInput] = useState('');
+  const [companyIdInput, setCompanyIdInput] = useState('');
+  const [showModal, setShowModal] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('https://perryapp.netlify.app/api/whatsapp/webhook');
 
   // Director Summary State
@@ -248,8 +250,7 @@ export default function WhatsappConfigPage() {
         setShowModal(false);
         fetchData();
       } else {
-        const err = await res.json();
-        alert(err.error || 'Error al guardar grupo');
+        alert('Error al guardar la configuración del grupo.');
       }
     } catch (err) {
       console.error('Error guardando grupo:', err);
@@ -259,7 +260,7 @@ export default function WhatsappConfigPage() {
   };
 
   const handleDeleteGroup = async (id: string) => {
-    if (!confirm('¿Deseas desvincular este grupo? (Los registros históricos se conservarán)')) return;
+    if (!confirm('¿Estás seguro de que deseas desvincular este grupo?')) return;
     try {
       const res = await fetch(`/api/whatsapp/groups?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -271,47 +272,49 @@ export default function WhatsappConfigPage() {
   };
 
   const handleCopyWebhook = () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    if (typeof window !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(webhookUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const filteredLogs = logs.filter(log => {
-    if (!searchTerm.trim()) return true;
-    const term = searchTerm.toLowerCase();
-    const raw = (log.rawMessage || '').toLowerCase();
-    const sender = (log.senderName || log.senderPhone || '').toLowerCase();
-    let parsedText = '';
+  const renderBadgeType = (missingField: string | null, parsedDataStr: string | null) => {
+    if (missingField) {
+      return <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Falta: {missingField}</span>;
+    }
+    
+    let type = 'operativo';
     try {
-      const p = JSON.parse(log.parsedData || '{}');
-      parsedText = `${p.title || ''} ${p.summary || ''} ${p.manPowerEquipo || ''} ${p.workOrderFolio || ''}`.toLowerCase();
+      if (parsedDataStr) {
+        const parsed = JSON.parse(parsedDataStr);
+        type = parsed.type || 'operativo';
+      }
     } catch {}
 
-    return raw.includes(term) || sender.includes(term) || parsedText.includes(term);
-  });
-
-  const getMessageTypeBadge = (type?: string) => {
     switch (type) {
-      case 'WORK_REPORT':
-        return <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold flex items-center gap-1"><Wrench className="w-3 h-3" /> Bitácora / Avance</span>;
-      case 'ISSUE_ALERT':
-        return <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-semibold flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Falla / Alerta</span>;
-      case 'MATERIAL_REQUEST':
-        return <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold flex items-center gap-1"><Package className="w-3 h-3" /> Refacciones</span>;
-      case 'COORDINATION':
-        return <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-semibold flex items-center gap-1"><Calendar className="w-3 h-3" /> Logística / Llegada</span>;
-      case 'CLIENT_REQUEST':
-        return <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-semibold flex items-center gap-1"><Users className="w-3 h-3" /> Petición Cliente</span>;
-      case 'DIRECT_PRIVATE_CHAT':
-        return <span className="px-2 py-0.5 rounded-md bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs font-semibold flex items-center gap-1"><MessageCircle className="w-3 h-3" /> Chat Privado (Auto-Reply)</span>;
-      case 'SOCIAL_CHAT':
+      case 'man_power':
+        return <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold flex items-center gap-1"><Users className="w-3 h-3" /> Personal / ManPower</span>;
+      case 'refaccion':
+        return <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-semibold flex items-center gap-1"><Package className="w-3 h-3" /> Refacción / Material</span>;
+      case 'falla_equipo':
+        return <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-semibold flex items-center gap-1"><Wrench className="w-3 h-3" /> Falla / Alerta Equipo</span>;
+      case 'audio_note':
+        return <span className="px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-semibold flex items-center gap-1"><Mic className="w-3 h-3" /> Bitácora Voz IA</span>;
+      case 'greeting':
         return <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-xs font-medium">Social / Saludo</span>;
       default:
         return <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold flex items-center gap-1"><Zap className="w-3 h-3" /> Operativo</span>;
     }
   };
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 p-8 flex items-center justify-center">
+        <RefreshCw className="w-8 h-8 animate-spin text-emerald-400" />
+      </div>
+    );
+  }
 
   if (!canAccessWhatsappCoPilot(userEmail)) {
     return (
