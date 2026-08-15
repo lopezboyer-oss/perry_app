@@ -506,54 +506,60 @@ export default function WhatsappConfigPage() {
         </div>
       )}
 
-      {/* TAB 2: LOGS & OPERATIONAL FEED */}
+      {/* PESTAÑA 2: FEED DE MENSAJES Y ANÁLISIS EN TIEMPO REAL */}
       {activeTab === 'logs' && (
         <div className="space-y-4">
-          {filteredLogs.length === 0 ? (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-12 text-center max-w-md mx-auto space-y-3">
-              <MessageSquare className="w-10 h-10 text-slate-600 mx-auto" />
-              <h4 className="text-base font-bold text-slate-300">No hay mensajes registrados aún</h4>
-              <p className="text-xs text-slate-500">
-                Los mensajes y fotos enviados en los grupos de WhatsApp vinculados comenzarán a aparecer aquí en tiempo real.
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-400" /> Feed Operativo en Vivo
+              </h2>
+              <p className="text-xs text-slate-400">
+                Historial de todos los mensajes, fotos y reportes respaldados y analizados con Gemini IA.
               </p>
             </div>
+
+            <button
+              onClick={fetchData}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Actualizar
+            </button>
+          </div>
+
+          {filteredLogs.length === 0 ? (
+            <div className="p-12 text-center bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl space-y-2">
+              <MessageSquare className="w-10 h-10 text-slate-600 mx-auto" />
+              <p className="text-sm text-slate-400">No se encontraron mensajes registrados aún.</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-3">
               {filteredLogs.map((log) => {
                 let parsed: any = {};
                 try {
                   parsed = JSON.parse(log.parsedData || '{}');
                 } catch {}
 
-                let mediaList: string[] = [];
-                try {
-                  mediaList = JSON.parse(log.mediaUrls || '[]');
-                } catch {}
+                const mediaList: string[] = log.mediaUrls ? JSON.parse(log.mediaUrls) : [];
 
                 return (
-                  <div 
+                  <div
                     key={log.id}
-                    className="bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 transition-all shadow-sm flex flex-col md:flex-row items-start justify-between gap-4"
+                    className="bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 transition-all flex flex-col md:flex-row items-start justify-between gap-4"
                   >
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {getMessageTypeBadge(parsed.messageType)}
                         
-                        {parsed.category && (
-                          <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-xs font-mono">
-                            {parsed.category}
-                          </span>
-                        )}
-
-                        {parsed.workOrderFolio && (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-bold">
-                            OT: {parsed.workOrderFolio}
-                          </span>
-                        )}
-
                         {parsed.manPowerEquipo && (
-                          <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-mono font-bold">
-                            Eq: {parsed.manPowerEquipo}
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-xs font-mono font-bold">
+                            EQ: {parsed.manPowerEquipo}
+                          </span>
+                        )}
+
+                        {parsed.workOrderFolio && parsed.workOrderFolio !== 'Sin asignar' && (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-xs font-mono font-bold">
+                            OT: {parsed.workOrderFolio}
                           </span>
                         )}
 
@@ -562,31 +568,42 @@ export default function WhatsappConfigPage() {
                         </span>
                       </div>
 
-                      {/* AI Executive Summary */}
-                      {parsed.summary && (
-                        <div className="bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-medium flex items-center gap-2">
-                          <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          <span>{parsed.summary}</span>
+                      {/* Resumen IA */}
+                      {parsed.title && (
+                        <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>{parsed.title}</span>
                         </div>
                       )}
 
-                      {/* Raw message text */}
+                      {/* Texto original recibido */}
                       {log.rawMessage && (
-                        <p className="text-sm text-slate-300 whitespace-pre-wrap bg-slate-950/40 p-3 rounded-xl border border-slate-800/50">
+                        <p className="text-xs text-slate-300 bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 leading-relaxed whitespace-pre-wrap">
                           {log.rawMessage}
                         </p>
                       )}
 
-                      {/* Attached Media / Photos */}
+                      {/* Etiquetas detectadas por IA */}
+                      {parsed.tags && parsed.tags.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                          {parsed.tags.map((tag: string, idx: number) => (
+                            <span key={idx} className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700 flex items-center gap-0.5">
+                              <Tag className="w-2.5 h-2.5 text-emerald-400" /> {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Fotos / Archivos multimedia */}
                       {mediaList.length > 0 && (
-                        <div className="flex items-center gap-2 flex-wrap pt-1">
+                        <div className="flex items-center gap-2 flex-wrap pt-2">
                           {mediaList.map((url, idx) => (
-                            <a 
-                              key={idx} 
-                              href={url} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="w-16 h-16 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 relative group block"
+                            <a
+                              key={idx}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-16 h-16 rounded-xl overflow-hidden border border-slate-700 bg-slate-800 relative group cursor-pointer hover:border-emerald-400 transition-colors"
                             >
                               <img src={url} alt="Evidencia" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                             </a>
@@ -596,12 +613,21 @@ export default function WhatsappConfigPage() {
                       )}
                     </div>
 
-                    <div className="text-right text-xs text-slate-500 shrink-0 self-end md:self-auto space-y-1">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        {new Date(log.createdAt).toLocaleString('es-MX')}
+                    <div className="text-right text-xs text-slate-400 shrink-0 self-end md:self-auto space-y-1">
+                      <div className="flex items-center gap-1 justify-end font-medium text-slate-300">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {new Date(log.createdAt).toLocaleString('es-MX', { 
+                          hour: '2-digit', 
+                          minute: '2-digit',
+                          day: '2-digit',
+                          month: 'short'
+                        })}
                       </div>
-                      {log.groupId && <div className="font-mono text-slate-500 truncate max-w-[160px] text-[11px]">Grupo: {log.groupId}</div>}
+                      {log.groupId && (
+                        <div className="font-mono text-slate-400 truncate max-w-[160px] text-[11px] bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800">
+                          {log.groupId.replace('@g.us', '')}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -613,21 +639,24 @@ export default function WhatsappConfigPage() {
 
       {/* MODAL: Registrar / Editar Grupo */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-lg shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div 
+            style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}
+            className="bg-slate-900 border-2 border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl space-y-5"
+          >
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Bot className="w-5 h-5 text-emerald-400" /> {editingId ? 'Editar Grupo y Empresa' : 'Vincular Grupo de WhatsApp'}
               </h3>
               <button 
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold"
+                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               {editingId 
                 ? 'Asigna la empresa correspondiente y ajusta el nombre o la orden de trabajo predeterminada para este grupo.'
                 : 'Si ya agregaste el bot al grupo de WhatsApp, se auto-registrará al recibir el primer mensaje. O puedes pre-registrarlo aquí.'}
@@ -635,7 +664,7 @@ export default function WhatsappConfigPage() {
 
             <form onSubmit={handleSaveGroup} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5">
                   Nombre Identificador del Grupo
                 </label>
                 <input
@@ -643,23 +672,33 @@ export default function WhatsappConfigPage() {
                   placeholder="ej. Mantenimiento Caseme Planta Norte"
                   value={groupNameInput}
                   onChange={(e) => setGroupNameInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner"
+                  autoComplete="off"
+                  style={{ backgroundColor: '#020617', color: '#ffffff' }}
+                  className="w-full bg-slate-950 border-2 border-slate-600 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-inner"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5">
                   Empresa a la que Pertenece
                 </label>
                 <select
                   value={companyIdInput}
                   onChange={(e) => setCompanyIdInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  style={{ backgroundColor: '#020617', color: '#ffffff' }}
+                  className="w-full bg-slate-950 border-2 border-slate-600 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all cursor-pointer"
                 >
-                  <option value="">-- Sin empresa asignada / General --</option>
+                  <option value="" style={{ backgroundColor: '#020617', color: '#ffffff' }} className="bg-slate-950 text-white">
+                    -- Sin empresa asignada / General --
+                  </option>
                   {companies.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option 
+                      key={c.id} 
+                      value={c.id} 
+                      style={{ backgroundColor: '#020617', color: '#ffffff' }} 
+                      className="bg-slate-950 text-white"
+                    >
                       {c.name} {c.shortName ? `(${c.shortName})` : ''}
                     </option>
                   ))}
@@ -667,7 +706,7 @@ export default function WhatsappConfigPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5">
                   ID del Grupo / JID en WhatsApp
                 </label>
                 <input
@@ -676,13 +715,22 @@ export default function WhatsappConfigPage() {
                   value={groupIdInput}
                   onChange={(e) => setGroupIdInput(e.target.value)}
                   disabled={!!editingId}
-                  className="w-full bg-slate-950 border border-slate-700 disabled:opacity-60 rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium text-emerald-300 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner"
+                  autoComplete="off"
+                  style={{ 
+                    backgroundColor: editingId ? '#1e293b' : '#020617', 
+                    color: editingId ? '#34d399' : '#ffffff' 
+                  }}
+                  className={`w-full border-2 rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium placeholder:text-slate-400 focus:outline-none transition-all shadow-inner ${
+                    editingId 
+                      ? 'bg-slate-800 border-slate-700 text-emerald-400 cursor-not-allowed opacity-90' 
+                      : 'bg-slate-950 border-slate-600 focus:border-emerald-500 text-white focus:ring-2 focus:ring-emerald-500/30'
+                  }`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider mb-1.5">
                   Orden de Trabajo (OT predeterminada)
                 </label>
                 <input
@@ -690,7 +738,9 @@ export default function WhatsappConfigPage() {
                   placeholder="ej. S06447 (Opcional)"
                   value={folioInput}
                   onChange={(e) => setFolioInput(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner"
+                  autoComplete="off"
+                  style={{ backgroundColor: '#020617', color: '#ffffff' }}
+                  className="w-full bg-slate-950 border-2 border-slate-600 focus:border-emerald-500 rounded-xl px-3.5 py-2.5 text-sm font-mono font-medium text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all shadow-inner"
                 />
               </div>
 
@@ -698,7 +748,7 @@ export default function WhatsappConfigPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-sm font-semibold transition-colors cursor-pointer border border-slate-700"
                 >
                   Cancelar
                 </button>
@@ -706,7 +756,7 @@ export default function WhatsappConfigPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-lg shadow-emerald-600/30 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition-all cursor-pointer"
                 >
                   {saving ? 'Guardando...' : editingId ? 'Actualizar Cambios' : 'Guardar Grupo'}
                 </button>
