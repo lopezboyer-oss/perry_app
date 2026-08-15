@@ -74,6 +74,22 @@ interface MessageLog {
   } | null;
 }
 
+const safeFormatDateTime = (dateStr?: string | null): string => {
+  if (!dateStr) return 'Sin fecha';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Sin fecha';
+    return d.toLocaleString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: 'short',
+    });
+  } catch {
+    return 'Sin fecha';
+  }
+};
+
 export default function WhatsappConfigPage() {
   const [activeTab, setActiveTab] = useState<'groups' | 'logs'>('groups');
   const [loading, setLoading] = useState(true);
@@ -93,9 +109,13 @@ export default function WhatsappConfigPage() {
   const [companyIdInput, setCompanyIdInput] = useState('');
   const [showModal, setShowModal] = useState(false);
 
-  const webhookUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/api/whatsapp/webhook`
-    : 'https://perryapp.netlify.app/api/whatsapp/webhook';
+  const [webhookUrl, setWebhookUrl] = useState('https://perryapp.netlify.app/api/whatsapp/webhook');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWebhookUrl(`${window.location.origin}/api/whatsapp/webhook`);
+    }
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -185,9 +205,11 @@ export default function WhatsappConfigPage() {
   };
 
   const handleCopyWebhook = () => {
-    navigator.clipboard.writeText(webhookUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(webhookUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const filteredLogs = logs.filter(log => {
@@ -480,7 +502,7 @@ export default function WhatsappConfigPage() {
                   <div className="pt-3 mt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {g.lastActivityAt ? new Date(g.lastActivityAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) : 'Sin actividad'}
+                      {g.lastActivityAt ? safeFormatDateTime(g.lastActivityAt) : 'Sin actividad'}
                     </span>
                     
                     <div className="flex items-center gap-1">
@@ -659,12 +681,7 @@ export default function WhatsappConfigPage() {
                     <div className="text-right text-xs text-slate-400 shrink-0 self-end md:self-auto space-y-1">
                       <div className="flex items-center gap-1 justify-end font-medium text-slate-300">
                         <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        {new Date(log.createdAt).toLocaleString('es-MX', { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          day: '2-digit',
-                          month: 'short'
-                        })}
+                        {safeFormatDateTime(log.createdAt)}
                       </div>
                       {log.groupId && (
                         <div className="font-mono text-slate-400 truncate max-w-[160px] text-[11px] bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800">

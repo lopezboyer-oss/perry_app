@@ -75,6 +75,33 @@ interface AISummary {
   operationalRecommendations: string[];
 }
 
+const safeFormatDate = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('es-MX');
+  } catch {
+    return '';
+  }
+};
+
+const safeFormatDateTime = (dateStr?: string | null): string => {
+  if (!dateStr) return 'Sin fecha';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Sin fecha';
+    return d.toLocaleString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: 'short',
+    });
+  } catch {
+    return 'Sin fecha';
+  }
+};
+
 export default function GroupDetailPage({ params }: { params: { groupId: string } }) {
   const rawGroupId = params?.groupId ? String(params.groupId) : '';
   let decodedGroupId = rawGroupId;
@@ -581,7 +608,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
                         </div>
 
                         <span className="text-xs text-slate-500 font-mono">
-                          {new Date(log.createdAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}
+                          {safeFormatDateTime(log.createdAt)}
                         </span>
                       </div>
 
@@ -677,7 +704,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
                     </div>
                     <div className="text-right">
                       <span className="text-xs text-slate-400 block">{ot.count} menciones</span>
-                      <span className="text-[10px] text-slate-500">Última: {new Date(ot.lastSeenAt).toLocaleDateString('es-MX')}</span>
+                      <span className="text-[10px] text-slate-500">Última: {safeFormatDate(ot.lastSeenAt)}</span>
                     </div>
                   </div>
                 ))}
@@ -721,7 +748,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
 
                     <div className="text-xs text-slate-400 flex items-center justify-between">
                       <span>Reportes: {eq.count}</span>
-                      <span className="text-[10px] text-slate-500">Último: {new Date(eq.lastSeenAt).toLocaleDateString('es-MX')}</span>
+                      <span className="text-[10px] text-slate-500">Último: {safeFormatDate(eq.lastSeenAt)}</span>
                     </div>
                   </div>
                 ))}
@@ -752,7 +779,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
                   <div key={idx} className="py-3 flex items-center justify-between text-xs">
                     <div>
                       <span className="font-bold text-slate-200 block">{part.name}</span>
-                      <span className="text-slate-500 text-[11px]">Solicitado por {part.senderName} • {new Date(part.createdAt).toLocaleDateString('es-MX')}</span>
+                      <span className="text-slate-500 text-[11px]">Solicitado por {part.senderName || 'Personal de campo'} • {safeFormatDate(part.createdAt)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 font-bold font-mono">
