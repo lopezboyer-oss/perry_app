@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const apiToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_API_TOKEN;
   const instanceId = process.env.WHATSAPP_INSTANCE_ID;
   const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
-  const audioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.m4a`;
+  const audioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.mp3`;
 
   // Step 1: Check env vars
   const envCheck = {

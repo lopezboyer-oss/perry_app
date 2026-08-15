@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
       // 2) Enviar nota de voz con el mensaje hablado de Perry
       const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
-      const welcomeAudioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.m4a`;
+      const welcomeAudioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.mp3`;
 
       try {
         await sendWhatsappVoiceNote({
