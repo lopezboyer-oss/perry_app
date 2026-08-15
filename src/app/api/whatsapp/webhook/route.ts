@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { parseWhatsappMessageWithGemini } from '@/lib/whatsapp/parser';
-import { sendWhatsappReaction, sendWhatsappGroupMessage } from '@/lib/whatsapp/service';
+import { sendWhatsappGroupMessage, sendWhatsappVoiceNote } from '@/lib/whatsapp/service';
 import { IncomingWhatsappPayload } from '@/lib/whatsapp/types';
 
 // Webhook Verification (GET)
@@ -46,12 +46,26 @@ export async function POST(req: NextRequest) {
     if (isPrivateChat) {
       const privateAutoReply = `¡Hola! 🤖 Soy *Perry*, el asistente de inteligencia operativa del consorcio.\n\nActualmente me encuentro en proceso de entrenamiento y conociendo cómo están operando las empresas a través de los grupos de trabajo, por lo que en este momento no estoy en posibilidad de responderte de manera personalizada por este chat privado.\n\n¡Pero te prometo que muy próximamente sí podré hacerlo y podré ayudarte de manera directa! 🚀 Mientras tanto, continuaré recopilando y estructurando los reportes y avances en los grupos de operaciones.\n\n¡Muchas gracias por escribir y que tengas una excelente jornada! 👷🏽`;
 
-      // Enviar respuesta cordial y profesional al usuario en privado
+      // 1) Enviar respuesta cordial y profesional al usuario en privado por escrito
       await sendWhatsappGroupMessage({
         groupId: payload.groupId,
         messageText: privateAutoReply,
         replyToMessageId: payload.messageId,
       });
+
+      // 2) Enviar nota de voz con el mensaje hablado de Perry
+      const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perry.netlify.app';
+      const welcomeAudioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.mp3`;
+
+      try {
+        await sendWhatsappVoiceNote({
+          groupId: payload.groupId,
+          audioUrl: welcomeAudioUrl,
+          replyToMessageId: payload.messageId,
+        });
+      } catch (voiceErr) {
+        console.error('[WHATSAPP VOICE AUTO-REPLY] Error enviando nota de voz en privado:', voiceErr);
+      }
 
       // Registrar el contacto privado en logs para auditoría sin crear pseudo-grupos
       await prisma.whatsappMessageLog.create({
@@ -66,7 +80,7 @@ export async function POST(req: NextRequest) {
             messageType: 'DIRECT_PRIVATE_CHAT',
             title: 'Mensaje Privado 1 a 1',
             summary: payload.messageText || 'Contacto directo en chat privado',
-            tags: ['chat_privado', 'auto_reply'],
+            tags: ['chat_privado', 'auto_reply', 'nota_de_voz'],
             isOperationalEvent: false,
           }),
           activityId: null,
@@ -75,7 +89,7 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({
-        status: 'Direct private message handled with auto-reply',
+        status: 'Direct private message handled with written auto-reply and voice note',
         sender: payload.senderPhone,
       });
     }
@@ -139,7 +153,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Registro 100% informativo en Supabase (WhatsappMessageLog)
-    // NOTA: No se crea ni se altera ninguna Actividad en Perry App.
+    // NOTA: Perry en grupos NO envía mensajes ni notas de voz ni altera Actividades.
+    // Opera 100% pasivo y silencioso como base de conocimiento operativa.
     const log = await prisma.whatsappMessageLog.create({
       data: {
         messageId: payload.messageId,
@@ -154,39 +169,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 7. Verificación si fue invocado explícitamente con @perry
-    const isExplicitCall = hasExplicitBotCall(messageText, body);
-
-    if (isExplicitCall) {
-      let replyText = `🤖 *Perry Intelligence*\nMensaje registrado en la base de datos informativa.`;
-      if (parsed.transcription) {
-        replyText += `\n🎙️ Transcripción: _"${parsed.transcription}"_`;
-      }
-      if (parsed.manPowerEquipo) {
-        replyText += `\n📌 Equipo identificado: *${parsed.manPowerEquipo}*`;
-      }
-      if (parsed.workOrderFolio) {
-        replyText += `\n📋 OT: *${parsed.workOrderFolio}*`;
-      }
-      if (parsed.summary) {
-        replyText += `\n📝 Resumen: ${parsed.summary}`;
-      }
-
-      await sendWhatsappGroupMessage({
-        groupId: payload.groupId,
-        messageText: replyText,
-        replyToMessageId: payload.messageId,
-      });
-
-      await sendWhatsappReaction({
-        messageId: payload.messageId,
-        groupId: payload.groupId,
-        emoji: '🤖',
-      });
-    }
-
     return NextResponse.json({
-      status: 'Logged successfully in knowledge base',
+      status: 'Logged silently in knowledge base (100% passive memory)',
       logId: log.id,
       messageType: parsed.messageType,
       isOperational: parsed.isOperationalEvent,
