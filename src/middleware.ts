@@ -9,7 +9,7 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
 
   // Public routes
-  const publicRoutes = ['/login', '/api/auth', '/campo', '/cliente-envio', '/api/campo', '/api/cliente-envio', '/api/whatsapp', '/api/debug'];
+  const publicRoutes = ['/login', '/api/auth', '/campo', '/cliente-envio', '/api/campo', '/api/cliente-envio', '/api/whatsapp'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
   let response: NextResponse;
