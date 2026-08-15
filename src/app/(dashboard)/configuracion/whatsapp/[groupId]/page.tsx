@@ -29,7 +29,9 @@ import {
   ShieldCheck,
   Zap,
   Users,
-  MessageCircle
+  MessageCircle,
+  Printer,
+  Check
 } from 'lucide-react';
 
 interface CompanyInfo {
@@ -140,6 +142,68 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
   const [activeTab, setActiveTab] = useState<'feed' | 'ots' | 'equipment' | 'parts'>('feed');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
+  const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
+
+  const handleExportGroupPDF = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
+  const handleCopyGroupWhatsApp = () => {
+    if (!aiSummary) return;
+
+    const groupName = group?.groupName || rawGroupId;
+
+    let text = `📋 *RESUMEN EJECUTIVO DE GRUPO*\n`;
+    text += `*Perry Intelligence Co-Pilot*\n`;
+    text += `👥 *Grupo:* ${groupName}\n`;
+    if (aiSummary.period) text += `📅 *Periodo:* ${aiSummary.period}\n`;
+    if (aiSummary.messageCount !== undefined) text += `💬 *Mensajes Analizados:* ${aiSummary.messageCount}\n`;
+    text += `\n`;
+
+    text += `📌 *SÍNTESIS DIAGNÓSTICA:* \n"${aiSummary.executiveSummary}"\n\n`;
+
+    if (aiSummary.workAdvances && aiSummary.workAdvances.length > 0) {
+      text += `✅ *AVANCES DE TRABAJO*\n`;
+      aiSummary.workAdvances.forEach((adv, i) => {
+        text += `${i + 1}. ${adv}\n`;
+      });
+      text += `\n`;
+    }
+
+    if (aiSummary.equipmentAlerts && aiSummary.equipmentAlerts.length > 0) {
+      text += `🛠️ *ALERTAS DE EQUIPO / MAQUINARIA*\n`;
+      aiSummary.equipmentAlerts.forEach((eq) => {
+        text += `• *${eq.equipo}* [${eq.status}]: ${eq.issue}\n`;
+      });
+      text += `\n`;
+    }
+
+    if (aiSummary.materialRequests && aiSummary.materialRequests.length > 0) {
+      text += `📦 *SOLICITUDES DE MATERIALES & REFACCIONES*\n`;
+      aiSummary.materialRequests.forEach((mat) => {
+        text += `• *${mat.name}* (Cant: ${mat.quantity}) - _${mat.providerType}_\n`;
+      });
+      text += `\n`;
+    }
+
+    if (aiSummary.operationalRecommendations && aiSummary.operationalRecommendations.length > 0) {
+      text += `💡 *RECOMENDACIONES OPERATIVAS*\n`;
+      aiSummary.operationalRecommendations.forEach((rec, i) => {
+        text += `${i + 1}. ${rec}\n`;
+      });
+      text += `\n`;
+    }
+
+    text += `_\nReporte generado por Perry Intelligence Co-Pilot_`;
+
+    if (typeof window !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedWhatsApp(true);
+      setTimeout(() => setCopiedWhatsApp(false), 3000);
+    }
+  };
 
   const fetchGroupDetail = async () => {
     setLoading(true);
@@ -454,9 +518,29 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
                 <p className="text-xs text-emerald-300">Análisis sintético multimodular basado en los reportes e interacción de este grupo.</p>
               </div>
             </div>
-            <span className="text-xs font-mono text-emerald-400 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-500/30">
-              Gemini 2.5 Flash
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-emerald-400 bg-emerald-950/80 px-3 py-1 rounded-full border border-emerald-500/30">
+                Gemini 2.5 Flash
+              </span>
+
+              <button
+                onClick={handleExportGroupPDF}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95"
+                title="Imprimir o guardar reporte en PDF"
+              >
+                <Printer className="w-4 h-4 text-blue-400" />
+                Exportar PDF
+              </button>
+
+              <button
+                onClick={handleCopyGroupWhatsApp}
+                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/30 cursor-pointer active:scale-95"
+                title="Copiar texto con formato de WhatsApp"
+              >
+                {copiedWhatsApp ? <Check className="w-4 h-4 text-white" /> : <MessageCircle className="w-4 h-4 text-white" />}
+                {copiedWhatsApp ? '¡Copiado!' : 'Copiar para WhatsApp'}
+              </button>
+            </div>
           </div>
 
           {/* Resumen Narrativo */}

@@ -36,7 +36,10 @@ import {
   ChevronRight,
   X,
   ShieldAlert,
-  Briefcase
+  Briefcase,
+  Printer,
+  FileText,
+  Share2
 } from 'lucide-react';
 
 interface DirectorSummaryData {
@@ -154,6 +157,82 @@ export default function WhatsappConfigPage() {
   const [generatingDirectorAI, setGeneratingDirectorAI] = useState(false);
   const [activeDirectorPeriod, setActiveDirectorPeriod] = useState<string | null>(null);
   const [showDirectorModal, setShowDirectorModal] = useState(false);
+  const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
+
+  const handleExportDirectorPDF = () => {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  };
+
+  const handleCopyDirectorWhatsApp = () => {
+    if (!directorSummary) return;
+
+    const periodLabelMap: Record<string, string> = {
+      today: 'Día (Hoy)',
+      yesterday: 'Ayer',
+      week: 'Última Semana (7 Días)',
+      month: 'Mes Actual',
+      all: 'Histórico Completo',
+    };
+
+    const periodName = periodLabelMap[directorSummary.period || 'today'] || 'Periodo General';
+
+    let text = `👔 *RESUMEN EJECUTIVO PARA DIRECCIÓN*\n`;
+    text += `*Perry Intelligence Co-Pilot*\n`;
+    text += `📅 *Periodo:* ${periodName}\n`;
+    text += `👥 *Grupos Analizados:* ${directorSummary.totalGroupsAnalyzed || 0} | 💬 *Mensajes:* ${directorSummary.messageCount || 0}\n\n`;
+
+    text += `📌 *SÍNTESIS GENERAL:* \n${directorSummary.executiveSummary}\n\n`;
+
+    if (directorSummary.resolvedCrossIssues && directorSummary.resolvedCrossIssues.length > 0) {
+      text += `🟢 *ASUNTOS RESUELTOS CRUZADOS (${directorSummary.resolvedCrossIssues.length})*\n`;
+      directorSummary.resolvedCrossIssues.forEach((item, i) => {
+        text += `${i + 1}. *${item.issue}*\n   • Detalle: ${item.resolutionDetails}\n   • Campo: _${item.originGroup}_ -> Gestión: _${item.resolutionGroup}_\n`;
+      });
+      text += `\n`;
+    }
+
+    if (directorSummary.unresolvedCriticalPending && directorSummary.unresolvedCriticalPending.length > 0) {
+      text += `🔴 *PENDIENTES CRÍTICOS REALES (${directorSummary.unresolvedCriticalPending.length})*\n`;
+      directorSummary.unresolvedCriticalPending.forEach((item, i) => {
+        text += `${i + 1}. *${item.issue}*\n   • Grupo: _${item.reportedGroup}_ | Estatus: *${item.status}*\n`;
+      });
+      text += `\n`;
+    }
+
+    if (directorSummary.globalEquipmentStatus && directorSummary.globalEquipmentStatus.length > 0) {
+      text += `🛠️ *ESTATUS DE EQUIPOS & MAQUINARIA (${directorSummary.globalEquipmentStatus.length})*\n`;
+      directorSummary.globalEquipmentStatus.forEach((eq) => {
+        text += `• *${eq.equipo}* [${eq.status}]: ${eq.issue}\n`;
+      });
+      text += `\n`;
+    }
+
+    if (directorSummary.globalMaterialRequests && directorSummary.globalMaterialRequests.length > 0) {
+      text += `📦 *SOLICITUDES DE MATERIALES (${directorSummary.globalMaterialRequests.length})*\n`;
+      directorSummary.globalMaterialRequests.forEach((mat) => {
+        text += `• *${mat.name}* (Cant: ${mat.quantity}) - _${mat.requestedInGroup}_\n`;
+      });
+      text += `\n`;
+    }
+
+    if (directorSummary.directorRecommendations && directorSummary.directorRecommendations.length > 0) {
+      text += `👔 *RECOMENDACIONES DIRECTIVAS*\n`;
+      directorSummary.directorRecommendations.forEach((rec, i) => {
+        text += `${i + 1}. ${rec}\n`;
+      });
+      text += `\n`;
+    }
+
+    text += `_\nReporte generado automáticamente por Perry Intelligence Co-Pilot_`;
+
+    if (typeof window !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedWhatsApp(true);
+      setTimeout(() => setCopiedWhatsApp(false), 3000);
+    }
+  };
 
   const handleGenerateDirectorSummary = async (period: string) => {
     setGeneratingDirectorAI(true);
@@ -1004,9 +1083,36 @@ export default function WhatsappConfigPage() {
       {showDirectorModal && directorSummary && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
           <div 
+            id="director-modal-container"
             style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}
             className="bg-slate-900 border border-indigo-500/40 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl space-y-6 p-6"
           >
+            <style dangerouslySetInnerHTML={{__html: `
+              @media print {
+                body * {
+                  visibility: hidden !important;
+                }
+                #director-modal-container, #director-modal-container * {
+                  visibility: visible !important;
+                }
+                #director-modal-container {
+                  position: absolute !important;
+                  left: 0 !important;
+                  top: 0 !important;
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  max-height: none !important;
+                  background-color: #ffffff !important;
+                  color: #0f172a !important;
+                  padding: 24px !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                }
+                button {
+                  display: none !important;
+                }
+              }
+            `}} />
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-indigo-500/20 pb-4">
               <div className="flex items-center gap-3">
@@ -1022,12 +1128,33 @@ export default function WhatsappConfigPage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowDirectorModal(false)}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportDirectorPDF}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm active:scale-95"
+                  title="Imprimir o guardar como documento PDF"
+                >
+                  <Printer className="w-4 h-4 text-blue-400" />
+                  Exportar PDF
+                </button>
+
+                <button
+                  onClick={handleCopyDirectorWhatsApp}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/30 cursor-pointer active:scale-95"
+                  title="Copiar resumen formateado para WhatsApp"
+                >
+                  {copiedWhatsApp ? <Check className="w-4 h-4 text-white" /> : <MessageCircle className="w-4 h-4 text-white" />}
+                  {copiedWhatsApp ? '¡Copiado!' : 'Copiar para WhatsApp'}
+                </button>
+
+                <button
+                  onClick={() => setShowDirectorModal(false)}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Síntesis Ejecutiva */}
