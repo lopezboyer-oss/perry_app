@@ -348,12 +348,13 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           {[
             { key: 'today', label: 'Día', icon: '📅', desc: 'Hoy' },
             { key: 'yesterday', label: 'Ayer', icon: '⏪', desc: 'Día anterior' },
             { key: 'week', label: '7 Días', icon: '📊', desc: 'Última semana' },
             { key: 'month', label: 'Mes', icon: '📆', desc: 'Mes actual' },
+            { key: 'all', label: 'Histórico', icon: '⚡', desc: 'Todos los msgs' },
           ].map((p) => (
             <button
               key={p.key}

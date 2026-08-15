@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { canAccessWhatsappCoPilot } from '@/lib/permissions';
 
 export async function POST(
   req: NextRequest,
@@ -12,9 +13,9 @@ export async function POST(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    // Access control: only Ivan Lopez
-    const userEmail = (session.user as any)?.email;
-    if (userEmail !== 'lopezboyer@gmail.com') {
+    // Access control: only authorized email (Ivan Lopez)
+    const userEmail = (session.user as any)?.email || '';
+    if (!canAccessWhatsappCoPilot(userEmail)) {
       return NextResponse.json({ error: 'No tienes acceso a esta función' }, { status: 403 });
     }
 
@@ -28,55 +29,7 @@ export async function POST(
     } catch {}
     const period: string = body.period || 'today';
 
-    // Calculate date range based on period (Mexico City timezone: UTC-6)
-    const now = new Date();
-    const mexicoOffset = -6 * 60; // UTC-6 in minutes
-    const localNow = new Date(now.getTime() + (mexicoOffset + now.getTimezoneOffset()) * 60000);
-    
-    let startDate: Date;
-    let periodLabel: string;
-
-    switch (period) {
-      case 'yesterday': {
-        const yesterday = new Date(localNow);
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
-        const yesterdayEnd = new Date(localNow);
-        yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
-        yesterdayEnd.setHours(23, 59, 59, 999);
-        // Convert back to UTC for DB query
-        startDate = new Date(yesterday.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
-        const endDate = new Date(yesterdayEnd.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
-        periodLabel = `Ayer (${yesterday.toLocaleDateString('es-MX')})`;
-        // Special case: yesterday has an end bound
-        const logs = await getFilteredLogs(decodedGroupId, startDate, endDate);
-        return await generateSummary(req, decodedGroupId, logs, periodLabel);
-      }
-      case 'week': {
-        const weekAgo = new Date(localNow);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        weekAgo.setHours(0, 0, 0, 0);
-        startDate = new Date(weekAgo.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
-        periodLabel = 'Últimos 7 días';
-        break;
-      }
-      case 'month': {
-        const monthStart = new Date(localNow.getFullYear(), localNow.getMonth(), 1, 0, 0, 0, 0);
-        startDate = new Date(monthStart.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
-        periodLabel = `Mes actual (${localNow.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })})`; 
-        break;
-      }
-      case 'today':
-      default: {
-        const todayStart = new Date(localNow);
-        todayStart.setHours(0, 0, 0, 0);
-        startDate = new Date(todayStart.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
-        periodLabel = `Hoy (${localNow.toLocaleDateString('es-MX')})`;
-        break;
-      }
-    }
-
-    // 1. Fetch group mapping
+    // 1. Resolve Group Mapping FIRST
     let group = await prisma.whatsappGroupMapping.findUnique({
       where: { groupId: decodedGroupId },
     });
@@ -96,41 +49,72 @@ export async function POST(
       return NextResponse.json({ error: 'Grupo no encontrado' }, { status: 404 });
     }
 
-    // 2. Fetch logs filtered by date range
-    const logs = await prisma.whatsappMessageLog.findMany({
-      where: {
-        groupId: group.groupId,
-        createdAt: { gte: startDate },
-      },
+    // 2. Calculate date range based on period (Mexico City timezone: UTC-6)
+    const now = new Date();
+    const getMexicoDate = (d: Date) => {
+      const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+      return new Date(utc - (360 * 60000));
+    };
+    const mxNow = getMexicoDate(now);
+
+    let whereClause: any = { groupId: group.groupId };
+    let periodLabel = '';
+
+    if (period === 'yesterday') {
+      const mxYesterday = new Date(mxNow);
+      mxYesterday.setDate(mxYesterday.getDate() - 1);
+      
+      const startYesterday = new Date(Date.UTC(mxYesterday.getFullYear(), mxYesterday.getMonth(), mxYesterday.getDate(), 6, 0, 0));
+      const endYesterday = new Date(Date.UTC(mxYesterday.getFullYear(), mxYesterday.getMonth(), mxYesterday.getDate() + 1, 5, 59, 59));
+      
+      whereClause.createdAt = { gte: startYesterday, lte: endYesterday };
+      periodLabel = `Ayer (${mxYesterday.toLocaleDateString('es-MX')})`;
+    } else if (period === 'week') {
+      const mx7Days = new Date(mxNow);
+      mx7Days.setDate(mx7Days.getDate() - 7);
+      const start7Days = new Date(Date.UTC(mx7Days.getFullYear(), mx7Days.getMonth(), mx7Days.getDate(), 6, 0, 0));
+      whereClause.createdAt = { gte: start7Days };
+      periodLabel = 'Últimos 7 Días';
+    } else if (period === 'month') {
+      const startMonth = new Date(Date.UTC(mxNow.getFullYear(), mxNow.getMonth(), 1, 6, 0, 0));
+      whereClause.createdAt = { gte: startMonth };
+      periodLabel = `Mes Actual (${mxNow.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })})`;
+    } else if (period === 'all') {
+      periodLabel = 'Histórico Completo';
+    } else {
+      // 'today' default
+      const startToday = new Date(Date.UTC(mxNow.getFullYear(), mxNow.getMonth(), mxNow.getDate(), 6, 0, 0));
+      whereClause.createdAt = { gte: startToday };
+      periodLabel = `Hoy (${mxNow.toLocaleDateString('es-MX')})`;
+    }
+
+    let logs = await prisma.whatsappMessageLog.findMany({
+      where: whereClause,
+      take: 100,
       orderBy: { createdAt: 'desc' },
     });
 
-    return await generateSummary(req, group.groupId, logs, periodLabel, group.groupName);
-  } catch (error: any) {
-    console.error('Error generando resumen IA por grupo:', error);
-    return NextResponse.json({ error: error.message || 'Error de servidor' }, { status: 500 });
-  }
-}
-
-async function getFilteredLogs(groupId: string, startDate: Date, endDate: Date) {
-  return prisma.whatsappMessageLog.findMany({
-    where: {
-      groupId,
-      createdAt: { gte: startDate, lte: endDate },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-}
-
-async function generateSummary(req: NextRequest, groupId: string, logs: any[], periodLabel: string, groupName?: string | null) {
+    // If 0 logs found for specific period (e.g. today has no activity yet), return a helpful structured fallback
     if (logs.length === 0) {
+      const totalGroupLogsCount = await prisma.whatsappMessageLog.count({
+        where: { groupId: group.groupId },
+      });
+
       return NextResponse.json({
         summary: {
-          executiveSummary: `No hay mensajes registrados para el período: ${periodLabel}. El grupo no tuvo actividad reportada en ese rango.`,
+          executiveSummary: `No se registraron mensajes en este grupo durante el período: ${periodLabel}.${
+            totalGroupLogsCount > 0
+              ? ' El grupo cuenta con mensajes en otros períodos (prueba consultar "Ayer", "7 Días" o "Histórico").'
+              : ' Aún no hay mensajes respaldados en este grupo.'
+          }`,
           workAdvances: [],
           equipmentAlerts: [],
           materialRequests: [],
-          operationalRecommendations: ["No se detectó actividad en este período. Verificar si los equipos de campo están reportando correctamente."],
+          operationalRecommendations: [
+            totalGroupLogsCount > 0
+              ? 'Selecciona "7 Días" o "Histórico" para analizar la actividad pasada del grupo.'
+              : 'Verifica que el bot de Perry esté agregado al grupo y activo para comenzar a registrar la actividad.',
+          ],
           period: periodLabel,
           messageCount: 0,
         },
@@ -138,8 +122,8 @@ async function generateSummary(req: NextRequest, groupId: string, logs: any[], p
     }
 
     // 3. Compile prompt data from logs
-    const resolvedGroupName = groupName || 'Grupo WhatsApp';
-    let promptData = `GRUPO DE TRABAJO: "${resolvedGroupName}" (ID: ${groupId})\n`;
+    const groupName = group.groupName || 'Grupo WhatsApp';
+    let promptData = `GRUPO DE TRABAJO: "${groupName}" (ID: ${group.groupId})\n`;
     promptData += `PERÍODO DEL RESUMEN: ${periodLabel}\n`;
     promptData += `CANTIDAD DE REGISTROS ANALIZADOS: ${logs.length}\n\n`;
     promptData += `HISTORIAL DE MENSAJES Y NOTAS DE VOZ TRANSCRITAS:\n`;
@@ -170,11 +154,21 @@ async function generateSummary(req: NextRequest, groupId: string, logs: any[], p
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey || apiKey === 'Configurado_En_Netlify') {
-      return NextResponse.json({ error: 'GEMINI_API_KEY no configurada localmente' }, { status: 500 });
+      return NextResponse.json({
+        summary: {
+          executiveSummary: `Diagnóstico operativo para ${periodLabel}: Se analizaron ${logs.length} registros del grupo "${groupName}". (Nota: GEMINI_API_KEY requiere configuración en el archivo .env local o en el panel de Netlify).`,
+          workAdvances: logs.slice(0, 3).map((l: any) => `${l.senderName || l.senderPhone}: ${l.rawMessage || 'Evidencia enviada'}`),
+          equipmentAlerts: [],
+          materialRequests: [],
+          operationalRecommendations: ['Configurar GEMINI_API_KEY para habilitar el análisis sintético profundo con Gemini 2.5 Flash.'],
+          period: periodLabel,
+          messageCount: logs.length,
+        },
+      });
     }
 
     const systemPrompt = `Eres el copiloto de inteligencia operacional senior de Perry Intelligence.
-Tu misión es generar un Diagnóstico Ejecutivo de Inteligencia Operativa extremadamente preciso a partir de los mensajes, notas de voz transcritas y fotos recibidas en el grupo de WhatsApp "${resolvedGroupName}".
+Tu misión es generar un Diagnóstico Ejecutivo de Inteligencia Operativa extremadamente preciso a partir de los mensajes, notas de voz transcritas y fotos recibidas en el grupo de WhatsApp "${groupName}".
 PERÍODO DE ANÁLISIS: ${periodLabel}
 
 ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA:
@@ -249,4 +243,8 @@ Responde ÚNICAMENTE con un objeto JSON válido con las siguientes llaves:
         messageCount: logs.length,
       },
     });
+  } catch (error: any) {
+    console.error('Error generando resumen IA por grupo:', error);
+    return NextResponse.json({ error: error.message || 'Error de servidor' }, { status: 500 });
+  }
 }
