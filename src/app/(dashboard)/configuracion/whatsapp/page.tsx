@@ -95,7 +95,7 @@ export default function WhatsappConfigPage() {
 
   const webhookUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/api/whatsapp/webhook`
-    : 'https://perry.netlify.app/api/whatsapp/webhook';
+    : 'https://perryapp.netlify.app/api/whatsapp/webhook';
 
   const fetchData = async () => {
     setLoading(true);

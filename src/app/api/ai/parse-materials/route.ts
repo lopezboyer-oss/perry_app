@@ -37,7 +37,7 @@ ${text}
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Referer': 'https://perry.netlify.app/',
+        'Referer': 'https://perryapp.netlify.app/',
       },
       body: JSON.stringify({
         contents: [

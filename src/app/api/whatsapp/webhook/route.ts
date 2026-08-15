@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       });
 
       // 2) Enviar nota de voz con el mensaje hablado de Perry
-      const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perry.netlify.app';
+      const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
       const welcomeAudioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.mp3`;
 
       try {
@@ -182,23 +182,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Check if message specifically tags or asks the bot directly
-function hasExplicitBotCall(text: string, rawBody: any): boolean {
-  if (!text) return false;
-  const lower = text.toLowerCase().trim();
-
-  const directKeywords = ['@perry', '@perrybot', '@copilot', '@co-pilot'];
-  if (directKeywords.some(kw => lower.includes(kw))) {
-    return true;
-  }
-
-  const botPhone = (process.env.WHATSAPP_BOT_PHONE || '').replace(/\D/g, '');
-  if (botPhone && lower.includes(botPhone)) {
-    return true;
-  }
-
-  return false;
-}
 
 // Clean trigger tags from message
 function cleanTriggerTags(text: string): string {

@@ -170,7 +170,7 @@ REGLA CRÍTICA DE ESTILO: NO uses ningún ícono ni emoji en todo el documento. 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Referer: 'https://perry.netlify.app/',
+          Referer: 'https://perryapp.netlify.app/',
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text }] }],

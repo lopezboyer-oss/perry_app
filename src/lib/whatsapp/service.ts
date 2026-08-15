@@ -116,7 +116,7 @@ export async function sendWhatsappVoiceNote(params: {
   }
 
   try {
-    const url = buildUltraMsgUrl(apiUrl, instanceId, 'messages/voice');
+    const url = buildUltraMsgUrl(apiUrl, instanceId, 'messages/audio');
 
     const bodyParams = new URLSearchParams();
     bodyParams.append('token', apiToken);
