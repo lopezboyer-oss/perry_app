@@ -18,7 +18,7 @@ export async function sendWhatsappReaction(params: {
   emoji: string; // ej: "🤖"
 }): Promise<boolean> {
   const apiUrl = process.env.WHATSAPP_API_URL;
-  const apiToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_API_TOKEN;
+  const apiToken = process.env.WHATSAPP_API_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN;
   const instanceId = process.env.WHATSAPP_INSTANCE_ID;
 
   if (!apiUrl || !apiToken) {
@@ -62,7 +62,7 @@ export async function sendWhatsappGroupMessage(params: {
   replyToMessageId?: string;
 }): Promise<boolean> {
   const apiUrl = process.env.WHATSAPP_API_URL;
-  const apiToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_API_TOKEN;
+  const apiToken = process.env.WHATSAPP_API_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN;
   const instanceId = process.env.WHATSAPP_INSTANCE_ID;
 
   if (!apiUrl || !apiToken) {
@@ -107,8 +107,16 @@ export async function sendWhatsappVoiceNote(params: {
   replyToMessageId?: string;
 }): Promise<boolean> {
   const apiUrl = process.env.WHATSAPP_API_URL;
-  const apiToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_API_TOKEN;
+  const apiToken = process.env.WHATSAPP_API_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN;
   const instanceId = process.env.WHATSAPP_INSTANCE_ID;
+
+  console.log(`[WHATSAPP VOICE] Intentando enviar nota de voz:`, {
+    to: params.groupId,
+    audioUrl: params.audioUrl,
+    hasApiUrl: !!apiUrl,
+    hasApiToken: !!apiToken,
+    hasInstanceId: !!instanceId,
+  });
 
   if (!apiUrl || !apiToken) {
     console.log(`[WHATSAPP BOT MOCK VOICE] Enviando nota de voz a ${params.groupId}: ${params.audioUrl}`);
@@ -117,6 +125,7 @@ export async function sendWhatsappVoiceNote(params: {
 
   try {
     const url = buildUltraMsgUrl(apiUrl, instanceId, 'messages/audio');
+    console.log(`[WHATSAPP VOICE] URL construida: ${url}`);
 
     const bodyParams = new URLSearchParams();
     bodyParams.append('token', apiToken);
@@ -126,6 +135,12 @@ export async function sendWhatsappVoiceNote(params: {
       bodyParams.append('msgId', params.replyToMessageId);
     }
 
+    console.log(`[WHATSAPP VOICE] Payload:`, {
+      to: params.groupId,
+      audio: params.audioUrl,
+      msgId: params.replyToMessageId || 'none',
+    });
+
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -134,14 +149,16 @@ export async function sendWhatsappVoiceNote(params: {
       body: bodyParams.toString(),
     });
 
+    const responseText = await res.text();
+    console.log(`[WHATSAPP VOICE] Response status: ${res.status}, body: ${responseText}`);
+
     if (!res.ok) {
-      const errText = await res.text();
-      console.error('UltraMsg Voice API Error:', res.status, errText);
+      console.error('[WHATSAPP VOICE] UltraMsg Audio API Error:', res.status, responseText);
     }
 
     return res.ok;
   } catch (error) {
-    console.error('Error enviando nota de voz a WhatsApp:', error);
+    console.error('[WHATSAPP VOICE] Error enviando nota de voz:', error);
     return false;
   }
 }
