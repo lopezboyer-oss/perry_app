@@ -47,3 +47,9 @@ export const canViewEconomicAnalysis = (email: string, _role: string) => {
   // Later we can change this to:
   // return ['ADMIN', 'ADMINISTRACION'].includes(role) || isIvanLopez;
 };
+
+/** Access to Perry Co-Pilot (WhatsApp Intelligence) — restricted to Ivan Lopez only */
+export const canAccessWhatsappCoPilot = (email: string) => {
+  const allowedEmails = ['lopezboyer@gmail.com'];
+  return allowedEmails.includes(email);
+};

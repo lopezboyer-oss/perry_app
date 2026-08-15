@@ -12,8 +12,69 @@ export async function POST(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    // Access control: only Ivan Lopez
+    const userEmail = (session.user as any)?.email;
+    if (userEmail !== 'lopezboyer@gmail.com') {
+      return NextResponse.json({ error: 'No tienes acceso a esta función' }, { status: 403 });
+    }
+
     const { groupId } = params;
     const decodedGroupId = decodeURIComponent(groupId);
+
+    // Parse period from request body
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {}
+    const period: string = body.period || 'today';
+
+    // Calculate date range based on period (Mexico City timezone: UTC-6)
+    const now = new Date();
+    const mexicoOffset = -6 * 60; // UTC-6 in minutes
+    const localNow = new Date(now.getTime() + (mexicoOffset + now.getTimezoneOffset()) * 60000);
+    
+    let startDate: Date;
+    let periodLabel: string;
+
+    switch (period) {
+      case 'yesterday': {
+        const yesterday = new Date(localNow);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        const yesterdayEnd = new Date(localNow);
+        yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+        yesterdayEnd.setHours(23, 59, 59, 999);
+        // Convert back to UTC for DB query
+        startDate = new Date(yesterday.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
+        const endDate = new Date(yesterdayEnd.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
+        periodLabel = `Ayer (${yesterday.toLocaleDateString('es-MX')})`;
+        // Special case: yesterday has an end bound
+        const logs = await getFilteredLogs(decodedGroupId, startDate, endDate);
+        return await generateSummary(req, decodedGroupId, logs, periodLabel);
+      }
+      case 'week': {
+        const weekAgo = new Date(localNow);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
+        startDate = new Date(weekAgo.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
+        periodLabel = 'Últimos 7 días';
+        break;
+      }
+      case 'month': {
+        const monthStart = new Date(localNow.getFullYear(), localNow.getMonth(), 1, 0, 0, 0, 0);
+        startDate = new Date(monthStart.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
+        periodLabel = `Mes actual (${localNow.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })})`; 
+        break;
+      }
+      case 'today':
+      default: {
+        const todayStart = new Date(localNow);
+        todayStart.setHours(0, 0, 0, 0);
+        startDate = new Date(todayStart.getTime() - (mexicoOffset + now.getTimezoneOffset()) * 60000);
+        periodLabel = `Hoy (${localNow.toLocaleDateString('es-MX')})`;
+        break;
+      }
+    }
 
     // 1. Fetch group mapping
     let group = await prisma.whatsappGroupMapping.findUnique({
@@ -35,31 +96,55 @@ export async function POST(
       return NextResponse.json({ error: 'Grupo no encontrado' }, { status: 404 });
     }
 
-    // 2. Fetch recent operational logs for this group
+    // 2. Fetch logs filtered by date range
     const logs = await prisma.whatsappMessageLog.findMany({
-      where: { groupId: group.groupId },
-      take: 80,
+      where: {
+        groupId: group.groupId,
+        createdAt: { gte: startDate },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
+    return await generateSummary(req, group.groupId, logs, periodLabel, group.groupName);
+  } catch (error: any) {
+    console.error('Error generando resumen IA por grupo:', error);
+    return NextResponse.json({ error: error.message || 'Error de servidor' }, { status: 500 });
+  }
+}
+
+async function getFilteredLogs(groupId: string, startDate: Date, endDate: Date) {
+  return prisma.whatsappMessageLog.findMany({
+    where: {
+      groupId,
+      createdAt: { gte: startDate, lte: endDate },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+async function generateSummary(req: NextRequest, groupId: string, logs: any[], periodLabel: string, groupName?: string | null) {
     if (logs.length === 0) {
       return NextResponse.json({
         summary: {
-          executiveSummary: "Aún no hay mensajes o reportes suficientes registrados en este grupo de WhatsApp para generar un diagnóstico.",
+          executiveSummary: `No hay mensajes registrados para el período: ${periodLabel}. El grupo no tuvo actividad reportada en ese rango.`,
           workAdvances: [],
           equipmentAlerts: [],
           materialRequests: [],
-          operationalRecommendations: ["Continuar registrando los reportes de campo en el grupo de WhatsApp."],
+          operationalRecommendations: ["No se detectó actividad en este período. Verificar si los equipos de campo están reportando correctamente."],
+          period: periodLabel,
+          messageCount: 0,
         },
       });
     }
 
     // 3. Compile prompt data from logs
-    let promptData = `GRUPO DE TRABAJO: "${group.groupName || 'Grupo WhatsApp'}" (ID: ${group.groupId})\n`;
+    const resolvedGroupName = groupName || 'Grupo WhatsApp';
+    let promptData = `GRUPO DE TRABAJO: "${resolvedGroupName}" (ID: ${groupId})\n`;
+    promptData += `PERÍODO DEL RESUMEN: ${periodLabel}\n`;
     promptData += `CANTIDAD DE REGISTROS ANALIZADOS: ${logs.length}\n\n`;
     promptData += `HISTORIAL DE MENSAJES Y NOTAS DE VOZ TRANSCRITAS:\n`;
 
-    logs.reverse().forEach((log, idx) => {
+    logs.reverse().forEach((log: any, idx: number) => {
       let parsed: any = {};
       try {
         parsed = JSON.parse(log.parsedData || '{}');
@@ -89,7 +174,8 @@ export async function POST(
     }
 
     const systemPrompt = `Eres el copiloto de inteligencia operacional senior de Perry Intelligence.
-Tu misión es generar un Diagnóstico Ejecutivo de Inteligencia Operativa extremadamente preciso a partir de los mensajes, notas de voz transcritas y fotos recibidas en el grupo de WhatsApp "${group.groupName}".
+Tu misión es generar un Diagnóstico Ejecutivo de Inteligencia Operativa extremadamente preciso a partir de los mensajes, notas de voz transcritas y fotos recibidas en el grupo de WhatsApp "${resolvedGroupName}".
+PERÍODO DE ANÁLISIS: ${periodLabel}
 
 ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA:
 Responde ÚNICAMENTE con un objeto JSON válido con las siguientes llaves:
@@ -156,9 +242,11 @@ Responde ÚNICAMENTE con un objeto JSON válido con las siguientes llaves:
 
     const summary = JSON.parse(rawText);
 
-    return NextResponse.json({ summary });
-  } catch (error: any) {
-    console.error('Error generando resumen IA por grupo:', error);
-    return NextResponse.json({ error: error.message || 'Error de servidor' }, { status: 500 });
-  }
+    return NextResponse.json({
+      summary: {
+        ...summary,
+        period: periodLabel,
+        messageCount: logs.length,
+      },
+    });
 }

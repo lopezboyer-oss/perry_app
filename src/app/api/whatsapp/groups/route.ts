@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { canAccessWhatsappCoPilot } from '@/lib/permissions';
 
 // GET all WhatsApp group mappings + statistics + recent message logs
 export async function GET(req: NextRequest) {
@@ -8,6 +9,11 @@ export async function GET(req: NextRequest) {
     const session = await auth();
     if (!session) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const email = (session.user as any)?.email || '';
+    if (!canAccessWhatsappCoPilot(email)) {
+      return NextResponse.json({ error: 'Acceso restringido' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

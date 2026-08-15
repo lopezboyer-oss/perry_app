@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { canAccessWhatsappCoPilot } from '@/lib/permissions';
 import { 
   Bot, 
   MessageSquare, 
@@ -92,6 +94,9 @@ const safeFormatDateTime = (dateStr?: string | null): string => {
 };
 
 export default function WhatsappConfigPage() {
+  const { data: session } = useSession();
+  const userEmail = (session?.user as any)?.email || '';
+
   const [activeTab, setActiveTab] = useState<'groups' | 'logs'>('groups');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -247,6 +252,20 @@ export default function WhatsappConfigPage() {
         return <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold flex items-center gap-1"><Zap className="w-3 h-3" /> Operativo</span>;
     }
   };
+
+  if (!canAccessWhatsappCoPilot(userEmail)) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 flex items-center justify-center">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center max-w-md space-y-4">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
+          <h2 className="text-xl font-bold text-white">Acceso Restringido</h2>
+          <p className="text-sm text-slate-400">
+            El módulo Perry Co-Pilot (WhatsApp Intelligence) está disponible únicamente para administradores autorizados.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 space-y-6">

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { canAccessWhatsappCoPilot } from '@/lib/permissions';
 import { 
   ArrowLeft,
   Bot, 
@@ -73,6 +75,8 @@ interface AISummary {
   equipmentAlerts: Array<{ equipo: string; status: string; issue: string }>;
   materialRequests: Array<{ name: string; quantity: number; providerType: string }>;
   operationalRecommendations: string[];
+  period?: string;
+  messageCount?: number;
 }
 
 const safeFormatDate = (dateStr?: string | null): string => {
@@ -103,6 +107,9 @@ const safeFormatDateTime = (dateStr?: string | null): string => {
 };
 
 export default function GroupDetailPage({ params }: { params: { groupId: string } }) {
+  const { data: session } = useSession();
+  const userEmail = (session?.user as any)?.email || '';
+
   const rawGroupId = params?.groupId ? String(params.groupId) : '';
   let decodedGroupId = rawGroupId;
   try {
@@ -113,6 +120,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
 
   const [loading, setLoading] = useState(true);
   const [generatingAI, setGeneratingAI] = useState(false);
+  const [activePeriod, setActivePeriod] = useState<string | null>(null);
   const [group, setGroup] = useState<GroupMapping | null>(null);
   const [stats, setStats] = useState({
     totalMessages: 0,
@@ -153,11 +161,14 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
     }
   };
 
-  const handleGenerateAISummary = async () => {
+  const handleGenerateAISummary = async (period: string) => {
     setGeneratingAI(true);
+    setActivePeriod(period);
     try {
       const res = await fetch(`/api/whatsapp/groups/${encodeURIComponent(decodedGroupId)}/ai-summary`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -169,6 +180,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
       console.error('Error generando resumen de IA:', err);
     } finally {
       setGeneratingAI(false);
+      setActivePeriod(null);
     }
   };
 
@@ -215,6 +227,20 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
 
     return matchesSearch && matchesType;
   });
+
+  if (!canAccessWhatsappCoPilot(userEmail)) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 flex items-center justify-center">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center max-w-md space-y-4">
+          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
+          <h2 className="text-xl font-bold text-white">Acceso Restringido</h2>
+          <p className="text-sm text-slate-400">
+            El módulo Perry Co-Pilot (WhatsApp Intelligence) está disponible únicamente para administradores autorizados.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -300,15 +326,6 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
 
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={handleGenerateAISummary}
-              disabled={generatingAI}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Sparkles className={`w-4 h-4 ${generatingAI ? 'animate-spin' : ''}`} />
-              {generatingAI ? 'Generando Diagnóstico...' : 'Generar Diagnóstico Ejecutivo IA'}
-            </button>
-
-            <button
               onClick={fetchGroupDetail}
               className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
               title="Actualizar datos"
@@ -317,6 +334,56 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
             </button>
           </div>
         </div>
+      </div>
+
+      {/* RESUMEN EJECUTIVO IA — CARD CON 4 PERIODOS */}
+      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/30 border border-emerald-500/20 rounded-2xl p-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Resumen Ejecutivo IA</h3>
+            <p className="text-xs text-slate-400">Diagnóstico operativo generado con Gemini 2.5 Flash</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { key: 'today', label: 'Día', icon: '📅', desc: 'Hoy' },
+            { key: 'yesterday', label: 'Ayer', icon: '⏪', desc: 'Día anterior' },
+            { key: 'week', label: '7 Días', icon: '📊', desc: 'Última semana' },
+            { key: 'month', label: 'Mes', icon: '📆', desc: 'Mes actual' },
+          ].map((p) => (
+            <button
+              key={p.key}
+              onClick={() => handleGenerateAISummary(p.key)}
+              disabled={generatingAI}
+              className={`p-3 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait ${
+                activePeriod === p.key
+                  ? 'bg-emerald-500/20 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                  : 'bg-slate-950/60 border-slate-800 hover:border-emerald-500/30 hover:bg-slate-900'
+              }`}
+            >
+              <div className="text-lg mb-1">{p.icon}</div>
+              <div className="text-sm font-bold text-white">{p.label}</div>
+              <div className="text-[10px] text-slate-400">{p.desc}</div>
+              {activePeriod === p.key && (
+                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
+                  <RefreshCw className="w-3 h-3 animate-spin" /> Generando...
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {aiSummary && (
+          <div className="text-xs text-slate-400 flex items-center gap-2 pt-1 border-t border-slate-800/60">
+            <Sparkles className="w-3 h-3 text-emerald-400" />
+            {aiSummary.period && <span className="font-semibold text-emerald-400">{aiSummary.period}</span>}
+            {aiSummary.messageCount !== undefined && <span>· {aiSummary.messageCount} mensajes analizados</span>}
+          </div>
+        )}
       </div>
 
       {/* GRID DE KPIs Y METRICAS DE INTELIGENCIA */}
