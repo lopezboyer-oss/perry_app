@@ -549,7 +549,19 @@ export default function WhatsappConfigPage() {
                   parsed = JSON.parse(log.parsedData || '{}');
                 } catch {}
 
-                const mediaList: string[] = log.mediaUrls ? JSON.parse(log.mediaUrls) : [];
+                let mediaList: string[] = [];
+                if (log.mediaUrls) {
+                  try {
+                    const pMedia = JSON.parse(log.mediaUrls);
+                    if (Array.isArray(pMedia)) {
+                      mediaList = pMedia;
+                    } else if (typeof pMedia === 'string') {
+                      mediaList = [pMedia];
+                    }
+                  } catch {
+                    mediaList = [log.mediaUrls];
+                  }
+                }
 
                 return (
                   <div

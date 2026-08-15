@@ -26,7 +26,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Zap,
-  Users
+  Users,
+  MessageCircle
 } from 'lucide-react';
 
 interface CompanyInfo {
@@ -75,8 +76,13 @@ interface AISummary {
 }
 
 export default function GroupDetailPage({ params }: { params: { groupId: string } }) {
-  const { groupId } = params;
-  const decodedGroupId = decodeURIComponent(groupId);
+  const rawGroupId = params?.groupId ? String(params.groupId) : '';
+  let decodedGroupId = rawGroupId;
+  try {
+    decodedGroupId = decodeURIComponent(rawGroupId);
+  } catch {
+    decodedGroupId = rawGroupId;
+  }
 
   const [loading, setLoading] = useState(true);
   const [generatingAI, setGeneratingAI] = useState(false);
@@ -534,7 +540,19 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
                     parsed = JSON.parse(log.parsedData || '{}');
                   } catch {}
 
-                  const mediaList: string[] = log.mediaUrls ? JSON.parse(log.mediaUrls) : [];
+                  let mediaList: string[] = [];
+                  if (log.mediaUrls) {
+                    try {
+                      const pMedia = JSON.parse(log.mediaUrls);
+                      if (Array.isArray(pMedia)) {
+                        mediaList = pMedia;
+                      } else if (typeof pMedia === 'string') {
+                        mediaList = [pMedia];
+                      }
+                    } catch {
+                      mediaList = [log.mediaUrls];
+                    }
+                  }
 
                   return (
                     <div
