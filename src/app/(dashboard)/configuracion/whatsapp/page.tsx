@@ -271,10 +271,16 @@ export default function WhatsappConfigPage() {
         setDirectorSummary(data.summary);
         setShowDirectorModal(true);
       } else {
-        alert('No se pudo generar el Resumen para Dirección');
+        let errorMsg = 'No se pudo generar el Resumen para Dirección';
+        try {
+          const errData = await res.json();
+          errorMsg = errData.error || errorMsg;
+        } catch {}
+        alert(`Error (${res.status}): ${errorMsg}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error generando Resumen para Dirección:', err);
+      alert(`Error de red: ${err.message || 'No se pudo conectar al servidor'}`);
     } finally {
       setGeneratingDirectorAI(false);
       setActiveDirectorPeriod(null);

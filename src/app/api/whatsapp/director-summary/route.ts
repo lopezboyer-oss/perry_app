@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     // 3. Fetch logs for ALL groups within period
     const logs = await prisma.whatsappMessageLog.findMany({
       where: whereClause,
-      take: 300,
+      take: 150,
       orderBy: { createdAt: 'desc' },
       include: {
         activity: {
@@ -241,42 +241,67 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
   ]
 }`;
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Referer: 'https://perryapp.netlify.app/',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: `${systemPrompt}\n\nHISTORIAL CONSOLIDADO DE TODOS LOS GRUPOS:\n${promptData}` }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json',
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Referer: 'https://perryapp.netlify.app/',
           },
-        }),
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: `${systemPrompt}\n\nHISTORIAL CONSOLIDADO DE TODOS LOS GRUPOS:\n${promptData}` }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.2,
+              responseMimeType: 'application/json',
+            },
+          }),
+          signal: controller.signal,
+        }
+      );
+    } catch (fetchErr: any) {
+      clearTimeout(timeout);
+      if (fetchErr.name === 'AbortError') {
+        console.error('Director Summary: Gemini API timeout (25s)');
+        return NextResponse.json({ error: 'La solicitud a Gemini IA tardó demasiado (timeout 25s). Intenta con un periodo más corto como "Día" o "Ayer".' }, { status: 504 });
       }
-    );
+      console.error('Director Summary: Fetch error:', fetchErr.message);
+      return NextResponse.json({ error: `Error de conexión con Gemini IA: ${fetchErr.message}` }, { status: 502 });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!res.ok) {
       const errText = await res.text();
       console.error('Error en API Gemini Director Summary:', res.status, errText);
-      return NextResponse.json({ error: 'Error comunicando con Gemini IA' }, { status: 500 });
+      return NextResponse.json({ error: `Error de Gemini IA (HTTP ${res.status}): ${errText.substring(0, 200)}` }, { status: 500 });
     }
 
     const jsonResponse = await res.json();
     const rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!rawText) {
-      return NextResponse.json({ error: 'Respuesta vacía de Gemini IA' }, { status: 500 });
+      const blockReason = jsonResponse.candidates?.[0]?.finishReason || jsonResponse.promptFeedback?.blockReason || 'desconocido';
+      console.error('Director Summary: Respuesta vacía de Gemini. Razón:', blockReason, JSON.stringify(jsonResponse).substring(0, 500));
+      return NextResponse.json({ error: `Gemini IA no generó contenido. Razón: ${blockReason}` }, { status: 500 });
     }
 
-    const summary = JSON.parse(rawText);
+    let summary: any;
+    try {
+      summary = JSON.parse(rawText);
+    } catch (parseErr: any) {
+      console.error('Director Summary: Error parseando JSON de Gemini:', parseErr.message, 'Raw:', rawText.substring(0, 300));
+      return NextResponse.json({ error: 'Gemini IA devolvió una respuesta con formato inválido (JSON parse error)' }, { status: 500 });
+    }
 
     return NextResponse.json({
       summary: {
