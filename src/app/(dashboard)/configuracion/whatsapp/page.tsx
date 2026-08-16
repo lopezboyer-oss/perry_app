@@ -1149,37 +1149,42 @@ export default function WhatsappConfigPage() {
           >
             <style dangerouslySetInnerHTML={{__html: `
               @media print {
-                /* Hide EVERYTHING except the modal content */
-                body > *:not([class*="fixed"]) {
-                  display: none !important;
-                }
-                /* Hide the sidebar, nav, header, etc. */
-                nav, aside, header, footer,
-                [class*="sidebar"], [class*="Sidebar"] {
-                  display: none !important;
+                /* Step 1: Hide everything visually */
+                body * {
+                  visibility: hidden !important;
                 }
 
-                /* The fixed overlay: make it a normal flow container */
-                .fixed.inset-0 {
-                  position: static !important;
-                  display: block !important;
-                  background: none !important;
-                  backdrop-filter: none !important;
-                  padding: 0 !important;
+                /* Step 2: Collapse all hidden layout to prevent blank pages */
+                html, body {
+                  height: auto !important;
                   overflow: visible !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: #fff !important;
+                }
+                aside, nav, header, footer {
+                  display: none !important;
                 }
 
-                /* The modal container itself */
+                /* Step 3: Show ONLY the modal container + all its children */
+                #director-modal-container,
+                #director-modal-container * {
+                  visibility: visible !important;
+                }
+
+                /* Step 4: Position modal to fill the printed page */
                 #director-modal-container {
-                  position: static !important;
-                  display: block !important;
+                  position: fixed !important;
+                  left: 0 !important;
+                  top: 0 !important;
                   width: 100% !important;
                   max-width: 100% !important;
                   max-height: none !important;
                   overflow: visible !important;
+                  z-index: 99999 !important;
                   background-color: #ffffff !important;
                   color: #1e293b !important;
-                  padding: 16px !important;
+                  padding: 20px !important;
                   margin: 0 !important;
                   border: none !important;
                   border-radius: 0 !important;
@@ -1187,8 +1192,9 @@ export default function WhatsappConfigPage() {
                 }
 
                 /* Hide all buttons in print */
-                button {
+                #director-modal-container button {
                   display: none !important;
+                  visibility: hidden !important;
                 }
 
                 /* Convert dark text colors to print-friendly */
@@ -1197,7 +1203,6 @@ export default function WhatsappConfigPage() {
                   -webkit-print-color-adjust: exact !important;
                   print-color-adjust: exact !important;
                 }
-
                 #director-modal-container h3,
                 #director-modal-container h4,
                 #director-modal-container h5,
@@ -1205,7 +1210,7 @@ export default function WhatsappConfigPage() {
                   color: #0f172a !important;
                 }
 
-                /* Section cards: light bg with visible borders for print */
+                /* Section cards */
                 #director-modal-container [class*="rounded-xl"],
                 #director-modal-container [class*="rounded-lg"] {
                   background-color: #f8fafc !important;
@@ -1215,7 +1220,7 @@ export default function WhatsappConfigPage() {
                   break-inside: avoid !important;
                 }
 
-                /* Badges / pills */
+                /* Badges */
                 #director-modal-container [class*="rounded-full"],
                 #director-modal-container [class*="rounded-md"] {
                   background-color: #f1f5f9 !important;
@@ -1223,29 +1228,19 @@ export default function WhatsappConfigPage() {
                   color: #334155 !important;
                 }
 
-                /* Header section titles - keep some color for readability */
+                /* Keep semantic colors for section headers */
                 #director-modal-container .text-indigo-400,
-                #director-modal-container .text-indigo-300 {
-                  color: #4338ca !important;
-                }
+                #director-modal-container .text-indigo-300 { color: #4338ca !important; }
                 #director-modal-container .text-emerald-400,
-                #director-modal-container .text-emerald-300 {
-                  color: #059669 !important;
-                }
+                #director-modal-container .text-emerald-300 { color: #059669 !important; }
                 #director-modal-container .text-rose-400,
-                #director-modal-container .text-rose-300 {
-                  color: #e11d48 !important;
-                }
+                #director-modal-container .text-rose-300 { color: #e11d48 !important; }
                 #director-modal-container .text-amber-400,
-                #director-modal-container .text-amber-300 {
-                  color: #d97706 !important;
-                }
+                #director-modal-container .text-amber-300 { color: #d97706 !important; }
                 #director-modal-container .text-purple-400,
-                #director-modal-container .text-purple-300 {
-                  color: #7c3aed !important;
-                }
+                #director-modal-container .text-purple-300 { color: #7c3aed !important; }
 
-                /* Grids: stack on print to avoid side-by-side clipping */
+                /* Stack grids vertically for print */
                 #director-modal-container .grid {
                   display: block !important;
                 }
@@ -1253,15 +1248,14 @@ export default function WhatsappConfigPage() {
                   margin-bottom: 12px !important;
                 }
 
-                /* SVG icons: make visible */
+                /* SVG icons */
                 #director-modal-container svg {
                   color: #475569 !important;
                 }
 
-                /* Page setup */
                 @page {
                   size: letter;
-                  margin: 0.6in;
+                  margin: 0.5in;
                 }
               }
             `}} />
