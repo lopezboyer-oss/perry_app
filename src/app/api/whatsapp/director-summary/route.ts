@@ -242,7 +242,7 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
 }`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
+    const timeout = setTimeout(() => controller.abort(), 55000);
 
     let res: Response;
     try {
@@ -271,8 +271,8 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
     } catch (fetchErr: any) {
       clearTimeout(timeout);
       if (fetchErr.name === 'AbortError') {
-        console.error('Director Summary: Gemini API timeout (25s)');
-        return NextResponse.json({ error: 'La solicitud a Gemini IA tardó demasiado (timeout 25s). Intenta con un periodo más corto como "Día" o "Ayer".' }, { status: 504 });
+        console.error('Director Summary: Gemini API timeout (55s)');
+        return NextResponse.json({ error: 'La solicitud a Gemini IA tardó demasiado (timeout 55s). Intenta con un periodo más corto como "Día" o "Ayer".' }, { status: 504 });
       }
       console.error('Director Summary: Fetch error:', fetchErr.message);
       return NextResponse.json({ error: `Error de conexión con Gemini IA: ${fetchErr.message}` }, { status: 502 });

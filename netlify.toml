@@ -1,0 +1,8 @@
+[functions]
+  external_node_modules = ["bcryptjs"]
+
+[functions."*"]
+  node_bundler = "esbuild"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
