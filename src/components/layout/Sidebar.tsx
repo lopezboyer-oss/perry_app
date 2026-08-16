@@ -204,10 +204,10 @@ export function Sidebar({ user }: SidebarProps) {
                   ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               )}
-              title={collapsed ? 'Perry Co-Pilot' : undefined}
+              title={collapsed ? 'Perry Intelligence' : undefined}
             >
               <Bot className="w-5 h-5 flex-shrink-0 text-emerald-400" />
-              {!collapsed && 'Perry Co-Pilot (WA)'}
+              {!collapsed && 'Perry Intelligence'}
             </Link>
           )}
         </nav>

@@ -32,18 +32,25 @@ import {
   Building2,
   Edit3,
   Mic,
-  MessageCircle,
-  ChevronRight,
-  X,
-  ShieldAlert,
-  Briefcase,
   Printer,
   FileText,
-  Share2
+  Share2,
+  Sun,
+  History,
+  CalendarRange,
+  CalendarDays,
+  Archive,
+  Globe,
+  Building
 } from 'lucide-react';
 
 interface DirectorSummaryData {
   executiveSummary: string;
+  companySummaries?: Array<{
+    companyName: string;
+    summary: string;
+  }>;
+  sharedTopicsSummary?: string;
   resolvedCrossIssues: Array<{
     issue: string;
     originGroup: string;
@@ -176,14 +183,25 @@ export default function WhatsappConfigPage() {
       all: 'Histórico Completo',
     };
 
-    const periodName = periodLabelMap[directorSummary.period || 'today'] || 'Periodo General';
+    const periodName = directorSummary.period || periodLabelMap['today'];
 
     let text = `👔 *RESUMEN EJECUTIVO PARA DIRECCIÓN*\n`;
-    text += `*Perry Intelligence Co-Pilot*\n`;
+    text += `*PERRY INTELLIGENCE*\n`;
     text += `📅 *Periodo:* ${periodName}\n`;
-    text += `👥 *Grupos Analizados:* ${directorSummary.totalGroupsAnalyzed || 0} | 💬 *Mensajes:* ${directorSummary.messageCount || 0}\n\n`;
+    text += `👥 *Grupos Analizados:* ${directorSummary.totalGroupsAnalyzed || 0} | 💬 *Mensajes Procesados:* ${directorSummary.messageCount || 0}\n\n`;
 
     text += `📌 *SÍNTESIS GENERAL:* \n${directorSummary.executiveSummary}\n\n`;
+
+    if (directorSummary.companySummaries && directorSummary.companySummaries.length > 0) {
+      text += `🏢 *DESGLOSE POR EMPRESA*\n`;
+      directorSummary.companySummaries.forEach((c) => {
+        text += `• *${c.companyName}:*\n  ${c.summary}\n\n`;
+      });
+    }
+
+    if (directorSummary.sharedTopicsSummary) {
+      text += `🌐 *RECURSOS Y TEMAS TRANSVERSALES COMPARTIDOS*\n${directorSummary.sharedTopicsSummary}\n\n`;
+    }
 
     if (directorSummary.resolvedCrossIssues && directorSummary.resolvedCrossIssues.length > 0) {
       text += `🟢 *ASUNTOS RESUELTOS CRUZADOS (${directorSummary.resolvedCrossIssues.length})*\n`;
@@ -225,7 +243,7 @@ export default function WhatsappConfigPage() {
       text += `\n`;
     }
 
-    text += `_\nReporte generado automáticamente por Perry Intelligence Co-Pilot_`;
+    text += `_\nReporte generado automáticamente por Perry Intelligence_`;
 
     if (typeof window !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
@@ -548,32 +566,39 @@ export default function WhatsappConfigPage() {
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
           {[
-            { key: 'today', label: 'Día', icon: '📅', desc: 'Hoy' },
-            { key: 'yesterday', label: 'Ayer', icon: '⏪', desc: 'Día anterior' },
-            { key: 'week', label: '7 Días', icon: '📊', desc: 'Última semana' },
-            { key: 'month', label: 'Mes', icon: '📆', desc: 'Mes actual' },
-            { key: 'all', label: 'Histórico', icon: '⚡', desc: 'Todos los grupos' },
-          ].map((p) => (
-            <button
-              key={p.key}
-              onClick={() => handleGenerateDirectorSummary(p.key)}
-              disabled={generatingDirectorAI}
-              className={`p-3 rounded-xl border text-left transition-all cursor-pointer disabled:opacity-50 disabled:cursor-wait ${
-                activeDirectorPeriod === p.key
-                  ? 'bg-indigo-500/30 border-indigo-400/60 shadow-lg shadow-indigo-500/20'
-                  : 'bg-slate-950/70 border-slate-800 hover:border-indigo-500/40 hover:bg-slate-900'
-              }`}
-            >
-              <div className="text-xl mb-1">{p.icon}</div>
-              <div className="text-sm font-bold text-white">{p.label}</div>
-              <div className="text-[10px] text-slate-400">{p.desc}</div>
-              {activeDirectorPeriod === p.key && (
-                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-indigo-300 font-medium">
-                  <RefreshCw className="w-3 h-3 animate-spin text-indigo-400" /> Conciliando...
+            { key: 'today', label: 'Día', icon: Sun, iconColor: 'text-amber-400', desc: 'Hoy' },
+            { key: 'yesterday', label: 'Ayer', icon: History, iconColor: 'text-blue-400', desc: 'Día anterior' },
+            { key: 'week', label: '7 Días', icon: CalendarRange, iconColor: 'text-indigo-400', desc: 'Última semana' },
+            { key: 'month', label: 'Mes', icon: CalendarDays, iconColor: 'text-purple-400', desc: 'Mes actual' },
+            { key: 'all', label: 'Histórico', icon: Archive, iconColor: 'text-emerald-400', desc: 'Todos los grupos' },
+          ].map((p) => {
+            const IconComp = p.icon;
+            return (
+              <button
+                key={p.key}
+                onClick={() => handleGenerateDirectorSummary(p.key)}
+                disabled={generatingDirectorAI}
+                className={`p-3 rounded-xl border transition-all text-left flex flex-col justify-between cursor-pointer disabled:opacity-50 disabled:cursor-wait ${
+                  activeDirectorPeriod === p.key && generatingDirectorAI
+                    ? 'bg-indigo-600/30 border-indigo-500 text-white animate-pulse'
+                    : 'bg-slate-900/80 hover:bg-slate-800/90 border-slate-800 hover:border-indigo-500/50 text-slate-200 shadow-md'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
+                    <IconComp className={`w-4 h-4 ${p.iconColor}`} />
+                  </div>
+                  {activeDirectorPeriod === p.key && generatingDirectorAI && (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                  )}
                 </div>
-              )}
-            </button>
-          ))}
+                <div className="mt-2">
+                  <div className="text-xs font-bold text-white">{p.label}</div>
+                  <div className="text-[10px] text-slate-400">{p.desc}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -1120,16 +1145,36 @@ export default function WhatsappConfigPage() {
                   <Briefcase className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    Resumen Ejecutivo para Dirección (Síntesis Multi-Grupo)
-                  </h3>
-                  <p className="text-xs text-indigo-300 mt-0.5">
-                    Conciliación transversal de {directorSummary.totalGroupsAnalyzed || 0} grupos | {directorSummary.messageCount || 0} mensajes analizados
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xl font-bold text-white">
+                      Resumen Ejecutivo para Dirección
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold">
+                      Perry Intelligence
+                    </span>
+                  </div>
+                  
+                  {/* Badges de Métricas de Análisis */}
+                  <div className="flex items-center gap-2 mt-2 flex-wrap text-xs">
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-amber-300 font-medium flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                      Periodo: <strong className="text-white">{directorSummary.period || 'General'}</strong>
+                    </span>
+
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-indigo-300 font-medium flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-indigo-400" />
+                      Grupos: <strong className="text-white">{directorSummary.totalGroupsAnalyzed || 0}</strong>
+                    </span>
+
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-emerald-300 font-medium flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                      Mensajes Procesados: <strong className="text-white">{directorSummary.messageCount || 0}</strong>
+                    </span>
+                  </div>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handleExportDirectorPDF}
                   className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm active:scale-95"
@@ -1157,7 +1202,7 @@ export default function WhatsappConfigPage() {
               </div>
             </div>
 
-            {/* Síntesis Ejecutiva */}
+            {/* Síntesis Ejecutiva C-Level */}
             <div className="bg-slate-950/80 border border-indigo-500/20 rounded-xl p-4 space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-indigo-400" /> Síntesis Directiva General
@@ -1166,6 +1211,40 @@ export default function WhatsappConfigPage() {
                 {directorSummary.executiveSummary}
               </p>
             </div>
+
+            {/* SECCIÓN ESTRUCTURADA POR EMPRESA */}
+            {directorSummary.companySummaries && directorSummary.companySummaries.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <Building className="w-4 h-4 text-indigo-400" /> Desglose Operativo por Empresa
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {directorSummary.companySummaries.map((c, idx) => (
+                    <div key={idx} className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-1.5 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                        <h5 className="text-xs font-bold text-indigo-300 uppercase tracking-wider">{c.companyName}</h5>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        {c.summary}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SECCIÓN RECURSOS Y TEMAS TRANSVERSALES COMPARTIDOS */}
+            {directorSummary.sharedTopicsSummary && (
+              <div className="bg-indigo-950/20 border border-indigo-500/30 rounded-xl p-4 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-indigo-400" /> Recursos & Temas Transversales Compartidos
+                </h4>
+                <p className="text-xs text-slate-200 leading-relaxed">
+                  {directorSummary.sharedTopicsSummary}
+                </p>
+              </div>
+            )}
 
             {/* Grid 2 Columnas: Asuntos Resueltos Cruzados vs Pendientes Reales */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

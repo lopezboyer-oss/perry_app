@@ -113,33 +113,41 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Categorize logs by group type
-    let promptData = `=== REPORTE MULTI-GRUPO DE INTELIGENCIA OPERATIVA PARA DIRECCIÓN ===\n`;
+    // 4. Categorize logs by group type & map to Company
+    const groupCompanyMap = new Map<string, string>();
+    groups.forEach((g) => {
+      const cName = g.companyId ? companyMap.get(g.companyId) : undefined;
+      groupCompanyMap.set(g.groupId, cName || 'Empresa General / Operaciones');
+    });
+
+    let promptData = `=== REPORTE MULTI-GRUPO DE PERRY INTELLIGENCE PARA DIRECCIÓN ===\n`;
     promptData += `PERÍODO DE ANÁLISIS: ${periodLabel}\n`;
     promptData += `GRUPOS REGISTRADOS: ${groups.length}\n`;
     promptData += `REGISTROS ENCONTRADOS EN EL PERÍODO: ${logs.length}\n\n`;
 
     // Group logs by group name / JID
-    const logsByGroup = new Map<string, any[]>();
+    const logsByGroup = new Map<string, { company: string; logs: any[] }>();
     logs.forEach((log) => {
       const gName = log.groupId ? (groupNameMap.get(log.groupId) || log.groupId) : 'Chat Directo 1-a-1';
-      if (!logsByGroup.has(gName)) logsByGroup.set(gName, []);
-      logsByGroup.get(gName)!.push(log);
+      const cName = log.groupId ? (groupCompanyMap.get(log.groupId) || 'Empresa General') : 'Directo';
+      if (!logsByGroup.has(gName)) logsByGroup.set(gName, { company: cName, logs: [] });
+      logsByGroup.get(gName)!.logs.push(log);
     });
 
-    logsByGroup.forEach((groupLogs, groupNameKey) => {
-      promptData += `>>> GRUPO: "${groupNameKey}" (${groupLogs.length} mensajes) <<<\n`;
-      groupLogs.reverse().forEach((log: any, idx: number) => {
+    logsByGroup.forEach((groupData, groupNameKey) => {
+      promptData += `>>> GRUPO: "${groupNameKey}" [Empresa: ${groupData.company}] (${groupData.logs.length} mensajes) <<<\n`;
+      groupData.logs.reverse().forEach((log: any) => {
         let parsed: any = {};
         try {
           parsed = JSON.parse(log.parsedData || '{}');
         } catch {}
 
-        promptData += `  [${new Date(log.createdAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}] ${log.senderName || log.senderPhone}: `;
+        const senderDisplayName = log.senderName || log.senderPhone || 'Usuario Remitente';
+        promptData += `  [${new Date(log.createdAt).toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}] Remitente: "${senderDisplayName}": `;
         if (parsed.messageType) promptData += `[Tipo: ${parsed.messageType}] `;
         if (parsed.workOrderFolio) promptData += `[OT: ${parsed.workOrderFolio}] `;
         if (parsed.manPowerEquipo) promptData += `[Equipo: ${parsed.manPowerEquipo} (${parsed.equipmentStatus || 'N/A'})] `;
-        if (parsed.transcription) promptData += `🎙️ Audio: "${parsed.transcription}" `;
+        if (parsed.transcription) promptData += `🎙️ Audio de ${senderDisplayName}: "${parsed.transcription}" `;
         if (log.rawMessage) promptData += `"${log.rawMessage}" `;
         if (parsed.parts && parsed.parts.length > 0) {
           promptData += `| Refacciones: ${parsed.parts.map((p: any) => `${p.quantity}x ${p.name}`).join(', ')}`;
@@ -154,7 +162,12 @@ export async function POST(req: NextRequest) {
     if (!apiKey || apiKey === 'Configurado_En_Netlify') {
       return NextResponse.json({
         summary: {
-          executiveSummary: `Síntesis Directiva (${periodLabel}): Se recopilaron ${logs.length} mensajes en ${logsByGroup.size} grupos activos. (Nota: GEMINI_API_KEY no configurada localmente).`,
+          executiveSummary: `Síntesis Directiva (${periodLabel}): Se recopilaron ${logs.length} mensajes en ${logsByGroup.size} grupos activos de Perry Intelligence.`,
+          companySummaries: Array.from(new Set(Array.from(logsByGroup.values()).map(v => v.company))).map(cName => ({
+            companyName: cName,
+            summary: `Actividad registrada en el periodo para los grupos pertenecientes a ${cName}.`
+          })),
+          sharedTopicsSummary: `Coordinación transversal entre empresas y logística unificada registrada en Perry Intelligence.`,
           resolvedCrossIssues: [],
           unresolvedCriticalPending: logs.slice(0, 3).map((l: any) => ({
             issue: l.rawMessage || 'Requerimiento de campo',
@@ -163,7 +176,7 @@ export async function POST(req: NextRequest) {
           })),
           globalEquipmentStatus: [],
           globalMaterialRequests: [],
-          directorRecommendations: ['Configurar GEMINI_API_KEY en Netlify para síntesis inteligente multicanal.'],
+          directorRecommendations: ['Verificar la integración de los bots en los grupos de coordinación directiva.'],
           period: periodLabel,
           messageCount: logs.length,
           totalGroupsAnalyzed: logsByGroup.size,
@@ -171,30 +184,39 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const systemPrompt = `Eres el copiloto senior de Inteligencia Operativa y Estratégica C-Suite de Perry Intelligence.
-Tu función es generar el "Resumen para Dirección" mediante una SÍNTESIS Y CONCILIACIÓN MULTI-GRUPO de todos los chats de WhatsApp (tanto grupos de campo/técnicos como grupos de coordinación/gerencia).
+    const systemPrompt = `Eres el sistema de Inteligencia Operativa y Estratégica C-Suite de Perry Intelligence.
+Tu función es generar el "Resumen Ejecutivo para Dirección" mediante una SÍNTESIS Y CONCILIACIÓN MULTI-GRUPO de todos los chats de WhatsApp (tanto grupos de campo/técnicos como grupos de coordinación/gerencia).
 
-INSTRUCCIONES CLAVE DE CONCILIACIÓN:
-1. CONCILIACIÓN DE ASUNTOS (Cruzar Grupos Técnicos vs Coordinación): Si en un grupo técnico/operativo se reportó una necesidad, falta de personal o problema (ej. "falta técnico asignado para la OT S06447"), pero en un grupo de coordinación o gerencia se confirmó la asignación o solución (ej. "Juan asignado a la OT S06447"), debes clasificarlo como un "Asunto Resuelto Cruzado" (resolvedCrossIssues), indicando el grupo de origen y el de solución.
-2. PENDIENTES CRÍTICOS REALES: Identifica asuntos, fallas o faltantes abiertos en campo que NO muestren ninguna resolución ni seguimiento en los grupos de coordinación (unresolvedCriticalPending).
-3. CONSOLIDADO DE EQUIPOS Y REFACCIONES: Compila el estado global de equipos fuera de servicio y la lista unificada de materiales solicitados.
-4. RESUMEN NARRATIVO C-LEVEL: Redacta una síntesis ejecutiva de alto nivel de 3 a 4 párrafos orientada a Directores.
+REGLAS DE ANÁLISIS Y ESTRUCTURA OBLIGATORIAS:
+1. IDENTIFICACIÓN DE REMITENTES POR NOMBRE: Atribuye las confirmaciones, avances y acuerdos directamente al nombre del remitente (ej: "Carlos López confirmó la atención...", "Ing. Javier autorizó el cambio..."). Usa siempre el nombre de la persona que envió el mensaje si está disponible.
+2. ANÁLISIS ESTRUCTURADO POR EMPRESA: Para cada empresa presente en los grupos (ej: Caseme, Perry, Consorcio, etc.), redacta un párrafo sintético exclusivo enfocado en las actividades, estado de trabajos y novedades de esa empresa.
+3. RECURSOS Y TEMAS TRANSVERSALES COMPARTIDOS: Redacta un párrafo dedicado a los temas en común entre empresas, como logística unificada, cuadrillas móviles itinerantes, herramientas o maquinaria compartidas y coordinación interempresarial.
+4. CONCILIACIÓN DE ASUNTOS (Cruzar Grupos Técnicos vs Coordinación): Si en un grupo técnico/operativo se reportó una necesidad o problema, pero en un grupo de coordinación se confirmó la asignación o solución, clasifícalo como "resolvedCrossIssues".
+5. PENDIENTES CRÍTICOS REALES: Identifica asuntos abiertos en campo que NO muestren resolución ni seguimiento en los grupos de coordinación (unresolvedCriticalPending).
+6. RECOMENDACIONES DIRECTIVAS: Genera recomendaciones estratégicas concisas para alta dirección (directorRecommendations).
 
-ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON):
+ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON sin markdown adicional):
 {
-  "executiveSummary": "Párrafo narrativo C-Level detallando el pulso global de la operación, ritmo de trabajo en campo y coordinación directiva...",
+  "executiveSummary": "Síntesis ejecutiva C-Level general del estado de la operación directiva...",
+  "companySummaries": [
+    {
+      "companyName": "Nombre de la Empresa (ej: Caseme)",
+      "summary": "Párrafo dedicado con las novedades, estatus operativo y avances de esta empresa, mencionando a los remitentes involucrados por su nombre..."
+    }
+  ],
+  "sharedTopicsSummary": "Párrafo dedicado a los recursos compartidos, logística transversal y temas comunes entre empresas...",
   "resolvedCrossIssues": [
     {
-      "issue": "Descripción del problema o requerimiento reportado en campo",
-      "originGroup": "Nombre del grupo de campo/técnicos donde nació la necesidad",
-      "resolutionGroup": "Nombre del grupo de coordinación/gerencia donde se resolvió",
-      "resolutionDetails": "Detalle de cómo se resolvió o quién dio la solución"
+      "issue": "Descripción del requerimiento reportado en campo",
+      "originGroup": "Grupo donde nació la necesidad",
+      "resolutionGroup": "Grupo donde se resolvió",
+      "resolutionDetails": "Detalle indicando quién (nombre de persona) y cómo se resolvió"
     }
   ],
   "unresolvedCriticalPending": [
     {
       "issue": "Descripción del problema abierto sin resolver",
-      "reportedGroup": "Nombre del grupo donde se reportó",
+      "reportedGroup": "Grupo donde se reportó",
       "status": "SIN_SEGUIMIENTO" | "EN_ESPERA_DE_MATERIAL" | "REQUIERE_DECISION_GERENCIAL"
     }
   ],

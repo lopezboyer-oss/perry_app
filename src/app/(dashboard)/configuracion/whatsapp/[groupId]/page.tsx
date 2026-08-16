@@ -156,7 +156,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
     const groupName = group?.groupName || rawGroupId;
 
     let text = `📋 *RESUMEN EJECUTIVO DE GRUPO*\n`;
-    text += `*Perry Intelligence Co-Pilot*\n`;
+    text += `*Perry Intelligence*\n`;
     text += `👥 *Grupo:* ${groupName}\n`;
     if (aiSummary.period) text += `📅 *Periodo:* ${aiSummary.period}\n`;
     if (aiSummary.messageCount !== undefined) text += `💬 *Mensajes Analizados:* ${aiSummary.messageCount}\n`;
@@ -196,7 +196,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
       text += `\n`;
     }
 
-    text += `_\nReporte generado por Perry Intelligence Co-Pilot_`;
+    text += `_\nReporte generado por Perry Intelligence_`;
 
     if (typeof window !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
@@ -299,7 +299,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
           <h2 className="text-xl font-bold text-white">Acceso Restringido</h2>
           <p className="text-sm text-slate-400">
-            El módulo Perry Co-Pilot (WhatsApp Intelligence) está disponible únicamente para administradores autorizados.
+            El módulo Perry Intelligence (WhatsApp) está disponible únicamente para administradores autorizados.
           </p>
         </div>
       </div>
@@ -343,7 +343,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
           href="/configuracion/whatsapp"
           className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-emerald-400 transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Volver a Perry Co-Pilot (Grupos de WhatsApp)
+          <ArrowLeft className="w-3.5 h-3.5" /> Volver a Perry Intelligence (Grupos de WhatsApp)
         </Link>
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 border border-slate-800/90 p-6 rounded-3xl backdrop-blur-md">
@@ -514,7 +514,7 @@ export default function GroupDetailPage({ params }: { params: { groupId: string 
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Diagnóstico Ejecutivo de Inteligencia Operativa (Perry IA)</h3>
+                <h3 className="text-lg font-bold text-white">Diagnóstico Ejecutivo de Inteligencia Operativa (Perry Intelligence)</h3>
                 <p className="text-xs text-emerald-300">Análisis sintético multimodular basado en los reportes e interacción de este grupo.</p>
               </div>
             </div>
