@@ -34,41 +34,55 @@ export async function POST(req: NextRequest) {
     const companyMap = new Map(companies.map((c) => [c.id, c.name]));
     const groupNameMap = new Map(groups.map((g) => [g.groupId, g.groupName || g.groupId]));
 
-    // 2. Compute date range (Mexico City timezone UTC-6)
+    // 2. Compute date range (Tijuana timezone — America/Tijuana, handles DST automatically)
+    const TIMEZONE = 'America/Tijuana';
     const now = new Date();
-    const getMexicoDate = (d: Date) => {
-      const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-      return new Date(utc - (360 * 60000));
+
+    // Get today's date components in Tijuana timezone
+    const localDateStr = now.toLocaleDateString('en-CA', { timeZone: TIMEZONE }); // 'YYYY-MM-DD'
+    const [localYear, localMonth, localDay] = localDateStr.split('-').map(Number);
+
+    // Calculate timezone offset in ms for a given date (DST-aware)
+    const getOffsetMs = (y: number, m: number, d: number) => {
+      const refDate = new Date(Date.UTC(y, m - 1, d, 12, 0, 0)); // noon UTC avoids DST edge cases
+      const utcStr = refDate.toLocaleString('en-US', { timeZone: 'UTC' });
+      const localStr = refDate.toLocaleString('en-US', { timeZone: TIMEZONE });
+      return new Date(utcStr).getTime() - new Date(localStr).getTime();
     };
-    const mxNow = getMexicoDate(now);
+
+    // Get start of day (midnight) in Tijuana as a UTC Date
+    const startOfDay = (y: number, m: number, d: number) => {
+      const offsetMs = getOffsetMs(y, m, d);
+      return new Date(Date.UTC(y, m - 1, d) + offsetMs);
+    };
 
     let whereClause: any = {};
     let periodLabel = '';
 
     if (period === 'yesterday') {
-      const mxYesterday = new Date(mxNow);
-      mxYesterday.setDate(mxYesterday.getDate() - 1);
-      const startYesterday = new Date(Date.UTC(mxYesterday.getFullYear(), mxYesterday.getMonth(), mxYesterday.getDate(), 6, 0, 0));
-      const endYesterday = new Date(Date.UTC(mxYesterday.getFullYear(), mxYesterday.getMonth(), mxYesterday.getDate() + 1, 5, 59, 59));
+      const yDate = new Date(Date.UTC(localYear, localMonth - 1, localDay - 1));
+      const yY = yDate.getUTCFullYear(), yM = yDate.getUTCMonth() + 1, yD = yDate.getUTCDate();
+      const startYesterday = startOfDay(yY, yM, yD);
+      const endYesterday = new Date(startOfDay(localYear, localMonth, localDay).getTime() - 1);
       whereClause.createdAt = { gte: startYesterday, lte: endYesterday };
-      periodLabel = `Ayer (${mxYesterday.toLocaleDateString('es-MX')})`;
+      periodLabel = `Ayer (${String(yD).padStart(2,'0')}/${String(yM).padStart(2,'0')}/${yY})`;
     } else if (period === 'week') {
-      const mx7Days = new Date(mxNow);
-      mx7Days.setDate(mx7Days.getDate() - 7);
-      const start7Days = new Date(Date.UTC(mx7Days.getFullYear(), mx7Days.getMonth(), mx7Days.getDate(), 6, 0, 0));
+      const wDate = new Date(Date.UTC(localYear, localMonth - 1, localDay - 7));
+      const start7Days = startOfDay(wDate.getUTCFullYear(), wDate.getUTCMonth() + 1, wDate.getUTCDate());
       whereClause.createdAt = { gte: start7Days };
       periodLabel = 'Últimos 7 Días';
     } else if (period === 'month') {
-      const startMonth = new Date(Date.UTC(mxNow.getFullYear(), mxNow.getMonth(), 1, 6, 0, 0));
+      const startMonth = startOfDay(localYear, localMonth, 1);
       whereClause.createdAt = { gte: startMonth };
-      periodLabel = `Mes Actual (${mxNow.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })})`;
+      const monthName = now.toLocaleDateString('es-MX', { timeZone: TIMEZONE, month: 'long', year: 'numeric' });
+      periodLabel = `Mes Actual (${monthName})`;
     } else if (period === 'all') {
       periodLabel = 'Histórico Completo';
     } else {
       // 'today'
-      const startToday = new Date(Date.UTC(mxNow.getFullYear(), mxNow.getMonth(), mxNow.getDate(), 6, 0, 0));
+      const startToday = startOfDay(localYear, localMonth, localDay);
       whereClause.createdAt = { gte: startToday };
-      periodLabel = `Hoy (${mxNow.toLocaleDateString('es-MX')})`;
+      periodLabel = `Hoy (${String(localDay).padStart(2,'0')}/${String(localMonth).padStart(2,'0')}/${localYear})`;
     }
 
     // 3. Fetch logs for ALL groups within period
