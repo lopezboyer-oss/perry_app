@@ -7,6 +7,7 @@ import { canAccessWhatsappCoPilot } from '@/lib/permissions';
 import { 
   Bot, 
   MessageSquare, 
+  MessageCircle,
   RefreshCw, 
   Plus, 
   Trash2, 
@@ -23,6 +24,7 @@ import {
   Search,
   Filter,
   ShieldCheck,
+  ShieldAlert,
   Zap,
   Wrench,
   AlertTriangle,
@@ -41,7 +43,10 @@ import {
   CalendarDays,
   Archive,
   Globe,
-  Building
+  Building,
+  Briefcase,
+  ChevronRight,
+  X
 } from 'lucide-react';
 
 interface DirectorSummaryData {
@@ -376,6 +381,23 @@ export default function WhatsappConfigPage() {
     }
   };
 
+  const getMessageTypeBadge = (messageType?: string) => {
+    switch (messageType) {
+      case 'man_power':
+        return <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold flex items-center gap-1"><Users className="w-3 h-3" /> Personal</span>;
+      case 'refaccion':
+        return <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-semibold flex items-center gap-1"><Package className="w-3 h-3" /> Refacción</span>;
+      case 'falla_equipo':
+        return <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-semibold flex items-center gap-1"><Wrench className="w-3 h-3" /> Falla Equipo</span>;
+      case 'audio_note':
+        return <span className="px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-semibold flex items-center gap-1"><Mic className="w-3 h-3" /> Bitácora Voz</span>;
+      case 'greeting':
+        return <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-xs font-medium">Social / Saludo</span>;
+      default:
+        return <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold flex items-center gap-1"><Zap className="w-3 h-3" /> Operativo</span>;
+    }
+  };
+
   const renderBadgeType = (missingField: string | null, parsedDataStr: string | null) => {
     if (missingField) {
       return <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Falta: {missingField}</span>;
@@ -389,21 +411,28 @@ export default function WhatsappConfigPage() {
       }
     } catch {}
 
-    switch (type) {
-      case 'man_power':
-        return <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold flex items-center gap-1"><Users className="w-3 h-3" /> Personal / ManPower</span>;
-      case 'refaccion':
-        return <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-semibold flex items-center gap-1"><Package className="w-3 h-3" /> Refacción / Material</span>;
-      case 'falla_equipo':
-        return <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-semibold flex items-center gap-1"><Wrench className="w-3 h-3" /> Falla / Alerta Equipo</span>;
-      case 'audio_note':
-        return <span className="px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-semibold flex items-center gap-1"><Mic className="w-3 h-3" /> Bitácora Voz IA</span>;
-      case 'greeting':
-        return <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-xs font-medium">Social / Saludo</span>;
-      default:
-        return <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold flex items-center gap-1"><Zap className="w-3 h-3" /> Operativo</span>;
-    }
+    return getMessageTypeBadge(type);
   };
+
+  // Filtered logs based on search term
+  const filteredLogs = logs.filter((log) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    const rawMatch = log.rawMessage?.toLowerCase().includes(term);
+    const senderMatch = (log.senderName || log.senderPhone || '').toLowerCase().includes(term);
+    const groupMatch = (log.groupId || '').toLowerCase().includes(term);
+    let parsedMatch = false;
+    try {
+      const parsed = JSON.parse(log.parsedData || '{}');
+      parsedMatch = 
+        (parsed.title || '').toLowerCase().includes(term) ||
+        (parsed.workOrderFolio || '').toLowerCase().includes(term) ||
+        (parsed.manPowerEquipo || '').toLowerCase().includes(term) ||
+        (parsed.transcription || '').toLowerCase().includes(term) ||
+        (parsed.tags || []).some((t: string) => t.toLowerCase().includes(term));
+    } catch {}
+    return rawMatch || senderMatch || groupMatch || parsedMatch;
+  });
 
   if (status === 'loading') {
     return (
