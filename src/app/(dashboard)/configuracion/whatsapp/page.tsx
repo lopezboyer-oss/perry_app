@@ -1149,27 +1149,119 @@ export default function WhatsappConfigPage() {
           >
             <style dangerouslySetInnerHTML={{__html: `
               @media print {
-                body * {
-                  visibility: hidden !important;
+                /* Hide EVERYTHING except the modal content */
+                body > *:not([class*="fixed"]) {
+                  display: none !important;
                 }
-                #director-modal-container, #director-modal-container * {
-                  visibility: visible !important;
+                /* Hide the sidebar, nav, header, etc. */
+                nav, aside, header, footer,
+                [class*="sidebar"], [class*="Sidebar"] {
+                  display: none !important;
                 }
+
+                /* The fixed overlay: make it a normal flow container */
+                .fixed.inset-0 {
+                  position: static !important;
+                  display: block !important;
+                  background: none !important;
+                  backdrop-filter: none !important;
+                  padding: 0 !important;
+                  overflow: visible !important;
+                }
+
+                /* The modal container itself */
                 #director-modal-container {
-                  position: absolute !important;
-                  left: 0 !important;
-                  top: 0 !important;
+                  position: static !important;
+                  display: block !important;
                   width: 100% !important;
                   max-width: 100% !important;
                   max-height: none !important;
+                  overflow: visible !important;
                   background-color: #ffffff !important;
-                  color: #0f172a !important;
-                  padding: 24px !important;
+                  color: #1e293b !important;
+                  padding: 16px !important;
+                  margin: 0 !important;
                   border: none !important;
+                  border-radius: 0 !important;
                   box-shadow: none !important;
                 }
+
+                /* Hide all buttons in print */
                 button {
                   display: none !important;
+                }
+
+                /* Convert dark text colors to print-friendly */
+                #director-modal-container * {
+                  color: #1e293b !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+
+                #director-modal-container h3,
+                #director-modal-container h4,
+                #director-modal-container h5,
+                #director-modal-container strong {
+                  color: #0f172a !important;
+                }
+
+                /* Section cards: light bg with visible borders for print */
+                #director-modal-container [class*="rounded-xl"],
+                #director-modal-container [class*="rounded-lg"] {
+                  background-color: #f8fafc !important;
+                  border: 1px solid #cbd5e1 !important;
+                  border-radius: 8px !important;
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                }
+
+                /* Badges / pills */
+                #director-modal-container [class*="rounded-full"],
+                #director-modal-container [class*="rounded-md"] {
+                  background-color: #f1f5f9 !important;
+                  border: 1px solid #94a3b8 !important;
+                  color: #334155 !important;
+                }
+
+                /* Header section titles - keep some color for readability */
+                #director-modal-container .text-indigo-400,
+                #director-modal-container .text-indigo-300 {
+                  color: #4338ca !important;
+                }
+                #director-modal-container .text-emerald-400,
+                #director-modal-container .text-emerald-300 {
+                  color: #059669 !important;
+                }
+                #director-modal-container .text-rose-400,
+                #director-modal-container .text-rose-300 {
+                  color: #e11d48 !important;
+                }
+                #director-modal-container .text-amber-400,
+                #director-modal-container .text-amber-300 {
+                  color: #d97706 !important;
+                }
+                #director-modal-container .text-purple-400,
+                #director-modal-container .text-purple-300 {
+                  color: #7c3aed !important;
+                }
+
+                /* Grids: stack on print to avoid side-by-side clipping */
+                #director-modal-container .grid {
+                  display: block !important;
+                }
+                #director-modal-container .grid > * {
+                  margin-bottom: 12px !important;
+                }
+
+                /* SVG icons: make visible */
+                #director-modal-container svg {
+                  color: #475569 !important;
+                }
+
+                /* Page setup */
+                @page {
+                  size: letter;
+                  margin: 0.6in;
                 }
               }
             `}} />
