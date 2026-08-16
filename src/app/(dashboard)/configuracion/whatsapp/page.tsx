@@ -172,9 +172,146 @@ export default function WhatsappConfigPage() {
   const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
 
   const handleExportDirectorPDF = () => {
-    if (typeof window !== 'undefined') {
-      window.print();
+    if (typeof window === 'undefined') return;
+    const container = document.getElementById('director-modal-container');
+    if (!container) return;
+
+    // Clone modal content without buttons
+    const clone = container.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('button').forEach(btn => btn.remove());
+    clone.querySelectorAll('style').forEach(s => s.remove());
+    // Remove the inline dark-mode styles
+    clone.removeAttribute('style');
+    clone.removeAttribute('id');
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) return;
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Resumen Ejecutivo - Perry Intelligence</title>
+  <style>
+    @page { size: letter; margin: 0.5in; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+      background: #fff;
+      padding: 20px;
+      line-height: 1.5;
+      font-size: 12px;
     }
+    h3 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    h5 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    p { font-size: 12px; line-height: 1.6; }
+    strong { font-weight: 700; }
+    ul { padding-left: 18px; }
+    li { margin-bottom: 4px; }
+    svg { display: none; }
+
+    /* Layout */
+    .space-y-6 > * + * { margin-top: 16px; }
+    .space-y-3 > * + * { margin-top: 10px; }
+    .space-y-2 > * + * { margin-top: 8px; }
+    .space-y-1 > * + * { margin-top: 4px; }
+    .space-y-1\\.5 > * + * { margin-top: 5px; }
+    .space-y-2\\.5 > * + * { margin-top: 9px; }
+
+    /* Flex helpers */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .items-start { align-items: flex-start; }
+    .justify-between { justify-content: space-between; }
+    .gap-1 { gap: 4px; }
+    .gap-1\\.5 { gap: 6px; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .flex-wrap { flex-wrap: wrap; }
+    .flex-1 { flex: 1; }
+    .shrink-0 { flex-shrink: 0; }
+
+    /* Cards and sections */
+    [class*="rounded-xl"],
+    [class*="rounded-lg"] {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Badges */
+    [class*="rounded-full"],
+    [class*="rounded-md"] {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* Grid → stack for print */
+    .grid { display: block !important; }
+    .grid > * { margin-bottom: 10px; }
+
+    /* Semantic colors */
+    .text-indigo-400, .text-indigo-300 { color: #4338ca; }
+    .text-emerald-400, .text-emerald-300 { color: #059669; }
+    .text-rose-400, .text-rose-300 { color: #e11d48; }
+    .text-amber-400, .text-amber-300 { color: #d97706; }
+    .text-purple-400, .text-purple-300 { color: #7c3aed; }
+    .text-white { color: #0f172a; }
+    .text-slate-200, .text-slate-300 { color: #334155; }
+    .text-slate-400, .text-slate-500 { color: #64748b; }
+
+    /* Text sizes */
+    .text-xl { font-size: 18px; }
+    .text-lg { font-size: 16px; }
+    .text-sm { font-size: 12px; }
+    .text-xs { font-size: 11px; }
+    .text-\\[10px\\] { font-size: 10px; }
+    .text-\\[11px\\] { font-size: 11px; }
+    .font-bold { font-weight: 700; }
+    .font-extrabold { font-weight: 800; }
+    .font-semibold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+    .uppercase { text-transform: uppercase; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .italic { font-style: italic; }
+    .list-disc { list-style-type: disc; }
+
+    /* Border helpers */
+    .border-b { border-bottom: 1px solid #e2e8f0; }
+    .border-t { border-top: 1px solid #e2e8f0; }
+    .pb-2 { padding-bottom: 8px; }
+    .pb-3 { padding-bottom: 12px; }
+    .pb-4 { padding-bottom: 14px; }
+    .pt-1 { padding-top: 4px; }
+    .mt-2 { margin-top: 8px; }
+
+    /* Hidden items */
+    .hidden, [class*="backdrop-blur"] { display: none; }
+
+    /* Dot indicator */
+    .w-2.h-2 { width: 8px; height: 8px; display: inline-block; border-radius: 50%; background: #4338ca; }
+  </style>
+</head>
+<body>${clone.innerHTML}</body>
+</html>`);
+    printWindow.document.close();
+    // Wait for rendering then print
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      // Don't close immediately — let user finish the print dialog
+    }, 400);
   };
 
   const handleCopyDirectorWhatsApp = () => {
@@ -1147,118 +1284,7 @@ export default function WhatsappConfigPage() {
             style={{ backgroundColor: '#0f172a', color: '#f8fafc' }}
             className="bg-slate-900 border border-indigo-500/40 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl space-y-6 p-6"
           >
-            <style dangerouslySetInnerHTML={{__html: `
-              @media print {
-                /* Step 1: Hide everything visually */
-                body * {
-                  visibility: hidden !important;
-                }
 
-                /* Step 2: Collapse all hidden layout to prevent blank pages */
-                html, body {
-                  height: auto !important;
-                  overflow: visible !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  background: #fff !important;
-                }
-                aside, nav, header, footer {
-                  display: none !important;
-                }
-
-                /* Step 3: Show ONLY the modal container + all its children */
-                #director-modal-container,
-                #director-modal-container * {
-                  visibility: visible !important;
-                }
-
-                /* Step 4: Position modal to fill the printed page */
-                #director-modal-container {
-                  position: fixed !important;
-                  left: 0 !important;
-                  top: 0 !important;
-                  width: 100% !important;
-                  max-width: 100% !important;
-                  max-height: none !important;
-                  overflow: visible !important;
-                  z-index: 99999 !important;
-                  background-color: #ffffff !important;
-                  color: #1e293b !important;
-                  padding: 20px !important;
-                  margin: 0 !important;
-                  border: none !important;
-                  border-radius: 0 !important;
-                  box-shadow: none !important;
-                }
-
-                /* Hide all buttons in print */
-                #director-modal-container button {
-                  display: none !important;
-                  visibility: hidden !important;
-                }
-
-                /* Convert dark text colors to print-friendly */
-                #director-modal-container * {
-                  color: #1e293b !important;
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                }
-                #director-modal-container h3,
-                #director-modal-container h4,
-                #director-modal-container h5,
-                #director-modal-container strong {
-                  color: #0f172a !important;
-                }
-
-                /* Section cards */
-                #director-modal-container [class*="rounded-xl"],
-                #director-modal-container [class*="rounded-lg"] {
-                  background-color: #f8fafc !important;
-                  border: 1px solid #cbd5e1 !important;
-                  border-radius: 8px !important;
-                  page-break-inside: avoid !important;
-                  break-inside: avoid !important;
-                }
-
-                /* Badges */
-                #director-modal-container [class*="rounded-full"],
-                #director-modal-container [class*="rounded-md"] {
-                  background-color: #f1f5f9 !important;
-                  border: 1px solid #94a3b8 !important;
-                  color: #334155 !important;
-                }
-
-                /* Keep semantic colors for section headers */
-                #director-modal-container .text-indigo-400,
-                #director-modal-container .text-indigo-300 { color: #4338ca !important; }
-                #director-modal-container .text-emerald-400,
-                #director-modal-container .text-emerald-300 { color: #059669 !important; }
-                #director-modal-container .text-rose-400,
-                #director-modal-container .text-rose-300 { color: #e11d48 !important; }
-                #director-modal-container .text-amber-400,
-                #director-modal-container .text-amber-300 { color: #d97706 !important; }
-                #director-modal-container .text-purple-400,
-                #director-modal-container .text-purple-300 { color: #7c3aed !important; }
-
-                /* Stack grids vertically for print */
-                #director-modal-container .grid {
-                  display: block !important;
-                }
-                #director-modal-container .grid > * {
-                  margin-bottom: 12px !important;
-                }
-
-                /* SVG icons */
-                #director-modal-container svg {
-                  color: #475569 !important;
-                }
-
-                @page {
-                  size: letter;
-                  margin: 0.5in;
-                }
-              }
-            `}} />
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b border-indigo-500/20 pb-4">
               <div className="flex items-center gap-3">
