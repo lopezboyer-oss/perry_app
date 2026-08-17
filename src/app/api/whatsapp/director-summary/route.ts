@@ -66,6 +66,34 @@ export async function POST(req: NextRequest) {
       const endYesterday = new Date(startOfDay(localYear, localMonth, localDay).getTime() - 1);
       whereClause.createdAt = { gte: startYesterday, lte: endYesterday };
       periodLabel = `Ayer (${String(yD).padStart(2,'0')}/${String(yM).padStart(2,'0')}/${yY})`;
+    } else if (period === 'weekend') {
+      // Get day of week in Tijuana (0=Sun, 6=Sat)
+      const dayOfWeekStr = now.toLocaleDateString('en-US', { timeZone: TIMEZONE, weekday: 'short' });
+      const dayOfWeek = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(dayOfWeekStr);
+
+      let satDate: Date;
+      if (dayOfWeek === 6) {
+        // Saturday: show only Saturday (today)
+        satDate = new Date(Date.UTC(localYear, localMonth - 1, localDay));
+      } else if (dayOfWeek === 0) {
+        // Sunday: show Sat + Sun (yesterday + today)
+        satDate = new Date(Date.UTC(localYear, localMonth - 1, localDay - 1));
+      } else {
+        // Mon-Fri: show last Sat + Sun
+        const daysSinceSat = dayOfWeek + 1; // Mon=2, Tue=3, ..., Fri=6
+        satDate = new Date(Date.UTC(localYear, localMonth - 1, localDay - daysSinceSat));
+      }
+      const satY = satDate.getUTCFullYear(), satM = satDate.getUTCMonth() + 1, satD = satDate.getUTCDate();
+      const sunDate = new Date(Date.UTC(satY, satM - 1, satD + 1));
+      const sunY = sunDate.getUTCFullYear(), sunM = sunDate.getUTCMonth() + 1, sunD = sunDate.getUTCDate();
+
+      const startWeekend = startOfDay(satY, satM, satD);
+      // End of Sunday = start of Monday - 1ms
+      const monDate = new Date(Date.UTC(satY, satM - 1, satD + 2));
+      const endWeekend = new Date(startOfDay(monDate.getUTCFullYear(), monDate.getUTCMonth() + 1, monDate.getUTCDate()).getTime() - 1);
+
+      whereClause.createdAt = { gte: startWeekend, lte: endWeekend };
+      periodLabel = `Fin de Semana (${String(satD).padStart(2,'0')}/${String(satM).padStart(2,'0')} - ${String(sunD).padStart(2,'0')}/${String(sunM).padStart(2,'0')})`;
     } else if (period === 'week') {
       const wDate = new Date(Date.UTC(localYear, localMonth - 1, localDay - 7));
       const start7Days = startOfDay(wDate.getUTCFullYear(), wDate.getUTCMonth() + 1, wDate.getUTCDate());
@@ -232,13 +260,6 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
       "issue": "Descripción del problema abierto sin resolver",
       "reportedGroup": "Grupo donde se reportó",
       "status": "SIN_SEGUIMIENTO" | "EN_ESPERA_DE_MATERIAL" | "REQUIERE_DECISION_GERENCIAL"
-    }
-  ],
-  "globalEquipmentStatus": [
-    {
-      "equipo": "Código o nombre del equipo (ej: EQ-0105)",
-      "status": "FUERA_DE_SERVICIO" | "DEGRADADO" | "OPERATIVO",
-      "issue": "Descripción técnica concisa del problema"
     }
   ],
   "globalMaterialRequests": [

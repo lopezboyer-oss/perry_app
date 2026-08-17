@@ -46,6 +46,7 @@ import {
   Building,
   Briefcase,
   ChevronRight,
+  CalendarCheck,
   X
 } from 'lucide-react';
 
@@ -66,11 +67,6 @@ interface DirectorSummaryData {
     issue: string;
     reportedGroup: string;
     status: string;
-  }>;
-  globalEquipmentStatus: Array<{
-    equipo: string;
-    status: string;
-    issue: string;
   }>;
   globalMaterialRequests: Array<{
     name: string;
@@ -361,13 +357,7 @@ export default function WhatsappConfigPage() {
       text += `\n`;
     }
 
-    if (directorSummary.globalEquipmentStatus && directorSummary.globalEquipmentStatus.length > 0) {
-      text += `🛠️ *ESTATUS DE EQUIPOS & MAQUINARIA (${directorSummary.globalEquipmentStatus.length})*\n`;
-      directorSummary.globalEquipmentStatus.forEach((eq) => {
-        text += `• *${eq.equipo}* [${eq.status}]: ${eq.issue}\n`;
-      });
-      text += `\n`;
-    }
+
 
     if (directorSummary.globalMaterialRequests && directorSummary.globalMaterialRequests.length > 0) {
       text += `📦 *SOLICITUDES DE MATERIALES (${directorSummary.globalMaterialRequests.length})*\n`;
@@ -736,10 +726,11 @@ export default function WhatsappConfigPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2.5">
           {[
             { key: 'today', label: 'Día', icon: Sun, iconColor: 'text-amber-400', desc: 'Hoy' },
             { key: 'yesterday', label: 'Ayer', icon: History, iconColor: 'text-blue-400', desc: 'Día anterior' },
+            { key: 'weekend', label: 'Finde', icon: CalendarCheck, iconColor: 'text-orange-400', desc: 'Sáb + Dom' },
             { key: 'week', label: '7 Días', icon: CalendarRange, iconColor: 'text-indigo-400', desc: 'Última semana' },
             { key: 'month', label: 'Mes', icon: CalendarDays, iconColor: 'text-purple-400', desc: 'Mes actual' },
             { key: 'all', label: 'Histórico', icon: Archive, iconColor: 'text-emerald-400', desc: 'Todos los grupos' },
@@ -1451,35 +1442,7 @@ export default function WhatsappConfigPage() {
               </div>
             </div>
 
-            {/* Estatus Global de Equipos y Refacciones */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Equipos */}
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                  <Wrench className="w-4 h-4 text-amber-400" /> Equipos Mencionados ({(directorSummary.globalEquipmentStatus || []).length})
-                </h4>
-                {(!directorSummary.globalEquipmentStatus || directorSummary.globalEquipmentStatus.length === 0) ? (
-                  <p className="text-xs text-slate-400 italic">Sin novedades de maquinaria o equipos.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {directorSummary.globalEquipmentStatus.map((eq, idx) => (
-                      <div key={idx} className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-start justify-between gap-2">
-                        <div>
-                          <div className="text-xs font-bold text-white">{eq.equipo}</div>
-                          <div className="text-[11px] text-slate-400">{eq.issue}</div>
-                        </div>
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0 ${
-                          eq.status?.toLowerCase().includes('operativo') ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
-                        }`}>
-                          {eq.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Materiales */}
+            {/* Solicitudes de Materiales */}
               <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-2">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
                   <Package className="w-4 h-4 text-purple-400" /> Solicitudes de Materiales ({(directorSummary.globalMaterialRequests || []).length})
@@ -1503,7 +1466,6 @@ export default function WhatsappConfigPage() {
                   </div>
                 )}
               </div>
-            </div>
 
             {/* Recomendaciones de Dirección */}
             {directorSummary.directorRecommendations && directorSummary.directorRecommendations.length > 0 && (
