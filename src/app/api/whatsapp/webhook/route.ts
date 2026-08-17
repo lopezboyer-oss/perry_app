@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
         messageId: payload.messageId,
         groupId: payload.groupId,
         senderPhone: payload.senderPhone,
-        senderName: payload.senderName || 'Personal Operativo',
+        senderName: payload.senderName || payload.senderPhone || 'Personal Operativo',
         rawMessage: storedRawMessage,
         mediaUrls: hasMedia ? JSON.stringify(mediaUrls) : null,
         parsedData: JSON.stringify(parsed),
@@ -198,7 +198,8 @@ function normalizeWhatsappPayload(body: any): IncomingWhatsappPayload {
   const msgId = d.id || d.messageId || body.id || d.key?.id || `msg_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   const groupJid = d.chatId || d.from || d.groupId || body.chatId || body.groupId || '';
   const authorPhone = d.author || d.senderPhone || d.from || body.author || '';
-  const authorName = d.authorName || d.pushName || d.senderName || 'Personal Operativo';
+  const authorName = d.authorName || d.pushName || d.pushname || d.notifyName || d.notify_name || d.senderName || d.sender_name || 'Personal Operativo';
+  console.log(`[WA] Sender: "${authorName}" | Phone: ${d.author || d.senderPhone || d.from} | Payload keys: ${Object.keys(d).join(',')}`);
   const textContent = d.body || d.caption || d.text || d.messageText || body.body || body.text || '';
   
   // Media URL extraction (UltraMsg, Evolution, Baileys, etc.)
