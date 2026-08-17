@@ -231,7 +231,7 @@ Tu función es generar el "Resumen Ejecutivo para Dirección" mediante una SÍNT
 
 REGLAS DE ANÁLISIS Y ESTRUCTURA OBLIGATORIAS:
 1. IDENTIFICACIÓN DE REMITENTES POR NOMBRE: Atribuye las confirmaciones, avances y acuerdos directamente al nombre del remitente (ej: "Carlos López confirmó la atención...", "Ing. Javier autorizó el cambio..."). Usa siempre el nombre de la persona que envió el mensaje si está disponible.
-2. ANÁLISIS ESTRUCTURADO POR EMPRESA: Para cada empresa presente en los grupos (ej: Caseme, Perry, Consorcio, etc.), redacta un párrafo sintético exclusivo enfocado en las actividades, estado de trabajos y novedades de esa empresa.
+2. ANÁLISIS ESTRUCTURADO POR EMPRESA: Para cada empresa presente en los grupos (ej: Caseme, Perry, Consorcio, etc.), redacta un párrafo sintético exclusivo enfocado en las actividades, estado de trabajos y novedades de esa empresa. INCLUYE SIEMPRE la fecha (día/mes) al mencionar cada evento relevante para que el lector pueda ubicarlo en el tiempo (ej: "El 15/08 Carlos confirmó la atención del equipo...", "El sábado 16/08 se reportó la falla en...").
 3. RECURSOS Y TEMAS TRANSVERSALES COMPARTIDOS: Redacta un párrafo dedicado a los temas en común entre empresas, como logística unificada, cuadrillas móviles itinerantes, herramientas o maquinaria compartidas y coordinación interempresarial.
 4. CONCILIACIÓN DE ASUNTOS (Cruzar Grupos Técnicos vs Coordinación): Si en un grupo técnico/operativo se reportó una necesidad o problema, pero en un grupo de coordinación se confirmó la asignación o solución, clasifícalo como "resolvedCrossIssues".
 5. PENDIENTES CRÍTICOS REALES: Identifica asuntos abiertos en campo que NO muestren resolución ni seguimiento en los grupos de coordinación (unresolvedCriticalPending).
@@ -259,6 +259,7 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
     {
       "issue": "Descripción del problema abierto sin resolver",
       "reportedGroup": "Grupo donde se reportó",
+      "reportedBy": "Nombre de la persona que reportó el problema",
       "status": "SIN_SEGUIMIENTO" | "EN_ESPERA_DE_MATERIAL" | "REQUIERE_DECISION_GERENCIAL"
     }
   ],
@@ -267,7 +268,8 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
       "name": "Nombre de refacción/material",
       "quantity": 1,
       "providerType": "COTIZAR" | "CLIENTE",
-      "requestedInGroup": "Nombre del grupo"
+      "requestedInGroup": "Nombre del grupo",
+      "requestedBy": "Nombre de la persona que solicitó el material"
     }
   ],
   "directorRecommendations": [

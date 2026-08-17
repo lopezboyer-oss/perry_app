@@ -66,6 +66,7 @@ interface DirectorSummaryData {
   unresolvedCriticalPending: Array<{
     issue: string;
     reportedGroup: string;
+    reportedBy?: string;
     status: string;
   }>;
   globalMaterialRequests: Array<{
@@ -73,6 +74,7 @@ interface DirectorSummaryData {
     quantity: number;
     providerType: string;
     requestedInGroup: string;
+    requestedBy?: string;
   }>;
   directorRecommendations: string[];
   period?: string;
@@ -352,7 +354,7 @@ export default function WhatsappConfigPage() {
     if (directorSummary.unresolvedCriticalPending && directorSummary.unresolvedCriticalPending.length > 0) {
       text += `🔴 *PENDIENTES CRÍTICOS REALES (${directorSummary.unresolvedCriticalPending.length})*\n`;
       directorSummary.unresolvedCriticalPending.forEach((item, i) => {
-        text += `${i + 1}. *${item.issue}*\n   • Grupo: _${item.reportedGroup}_ | Estatus: *${item.status}*\n`;
+        text += `${i + 1}. *${item.issue}*\n   • Grupo: _${item.reportedGroup}_${item.reportedBy ? ` — Reportó: *${item.reportedBy}*` : ''} | Estatus: *${item.status}*\n`;
       });
       text += `\n`;
     }
@@ -362,7 +364,7 @@ export default function WhatsappConfigPage() {
     if (directorSummary.globalMaterialRequests && directorSummary.globalMaterialRequests.length > 0) {
       text += `📦 *SOLICITUDES DE MATERIALES (${directorSummary.globalMaterialRequests.length})*\n`;
       directorSummary.globalMaterialRequests.forEach((mat) => {
-        text += `• *${mat.name}* (Cant: ${mat.quantity}) - _${mat.requestedInGroup}_\n`;
+        text += `• *${mat.name}* (Cant: ${mat.quantity}) - _${mat.requestedInGroup}_${mat.requestedBy ? ` — Solicitó: *${mat.requestedBy}*` : ''}\n`;
       });
       text += `\n`;
     }
@@ -1432,7 +1434,10 @@ export default function WhatsappConfigPage() {
                       <div key={idx} className="bg-slate-900/90 border border-rose-500/20 rounded-lg p-3 space-y-1">
                         <div className="text-xs font-bold text-rose-300">🔴 {item.issue}</div>
                         <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
-                          <span>Grupo: <strong className="text-slate-200">{item.reportedGroup}</strong></span>
+                          <div className="flex flex-col gap-0.5">
+                            <span>Grupo: <strong className="text-slate-200">{item.reportedGroup}</strong></span>
+                            {item.reportedBy && <span>Reportó: <strong className="text-rose-200">{item.reportedBy}</strong></span>}
+                          </div>
                           <span className="text-amber-400 font-semibold">{item.status}</span>
                         </div>
                       </div>
@@ -1456,6 +1461,7 @@ export default function WhatsappConfigPage() {
                         <div>
                           <div className="text-xs font-bold text-white">{mat.name}</div>
                           <div className="text-[11px] text-slate-400">Grupo: {mat.requestedInGroup}</div>
+                          {mat.requestedBy && <div className="text-[11px] text-purple-300">Solicitó: {mat.requestedBy}</div>}
                         </div>
                         <div className="text-right shrink-0">
                           <span className="text-xs font-bold text-purple-300">Cant: {mat.quantity}</span>
