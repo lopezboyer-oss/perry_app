@@ -5,14 +5,20 @@ import { canAccessWhatsappCoPilot } from '@/lib/permissions';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    // Allow cron jobs to call this endpoint with a secret token
+    const authHeader = req.headers.get('authorization');
+    const cronSecret = process.env.CRON_SECRET;
+    const isCronCall = cronSecret && authHeader === `Bearer ${cronSecret}`;
 
-    const email = (session.user as any)?.email || '';
-    if (!canAccessWhatsappCoPilot(email)) {
-      return NextResponse.json({ error: 'Acceso restringido a dirección' }, { status: 403 });
+    if (!isCronCall) {
+      const session = await auth();
+      if (!session) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      }
+      const email = (session.user as any)?.email || '';
+      if (!canAccessWhatsappCoPilot(email)) {
+        return NextResponse.json({ error: 'Acceso restringido a dirección' }, { status: 403 });
+      }
     }
 
     let body: any = {};
