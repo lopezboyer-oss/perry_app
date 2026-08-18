@@ -179,11 +179,17 @@ export async function POST(req: NextRequest) {
             },
           });
 
-          // React with emoji only (no text response per Ivan's instruction)
-          await sendWhatsappReaction({
-            messageId: payload.messageId,
+          // Send short emoji confirmation (reactions require exact WA msgId which may not be available)
+          const statusLabels: Record<string, string> = {
+            'CERRADO': '✅ Cerrado',
+            'EN_PROCESO': '🔄 En proceso',
+            'ABIERTO': '⛔ Sin atención',
+            'DESCARTADO': '🗑️ Descartado',
+          };
+          const senderShort = (payload.senderName || 'Coordinador').split(' ')[0];
+          await sendWhatsappGroupMessage({
             groupId: payload.groupId,
-            emoji: reactionEmoji,
+            messageText: `${reactionEmoji} #${itemNumber} → ${statusLabels[newStatus] || newStatus} (por ${senderShort})`,
           });
 
           console.log(`[CRITICAL TRACKING] Item #${itemNumber} updated to ${newStatus} by ${payload.senderName} — "${comment}"`);
