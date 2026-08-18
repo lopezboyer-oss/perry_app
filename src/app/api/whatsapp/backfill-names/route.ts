@@ -7,9 +7,16 @@ import { auth } from '@/lib/auth';
 // by building a phone→name mapping from newer records that have real names.
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    // Auth: session or CRON_SECRET
+    const authHeader = req.headers.get('authorization');
+    const cronSecret = process.env.CRON_SECRET;
+    const isCronCall = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+    if (!isCronCall) {
+      const session = await auth();
+      if (!session?.user?.email) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      }
     }
 
     // 1. Get all distinct (senderPhone, senderName) pairs where name is NOT generic
