@@ -197,6 +197,59 @@ export async function POST(req: NextRequest) {
           // Still log the message normally (continue to Gemini parse below)
         }
       }
+
+      // 4c. Critical Item ADD Detection (#Agregar / #Nuevo)
+      const addMatch = messageText.match(/^#(agregar|nuevo|nueva|add)\s+(.+)/is);
+      if (addMatch) {
+        const issueDescription = addMatch[2].trim();
+
+        // Try to detect company from message context
+        const companyKeywords: Record<string, string[]> = {
+          'DROBOTS': ['drobots', 'drobot'],
+          'OPUS INGENIUM': ['opus', 'infineon'],
+          'GRUPO CASEME': ['caseme', 'global support'],
+          'VULCAN FORGE': ['vulcan', 'forge'],
+          'SAINPRO': ['sainpro'],
+        };
+        let detectedCompany = 'COORDINACION';
+        const lowerText = issueDescription.toLowerCase();
+        for (const [company, keywords] of Object.entries(companyKeywords)) {
+          if (keywords.some(kw => lowerText.includes(kw))) {
+            detectedCompany = company;
+            break;
+          }
+        }
+
+        // Get next item number
+        const lastItem = await prisma.criticalItemTracking.findFirst({
+          where: { groupId: COORD_GROUP_ID },
+          orderBy: { itemNumber: 'desc' },
+        });
+        const nextNumber = (lastItem?.itemNumber || 0) + 1;
+
+        // Create the new tracking item
+        await prisma.criticalItemTracking.create({
+          data: {
+            itemNumber: nextNumber,
+            issueText: issueDescription,
+            reportedGroup: COORD_GROUP_ID,
+            reportedBy: payload.senderName || payload.senderPhone || 'Coordinador',
+            companyName: detectedCompany,
+            aiStatus: 'REPORTADO_MANUAL',
+            currentStatus: 'ABIERTO',
+            groupId: COORD_GROUP_ID,
+            sentDate: new Date(),
+          },
+        });
+
+        const senderShort = (payload.senderName || 'Coordinador').split(' ')[0];
+        await sendWhatsappGroupMessage({
+          groupId: payload.groupId,
+          messageText: `🆕 *#${nextNumber}* agregado al seguimiento (por ${senderShort})\n🏢 ${detectedCompany}\n→ "${issueDescription}"`,
+        });
+
+        console.log(`[CRITICAL TRACKING] New item #${nextNumber} added by ${payload.senderName} — "${issueDescription}" (${detectedCompany})`);
+      }
     }
 
     // 5. Intelligent AI Parse with Gemini 2.5 Flash (Análisis informativo de contexto + Transcripción de Audio)
