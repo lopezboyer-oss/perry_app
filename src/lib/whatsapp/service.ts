@@ -29,12 +29,14 @@ export async function sendWhatsappReaction(params: {
   try {
     const url = buildUltraMsgUrl(apiUrl, instanceId, 'messages/reaction');
 
-    // Form data payload for UltraMsg API (UltraMsg expects token, msgId, icon)
+    // Form data payload for UltraMsg API (UltraMsg expects token, msgId, emoji, to)
     const bodyParams = new URLSearchParams();
     bodyParams.append('token', apiToken);
+    bodyParams.append('to', params.groupId);
     bodyParams.append('msgId', params.messageId);
-    bodyParams.append('icon', params.emoji);
-    bodyParams.append('reaction', params.emoji);
+    bodyParams.append('emoji', params.emoji);
+
+    console.log(`[WA REACTION] Sending ${params.emoji} to msg ${params.messageId} in ${params.groupId}`);
 
     const res = await fetch(url, {
       method: 'POST',
@@ -47,6 +49,9 @@ export async function sendWhatsappReaction(params: {
     if (!res.ok) {
       const errText = await res.text();
       console.error('UltraMsg Reaction API Error:', res.status, errText);
+    } else {
+      const resData = await res.text();
+      console.log(`[WA REACTION] Response: ${resData}`);
     }
 
     return res.ok;
