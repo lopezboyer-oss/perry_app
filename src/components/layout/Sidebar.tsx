@@ -265,6 +265,19 @@ export function Sidebar({ user }: SidebarProps) {
               </Link>
             );
           })}
+          {/* Perry Intelligence — mobile */}
+          {(user.email === 'lopezboyer@gmail.com' || user.name?.toLowerCase().includes('ivan lopez')) && (
+            <Link
+              href="/configuracion/whatsapp"
+              className={cn(
+                'flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg text-xs transition-colors',
+                pathname === '/configuracion/whatsapp' ? 'text-emerald-600' : 'text-slate-500'
+              )}
+            >
+              <Bot className="w-5 h-5" />
+              <span className="truncate max-w-[60px]">Perry IA</span>
+            </Link>
+          )}
         </nav>
       </div>
     </>
