@@ -168,31 +168,45 @@ export async function POST(req: NextRequest) {
         });
 
         if (item) {
+          const senderName = payload.senderName || payload.senderPhone || 'Coordinador';
+
+          // Update main record (latest feedback)
           await prisma.criticalItemTracking.update({
             where: { id: item.id },
             data: {
               currentStatus: newStatus,
-              feedbackBy: payload.senderName || payload.senderPhone || 'Coordinador',
+              feedbackBy: senderName,
               feedbackPhone: payload.senderPhone,
               feedbackText: comment || null,
               feedbackAt: new Date(),
             },
           });
 
-          // Send short emoji confirmation (reactions require exact WA msgId which may not be available)
+          // Create progressive log entry
+          await prisma.criticalItemLog.create({
+            data: {
+              itemId: item.id,
+              status: newStatus,
+              updatedBy: senderName,
+              updatedPhone: payload.senderPhone,
+              comment: comment || null,
+            },
+          });
+
+          // Send short emoji confirmation
           const statusLabels: Record<string, string> = {
             'CERRADO': '✅ Cerrado',
             'EN_PROCESO': '🔄 En proceso',
             'ABIERTO': '⛔ Sin atención',
             'DESCARTADO': '🗑️ Descartado',
           };
-          const senderShort = (payload.senderName || 'Coordinador').split(' ')[0];
+          const senderShort = senderName.split(' ')[0];
           await sendWhatsappGroupMessage({
             groupId: payload.groupId,
             messageText: `${reactionEmoji} #${itemNumber} → ${statusLabels[newStatus] || newStatus} (por ${senderShort})`,
           });
 
-          console.log(`[CRITICAL TRACKING] Item #${itemNumber} updated to ${newStatus} by ${payload.senderName} — "${comment}"`);
+          console.log(`[CRITICAL TRACKING] Item #${itemNumber} updated to ${newStatus} by ${senderName} — "${comment}"`);
 
           // Still log the message normally (continue to Gemini parse below)
         }

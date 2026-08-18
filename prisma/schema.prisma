@@ -589,15 +589,31 @@ model CriticalItemTracking {
   groupId       String    // Grupo donde se envió
   sentDate      DateTime  // Fecha del reporte donde se envió
 
-  // Feedback del coordinador
+  // Feedback del coordinador (latest — kept for quick access)
   feedbackBy    String?   // Nombre del coordinador que respondió
   feedbackPhone String?   // Teléfono del coordinador
   feedbackText  String?   @db.Text
   feedbackAt    DateTime?
+
+  // Progressive log of all updates
+  logs          CriticalItemLog[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   @@index([groupId, sentDate])
   @@index([currentStatus])
+}
+
+model CriticalItemLog {
+  id            String    @id @default(cuid())
+  itemId        String
+  item          CriticalItemTracking @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  status        String    // ABIERTO | EN_PROCESO | CERRADO | DESCARTADO
+  updatedBy     String    // Nombre del coordinador
+  updatedPhone  String?
+  comment       String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@index([itemId])
 }
