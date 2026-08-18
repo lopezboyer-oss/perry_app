@@ -83,7 +83,11 @@ function formatDirectorSummaryForWhatsApp(summary: any): string {
   let text = `👔 *RESUMEN EJECUTIVO PARA DIRECCIÓN*\n`;
   text += `*PERRY INTELLIGENCE*\n`;
   text += `📅 *Periodo:* ${periodName}\n`;
-  text += `👥 *Grupos Analizados:* ${summary.totalGroupsAnalyzed || 0} | 💬 *Mensajes Procesados:* ${summary.messageCount || 0}\n\n`;
+  text += `👥 *Grupos WhatsApp:* ${summary.totalGroupsAnalyzed || 0} | 💬 *Mensajes:* ${summary.messageCount || 0}`;
+  if (summary.activityCount) {
+    text += ` | 📋 *Actividades Perry:* ${summary.activityCount}`;
+  }
+  text += `\n\n`;
 
   text += `📌 *SÍNTESIS GENERAL:* \n${summary.executiveSummary}\n\n`;
 

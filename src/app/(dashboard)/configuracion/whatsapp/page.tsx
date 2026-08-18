@@ -328,7 +328,11 @@ export default function WhatsappConfigPage() {
     let text = `👔 *RESUMEN EJECUTIVO PARA DIRECCIÓN*\n`;
     text += `*PERRY INTELLIGENCE*\n`;
     text += `📅 *Periodo:* ${periodName}\n`;
-    text += `👥 *Grupos Analizados:* ${directorSummary.totalGroupsAnalyzed || 0} | 💬 *Mensajes Procesados:* ${directorSummary.messageCount || 0}\n\n`;
+    text += `👥 *Grupos WhatsApp:* ${directorSummary.totalGroupsAnalyzed || 0} | 💬 *Mensajes:* ${directorSummary.messageCount || 0}`;
+    if (directorSummary.activityCount) {
+      text += ` | 📋 *Actividades Perry:* ${directorSummary.activityCount}`;
+    }
+    text += `\n\n`;
 
     text += `📌 *SÍNTESIS GENERAL:* \n${directorSummary.executiveSummary}\n\n`;
 
@@ -733,9 +737,7 @@ export default function WhatsappConfigPage() {
             { key: 'today', label: 'Día', icon: Sun, iconColor: 'text-amber-400', desc: 'Hoy' },
             { key: 'yesterday', label: 'Ayer', icon: History, iconColor: 'text-blue-400', desc: 'Día anterior' },
             { key: 'weekend', label: 'Finde', icon: CalendarCheck, iconColor: 'text-orange-400', desc: 'Sáb + Dom' },
-            { key: 'week', label: '7 Días', icon: CalendarRange, iconColor: 'text-indigo-400', desc: 'Última semana' },
-            { key: 'month', label: 'Mes', icon: CalendarDays, iconColor: 'text-purple-400', desc: 'Mes actual' },
-            { key: 'all', label: 'Histórico', icon: Archive, iconColor: 'text-emerald-400', desc: 'Todos los grupos' },
+            { key: '3days', label: '3 Días', icon: CalendarRange, iconColor: 'text-indigo-400', desc: 'Últimos 3 días' },
           ].map((p) => {
             const IconComp = p.icon;
             return (

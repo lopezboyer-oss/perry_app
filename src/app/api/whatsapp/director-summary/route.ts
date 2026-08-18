@@ -100,24 +100,21 @@ export async function POST(req: NextRequest) {
 
       whereClause.createdAt = { gte: startWeekend, lte: endWeekend };
       periodLabel = `Fin de Semana (${String(satD).padStart(2,'0')}/${String(satM).padStart(2,'0')} - ${String(sunD).padStart(2,'0')}/${String(sunM).padStart(2,'0')})`;
-    } else if (period === 'week') {
-      const wDate = new Date(Date.UTC(localYear, localMonth - 1, localDay - 7));
-      const start7Days = startOfDay(wDate.getUTCFullYear(), wDate.getUTCMonth() + 1, wDate.getUTCDate());
-      whereClause.createdAt = { gte: start7Days };
-      periodLabel = 'Últimos 7 Días';
-    } else if (period === 'month') {
-      const startMonth = startOfDay(localYear, localMonth, 1);
-      whereClause.createdAt = { gte: startMonth };
-      const monthName = now.toLocaleDateString('es-MX', { timeZone: TIMEZONE, month: 'long', year: 'numeric' });
-      periodLabel = `Mes Actual (${monthName})`;
-    } else if (period === 'all') {
-      periodLabel = 'Histórico Completo';
+    } else if (period === '3days') {
+      const d3 = new Date(Date.UTC(localYear, localMonth - 1, localDay - 3));
+      const start3Days = startOfDay(d3.getUTCFullYear(), d3.getUTCMonth() + 1, d3.getUTCDate());
+      whereClause.createdAt = { gte: start3Days };
+      periodLabel = 'Últimos 3 Días';
     } else {
       // 'today'
       const startToday = startOfDay(localYear, localMonth, localDay);
       whereClause.createdAt = { gte: startToday };
       periodLabel = `Hoy (${String(localDay).padStart(2,'0')}/${String(localMonth).padStart(2,'0')}/${localYear})`;
     }
+
+    // Compute date range for activities (using the same period)
+    const activityDateStart = whereClause.createdAt?.gte || new Date(0);
+    const activityDateEnd = whereClause.createdAt?.lte || new Date();
 
     // 3. Fetch logs for ALL groups within period
     const logs = await prisma.whatsappMessageLog.findMany({
@@ -136,26 +133,47 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (logs.length === 0) {
-      const totalLogsCount = await prisma.whatsappMessageLog.count();
+    // 3b. Fetch Perry App activities for the same period
+    const activities = await prisma.activity.findMany({
+      where: { date: { gte: activityDateStart, lte: activityDateEnd } },
+      select: {
+        title: true, type: true, status: true, date: true,
+        result: true, nextStep: true, notes: true, weekendNotes: true,
+        workOrderFolio: true, location: true, projectArea: true,
+        equipmentStatus: true, cancelReason: true, cancelNotes: true,
+        company: { select: { name: true } },
+        client: { select: { name: true } },
+        user: { select: { name: true } },
+        parts: { select: { name: true, quantity: true, status: true } },
+      },
+      orderBy: [{ company: { name: 'asc' } }, { user: { name: 'asc' } }],
+    });
+
+    // 3c. Fetch active critical items with logs
+    const criticalItems = await prisma.criticalItemTracking.findMany({
+      where: {
+        currentStatus: { in: ['ABIERTO', 'EN_PROCESO'] },
+      },
+      include: {
+        logs: { orderBy: { createdAt: 'asc' } },
+      },
+      orderBy: { itemNumber: 'asc' },
+    });
+
+    if (logs.length === 0 && activities.length === 0) {
       return NextResponse.json({
         summary: {
-          executiveSummary: `No se registraron mensajes en ningún grupo de WhatsApp durante el período: ${periodLabel}.${
-            totalLogsCount > 0
-              ? ' Hay actividad registrada en otros períodos (prueba consultar "Ayer", "7 Días" o "Histórico").'
-              : ' Aún no hay mensajes respaldados en Perry App.'
-          }`,
+          executiveSummary: `No se registraron mensajes ni actividades durante el período: ${periodLabel}.`,
           resolvedCrossIssues: [],
           unresolvedCriticalPending: [],
           globalEquipmentStatus: [],
           globalMaterialRequests: [],
           directorRecommendations: [
-            totalLogsCount > 0
-              ? 'Selecciona "7 Días" o "Histórico" para analizar la actividad directiva de períodos anteriores.'
-              : 'Verifica que el bot de Perry esté integrado en los grupos clave de operaciones y coordinación.',
+            'Verifica que el bot de Perry esté integrado en los grupos clave de operaciones.',
           ],
           period: periodLabel,
           messageCount: 0,
+          activityCount: 0,
           totalGroupsAnalyzed: groups.length,
         },
       });
@@ -205,6 +223,64 @@ export async function POST(req: NextRequest) {
       promptData += `\n`;
     });
 
+    // 5. Append Perry App Activities data to prompt
+    if (activities.length > 0) {
+      promptData += `\n=== ACTIVIDADES REGISTRADAS EN PERRY APP (${activities.length}) ===\n`;
+      promptData += `Estas son actividades reportadas formalmente por los ingenieros en la plataforma Perry.\n\n`;
+
+      // Group by company
+      const actsByCompany = new Map<string, typeof activities>();
+      activities.forEach(a => {
+        const cName = a.company?.name || 'Sin empresa';
+        if (!actsByCompany.has(cName)) actsByCompany.set(cName, []);
+        actsByCompany.get(cName)!.push(a);
+      });
+
+      actsByCompany.forEach((acts, compName) => {
+        promptData += `--- EMPRESA: ${compName} (${acts.length} actividades) ---\n`;
+        acts.forEach(a => {
+          const dateStr = a.date ? new Date(a.date).toLocaleDateString('es-MX', { timeZone: 'America/Tijuana', day: '2-digit', month: '2-digit' }) : '';
+          promptData += `  📋 [${dateStr}] ${a.user?.name || 'Sin asignar'}: "${a.title}"\n`;
+          promptData += `     Tipo: ${a.type} | Status: ${a.status}`;
+          if (a.workOrderFolio) promptData += ` | OT: ${a.workOrderFolio}`;
+          if (a.client?.name) promptData += ` | Cliente: ${a.client.name}`;
+          if (a.location) promptData += ` | Ubicación: ${a.location}`;
+          if (a.projectArea) promptData += ` | Área: ${a.projectArea}`;
+          promptData += `\n`;
+          if (a.result) promptData += `     Resultado: "${a.result}"\n`;
+          if (a.nextStep) promptData += `     Siguiente paso: "${a.nextStep}"\n`;
+          if (a.notes) promptData += `     Notas: "${a.notes}"\n`;
+          if (a.weekendNotes) promptData += `     Notas finde: "${a.weekendNotes}"\n`;
+          if (a.cancelReason) promptData += `     ❌ Cancelada: ${a.cancelReason} — ${a.cancelNotes || ''}\n`;
+          if (a.equipmentStatus) promptData += `     Equipo: ${a.equipmentStatus}\n`;
+          if (a.parts && a.parts.length > 0) {
+            promptData += `     Refacciones: ${a.parts.map(p => `${p.quantity}x ${p.name} (${p.status})`).join(', ')}\n`;
+          }
+        });
+        promptData += `\n`;
+      });
+    }
+
+    // 6. Append Critical Items Tracking data
+    if (criticalItems.length > 0) {
+      promptData += `\n=== PUNTOS CRÍTICOS ACTIVOS EN SEGUIMIENTO (${criticalItems.length}) ===\n`;
+      criticalItems.forEach(item => {
+        const statusIcon = item.currentStatus === 'EN_PROCESO' ? '🔄' : '⛔';
+        promptData += `  #${item.itemNumber} ${statusIcon} [${item.currentStatus}] ${item.issueText}\n`;
+        promptData += `     Empresa: ${item.companyName || 'N/A'} | Grupo: ${item.reportedGroup}\n`;
+        if (item.logs.length > 0) {
+          promptData += `     📝 Historial:\n`;
+          item.logs.forEach((log: any) => {
+            const logDate = new Date(log.createdAt).toLocaleString('es-MX', { timeZone: 'America/Tijuana', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            promptData += `       - ${log.updatedBy} (${logDate}): [${log.status}] "${log.comment || ''}"\n`;
+          });
+        } else if (item.feedbackBy) {
+          const fbDate = item.feedbackAt ? new Date(item.feedbackAt).toLocaleString('es-MX', { timeZone: 'America/Tijuana', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+          promptData += `     📝 Último update: ${item.feedbackBy} (${fbDate}): "${item.feedbackText || ''}"\n`;
+        }
+      });
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey || apiKey === 'Configurado_En_Netlify') {
@@ -233,15 +309,19 @@ export async function POST(req: NextRequest) {
     }
 
     const systemPrompt = `Eres el sistema de Inteligencia Operativa y Estratégica C-Suite de Perry Intelligence.
-Tu función es generar el "Resumen Ejecutivo para Dirección" mediante una SÍNTESIS Y CONCILIACIÓN MULTI-GRUPO de todos los chats de WhatsApp (tanto grupos de campo/técnicos como grupos de coordinación/gerencia).
+Tu función es generar el "Resumen Ejecutivo para Dirección" mediante una SÍNTESIS Y CONCILIACIÓN de TRES fuentes de datos:
+1. Mensajes de WhatsApp (grupos de campo/técnicos y coordinación/gerencia)
+2. Actividades formales registradas en Perry App por los ingenieros
+3. Puntos Críticos activos en seguimiento
 
 REGLAS DE ANÁLISIS Y ESTRUCTURA OBLIGATORIAS:
-1. IDENTIFICACIÓN DE REMITENTES POR NOMBRE: Atribuye las confirmaciones, avances y acuerdos directamente al nombre del remitente (ej: "Carlos López confirmó la atención...", "Ing. Javier autorizó el cambio..."). Usa siempre el nombre de la persona que envió el mensaje si está disponible.
-2. ANÁLISIS ESTRUCTURADO POR EMPRESA: Para cada empresa presente en los grupos (ej: Caseme, Perry, Consorcio, etc.), redacta un párrafo sintético exclusivo enfocado en las actividades, estado de trabajos y novedades de esa empresa. INCLUYE SIEMPRE la fecha (día/mes) al mencionar cada evento relevante para que el lector pueda ubicarlo en el tiempo (ej: "El 15/08 Carlos confirmó la atención del equipo...", "El sábado 16/08 se reportó la falla en...").
-3. RECURSOS Y TEMAS TRANSVERSALES COMPARTIDOS: Redacta un párrafo dedicado a los temas en común entre empresas, como logística unificada, cuadrillas móviles itinerantes, herramientas o maquinaria compartidas y coordinación interempresarial.
-4. CONCILIACIÓN DE ASUNTOS (Cruzar Grupos Técnicos vs Coordinación): Si en un grupo técnico/operativo se reportó una necesidad o problema, pero en un grupo de coordinación se confirmó la asignación o solución, clasifícalo como "resolvedCrossIssues".
-5. PENDIENTES CRÍTICOS REALES: Identifica asuntos abiertos en campo que NO muestren resolución ni seguimiento en los grupos de coordinación (unresolvedCriticalPending).
-6. RECOMENDACIONES DIRECTIVAS: Genera recomendaciones estratégicas concisas para alta dirección (directorRecommendations).
+1. IDENTIFICACIÓN DE REMITENTES POR NOMBRE: Atribuye las confirmaciones, avances y acuerdos directamente al nombre del remitente. Usa siempre el nombre de la persona.
+2. ANÁLISIS ESTRUCTURADO POR EMPRESA: Para cada empresa, redacta un párrafo sintético que combine la información de WhatsApp Y de las actividades Perry App. INCLUYE la fecha (día/mes) y folios de OT cuando estén disponibles.
+3. CONCILIACIÓN WHATSAPP ↔ PERRY APP: Si un tema aparece en WhatsApp Y en una actividad formal de Perry, CRÚZALOS y prioriza la versión formal de Perry App. Si algo aparece SOLO en WhatsApp, inclúyelo como información informal. Si algo aparece SOLO en Perry App, inclúyelo como reporte formal. Menciona el folio de OT cuando esté disponible.
+4. RECURSOS Y TEMAS TRANSVERSALES: Párrafo dedicado a temas en común entre empresas.
+5. CONCILIACIÓN DE ASUNTOS (Cruzar Grupos Técnicos vs Coordinación vs Actividades Perry): clasifícalo como "resolvedCrossIssues" cuando se detecte resolución.
+6. PENDIENTES CRÍTICOS REALES: Incluye los PUNTOS CRÍTICOS EN SEGUIMIENTO que aparecen en la sección correspondiente. Estos ya están siendo monitoreados — inclúyelos con su status actual y último comentario.
+7. RECOMENDACIONES DIRECTIVAS: Genera recomendaciones estratégicas concisas para alta dirección, considerando tanto la información de WhatsApp como las actividades de Perry App.
 
 ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON sin markdown adicional):
 {
@@ -351,6 +431,8 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
         ...summary,
         period: periodLabel,
         messageCount: logs.length,
+        activityCount: activities.length,
+        criticalItemsCount: criticalItems.length,
         totalGroupsAnalyzed: logsByGroup.size,
       },
     });
