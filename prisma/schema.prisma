@@ -575,3 +575,29 @@ model WhatsappMessageLog {
   @@index([activityId])
 }
 
+// ─── SEGUIMIENTO DE PUNTOS CRÍTICOS (WhatsApp) ──────────────────────
+
+model CriticalItemTracking {
+  id            String    @id @default(cuid())
+  itemNumber    Int       // #1, #2, etc.
+  issueText     String    @db.Text
+  reportedGroup String
+  reportedBy    String?
+  companyName   String?   // Empresa asociada
+  aiStatus      String    // Status original de Gemini (EN_ESPERA_DE_MATERIAL, SIN_SEGUIMIENTO, etc.)
+  currentStatus String    @default("ABIERTO") // ABIERTO | EN_PROCESO | CERRADO | DESCARTADO
+  groupId       String    // Grupo donde se envió
+  sentDate      DateTime  // Fecha del reporte donde se envió
+
+  // Feedback del coordinador
+  feedbackBy    String?   // Nombre del coordinador que respondió
+  feedbackPhone String?   // Teléfono del coordinador
+  feedbackText  String?   @db.Text
+  feedbackAt    DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([groupId, sentDate])
+  @@index([currentStatus])
+}

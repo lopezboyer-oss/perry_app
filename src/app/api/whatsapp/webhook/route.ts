@@ -131,6 +131,68 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'Ignored: Empty message' }, { status: 200 });
     }
 
+    // 4b. Critical Item Feedback Detection (only in COORDINACION MULTIEMPRESA group)
+    const COORD_GROUP_ID = '5216641103189-1594651582@g.us';
+    if (payload.groupId === COORD_GROUP_ID && messageText) {
+      const criticalFeedbackMatch = messageText.match(/^#(\d+)\s+(cerrado|en proceso|en progreso|sin atenci[oó]n|sin atencion|descartar|cancelar|eliminar|listo|resuelto)/i);
+      if (criticalFeedbackMatch) {
+        const itemNumber = parseInt(criticalFeedbackMatch[1]);
+        const rawStatus = criticalFeedbackMatch[2].toLowerCase();
+        const comment = messageText.replace(criticalFeedbackMatch[0], '').replace(/^[\s\-:]+/, '').trim();
+
+        // Map to canonical status
+        let newStatus = 'ABIERTO';
+        let reactionEmoji = '👀';
+        if (/cerrado|listo|resuelto/i.test(rawStatus)) {
+          newStatus = 'CERRADO';
+          reactionEmoji = '✅';
+        } else if (/en proceso|en progreso/i.test(rawStatus)) {
+          newStatus = 'EN_PROCESO';
+          reactionEmoji = '🔄';
+        } else if (/sin atenci|sin atencion/i.test(rawStatus)) {
+          newStatus = 'ABIERTO';
+          reactionEmoji = '⛔';
+        } else if (/descartar|cancelar|eliminar/i.test(rawStatus)) {
+          newStatus = 'DESCARTADO';
+          reactionEmoji = '🗑️';
+        }
+
+        // Find the most recent open item with this number
+        const item = await prisma.criticalItemTracking.findFirst({
+          where: {
+            itemNumber,
+            groupId: COORD_GROUP_ID,
+            currentStatus: { in: ['ABIERTO', 'EN_PROCESO'] },
+          },
+          orderBy: { sentDate: 'desc' },
+        });
+
+        if (item) {
+          await prisma.criticalItemTracking.update({
+            where: { id: item.id },
+            data: {
+              currentStatus: newStatus,
+              feedbackBy: payload.senderName || payload.senderPhone || 'Coordinador',
+              feedbackPhone: payload.senderPhone,
+              feedbackText: comment || null,
+              feedbackAt: new Date(),
+            },
+          });
+
+          // React with emoji only (no text response per Ivan's instruction)
+          await sendWhatsappReaction({
+            messageId: payload.messageId,
+            groupId: payload.groupId,
+            emoji: reactionEmoji,
+          });
+
+          console.log(`[CRITICAL TRACKING] Item #${itemNumber} updated to ${newStatus} by ${payload.senderName} — "${comment}"`);
+
+          // Still log the message normally (continue to Gemini parse below)
+        }
+      }
+    }
+
     // 5. Intelligent AI Parse with Gemini 2.5 Flash (Análisis informativo de contexto + Transcripción de Audio)
     const cleanedText = cleanTriggerTags(messageText);
     const parsed = await parseWhatsappMessageWithGemini({
