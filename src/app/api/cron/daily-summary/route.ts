@@ -3,15 +3,29 @@ import { sendWhatsappGroupMessage } from '@/lib/whatsapp/service';
 
 const TARGET_GROUP_ID = '5216641103189-1594651582@g.us';
 
-// POST /api/cron/daily-summary
+// GET or POST /api/cron/daily-summary?secret=YOUR_CRON_SECRET
 // Called by an external cron service (e.g., cron-job.org) daily at 8 PM Tijuana time.
 // Generates the director summary for today and sends it to the coordination group.
+export async function GET(req: NextRequest) {
+  return handleCronSummary(req);
+}
+
 export async function POST(req: NextRequest) {
+  return handleCronSummary(req);
+}
+
+async function handleCronSummary(req: NextRequest) {
   try {
-    // 1. Verify CRON_SECRET
+    // 1. Verify CRON_SECRET (via query param or header)
+    const { searchParams } = new URL(req.url);
+    const secretFromUrl = searchParams.get('secret');
     const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    const isAuthorized = cronSecret && (
+      secretFromUrl === cronSecret ||
+      authHeader === `Bearer ${cronSecret}`
+    );
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
