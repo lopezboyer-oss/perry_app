@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { canAccessWhatsappCoPilot } from '@/lib/permissions';
 
+// Extend Netlify/Vercel function timeout to 60s
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
     // Allow cron jobs to call this endpoint with a secret token
@@ -119,7 +122,7 @@ export async function POST(req: NextRequest) {
     // 3. Fetch logs for ALL groups within period
     const logs = await prisma.whatsappMessageLog.findMany({
       where: whereClause,
-      take: 150,
+      take: 100,
       orderBy: { createdAt: 'desc' },
       include: {
         activity: {
@@ -365,7 +368,7 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
 }`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 55000);
+    const timeout = setTimeout(() => controller.abort(), 45000);
 
     let res: Response;
     try {

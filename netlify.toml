@@ -4,5 +4,11 @@
 [functions."*"]
   node_bundler = "esbuild"
 
+[functions."api-cron-daily-summary-worker"]
+  timeout_seconds = 60
+
+[functions."api-whatsapp-director-summary"]
+  timeout_seconds = 60
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
