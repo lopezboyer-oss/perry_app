@@ -27,25 +27,42 @@ async function handleCronTrigger(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Fire-and-forget: trigger the worker endpoint (separate Netlify function)
+    // 2. Trigger the worker endpoint and wait just long enough to confirm it was received
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
     const workerUrl = `${appUrl}/api/cron/daily-summary/worker?secret=${cronSecret}`;
 
-    // Don't await — the worker runs as its own Netlify function with a 60s timeout
-    fetch(workerUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }).catch(err => {
-      // Log but don't fail — the worker is already running independently
-      console.error('[CRON] Failed to trigger worker:', err.message);
-    });
+    // We await the fetch but with a short timeout — we just need to confirm the request
+    // reached Netlify. The worker function runs independently with its own 60s timeout.
+    const controller = new AbortController();
+    const shortTimeout = setTimeout(() => controller.abort(), 8000); // 8s max wait
 
-    // 3. Return immediately (within <2s) so cron-job.org doesn't timeout
+    let workerTriggered = false;
+    try {
+      const res = await fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+      });
+      clearTimeout(shortTimeout);
+      workerTriggered = true;
+      console.log(`[CRON] Worker triggered, status: ${res.status}`);
+    } catch (err: any) {
+      clearTimeout(shortTimeout);
+      if (err.name === 'AbortError') {
+        // Timeout is OK — worker is running, we just didn't wait for full response
+        workerTriggered = true;
+        console.log('[CRON] Worker triggered (timeout waiting for response, but request was sent)');
+      } else {
+        console.error('[CRON] Failed to trigger worker:', err.message);
+      }
+    }
+
+    // 3. Return to cron-job.org (well within 30s)
     return NextResponse.json({
-      status: 'Worker triggered',
+      status: workerTriggered ? 'Worker triggered' : 'Worker trigger may have failed',
       message: 'Summary generation started in background. Check WhatsApp group for result.',
       triggeredAt: new Date().toISOString(),
-    }, { status: 202 });
+    }, { status: workerTriggered ? 202 : 500 });
 
   } catch (error: any) {
     console.error('[CRON] Trigger error:', error);
