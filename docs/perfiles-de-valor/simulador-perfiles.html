@@ -167,10 +167,35 @@
     .surface2, .bg { background:white !important; }
   }
 
+  /* Table Scroll Container */
+  .table-responsive { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
   @media (max-width:768px) {
-    .dashboard { grid-template-columns:1fr; }
-    .profile-header { flex-wrap:wrap; gap:12px; }
-    .profile-controls { width:100%; justify-content:space-between; }
+    body { padding:12px; }
+    .header { margin-bottom:20px; }
+    .header h1 { font-size:22px; }
+    .header p { font-size:12px; }
+    .dashboard { grid-template-columns:1fr; gap:12px; margin-bottom:20px; }
+    .dash-card { padding:14px; }
+    .dash-value { font-size:28px; }
+    
+    .phase-bar { flex-wrap:wrap; gap:12px; padding:12px; text-align:center; justify-content:center; }
+    .phase-bar .label { width:100%; text-align:center; }
+    
+    .action-bar { flex-direction:column; gap:8px; width:100%; }
+    .action-btn { width:100%; justify-content:center; padding:12px 16px; }
+
+    .profile-header { flex-direction:column; align-items:flex-start; gap:12px; padding:14px; }
+    .profile-title { width:100%; justify-content:space-between; }
+    .profile-controls { width:100%; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+    .toggle-group { flex:1; justify-content:center; }
+    .toggle-btn { flex:1; text-align:center; padding:6px 8px; }
+    .profile-content { padding:12px; }
+  }
+
+  @media (max-width:480px) {
+    .kpi-table th, .kpi-table td { padding:6px 4px; font-size:11px; }
+    .kpi-meta-input { font-size:11px; min-width:65px; }
   }
 </style>
 </head>
@@ -487,10 +512,12 @@ function render() {
           </div>
           <div class="resp-section">
             <div class="resp-label">📊 KPIs</div>
-            <table class="kpi-table">
-              <thead><tr><th>KPI</th><th>Meta</th><th>Frecuencia</th><th>Fase</th></tr></thead>
-              <tbody>${p.kpis.map((k,ki)=>`<tr class="${PHASE_ACTIVE[k[3]]?'':'kpi-row-dimmed'}"><td>${k[0]}</td><td><input class="kpi-meta-input" value="${k[1]}" oninput="updateKpiMeta(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td>${k[2]}</td><td><span class="phase-tag ${k[3]}">${k[3]==='f1'?'🔴 F1':'🟡 F2'}</span></td></tr>`).join('')}</tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="kpi-table">
+                <thead><tr><th>KPI</th><th>Meta</th><th>Frecuencia</th><th>Fase</th></tr></thead>
+                <tbody>${p.kpis.map((k,ki)=>`<tr class="${PHASE_ACTIVE[k[3]]?'':'kpi-row-dimmed'}"><td>${k[0]}</td><td><input class="kpi-meta-input" value="${k[1]}" oninput="updateKpiMeta(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td>${k[2]}</td><td><span class="phase-tag ${k[3]}">${k[3]==='f1'?'🔴 F1':'🟡 F2'}</span></td></tr>`).join('')}</tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>`;
