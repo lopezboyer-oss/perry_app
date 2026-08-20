@@ -234,7 +234,7 @@
 
 <div class="dashboard">
   <div class="dash-card socio1">
-    <div class="dash-label">Socio 1 — Gobierno Digital</div>
+    <div class="dash-label">Socio 1</div>
     <div class="dash-value" id="s1pct">0%</div>
     <div class="dash-amount" id="s1amount">$0 MXN</div>
     <div class="dash-sub"><span id="s1pts">0</span> pts · <span id="s1profiles">0</span> perfiles</div>
@@ -250,7 +250,7 @@
     <div class="dash-sub" style="margin-top:8px;">Brecha: <strong id="gap">0%</strong></div>
   </div>
   <div class="dash-card socio2">
-    <div class="dash-label">Socio 2 — Operación y Crecimiento</div>
+    <div class="dash-label">Socio 2</div>
     <div class="dash-value" id="s2pct">0%</div>
     <div class="dash-amount" id="s2amount">$0 MXN</div>
     <div class="dash-sub"><span id="s2pts">0</span> pts · <span id="s2profiles">0</span> perfiles</div>
@@ -260,10 +260,6 @@
 <div class="alert" id="conflictAlert">
   <span class="icon">⛔</span>
   <div class="text" id="conflictText"></div>
-</div>
-<div class="alert warn" id="overloadAlert">
-  <span class="icon">⚠️</span>
-  <div class="text" id="overloadText"></div>
 </div>
 
 <div class="phase-bar">
@@ -655,11 +651,6 @@ function recalc() {
   const cText = document.getElementById('conflictText');
   if (conflicts.length) { cAlert.classList.add('show'); cText.innerHTML = '<strong>Conflictos de interés detectados:</strong><br>' + conflicts.join('<br>'); }
   else { cAlert.classList.remove('show'); }
-
-  const oAlert = document.getElementById('overloadAlert');
-  const oText = document.getElementById('overloadText');
-  if (overloads.length) { oAlert.classList.add('show'); oText.innerHTML = '<strong>Riesgo de sobrecarga:</strong><br>' + overloads.join('<br>'); }
-  else { oAlert.classList.remove('show'); }
 }
 
 // Store base KPI values and base points for recalculation
