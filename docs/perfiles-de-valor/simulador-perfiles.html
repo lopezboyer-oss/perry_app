@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Perfiles de Valor — Grupo Caseme</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242836;
+    --border: #2e3346;
+    --text: #e4e6ef;
+    --text-dim: #8b8fa3;
+    --accent1: #6366f1;
+    --accent1-dim: rgba(99,102,241,0.15);
+    --accent2: #22d3ee;
+    --accent2-dim: rgba(34,211,238,0.15);
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f59e0b;
+    --phase1: #ef4444;
+    --phase2: #f59e0b;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:24px; }
+
+  .header { text-align:center; margin-bottom:32px; }
+  .header h1 { font-size:28px; font-weight:800; background:linear-gradient(135deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .header p { color:var(--text-dim); margin-top:6px; font-size:14px; }
+
+  /* Dashboard Cards */
+  .dashboard { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:28px; }
+  .dash-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; }
+  .dash-card.socio1 { border-color:var(--accent1); background:var(--accent1-dim); }
+  .dash-card.socio2 { border-color:var(--accent2); background:var(--accent2-dim); }
+  .dash-label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); }
+  .dash-value { font-size:36px; font-weight:800; margin:8px 0 4px; }
+  .dash-card.socio1 .dash-value { color:var(--accent1); }
+  .dash-card.socio2 .dash-value { color:var(--accent2); }
+  .dash-sub { font-size:13px; color:var(--text-dim); }
+  .dash-bar { height:8px; border-radius:4px; background:var(--surface2); margin-top:12px; overflow:hidden; display:flex; }
+  .dash-bar .s1 { background:var(--accent1); transition:width 0.4s ease; }
+  .dash-bar .s2 { background:var(--accent2); transition:width 0.4s ease; }
+
+  /* Alerts */
+  .alert { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px 16px; margin-bottom:20px; display:none; }
+  .alert.show { display:flex; gap:8px; align-items:flex-start; }
+  .alert .icon { font-size:18px; flex-shrink:0; }
+  .alert .text { font-size:13px; color:#fca5a5; line-height:1.5; }
+  .alert.warn { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.3); }
+  .alert.warn .text { color:#fcd34d; }
+
+  /* Profile Cards */
+  .profiles { display:flex; flex-direction:column; gap:16px; }
+  .profile-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:border-color 0.3s; }
+  .profile-card.assigned-s1 { border-color:var(--accent1); }
+  .profile-card.assigned-s2 { border-color:var(--accent2); }
+
+  .profile-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:var(--surface2); cursor:pointer; user-select:none; }
+  .profile-header:hover { background:#2a2e3e; }
+  .profile-title { display:flex; align-items:center; gap:12px; }
+  .profile-num { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  .assigned-s1 .profile-num { background:var(--accent1-dim); color:var(--accent1); }
+  .assigned-s2 .profile-num { background:var(--accent2-dim); color:var(--accent2); }
+  .profile-name { font-weight:600; font-size:15px; }
+  .profile-controls { display:flex; align-items:center; gap:16px; }
+  .points-input { width:56px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:inherit; font-size:15px; font-weight:700; text-align:center; padding:6px; outline:none; }
+  .points-input:focus { border-color:var(--accent1); }
+  .pct-badge { font-size:13px; font-weight:600; color:var(--text-dim); min-width:50px; text-align:right; }
+
+  /* Toggle Switch */
+  .toggle-group { display:flex; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+  .toggle-btn { padding:6px 12px; font-size:11px; font-weight:600; font-family:inherit; cursor:pointer; border:none; background:transparent; color:var(--text-dim); transition:all 0.2s; }
+  .toggle-btn.active-s1 { background:var(--accent1); color:white; }
+  .toggle-btn.active-s2 { background:var(--accent2); color:#0f1117; }
+
+  /* Expandable Content */
+  .profile-body { max-height:0; overflow:hidden; transition:max-height 0.4s ease; }
+  .profile-body.open { max-height:2000px; }
+  .profile-content { padding:16px 20px 20px; }
+
+  .resp-section { margin-bottom:16px; }
+  .resp-label { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .resp-label .dot { width:8px; height:8px; border-radius:50%; }
+  .resp-label .dot.f1 { background:var(--phase1); }
+  .resp-label .dot.f2 { background:var(--phase2); }
+  .resp-list { list-style:none; }
+  .resp-list li { font-size:13px; color:var(--text-dim); padding:4px 0 4px 16px; position:relative; line-height:1.5; }
+  .resp-list li::before { content:'›'; position:absolute; left:0; color:var(--text-dim); font-weight:700; }
+
+  .kpi-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; }
+  .kpi-table th { text-align:left; padding:6px 8px; background:var(--bg); color:var(--text-dim); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+  .kpi-table td { padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-dim); }
+  .kpi-table .phase-tag { display:inline-block; padding:1px 6px; border-radius:4px; font-size:10px; font-weight:600; }
+  .kpi-table .f1 { background:rgba(239,68,68,0.15); color:var(--phase1); }
+  .kpi-table .f2 { background:rgba(245,158,11,0.15); color:var(--phase2); }
+  .kpi-meta-input { background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--accent2); font-family:inherit; font-size:12px; font-weight:600; padding:3px 6px; width:100%; min-width:80px; outline:none; }
+  .kpi-meta-input:focus { border-color:var(--accent1); background:#1e2235; }
+
+  .expand-icon { font-size:18px; color:var(--text-dim); transition:transform 0.3s; }
+  .profile-card.expanded .expand-icon { transform:rotate(180deg); }
+
+  /* Footer */
+  .footer { margin-top:32px; text-align:center; padding:20px; border-top:1px solid var(--border); }
+  .footer p { font-size:12px; color:var(--text-dim); }
+
+  /* Action Bar */
+  .action-bar { display:flex; gap:12px; justify-content:center; margin-bottom:24px; flex-wrap:wrap; }
+  .action-btn { display:flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+  .action-btn:hover { background:var(--surface2); border-color:var(--accent1); }
+  .action-btn.primary { background:var(--accent1); border-color:var(--accent1); color:white; }
+  .action-btn.primary:hover { background:#4f46e5; }
+  .action-btn.export { background:linear-gradient(135deg,#059669,#10b981); border-color:#059669; color:white; }
+  .action-btn.export:hover { opacity:0.9; }
+  .action-btn .icon { font-size:16px; }
+  .recalc-feedback { font-size:12px; color:var(--green); margin-top:8px; text-align:center; display:none; }
+  .recalc-feedback.show { display:block; animation: fadeInOut 3s ease forwards; }
+  @keyframes fadeInOut { 0%{opacity:0} 10%{opacity:1} 80%{opacity:1} 100%{opacity:0;display:none} }
+
+  /* Phase Toggle Bar */
+  .phase-bar { display:flex; align-items:center; justify-content:center; gap:24px; margin-bottom:20px; padding:12px 20px; background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+  .phase-bar .label { font-size:13px; font-weight:600; color:var(--text-dim); }
+  .phase-toggle { display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .phase-toggle input { display:none; }
+  .phase-toggle .switch { width:40px; height:22px; border-radius:11px; background:var(--border); position:relative; transition:background 0.3s; flex-shrink:0; }
+  .phase-toggle .switch::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:var(--text-dim); transition:all 0.3s; }
+  .phase-toggle input:checked + .switch { background:var(--phase1); }
+  .phase-toggle input:checked + .switch::after { left:21px; background:white; }
+  .phase-toggle.f2 input:checked + .switch { background:var(--phase2); }
+  .phase-toggle .tag { font-size:12px; font-weight:700; padding:2px 8px; border-radius:4px; }
+  .phase-toggle .tag.f1 { background:rgba(239,68,68,0.15); color:var(--phase1); }
+  .phase-toggle .tag.f2 { background:rgba(245,158,11,0.15); color:var(--phase2); }
+  .phase-mode-label { font-size:11px; color:var(--accent2); font-weight:600; background:var(--accent2-dim); padding:3px 10px; border-radius:6px; }
+
+  /* Dimmed phase content */
+  .phase-dimmed { opacity:0.25; pointer-events:none; filter:grayscale(1); }
+  .kpi-row-dimmed { opacity:0.25; }
+
+  /* Print Styles */
+  @media print {
+    body { background:white !important; color:#1a1a2e !important; padding:20px !important; }
+    .action-bar, .toggle-group, .points-input, .expand-icon { display:none !important; }
+    .header h1 { -webkit-text-fill-color:#1e3a5f !important; font-size:22pt; }
+    .dash-card { background:white !important; border:1px solid #ccc !important; }
+    .dash-card.socio1, .dash-card.socio2 { background:white !important; }
+    .dash-value { color:#1e3a5f !important; }
+    .dash-label, .dash-sub, .pct-badge { color:#555 !important; }
+    .profile-card { background:white !important; border:1px solid #ccc !important; page-break-inside:avoid; }
+    .profile-header { background:#f5f5f5 !important; }
+    .profile-header:hover { background:#f5f5f5 !important; }
+    .profile-body { max-height:none !important; }
+    .profile-content { padding:12px 16px !important; }
+    .profile-num { background:#e8e8e8 !important; color:#333 !important; }
+    .profile-name { color:#1a1a2e !important; }
+    .resp-list li, .kpi-table td { color:#333 !important; }
+    .kpi-table th { background:#eee !important; color:#333 !important; }
+    .kpi-meta-input { border:none !important; background:transparent !important; color:#1a1a2e !important; font-weight:700 !important; padding:0 !important; }
+    .alert, .alert.warn { border:1px solid #ccc !important; background:#fff8f0 !important; }
+    .alert .text, .alert.warn .text { color:#333 !important; }
+    .footer { border-top:1px solid #ccc !important; }
+    .footer p { color:#666 !important; }
+    .dash-bar .s1 { background:#4a5568 !important; }
+    .dash-bar .s2 { background:#a0aec0 !important; }
+    .surface2, .bg { background:white !important; }
+  }
+
+  @media (max-width:768px) {
+    .dashboard { grid-template-columns:1fr; }
+    .profile-header { flex-wrap:wrap; gap:12px; }
+    .profile-controls { width:100%; justify-content:space-between; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚖️ Simulador de Perfiles de Valor</h1>
+  <p>Grupo Caseme — Ajusta puntos y asignaciones en tiempo real</p>
+</div>
+
+<div class="dashboard">
+  <div class="dash-card socio1">
+    <div class="dash-label">Socio 1 — Gobierno Digital</div>
+    <div class="dash-value" id="s1pct">0%</div>
+    <div class="dash-sub"><span id="s1pts">0</span> pts · <span id="s1profiles">0</span> perfiles</div>
+  </div>
+  <div class="dash-card">
+    <div class="dash-label">Distribución de la Bolsa</div>
+    <div class="dash-bar"><div class="s1" id="bar1"></div><div class="s2" id="bar2"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;">
+      <span class="dash-sub" style="color:var(--accent1)" id="barLabel1">0%</span>
+      <span class="dash-sub" id="totalPts">Total: 0 pts</span>
+      <span class="dash-sub" style="color:var(--accent2)" id="barLabel2">0%</span>
+    </div>
+    <div class="dash-sub" style="margin-top:8px;">Brecha: <strong id="gap">0%</strong></div>
+  </div>
+  <div class="dash-card socio2">
+    <div class="dash-label">Socio 2 — Operación y Crecimiento</div>
+    <div class="dash-value" id="s2pct">0%</div>
+    <div class="dash-sub"><span id="s2pts">0</span> pts · <span id="s2profiles">0</span> perfiles</div>
+  </div>
+</div>
+
+<div class="alert" id="conflictAlert">
+  <span class="icon">⛔</span>
+  <div class="text" id="conflictText"></div>
+</div>
+<div class="alert warn" id="overloadAlert">
+  <span class="icon">⚠️</span>
+  <div class="text" id="overloadText"></div>
+</div>
+
+<div class="phase-bar">
+  <span class="label">Evaluar:</span>
+  <label class="phase-toggle f1">
+    <input type="checkbox" checked onchange="togglePhase('f1', this.checked)">
+    <span class="switch"></span>
+    <span class="tag f1">🔴 Fase 1 — Urgentes</span>
+  </label>
+  <label class="phase-toggle f2">
+    <input type="checkbox" checked onchange="togglePhase('f2', this.checked)">
+    <span class="switch"></span>
+    <span class="tag f2">🟡 Fase 2 — En rampa</span>
+  </label>
+  <span class="phase-mode-label" id="phaseModeLabel">Ambas fases</span>
+</div>
+
+<div class="action-bar">
+  <button class="action-btn primary" onclick="recalcFromKPIs()"><span class="icon">🔄</span> Recalcular Puntajes desde KPIs</button>
+  <button class="action-btn export" onclick="exportPDF()"><span class="icon">📄</span> Exportar PDF</button>
+  <button class="action-btn" onclick="resetToDefaults()"><span class="icon">↩️</span> Restaurar Defaults</button>
+</div>
+<div class="recalc-feedback" id="recalcFeedback"></div>
+
+<div class="profiles" id="profilesContainer"></div>
+
+<div class="footer">
+  <p>CONFIDENCIAL — Documento de trabajo para Junta Directiva · Perry Intelligence · v3.0</p>
+</div>
+
+<script>
+// Phase state
+const PHASE_ACTIVE = { f1: true, f2: true };
+
+const PROFILES = [
+  {
+    id: 1, name: 'Auditor y Consultor Senior de Operaciones', points: 20, assignedTo: 2,
+    f1: [
+      'Realizar auditorías periódicas de los procesos operativos',
+      'Evaluar calidad técnica de trabajos en campo (visitas)',
+      'Identificar cuellos de botella, ineficiencias y riesgos',
+      'Emitir informes de auditoría con hallazgos accionables',
+      'Validar estándares de calidad del cliente',
+      'Participar en resolución de problemas técnicos escalados',
+      'Revisar diariamente puntos críticos activos en Perry',
+      'Asegurar responsable y fecha compromiso en cada punto',
+      'Escalar puntos sin atención después de 24h',
+      'Validar actualizaciones sustantivas',
+      'Reportar semanalmente estado de puntos críticos a dirección',
+      'Revisar diariamente reportes ejecutivos Perry Intelligence'
+    ],
+    f2: [
+      'Evaluar desempeño de coordinadores y responsables',
+      'Seguimiento a planes de mejora y validar implementación',
+      'Analizar capacidad instalada vs carga de trabajo',
+      'Mentorear ingenieros y supervisores',
+      'Proponer mejoras basadas en experiencia acumulada'
+    ],
+    kpis: [
+      ['Visitas de auditoría/campo', '≥ 4/mes', 'Mensual', 'f1'],
+      ['Informes de auditoría emitidos', '≥ 2/mes', 'Mensual', 'f1'],
+      ['Hallazgos documentados', '100% visitas', 'Por visita', 'f1'],
+      ['Puntos críticos revisados diariamente', '100%', 'Diario', 'f1'],
+      ['Puntos críticos sin atención >48h', '0', 'Semanal', 'f1'],
+      ['Reporte semanal seguimiento crítico', '100% semanas', 'Semanal', 'f1'],
+      ['Revisión reporte ejecutivo Perry', '100% días hábiles', 'Diario', 'f1'],
+      ['Recomendaciones implementadas', '≥ 70%', 'Trimestral', 'f2'],
+      ['Evaluaciones de coordinadores', '≥ 1/trimestre', 'Trimestral', 'f2'],
+    ]
+  },
+  {
+    id: 2, name: 'Director Comercial y Relaciones Estratégicas', points: 18, assignedTo: 2,
+    f1: [
+      'Mantener relación con gerentes de compras y decisores TMMBC',
+      'Reuniones periódicas de alto nivel (comidas, juntas ejecutivas)',
+      'Intervenir en negociaciones de contratos mayores',
+      'Gestionar percepción del cliente sobre calidad/confiabilidad',
+      'Supervisar estratégicamente al equipo de vendedores',
+      'Recuperar relaciones cuando hay conflictos con cliente'
+    ],
+    f2: [
+      'Buscar nuevos mercados/sectores para reducir dependencia TMMBC',
+      'Desarrollar nuevas líneas de negocio',
+      'Elaborar y dar seguimiento al plan comercial anual',
+      'Diseñar estrategias para reducir concentración de facturación',
+      'Monitorear concentración de facturación por cliente',
+      'Identificar oportunidades antes de licitación',
+      'Representar empresa en eventos del sector',
+      'Mentoría al equipo de ventas'
+    ],
+    kpis: [
+      ['Reuniones alto nivel con gerencia', '≥ 2/mes', 'Mensual', 'f1'],
+      ['Contratos renovados sin pérdida', '100%', 'Anual', 'f1'],
+      ['Conflictos atendidos', '≤ 48h respuesta', 'Por evento', 'f1'],
+      ['Nuevos clientes prospectados', '≥ 2/trimestre', 'Trimestral', 'f2'],
+      ['Concentración facturación principal', 'Reducción prog.', 'Semestral', 'f2'],
+    ]
+  },
+  {
+    id: 3, name: 'Analista de Inteligencia Operativa y de Negocio', points: 29, assignedTo: 1,
+    f1: [
+      'Analizar tendencias: tipos, volúmenes, tiempos, cancelaciones',
+      'Detectar alertas tempranas: productividad, concentración de carga',
+      'Monitorear KPIs transversales de todas las áreas'
+    ],
+    f2: [
+      'Generar reportes de análisis para dirección',
+      'Identificar patrones recurrentes → acciones preventivas',
+      'Coordinar juntas multi-área para puntos que lo requieran',
+      'Proponer mejoras al sistema de reporteo',
+      'Identificar oportunidades de negocio desde la data'
+    ],
+    kpis: [
+      ['Alertas tempranas detectadas', 'Registro', 'Mensual', 'f1'],
+      ['Reportes análisis a dirección', '≥ 2/mes', 'Mensual', 'f2'],
+      ['Patrones recurrentes documentados', '≥ 1/mes', 'Mensual', 'f2'],
+      ['Monitoreo KPIs transversales', '≥ 1/mes', 'Mensual', 'f2'],
+    ]
+  },
+  {
+    id: 4, name: 'Controller de Costos de Proyecto', points: 19, assignedTo: 1,
+    f1: [
+      'Revisar cotizaciones: alcance, precios, márgenes',
+      'Seguimiento a cotizaciones para conversión PO/contrato',
+      'Monitorear costo real vs presupuestado por proyecto',
+      'Alertas tempranas de desviación de costo',
+      'Identificar problemas técnicos que impacten costo',
+      'Apoyar cobranza: seguimiento a facturas',
+      'Validar cotizaciones reflejen costos reales'
+    ],
+    f2: [
+      'Participar en elaboración del presupuesto anual',
+      'Estado de resultados mensual vs presupuesto',
+      'Proyección de flujo de efectivo',
+      'Reportes de rentabilidad por proyecto/ingeniero/tipo',
+      'Proponer ajustes de precio por desviaciones sistemáticas',
+      'Supervisar pipeline de cotizaciones del equipo de ventas'
+    ],
+    kpis: [
+      ['Cotizaciones revisadas vs emitidas', '100%', 'Semanal', 'f1'],
+      ['Desviación costo detectada oportuna', '≥ 90%', 'Mensual', 'f1'],
+      ['Antigüedad cuentas por cobrar', 'Reducción prog.', 'Mensual', 'f1'],
+      ['Tasa conversión cotización→PO', '≥ 40%', 'Mensual', 'f2'],
+      ['Reportes rentabilidad', '≥ 2/mes', 'Mensual', 'f2'],
+      ['Edo. resultados generado', '100% meses', 'Mensual', 'f2'],
+    ]
+  },
+  {
+    id: 5, name: 'CTO / Director de Tecnología e Innovación', points: 21, assignedTo: 1,
+    f1: [
+      'Dirigir desarrollo y evolución de Perry App',
+      'Evaluar e implementar soluciones IA/automatización',
+      'Asegurar estabilidad y escalabilidad de infraestructura',
+      'Capacitar al equipo en herramientas implementadas',
+      'Gestionar proveedores tecnológicos'
+    ],
+    f2: [
+      'Definir roadmap tecnológico anual y mediano plazo',
+      'Implementar políticas de ciberseguridad y respaldo',
+      'Definir estrategia tecnológica corto/mediano plazo',
+      'Promover adopción de tecnología en todas las áreas',
+      'Innovar: proponer soluciones de vanguardia',
+      'Medir ROI de inversiones tecnológicas'
+    ],
+    kpis: [
+      ['Funcionalidades nuevas Perry', '≥ 2/mes', 'Mensual', 'f1'],
+      ['Uptime plataforma', '≥ 99.5%', 'Mensual', 'f1'],
+      ['Adopción herramientas equipo', '≥ 80%', 'Trimestral', 'f1'],
+      ['Roadmap documentado vigente', '1 activo', 'Semestral', 'f2'],
+      ['Procesos automatizados nuevos', '≥ 1/trimestre', 'Trimestral', 'f2'],
+    ]
+  },
+  {
+    id: 6, name: 'Director Administrativo y de Control de Egresos', points: 19, assignedTo: 2,
+    f1: [
+      'Revisar y validar nómina semanal/quincenal',
+      'Auditar y aprobar horas extra reportadas',
+      'Revisar y aprobar OC de materiales',
+      'Revisar y aprobar pagos a proveedores',
+      'Revisar y aprobar compras herramientas/EPP',
+      'Atender despidos y rescisión laboral',
+      'Detectar irregularidades en egresos'
+    ],
+    f2: [
+      'Actualizar organigrama y planeación de plantilla',
+      'Implementar evaluaciones de desempeño',
+      'Planes de capacitación para brechas de competencia',
+      'Planes de sucesión para puestos críticos',
+      'Medir y analizar rotación y causas de salida',
+      'Supervisar procesos administrativos en tiempo'
+    ],
+    kpis: [
+      ['Nóminas revisadas antes de dispersión', '100%', 'Semanal', 'f1'],
+      ['Horas extra auditadas', '100%', 'Semanal', 'f1'],
+      ['OC revisadas antes de emisión', '100%', 'Por evento', 'f1'],
+      ['Despidos sin demanda procedente', '≥ 90%', 'Por evento', 'f1'],
+      ['Evaluaciones desempeño realizadas', '100%', 'Semestral', 'f2'],
+      ['Puestos con plan de sucesión', '100%', 'Anual', 'f2'],
+    ]
+  },
+  {
+    id: 7, name: 'Representante Legal y Fiduciario', points: 14, assignedTo: 1,
+    f1: [
+      'Firmar como representante legal en contratos',
+      'Actuar como aval personal en créditos bancarios',
+      'Comparecer ante dependencias: SAT, IMSS, STPS',
+      'Atender requerimientos legales y auditorías',
+      'Supervisar cumplimiento regulatorio (REPSE)'
+    ],
+    f2: [
+      'Elaborar y mantener matriz de riesgos empresariales',
+      'Seguimiento a seguros y coberturas',
+      'Firmar escrituras y poderes notariales',
+      'Gestionar renovaciones de permisos y licencias'
+    ],
+    kpis: [
+      ['Obligaciones regulatorias sin multas', '100%', 'Trimestral', 'f1'],
+      ['Requerimientos legales atendidos', '≤ 5 días', 'Por evento', 'f1'],
+      ['Contratos firmados y revisados', 'Registro completo', 'Mensual', 'f1'],
+      ['Matriz de riesgos actualizada', '1 activa', 'Semestral', 'f2'],
+      ['Revisión seguros/coberturas', 'Suficiente', 'Anual', 'f2'],
+    ]
+  }
+];
+
+// Conflict matrix: [profileId1, profileId2, type, reason]
+// In a partner model (remuneration by profit share, not commission),
+// traditional conflicts are mitigated because incentives are aligned.
+const CONFLICTS = [
+  // P2+P4 reclassified: partner-seller benefits from knowing real margins → no conflict
+  // P2+P6, P4+P6 reclassified as oversight warnings (below), not hard conflicts
+];
+const OVERLOADS = [
+  [1, 5, 'Auditor + CTO: Sobrecarga de tiempo (campo + desarrollo)'],
+  [4, 5, 'Controller + CTO: Sobrecarga de tiempo (análisis financiero + desarrollo)'],
+  [5, 6, 'CTO + Dir Admin: Sobrecarga de tiempo (desarrollo + admin diaria)'],
+  [2, 6, 'Comercial + Dir Admin: Compatible (incentivos alineados) — recomendar auditoría cruzada trimestral'],
+  [4, 6, 'Controller + Dir Admin: Compatible (incentivos alineados) — recomendar segundo filtro en pagos >$50K'],
+];
+
+function render() {
+  const container = document.getElementById('profilesContainer');
+  container.innerHTML = '';
+  PROFILES.forEach(p => {
+    const card = document.createElement('div');
+    card.className = `profile-card assigned-s${p.assignedTo}`;
+    card.id = `card-${p.id}`;
+    card.innerHTML = `
+      <div class="profile-header" onclick="toggleExpand(${p.id})">
+        <div class="profile-title">
+          <div class="profile-num">P${p.id}</div>
+          <span class="profile-name">${p.name}</span>
+        </div>
+        <div class="profile-controls">
+          <div class="toggle-group">
+            <button class="toggle-btn ${p.assignedTo===1?'active-s1':''}" onclick="event.stopPropagation();assign(${p.id},1)">Socio 1</button>
+            <button class="toggle-btn ${p.assignedTo===2?'active-s2':''}" onclick="event.stopPropagation();assign(${p.id},2)">Socio 2</button>
+          </div>
+          <input type="number" class="points-input" value="${p.points}" min="1" max="99"
+            onclick="event.stopPropagation()" oninput="updatePoints(${p.id}, this.value)">
+          <span class="pct-badge" id="pct-${p.id}">0%</span>
+          <span class="expand-icon">▾</span>
+        </div>
+      </div>
+      <div class="profile-body" id="body-${p.id}">
+        <div class="profile-content">
+          <div class="resp-section ${PHASE_ACTIVE.f1?'':'phase-dimmed'}">
+            <div class="resp-label"><span class="dot f1"></span> FASE 1 — URGENTES (${p.f1.length})</div>
+            <ul class="resp-list">${p.f1.map(r=>`<li>${r}</li>`).join('')}</ul>
+          </div>
+          <div class="resp-section ${PHASE_ACTIVE.f2?'':'phase-dimmed'}">
+            <div class="resp-label"><span class="dot f2"></span> FASE 2 — EN RAMPA (${p.f2.length})</div>
+            <ul class="resp-list">${p.f2.map(r=>`<li>${r}</li>`).join('')}</ul>
+          </div>
+          <div class="resp-section">
+            <div class="resp-label">📊 KPIs</div>
+            <table class="kpi-table">
+              <thead><tr><th>KPI</th><th>Meta</th><th>Frecuencia</th><th>Fase</th></tr></thead>
+              <tbody>${p.kpis.map((k,ki)=>`<tr class="${PHASE_ACTIVE[k[3]]?'':'kpi-row-dimmed'}"><td>${k[0]}</td><td><input class="kpi-meta-input" value="${k[1]}" oninput="updateKpiMeta(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td>${k[2]}</td><td><span class="phase-tag ${k[3]}">${k[3]==='f1'?'🔴 F1':'🟡 F2'}</span></td></tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    container.appendChild(card);
+  });
+  recalc();
+}
+
+function assign(id, socio) {
+  PROFILES.find(p=>p.id===id).assignedTo = socio;
+  render();
+}
+
+function updatePoints(id, val) {
+  const v = parseInt(val) || 1;
+  PROFILES.find(p=>p.id===id).points = v;
+  recalc();
+}
+
+function updateKpiMeta(profileId, kpiIndex, value) {
+  PROFILES.find(p=>p.id===profileId).kpis[kpiIndex][1] = value;
+}
+
+function togglePhase(phase, active) {
+  PHASE_ACTIVE[phase] = active;
+  const label = document.getElementById('phaseModeLabel');
+  if (PHASE_ACTIVE.f1 && PHASE_ACTIVE.f2) label.textContent = 'Ambas fases';
+  else if (PHASE_ACTIVE.f1) label.textContent = 'Solo Fase 1';
+  else if (PHASE_ACTIVE.f2) label.textContent = 'Solo Fase 2';
+  else label.textContent = 'Ninguna fase';
+
+  // Auto-recalculate points based on active phases
+  PROFILES.forEach(p => {
+    const base = BASE_POINTS[p.id];
+    const totalKpis = p.kpis.length;
+    const activeKpis = p.kpis.filter(k => PHASE_ACTIVE[k[3]]).length;
+    p.points = totalKpis > 0 ? Math.max(1, Math.round(base * (activeKpis / totalKpis))) : base;
+  });
+
+  render();
+}
+
+function toggleExpand(id) {
+  const card = document.getElementById(`card-${id}`);
+  const body = document.getElementById(`body-${id}`);
+  card.classList.toggle('expanded');
+  body.classList.toggle('open');
+}
+
+function recalc() {
+  const total = PROFILES.reduce((s,p) => s + p.points, 0);
+  let s1pts=0, s2pts=0, s1n=0, s2n=0;
+  PROFILES.forEach(p => {
+    const pct = ((p.points/total)*100).toFixed(1);
+    const el = document.getElementById(`pct-${p.id}`);
+    if (el) el.textContent = pct + '%';
+    if (p.assignedTo === 1) { s1pts += p.points; s1n++; }
+    else { s2pts += p.points; s2n++; }
+  });
+  const s1pct = ((s1pts/total)*100).toFixed(1);
+  const s2pct = ((s2pts/total)*100).toFixed(1);
+  const gapVal = Math.abs(s1pct - s2pct).toFixed(1);
+
+  document.getElementById('s1pct').textContent = s1pct + '%';
+  document.getElementById('s2pct').textContent = s2pct + '%';
+  document.getElementById('s1pts').textContent = s1pts;
+  document.getElementById('s2pts').textContent = s2pts;
+  document.getElementById('s1profiles').textContent = s1n;
+  document.getElementById('s2profiles').textContent = s2n;
+  document.getElementById('totalPts').textContent = `Total: ${total} pts`;
+  document.getElementById('bar1').style.width = s1pct + '%';
+  document.getElementById('bar2').style.width = s2pct + '%';
+  document.getElementById('barLabel1').textContent = s1pct + '%';
+  document.getElementById('barLabel2').textContent = s2pct + '%';
+  const gapEl = document.getElementById('gap');
+  gapEl.textContent = gapVal + '%';
+  gapEl.style.color = gapVal > 15 ? 'var(--red)' : gapVal > 10 ? 'var(--orange)' : 'var(--green)';
+
+  // Check conflicts
+  const conflicts = [];
+  const overloads = [];
+  CONFLICTS.forEach(([a,b,type,reason]) => {
+    const pa = PROFILES.find(p=>p.id===a);
+    const pb = PROFILES.find(p=>p.id===b);
+    if (pa.assignedTo === pb.assignedTo) conflicts.push(`Socio ${pa.assignedTo}: ${reason}`);
+  });
+  OVERLOADS.forEach(([a,b,reason]) => {
+    const pa = PROFILES.find(p=>p.id===a);
+    const pb = PROFILES.find(p=>p.id===b);
+    if (pa.assignedTo === pb.assignedTo) overloads.push(`Socio ${pa.assignedTo}: ${reason}`);
+  });
+
+  const cAlert = document.getElementById('conflictAlert');
+  const cText = document.getElementById('conflictText');
+  if (conflicts.length) { cAlert.classList.add('show'); cText.innerHTML = '<strong>Conflictos de interés detectados:</strong><br>' + conflicts.join('<br>'); }
+  else { cAlert.classList.remove('show'); }
+
+  const oAlert = document.getElementById('overloadAlert');
+  const oText = document.getElementById('overloadText');
+  if (overloads.length) { oAlert.classList.add('show'); oText.innerHTML = '<strong>Riesgo de sobrecarga:</strong><br>' + overloads.join('<br>'); }
+  else { oAlert.classList.remove('show'); }
+}
+
+// Store base KPI values and base points for recalculation
+const BASE_POINTS = {};
+const BASE_KPIS = {};
+PROFILES.forEach(p => {
+  BASE_POINTS[p.id] = p.points;
+  BASE_KPIS[p.id] = p.kpis.map(k => ({ name: k[0], meta: k[1], freq: k[2], phase: k[3] }));
+});
+
+// Extract numeric value from a KPI meta string
+function extractNum(str) {
+  const match = str.match(/([\d]+\.?[\d]*)/); 
+  return match ? parseFloat(match[1]) : null;
+}
+
+// Detect if a KPI is "inverse" — lower number = MORE effort/demand
+// e.g., "≤ 48h" → "≤ 24h" means double the demand, not half
+function isInverseKPI(metaStr, kpiName) {
+  const m = metaStr.toLowerCase();
+  const n = kpiName.toLowerCase();
+  // "≤" prefix means "at most X" — less is more demanding
+  if (metaStr.includes('≤') || metaStr.includes('<=')) return true;
+  // Time/aging keywords
+  if (n.includes('tiempo') || n.includes('antigüedad') || n.includes('desviación')) return true;
+  return false;
+}
+
+// Map frequency to monthly multiplier for effort normalization
+function freqMultiplier(freq) {
+  const f = freq.toLowerCase();
+  if (f.includes('diario')) return 22; // ~22 working days
+  if (f.includes('semanal')) return 4.3;
+  if (f.includes('mensual') || f.includes('mes')) return 1;
+  if (f.includes('trimestral')) return 0.33;
+  if (f.includes('semestral')) return 0.17;
+  if (f.includes('anual') || f.includes('año')) return 0.083;
+  if (f.includes('evento') || f.includes('visita')) return 2; // estimate ~2/month
+  if (f.includes('única')) return 0.05;
+  return 1;
+}
+
+function recalcFromKPIs() {
+  const changes = [];
+  PROFILES.forEach(p => {
+    const baseKpis = BASE_KPIS[p.id];
+    const basePoints = BASE_POINTS[p.id];
+    let weightedRatioSum = 0;
+    let weightSum = 0;
+
+    // Scale base points by active phases
+    const totalKpis = p.kpis.length;
+    const activeKpis = p.kpis.filter(k => PHASE_ACTIVE[k[3]]).length;
+    const phaseScale = totalKpis > 0 ? activeKpis / totalKpis : 1;
+    const scaledBase = Math.max(1, Math.round(basePoints * phaseScale));
+
+    p.kpis.forEach((k, i) => {
+      // Skip KPIs from inactive phases
+      if (!PHASE_ACTIVE[k[3]]) return;
+
+      const baseNum = extractNum(baseKpis[i].meta);
+      const currentNum = extractNum(k[1]);
+      const fm = freqMultiplier(k[2]);
+      if (baseNum !== null && currentNum !== null && baseNum > 0) {
+        const inverse = isInverseKPI(baseKpis[i].meta, k[0]);
+        const ratio = inverse ? (baseNum / currentNum) : (currentNum / baseNum);
+        weightedRatioSum += ratio * fm;
+        weightSum += fm;
+      }
+    });
+
+    if (weightSum > 0) {
+      const avgRatio = weightedRatioSum / weightSum;
+      const newPoints = Math.max(1, Math.round(scaledBase * avgRatio));
+      if (newPoints !== p.points) {
+        const direction = newPoints > p.points ? '📈' : '📉';
+        changes.push({ name: `P${p.id}`, from: p.points, to: newPoints, ratio: (avgRatio*100).toFixed(0), direction });
+        p.points = newPoints;
+      }
+    }
+  });
+
+  render();
+
+  // Show feedback
+  const fb = document.getElementById('recalcFeedback');
+  if (changes.length === 0) {
+    fb.textContent = '✅ Todos los puntajes ya están alineados con las metas actuales.';
+  } else {
+    fb.innerHTML = '✅ Puntajes recalculados: ' + changes.map(c => 
+      `${c.direction} <strong>${c.name}</strong> ${c.from}→${c.to} pts (${c.ratio}%)`
+    ).join(' · ');
+  }
+  fb.classList.remove('show');
+  void fb.offsetWidth;
+  fb.classList.add('show');
+}
+
+function resetToDefaults() {
+  PROFILES.forEach(p => {
+    p.points = BASE_POINTS[p.id];
+    BASE_KPIS[p.id].forEach((bk, i) => { p.kpis[i][1] = bk.meta; });
+  });
+  render();
+  const fb = document.getElementById('recalcFeedback');
+  fb.textContent = '↩️ Restaurado a valores originales.';
+  fb.classList.remove('show');
+  void fb.offsetWidth;
+  fb.classList.add('show');
+}
+
+function exportPDF() {
+  // Expand all profiles before printing
+  PROFILES.forEach(p => {
+    const body = document.getElementById(`body-${p.id}`);
+    if (body) body.classList.add('open');
+    const card = document.getElementById(`card-${p.id}`);
+    if (card) card.classList.add('expanded');
+  });
+  setTimeout(() => { window.print(); }, 300);
+}
+
+render();
+</script>
+</body>
+</html>

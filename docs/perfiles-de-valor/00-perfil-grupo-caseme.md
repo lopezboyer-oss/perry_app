@@ -19,9 +19,9 @@ Este documento establece un **modelo de compensación basada en valor** con 7 pe
 **Peso: 14.3%** | Puntos: 20/140
 
 ### Descripción
-Profesional con experiencia profunda en la industria (21+ años) que actúa como auditor interno de la operación, evaluando la eficiencia de los procesos, detectando desviaciones y proponiendo mejoras. Opera a nivel **estratégico-táctico**: no ejecuta, sino que **observa, diagnostica y prescribe**. Incluye aseguramiento de calidad técnica mediante visitas periódicas a campo.
+Profesional con experiencia profunda en la industria (21+ años) que actúa como auditor interno de la operación, evaluando la eficiencia de los procesos, detectando desviaciones y proponiendo mejoras. Opera a nivel **estratégico-táctico**: no ejecuta, sino que **observa, diagnostica y prescribe**. Incluye aseguramiento de calidad técnica mediante visitas periódicas a campo y **seguimiento diario de puntos críticos** a través de Perry App.
 
-### 🔴 Responsabilidades FASE 1 (Urgentes)
+### 🔴 Responsabilidades FASE 1 (Urgentes) — Auditoría de Campo
 1. Realizar auditorías periódicas de los procesos operativos (ejecución, cotización, planeación)
 2. Evaluar la calidad técnica de los trabajos en campo mediante visitas programadas
 3. Identificar cuellos de botella, ineficiencias y riesgos operativos
@@ -29,12 +29,20 @@ Profesional con experiencia profunda en la industria (21+ años) que actúa como
 5. Validar que los estándares de calidad del cliente se estén cumpliendo
 6. Participar en la resolución de problemas técnicos complejos o escalados
 
+### 🔴 Responsabilidades FASE 1 (Urgentes) — Seguimiento Operativo Digital
+7. Revisar diariamente el listado de puntos críticos activos en Perry
+8. Asegurar que cada punto crítico tiene un responsable y una fecha compromiso
+9. Escalar puntos sin atención después de 24 horas
+10. Validar que las actualizaciones registradas son sustantivas
+11. Reportar semanalmente el estado de puntos críticos a dirección
+12. Revisar diariamente los reportes ejecutivos de Perry Intelligence
+
 ### 🟡 Responsabilidades FASE 2 (En rampa)
-7. Evaluar el desempeño de coordinadores y responsables de operación
-8. Dar seguimiento a planes de mejora y validar que se implementen realmente
-9. Analizar capacidad instalada vs carga de trabajo y necesidades futuras de recursos
-10. Mentorear a ingenieros y supervisores en mejores prácticas técnicas
-11. Proponer mejoras a los procesos basándose en la experiencia acumulada
+13. Evaluar el desempeño de coordinadores y responsables de operación
+14. Dar seguimiento a planes de mejora y validar que se implementen realmente
+15. Analizar capacidad instalada vs carga de trabajo y necesidades futuras de recursos
+16. Mentorear a ingenieros y supervisores en mejores prácticas técnicas
+17. Proponer mejoras a los procesos basándose en la experiencia acumulada
 
 ### KPIs de Medición
 
@@ -44,6 +52,10 @@ Profesional con experiencia profunda en la industria (21+ años) que actúa como
 | Informes de auditoría emitidos | ≥ 2 por mes | Mensual | 🔴 F1 |
 | Hallazgos documentados con recomendación accionable | 100% de visitas | Por visita | 🔴 F1 |
 | Incidentes de calidad detectados previo a entrega | Registro | Mensual | 🔴 F1 |
+| Puntos críticos revisados diariamente | 100% | Diario | 🔴 F1 |
+| Puntos críticos sin atención > 48 horas | 0 | Semanal | 🔴 F1 |
+| Reporte semanal de seguimiento crítico emitido | 100% de las semanas | Semanal | 🔴 F1 |
+| Revisión del reporte ejecutivo diario Perry | 100% de los días hábiles | Diario | 🔴 F1 |
 | Recomendaciones implementadas (tasa de adopción) | ≥ 70% | Trimestral | 🟡 F2 |
 | Evaluaciones de coordinadores realizadas | ≥ 1 por trimestre | Trimestral | 🟡 F2 |
 | Análisis de capacidad instalada emitido | ≥ 1 por semestre | Semestral | 🟡 F2 |
@@ -89,32 +101,26 @@ Ejecutivo senior responsable del **contacto estratégico de alto nivel** con los
 
 ---
 
-## PERFIL 3: ANALISTA DE INTELIGENCIA Y SEGUIMIENTO OPERATIVO
+## PERFIL 3: ANALISTA DE INTELIGENCIA OPERATIVA Y DE NEGOCIO
 **Peso: 20.7%** | Puntos: 29/140
-*Perfil fusionado: Análisis de datos Perry + Coordinación de Puntos Críticos*
+*Perfil enfocado en análisis estratégico de datos e inteligencia de negocio*
 
 ### Descripción
-Responsable integral de **extraer valor de la información operativa** y asegurar que los **puntos críticos** se resuelvan oportunamente. Es el **centro nervioso de la inteligencia operativa**: analiza datos de Perry App y WhatsApp para detectar tendencias e insights, y simultáneamente da seguimiento a incidentes críticos. Con el tiempo, este perfil debe evolucionar hacia una función de **Business Intelligence empresarial** que no solo reporte "qué está pasando en la operación" sino "qué está pasando en el negocio y dónde hay que intervenir".
+Responsable de **extraer valor estratégico de la información operativa y de negocio**. Es el **cerebro analítico**: interpreta datos de Perry App, tendencias del mercado y KPIs transversales para generar insights accionables para la dirección. Con el tiempo, este perfil debe evolucionar hacia una función de **Business Intelligence empresarial** que no solo reporte "qué está pasando en la operación" sino "qué está pasando en el negocio y dónde hay que intervenir".
 
-### 🔴 Responsabilidades FASE 1 (Urgentes) — Seguimiento Crítico
-1. Revisar diariamente el listado de puntos críticos activos en Perry
-2. Asegurar que cada punto tiene un responsable y una fecha compromiso
-3. Escalar puntos sin atención después de 24 horas
-4. Validar que las actualizaciones registradas son sustantivas
-5. Reportar semanalmente el estado de puntos críticos a dirección
+> **Nota**: El seguimiento diario de puntos críticos y reportes Perry fue transferido al Perfil 1 (Auditor) por ser una tarea de supervisión operativa.
 
-### 🔴 Responsabilidades FASE 1 (Urgentes) — Inteligencia Operativa
-6. Revisar diariamente los reportes ejecutivos de Perry Intelligence
-7. Analizar tendencias de actividades: tipos, volúmenes, tiempos, cancelaciones
-8. Detectar alertas tempranas: caídas de productividad, concentración de carga, etc.
+### 🔴 Responsabilidades FASE 1 (Urgentes)
+1. Analizar tendencias de actividades: tipos, volúmenes, tiempos, cancelaciones
+2. Detectar alertas tempranas: caídas de productividad, concentración de carga, etc.
+3. Monitorear KPIs transversales de todas las áreas (no solo operación)
 
 ### 🟡 Responsabilidades FASE 2 (En rampa)
-9. Generar reportes de análisis para dirección con datos y recomendaciones
-10. Monitorear KPIs transversales de todas las áreas (no solo operación)
-11. Identificar patrones recurrentes para proponer acciones preventivas
-12. Coordinar juntas de seguimiento cuando un punto requiere intervención multi-área
-13. Proponer mejoras al sistema de reporteo y automatizar seguimiento puntual
-14. Identificar oportunidades de negocio a partir de patrones en la data
+4. Generar reportes de análisis para dirección con datos y recomendaciones
+5. Identificar patrones recurrentes para proponer acciones preventivas
+6. Coordinar juntas de seguimiento cuando un punto requiere intervención multi-área
+7. Proponer mejoras al sistema de reporteo y automatizar seguimiento puntual
+8. Identificar oportunidades de negocio a partir de patrones en la data
 
 > **Nota de evolución**: A medida que el seguimiento puntual se automatice vía Perry, este perfil debe dedicar cada vez más tiempo al análisis estratégico y menos a perseguir actualizaciones individuales.
 
@@ -122,10 +128,6 @@ Responsable integral de **extraer valor de la información operativa** y asegura
 
 | KPI | Meta | Frecuencia | Fase |
 |---|---|---|---|
-| Revisión del reporte ejecutivo diario Perry | 100% de los días hábiles | Diario | 🔴 F1 |
-| Puntos críticos revisados diariamente | 100% | Diario | 🔴 F1 |
-| Puntos críticos sin atención > 48 horas | 0 | Semanal | 🔴 F1 |
-| Reporte semanal de seguimiento crítico emitido | 100% de las semanas | Semanal | 🔴 F1 |
 | Alertas tempranas detectadas y comunicadas | Registro | Mensual | 🔴 F1 |
 | Tiempo promedio de resolución de puntos críticos | Reducción progresiva | Mensual | 🟡 F2 |
 | Reportes de análisis emitidos a dirección | ≥ 2 por mes | Mensual | 🟡 F2 |
@@ -348,19 +350,21 @@ Habilidades únicas, máxima dedicación, máxima irreemplazabilidad. No fusiona
 ### ✅ Representante Legal (7) — No fusionable estructuralmente
 Designación legal, no función operativa. El riesgo patrimonial es intransferible.
 
-### Matriz de Compatibilidad
+### Matriz de Compatibilidad (Modelo Socios — Remuneración por Utilidad)
+
+> **Nota**: En un modelo de socios con remuneración por utilidad (no por comisión), los conflictos de interés tradicionales se mitigan porque ambos socios tienen incentivos alineados: maximizar la rentabilidad real. Las combinaciones P2+P4, P2+P6 y P4+P6 que serían conflictivas en un modelo corporativo con empleados a comisión, son compatibles cuando el vendedor es socio y su remuneración depende de la utilidad — le conviene filtrar bien los costos y pagos.
 
 |  | P1 | P2 | P3 | P4 | P5 | P6 | P7 |
 |---|---|---|---|---|---|---|---|
 | **P1 Auditor** | — | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ |
-| **P2 Comercial** | ✅ | — | ✅ | ⛔ | ✅ | ⛔ | ✅ |
+| **P2 Comercial** | ✅ | — | ✅ | ✅ | ✅ | ✅🔍 | ✅ |
 | **P3 Analista** | ✅ | ✅ | — | ✅ | ✅ | ✅ | ✅ |
-| **P4 Controller** | ✅ | ⛔ | ✅ | — | ⚠️ | ⛔ | ✅ |
+| **P4 Controller** | ✅ | ✅ | ✅ | — | ⚠️ | ✅🔍 | ✅ |
 | **P5 CTO** | ⚠️ | ✅ | ✅ | ⚠️ | — | ⚠️ | ✅ |
-| **P6 Dir Admin** | ✅ | ⛔ | ✅ | ⛔ | ⚠️ | — | ✅ |
+| **P6 Dir Admin** | ✅ | ✅🔍 | ✅ | ✅🔍 | ⚠️ | — | ✅ |
 | **P7 Rep Legal** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 
-*✅ Compatible | ⛔ Conflicto de interés | ⚠️ Compatible pero no recomendable (sobrecarga)*
+*✅ Compatible | ✅🔍 Compatible con auditoría cruzada | ⚠️ Compatible pero riesgo de sobrecarga*
 
 ---
 
