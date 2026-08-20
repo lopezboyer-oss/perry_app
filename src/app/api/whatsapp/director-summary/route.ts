@@ -225,8 +225,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Append Perry App Activities data to prompt
     if (activities.length > 0) {
-      promptData += `\n=== ACTIVIDADES REGISTRADAS EN PERRY APP (${activities.length}) ===\n`;
-      promptData += `Estas son actividades reportadas formalmente por los ingenieros en la plataforma Perry.\n\n`;
+      promptData += `\n=== ACTIVIDADES PERRY APP (${activities.length}) ===\n`;
 
       // Group by company
       const actsByCompany = new Map<string, typeof activities>();
@@ -237,49 +236,38 @@ export async function POST(req: NextRequest) {
       });
 
       actsByCompany.forEach((acts, compName) => {
-        promptData += `--- EMPRESA: ${compName} (${acts.length} actividades) ---\n`;
+        promptData += `--- ${compName} (${acts.length}) ---\n`;
         acts.forEach(a => {
-          const dateStr = a.date ? new Date(a.date).toLocaleDateString('es-MX', { timeZone: 'America/Tijuana', day: '2-digit', month: '2-digit' }) : '';
-          promptData += `  📋 [${dateStr}] ${a.user?.name || 'Sin asignar'}: "${a.title}"\n`;
-          promptData += `     Tipo: ${a.type} | Status: ${a.status}`;
-          if (a.workOrderFolio) promptData += ` | OT: ${a.workOrderFolio}`;
-          if (a.client?.name) promptData += ` | Cliente: ${a.client.name}`;
-          if (a.location) promptData += ` | Ubicación: ${a.location}`;
-          if (a.projectArea) promptData += ` | Área: ${a.projectArea}`;
-          promptData += `\n`;
-          if (a.result) promptData += `     Resultado: "${a.result}"\n`;
-          if (a.nextStep) promptData += `     Siguiente paso: "${a.nextStep}"\n`;
-          if (a.notes) promptData += `     Notas: "${a.notes}"\n`;
-          if (a.weekendNotes) promptData += `     Notas finde: "${a.weekendNotes}"\n`;
-          if (a.cancelReason) promptData += `     ❌ Cancelada: ${a.cancelReason} — ${a.cancelNotes || ''}\n`;
-          if (a.equipmentStatus) promptData += `     Equipo: ${a.equipmentStatus}\n`;
-          if (a.parts && a.parts.length > 0) {
-            promptData += `     Refacciones: ${a.parts.map(p => `${p.quantity}x ${p.name} (${p.status})`).join(', ')}\n`;
-          }
+          const parts: string[] = [];
+          parts.push(a.user?.name || '?');
+          parts.push(`"${a.title}"`);
+          parts.push(a.status);
+          if (a.workOrderFolio) parts.push(`OT:${a.workOrderFolio}`);
+          if (a.location) parts.push(a.location);
+          if (a.result) parts.push(`R:"${a.result.substring(0, 80)}"`);
+          if (a.nextStep) parts.push(`Sig:"${a.nextStep.substring(0, 60)}"`);
+          if (a.cancelReason) parts.push(`❌${a.cancelReason}`);
+          if (a.equipmentStatus) parts.push(`Eq:${a.equipmentStatus}`);
+          if (a.parts && a.parts.length > 0) parts.push(`Refs:${a.parts.length}`);
+          promptData += `  ${parts.join(' | ')}\n`;
         });
-        promptData += `\n`;
       });
     }
 
-    // 6. Append Critical Items Tracking data
+    // 6. Append Critical Items Tracking data (compact)
     if (criticalItems.length > 0) {
-      promptData += `\n=== PUNTOS CRÍTICOS ACTIVOS EN SEGUIMIENTO (${criticalItems.length}) ===\n`;
+      promptData += `\n=== PUNTOS CRÍTICOS ACTIVOS (${criticalItems.length}) ===\n`;
       criticalItems.forEach(item => {
-        const statusIcon = item.currentStatus === 'EN_PROCESO' ? '🔄' : '⛔';
-        promptData += `  #${item.itemNumber} ${statusIcon} [${item.currentStatus}] ${item.issueText}\n`;
-        promptData += `     Empresa: ${item.companyName || 'N/A'} | Grupo: ${item.reportedGroup}\n`;
-        if (item.logs.length > 0) {
-          promptData += `     📝 Historial:\n`;
-          item.logs.forEach((log: any) => {
-            const logDate = new Date(log.createdAt).toLocaleString('es-MX', { timeZone: 'America/Tijuana', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-            promptData += `       - ${log.updatedBy} (${logDate}): [${log.status}] "${log.comment || ''}"\n`;
-          });
-        } else if (item.feedbackBy) {
-          const fbDate = item.feedbackAt ? new Date(item.feedbackAt).toLocaleString('es-MX', { timeZone: 'America/Tijuana', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-          promptData += `     📝 Último update: ${item.feedbackBy} (${fbDate}): "${item.feedbackText || ''}"\n`;
-        }
+        const icon = item.currentStatus === 'EN_PROCESO' ? '🔄' : '⛔';
+        const lastLog = item.logs.length > 0 ? item.logs[item.logs.length - 1] : null;
+        const lastUpdate = lastLog
+          ? `${(lastLog as any).updatedBy}: "${((lastLog as any).comment || '').substring(0, 60)}"`
+          : (item.feedbackBy ? `${item.feedbackBy}: "${(item.feedbackText || '').substring(0, 60)}"` : 'Sin update');
+        promptData += `  #${item.itemNumber} ${icon} [${item.currentStatus}] ${item.issueText} | ${item.companyName || 'N/A'} | Último: ${lastUpdate}\n`;
       });
     }
+
+    console.log(`[Director Summary] Prompt size: ${promptData.length} chars | Logs: ${logs.length} | Activities: ${activities.length} | Critical: ${criticalItems.length}`);
 
     const apiKey = process.env.GEMINI_API_KEY;
 
