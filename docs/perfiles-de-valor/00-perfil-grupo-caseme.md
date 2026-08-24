@@ -225,16 +225,15 @@ Responsable de la **supervisión y aprobación de los egresos operativos** de la
 3. Revisar y aprobar solicitudes de Orden de Compra de materiales
 4. Revisar y aprobar solicitudes de pago a proveedores: anticipos y liquidaciones
 5. Revisar y aprobar compras de herramientas y EPP
-6. Atender procesos de despido y rescisión laboral: evaluar procedencia, finiquitos, riesgo
-7. Detectar irregularidades o patrones anómalos en los egresos
+6. Detectar irregularidades o patrones anómalos en los egresos
 
 ### 🟡 Responsabilidades FASE 2 (En rampa) — Capital Humano
-8. Revisar y actualizar periódicamente el organigrama y la planeación de plantilla
-9. Implementar evaluaciones de desempeño para todo el personal
-10. Elaborar planes de capacitación para áreas con brechas de competencia
-11. Desarrollar planes de sucesión para puestos críticos (ingenieros clave, coordinadores)
-12. Medir y analizar rotación de personal y sus causas
-13. Supervisar que los procesos administrativos se ejecuten en tiempo y forma
+7. Revisar y actualizar periódicamente el organigrama y la planeación de plantilla
+8. Implementar evaluaciones de desempeño para todo el personal
+9. Elaborar planes de capacitación para áreas con brechas de competencia
+10. Desarrollar planes de sucesión para puestos críticos (ingenieros clave, coordinadores)
+11. Medir y analizar rotación de personal y sus causas
+12. Supervisar que los procesos administrativos se ejecuten en tiempo y forma
 
 ### KPIs de Medición
 
@@ -245,7 +244,6 @@ Responsable de la **supervisión y aprobación de los egresos operativos** de la
 | Órdenes de compra revisadas antes de emisión | 100% | Por evento | 🔴 F1 |
 | Pagos a proveedores con documentación completa | 100% | Por evento | 🔴 F1 |
 | Irregularidades detectadas y documentadas | Registro completo | Mensual | 🔴 F1 |
-| Despidos atendidos sin demanda procedente | ≥ 90% | Por evento | 🔴 F1 |
 | Tiempo de atención a solicitudes de pago | ≤ 48 horas | Semanal | 🔴 F1 |
 | Evaluaciones de desempeño realizadas | 100% del personal | Semestral | 🟡 F2 |
 | Puestos críticos con plan de sucesión | 100% | Anual | 🟡 F2 |
@@ -258,7 +256,7 @@ Responsable de la **supervisión y aprobación de los egresos operativos** de la
 **Peso: 10.0%** | Puntos: 14/140
 
 ### Descripción
-Persona que ostenta la representación legal de la empresa ante terceros, incluyendo la exposición personal como aval en créditos e instrumentos financieros. Actúa como apoderado ante dependencias gubernamentales, fiscales, laborales y comerciales. Además de la función legal reactiva, este perfil incorpora una **visión preventiva de gestión de riesgos**: identificar exposiciones antes de que se materialicen.
+Persona que ostenta la representación legal de la empresa ante terceros, incluyendo la exposición personal como aval en créditos e instrumentos financieros. Actúa como apoderado ante dependencias gubernamentales, fiscales, laborales y comerciales. Además de la función legal reactiva, este perfil incorpora una **visión preventiva de gestión de riesgos**: identificar exposiciones antes de que se materialicen y atender la gestión legal de despidos y rescisiones laborales.
 
 ### 🔴 Responsabilidades FASE 1 (Urgentes)
 1. Firmar como representante legal en contratos con clientes, proveedores y entidades financieras
@@ -266,12 +264,13 @@ Persona que ostenta la representación legal de la empresa ante terceros, incluy
 3. Comparecer ante dependencias públicas: SAT, IMSS, STPS, Secretaría de Economía, Protección Civil
 4. Atender requerimientos legales, auditorías fiscales y laborales
 5. Supervisar el cumplimiento de obligaciones regulatorias (REPSE, padrones de contratistas)
+6. Atender procesos de despido y rescisión laboral: evaluar procedencia legal, finiquitos, convenios y reducir riesgo de demanda
 
 ### 🟡 Responsabilidades FASE 2 (En rampa)
-6. Elaborar y mantener actualizada una matriz de riesgos empresariales (legales, fiscales, laborales, patrimoniales)
-7. Dar seguimiento a seguros y validar suficiencia de coberturas
-8. Firmar escrituras, poderes notariales y documentos constitutivos
-9. Gestionar renovaciones de permisos, licencias y registros ante autoridades
+7. Elaborar y mantener actualizada una matriz de riesgos empresariales (legales, fiscales, laborales, patrimoniales)
+8. Dar seguimiento a seguros y validar suficiencia de coberturas
+9. Firmar escrituras, poderes notariales y documentos constitutivos
+10. Gestionar renovaciones de permisos, licencias y registros ante autoridades
 
 ### Consideraciones Especiales
 > Este perfil tiene un componente de **prima de riesgo** por la exposición patrimonial personal como aval. La valoración considera no solo el tiempo invertido sino el riesgo asumido.
@@ -283,6 +282,7 @@ Persona que ostenta la representación legal de la empresa ante terceros, incluy
 | Cumplimiento de obligaciones regulatorias (sin multas) | 100% | Trimestral | 🔴 F1 |
 | Atención oportuna de requerimientos legales/fiscales | ≤ 5 días hábiles | Por evento | 🔴 F1 |
 | Contratos firmados y revisados | Registro completo | Mensual | 🔴 F1 |
+| Despidos atendidos sin demanda procedente | ≥ 90% | Por evento | 🔴 F1 |
 | Líneas de crédito donde funge como aval | Registro actualizado | Trimestral | 🔴 F1 |
 | Renovación oportuna de permisos y licencias | Sin vencimientos | Semestral | 🔴 F1 |
 | Matriz de riesgos elaborada y actualizada | 1 activa | Semestral | 🟡 F2 |
@@ -295,12 +295,12 @@ Persona que ostenta la representación legal de la empresa ante terceros, incluy
 | # | Perfil | Peso | F1 (Urgentes) | F2 (En rampa) |
 |---|---|---|---|---|
 | 1 | **Auditor y Consultor Senior** | 14.3% | 6 responsabilidades | 5 responsabilidades |
-| 2 | **Director Comercial** | 12.9% | 6 responsabilidades | 8 responsabilidades |
+| 2 | **Director Comercial (Dividido 50/50)** | 12.9% | 6 responsabilidades | 8 responsabilidades |
 | 3 | **Analista Inteligencia + Seg. Operativo** | 20.7% | 8 responsabilidades | 6 responsabilidades |
 | 4 | **Controller de Costos** | 13.6% | 7 responsabilidades | 6 responsabilidades |
 | 5 | **CTO / Tecnología e Innovación** | 15.0% | 5 responsabilidades | 6 responsabilidades |
-| 6 | **Dir. Administrativo + Capital Humano** | 13.6% | 7 responsabilidades | 6 responsabilidades |
-| 7 | **Representante Legal y Fiduciario** | 10.0% | 5 responsabilidades | 4 responsabilidades |
+| 6 | **Dir. Administrativo + Control Egresos** | 13.6% | 6 responsabilidades | 6 responsabilidades |
+| 7 | **Representante Legal y Fiduciario (inc. Despidos)** | 10.0% | 6 responsabilidades | 4 responsabilidades |
 | | **TOTAL** | **100%** | **44** | **41** |
 
 ---
@@ -310,13 +310,13 @@ Persona que ostenta la representación legal de la empresa ante terceros, incluy
 | | **Socio A (Control y Gobierno)** | **Socio B (Crecimiento e Innovación)** |
 |---|---|---|
 | Perfil 1 | ✅ Auditor Operaciones (14.3%) | |
-| Perfil 2 | | ✅ Director Comercial (12.9%) |
+| Perfil 2 | 🤝 Director Comercial 50% (6.45%) | 🤝 Director Comercial 50% (6.45%) |
 | Perfil 3 | | ✅ Analista + Seg. Operativo (20.7%) |
 | Perfil 4 | ✅ Controller Costos (13.6%) | |
 | Perfil 5 | | ✅ CTO / Tecnología (15.0%) |
-| Perfil 6 | ✅ Dir. Admin + Capital Humano (13.6%) | |
-| Perfil 7 | ✅ Rep Legal (10.0%) | |
-| **Total** | **51.5%** | **48.6%** |
+| Perfil 6 | ✅ Dir. Admin + Control Egresos (13.6%) | |
+| Perfil 7 | ✅ Rep Legal + Despidos (10.0%) | |
+| **Total** | **57.95%** | **42.05%** |
 
 ---
 

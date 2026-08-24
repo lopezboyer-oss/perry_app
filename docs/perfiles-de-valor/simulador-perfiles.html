@@ -18,6 +18,8 @@
     --accent1-dim: rgba(99,102,241,0.15);
     --accent2: #22d3ee;
     --accent2-dim: rgba(34,211,238,0.15);
+    --accent-split: #818cf8;
+    --accent-split-dim: rgba(129,140,248,0.15);
     --green: #22c55e;
     --red: #ef4444;
     --orange: #f59e0b;
@@ -31,6 +33,13 @@
   .header h1 { font-size:28px; font-weight:800; background:linear-gradient(135deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
   .header p { color:var(--text-dim); margin-top:6px; font-size:14px; }
 
+  /* Top Monetary Pool Card */
+  .bolsa-card { background:linear-gradient(135deg, #1e1b4b, #0f172a); border:1px solid #6366f1; border-radius:14px; padding:20px; text-align:center; margin-bottom:20px; shadow:0 10px 25px rgba(99,102,241,0.2); }
+  .bolsa-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#a5b4fc; margin-bottom:8px; }
+  .bolsa-input-wrap { display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.4); border:1px solid #4f46e5; border-radius:10px; padding:6px 16px; margin:4px 0; }
+  .bolsa-symbol { font-size:20px; font-weight:800; color:#818cf8; }
+  .bolsa-input { background:transparent; border:none; color:white; font-family:inherit; font-size:24px; font-weight:800; width:160px; text-align:center; outline:none; }
+
   /* Dashboard Cards */
   .dashboard { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:28px; }
   .dash-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; }
@@ -38,6 +47,7 @@
   .dash-card.socio2 { border-color:var(--accent2); background:var(--accent2-dim); }
   .dash-label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); }
   .dash-value { font-size:36px; font-weight:800; margin:8px 0 4px; }
+  .dash-amount { font-size:18px; font-weight:700; color:white; margin-bottom:4px; }
   .dash-card.socio1 .dash-value { color:var(--accent1); }
   .dash-card.socio2 .dash-value { color:var(--accent2); }
   .dash-sub { font-size:13px; color:var(--text-dim); }
@@ -50,14 +60,13 @@
   .alert.show { display:flex; gap:8px; align-items:flex-start; }
   .alert .icon { font-size:18px; flex-shrink:0; }
   .alert .text { font-size:13px; color:#fca5a5; line-height:1.5; }
-  .alert.warn { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.3); }
-  .alert.warn .text { color:#fcd34d; }
 
   /* Profile Cards */
   .profiles { display:flex; flex-direction:column; gap:16px; }
   .profile-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:border-color 0.3s; }
   .profile-card.assigned-s1 { border-color:var(--accent1); }
   .profile-card.assigned-s2 { border-color:var(--accent2); }
+  .profile-card.assigned-split { border-color:var(--accent-split); }
 
   .profile-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; background:var(--surface2); cursor:pointer; user-select:none; }
   .profile-header:hover { background:#2a2e3e; }
@@ -65,6 +74,7 @@
   .profile-num { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
   .assigned-s1 .profile-num { background:var(--accent1-dim); color:var(--accent1); }
   .assigned-s2 .profile-num { background:var(--accent2-dim); color:var(--accent2); }
+  .assigned-split .profile-num { background:var(--accent-split-dim); color:var(--accent-split); }
   .profile-name { font-weight:600; font-size:15px; }
   .profile-controls { display:flex; align-items:center; gap:16px; }
   .points-input { width:56px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:inherit; font-size:15px; font-weight:700; text-align:center; padding:6px; outline:none; }
@@ -73,9 +83,10 @@
 
   /* Toggle Switch */
   .toggle-group { display:flex; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
-  .toggle-btn { padding:6px 12px; font-size:11px; font-weight:600; font-family:inherit; cursor:pointer; border:none; background:transparent; color:var(--text-dim); transition:all 0.2s; }
+  .toggle-btn { padding:6px 10px; font-size:11px; font-weight:600; font-family:inherit; cursor:pointer; border:none; background:transparent; color:var(--text-dim); transition:all 0.2s; }
   .toggle-btn.active-s1 { background:var(--accent1); color:white; }
   .toggle-btn.active-s2 { background:var(--accent2); color:#0f1117; }
+  .toggle-btn.active-split { background:linear-gradient(135deg,var(--accent1),var(--accent2)); color:white; }
 
   /* Expandable Content */
   .profile-body { max-height:0; overflow:hidden; transition:max-height 0.4s ease; }
@@ -91,6 +102,7 @@
   .resp-list li { font-size:13px; color:var(--text-dim); padding:4px 0 4px 16px; position:relative; line-height:1.5; }
   .resp-list li::before { content:'›'; position:absolute; left:0; color:var(--text-dim); font-weight:700; }
 
+  .table-responsive { width:100%; overflow-x:auto; }
   .kpi-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; }
   .kpi-table th { text-align:left; padding:6px 8px; background:var(--bg); color:var(--text-dim); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
   .kpi-table td { padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text-dim); }
@@ -99,6 +111,8 @@
   .kpi-table .f2 { background:rgba(245,158,11,0.15); color:var(--phase2); }
   .kpi-meta-input { background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--accent2); font-family:inherit; font-size:12px; font-weight:600; padding:3px 6px; width:100%; min-width:80px; outline:none; }
   .kpi-meta-input:focus { border-color:var(--accent1); background:#1e2235; }
+  .kpi-freq-input { background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text-dim); font-family:inherit; font-size:11px; font-weight:600; padding:3px 6px; width:100%; min-width:70px; outline:none; }
+  .kpi-freq-input:focus { border-color:var(--accent1); background:#1e2235; color:white; }
 
   .expand-icon { font-size:18px; color:var(--text-dim); transition:transform 0.3s; }
   .profile-card.expanded .expand-icon { transform:rotate(180deg); }
@@ -139,120 +153,80 @@
   .phase-dimmed { opacity:0.25; pointer-events:none; filter:grayscale(1); }
   .kpi-row-dimmed { opacity:0.25; }
 
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    body { padding:12px; }
+    .header h1 { font-size:20px; }
+    .dashboard { grid-template-columns:1fr; gap:12px; }
+    .action-bar { flex-direction:column; }
+    .action-btn { width:100%; justify-content:center; }
+    .phase-bar { flex-direction:column; gap:12px; align-items:stretch; }
+    .profile-header { padding:12px; flex-wrap:wrap; gap:10px; }
+    .profile-controls { width:100%; justify-content:space-between; }
+    .bolsa-input { width:120px; font-size:20px; }
+  }
+
   /* Print Styles */
   @media print {
     body { background:white !important; color:#1a1a2e !important; padding:20px !important; }
-    .action-bar, .toggle-group, .points-input, .expand-icon { display:none !important; }
+    .action-bar, .toggle-group, .points-input, .expand-icon, .bolsa-card { display:none !important; }
     .header h1 { -webkit-text-fill-color:#1e3a5f !important; font-size:22pt; }
     .dash-card { background:white !important; border:1px solid #ccc !important; }
     .dash-card.socio1, .dash-card.socio2 { background:white !important; }
     .dash-value { color:#1e3a5f !important; }
     .dash-label, .dash-sub, .pct-badge { color:#555 !important; }
-    .profile-card { background:white !important; border:1px solid #ccc !important; page-break-inside:avoid; }
-    .profile-header { background:#f5f5f5 !important; }
-    .profile-header:hover { background:#f5f5f5 !important; }
-    .profile-body { max-height:none !important; }
-    .profile-content { padding:12px 16px !important; }
-    .profile-num { background:#e8e8e8 !important; color:#333 !important; }
-    .profile-name { color:#1a1a2e !important; }
-    .resp-list li, .kpi-table td { color:#333 !important; }
-    .kpi-table th { background:#eee !important; color:#333 !important; }
-    .kpi-meta-input { border:none !important; background:transparent !important; color:#1a1a2e !important; font-weight:700 !important; padding:0 !important; }
-    .alert, .alert.warn { border:1px solid #ccc !important; background:#fff8f0 !important; }
-    .alert .text, .alert.warn .text { color:#333 !important; }
-    .footer { border-top:1px solid #ccc !important; }
-    .footer p { color:#666 !important; }
-    .dash-bar .s1 { background:#4a5568 !important; }
-    .dash-bar .s2 { background:#a0aec0 !important; }
-    .surface2, .bg { background:white !important; }
-  }
-
-  /* Bolsa Input Box */
-  .bolsa-card { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--accent1); border-radius:14px; padding:16px 24px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; box-shadow:0 4px 20px rgba(0,0,0,0.2); }
-  .bolsa-info { display:flex; align-items:center; gap:12px; }
-  .bolsa-icon { font-size:28px; }
-  .bolsa-title { font-size:15px; font-weight:700; color:var(--text); }
-  .bolsa-sub { font-size:12px; color:var(--text-dim); }
-  .bolsa-input-wrapper { display:flex; align-items:center; gap:8px; background:var(--bg); border:2px solid var(--accent1); border-radius:10px; padding:6px 12px; }
-  .bolsa-currency { font-size:18px; font-weight:800; color:var(--green); }
-  .bolsa-input { background:transparent; border:none; color:var(--text); font-family:inherit; font-size:22px; font-weight:800; width:140px; outline:none; text-align:right; }
-  .dash-amount { font-size:20px; font-weight:800; color:var(--green); margin:2px 0 4px; }
-
-  /* Table Scroll Container */
-  .table-responsive { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-
-  @media (max-width:768px) {
-    body { padding:12px; }
-    .header { margin-bottom:20px; }
-    .header h1 { font-size:22px; }
-    .header p { font-size:12px; }
-    .dashboard { grid-template-columns:1fr; gap:12px; margin-bottom:20px; }
-    .dash-card { padding:14px; }
-    .dash-value { font-size:28px; }
-    
-    .phase-bar { flex-wrap:wrap; gap:12px; padding:12px; text-align:center; justify-content:center; }
-    .phase-bar .label { width:100%; text-align:center; }
-    
-    .action-bar { flex-direction:column; gap:8px; width:100%; }
-    .action-btn { width:100%; justify-content:center; padding:12px 16px; }
-
-    .profile-header { flex-direction:column; align-items:flex-start; gap:12px; padding:14px; }
-    .profile-title { width:100%; justify-content:space-between; }
-    .profile-controls { width:100%; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-    .toggle-group { flex:1; justify-content:center; }
-    .toggle-btn { flex:1; text-align:center; padding:6px 8px; }
-    .profile-content { padding:12px; }
-  }
-
-  @media (max-width:480px) {
-    .kpi-table th, .kpi-table td { padding:6px 4px; font-size:11px; }
-    .kpi-meta-input { font-size:11px; min-width:65px; }
+    .profile-card { background:white !important; border:1px solid #ddd !important; margin-bottom:12px !important; page-break-inside:avoid; }
+    .profile-header { background:#f4f6f9 !important; border-bottom:1px solid #ddd !important; }
+    .profile-body { max-height:none !important; display:block !important; }
+    .resp-list li { color:#333 !important; }
+    .kpi-table th { background:#eef2f7 !important; color:#333 !important; }
+    .kpi-table td { color:#333 !important; border-bottom:1px solid #eee !important; }
+    .kpi-meta-input, .kpi-freq-input { background:white !important; color:#111 !important; border:none !important; }
   }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>⚖️ Simulador de Perfiles de Valor</h1>
-  <p>Grupo Caseme — Ajusta puntos y asignaciones en tiempo real</p>
+  <h1>Simulador de Perfiles de Valor — Grupo Caseme</h1>
+  <p>Herramienta interactiva para asignación de responsabilidades y distribución de compensación basada en valor</p>
 </div>
 
+<!-- Bolsa Total Card -->
 <div class="bolsa-card">
-  <div class="bolsa-info">
-    <span class="bolsa-icon">💰</span>
-    <div>
-      <div class="bolsa-title">Bolsa Total a Repartir</div>
-      <div class="bolsa-sub">Ingresa el monto mensual disponible para calcular la distribución económica</div>
-    </div>
+  <div class="bolsa-title">💰 Bolsa Total de Remuneración por Utilidades</div>
+  <div class="bolsa-input-wrap">
+    <span class="bolsa-symbol">$</span>
+    <input type="number" id="bolsaInput" class="bolsa-input" value="100000" step="5000" min="0" oninput="recalc()">
+    <span class="bolsa-symbol">MXN</span>
   </div>
-  <div class="bolsa-input-wrapper">
-    <span class="bolsa-currency">$</span>
-    <input type="number" id="bolsaInput" class="bolsa-input" value="100000" step="5000" min="0" oninput="recalc()" placeholder="100000">
-    <span style="font-size:12px; font-weight:700; color:var(--text-dim);">MXN</span>
-  </div>
+  <p style="font-size:11px; color:#a5b4fc; margin-top:4px;">Ingresa el monto total mensual a repartir según las ponderaciones porcentuales</p>
 </div>
 
 <div class="dashboard">
   <div class="dash-card socio1">
     <div class="dash-label">Socio 1</div>
     <div class="dash-value" id="s1pct">0%</div>
-    <div class="dash-amount" id="s1amount">$0 MXN</div>
+    <div class="dash-amount" id="s1amount">$0.00 MXN</div>
     <div class="dash-sub"><span id="s1pts">0</span> pts · <span id="s1profiles">0</span> perfiles</div>
   </div>
   <div class="dash-card">
-    <div class="dash-label">Distribución de la Bolsa</div>
-    <div class="dash-bar"><div class="s1" id="bar1"></div><div class="s2" id="bar2"></div></div>
-    <div style="display:flex;justify-content:space-between;margin-top:8px;">
-      <span class="dash-sub" style="color:var(--accent1)" id="barLabel1">0%</span>
-      <span class="dash-sub" id="totalPts">Total: 0 pts</span>
-      <span class="dash-sub" style="color:var(--accent2)" id="barLabel2">0%</span>
+    <div class="dash-label">Distribución Total</div>
+    <div class="dash-value" id="totalPts" style="font-size:24px; color:var(--text);">Total: 140 pts</div>
+    <div class="dash-bar">
+      <div class="s1" id="bar1" style="width:50%;"></div>
+      <div class="s2" id="bar2" style="width:50%;"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-dim);">
+      <span>Socio 1: <strong id="barLabel1">0%</strong></span>
+      <span>Socio 2: <strong id="barLabel2">0%</strong></span>
     </div>
     <div class="dash-sub" style="margin-top:8px;">Brecha: <strong id="gap">0%</strong></div>
   </div>
   <div class="dash-card socio2">
     <div class="dash-label">Socio 2</div>
     <div class="dash-value" id="s2pct">0%</div>
-    <div class="dash-amount" id="s2amount">$0 MXN</div>
+    <div class="dash-amount" id="s2amount">$0.00 MXN</div>
     <div class="dash-sub"><span id="s2pts">0</span> pts · <span id="s2profiles">0</span> perfiles</div>
   </div>
 </div>
@@ -287,7 +261,7 @@
 <div class="profiles" id="profilesContainer"></div>
 
 <div class="footer">
-  <p>CONFIDENCIAL — Documento de trabajo para Junta Directiva · Perry Intelligence · v3.0</p>
+  <p>CONFIDENCIAL — Documento de trabajo para Junta Directiva · Perry Intelligence · v3.2</p>
 </div>
 
 <script>
@@ -331,7 +305,7 @@ const PROFILES = [
     ]
   },
   {
-    id: 2, name: 'Director Comercial y Relaciones Estratégicas', points: 18, assignedTo: 2,
+    id: 2, name: 'Director Comercial y Relaciones Estratégicas', points: 18, assignedTo: 'split',
     f1: [
       'Mantener relación con gerentes de compras y decisores TMMBC',
       'Reuniones periódicas de alto nivel (comidas, juntas ejecutivas)',
@@ -440,7 +414,6 @@ const PROFILES = [
       'Revisar y aprobar OC de materiales',
       'Revisar y aprobar pagos a proveedores',
       'Revisar y aprobar compras herramientas/EPP',
-      'Atender despidos y rescisión laboral',
       'Detectar irregularidades en egresos'
     ],
     f2: [
@@ -455,7 +428,6 @@ const PROFILES = [
       ['Nóminas revisadas antes de dispersión', '100%', 'Semanal', 'f1'],
       ['Horas extra auditadas', '100%', 'Semanal', 'f1'],
       ['OC revisadas antes de emisión', '100%', 'Por evento', 'f1'],
-      ['Despidos sin demanda procedente', '≥ 90%', 'Por evento', 'f1'],
       ['Evaluaciones desempeño realizadas', '100%', 'Semestral', 'f2'],
       ['Puestos con plan de sucesión', '100%', 'Anual', 'f2'],
     ]
@@ -467,7 +439,8 @@ const PROFILES = [
       'Actuar como aval personal en créditos bancarios',
       'Comparecer ante dependencias: SAT, IMSS, STPS',
       'Atender requerimientos legales y auditorías',
-      'Supervisar cumplimiento regulatorio (REPSE)'
+      'Supervisar cumplimiento regulatorio (REPSE)',
+      'Atender procesos de despido y rescisión laboral (gestión legal / rescisión)'
     ],
     f2: [
       'Elaborar y mantener matriz de riesgos empresariales',
@@ -479,25 +452,19 @@ const PROFILES = [
       ['Obligaciones regulatorias sin multas', '100%', 'Trimestral', 'f1'],
       ['Requerimientos legales atendidos', '≤ 5 días', 'Por evento', 'f1'],
       ['Contratos firmados y revisados', 'Registro completo', 'Mensual', 'f1'],
+      ['Despidos atendidos sin demanda procedente', '≥ 90%', 'Por evento', 'f1'],
       ['Matriz de riesgos actualizada', '1 activa', 'Semestral', 'f2'],
       ['Revisión seguros/coberturas', 'Suficiente', 'Anual', 'f2'],
     ]
   }
 ];
 
-// Conflict matrix: [profileId1, profileId2, type, reason]
-// In a partner model (remuneration by profit share, not commission),
-// traditional conflicts are mitigated because incentives are aligned.
-const CONFLICTS = [
-  // P2+P4 reclassified: partner-seller benefits from knowing real margins → no conflict
-  // P2+P6, P4+P6 reclassified as oversight warnings (below), not hard conflicts
-];
+// Conflict matrix
+const CONFLICTS = [];
 const OVERLOADS = [
   [1, 5, 'Auditor + CTO: Sobrecarga de tiempo (campo + desarrollo)'],
   [4, 5, 'Controller + CTO: Sobrecarga de tiempo (análisis financiero + desarrollo)'],
   [5, 6, 'CTO + Dir Admin: Sobrecarga de tiempo (desarrollo + admin diaria)'],
-  [2, 6, 'Comercial + Dir Admin: Compatible (incentivos alineados) — recomendar auditoría cruzada trimestral'],
-  [4, 6, 'Controller + Dir Admin: Compatible (incentivos alineados) — recomendar segundo filtro en pagos >$50K'],
 ];
 
 function render() {
@@ -505,7 +472,7 @@ function render() {
   container.innerHTML = '';
   PROFILES.forEach(p => {
     const card = document.createElement('div');
-    card.className = `profile-card assigned-s${p.assignedTo}`;
+    card.className = `profile-card assigned-${p.assignedTo}`;
     card.id = `card-${p.id}`;
     card.innerHTML = `
       <div class="profile-header" onclick="toggleExpand(${p.id})">
@@ -516,6 +483,7 @@ function render() {
         <div class="profile-controls">
           <div class="toggle-group">
             <button class="toggle-btn ${p.assignedTo===1?'active-s1':''}" onclick="event.stopPropagation();assign(${p.id},1)">Socio 1</button>
+            <button class="toggle-btn ${p.assignedTo==='split'?'active-split':''}" onclick="event.stopPropagation();assign(${p.id},'split')">Ambos (50/50)</button>
             <button class="toggle-btn ${p.assignedTo===2?'active-s2':''}" onclick="event.stopPropagation();assign(${p.id},2)">Socio 2</button>
           </div>
           <input type="number" class="points-input" value="${p.points}" min="1" max="99"
@@ -538,8 +506,8 @@ function render() {
             <div class="resp-label">📊 KPIs</div>
             <div class="table-responsive">
               <table class="kpi-table">
-                <thead><tr><th>KPI</th><th>Meta</th><th>Frecuencia</th><th>Fase</th></tr></thead>
-                <tbody>${p.kpis.map((k,ki)=>`<tr class="${PHASE_ACTIVE[k[3]]?'':'kpi-row-dimmed'}"><td>${k[0]}</td><td><input class="kpi-meta-input" value="${k[1]}" oninput="updateKpiMeta(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td>${k[2]}</td><td><span class="phase-tag ${k[3]}">${k[3]==='f1'?'🔴 F1':'🟡 F2'}</span></td></tr>`).join('')}</tbody>
+                <thead><tr><th>KPI</th><th>Meta (Editable)</th><th>Frecuencia (Editable)</th><th>Fase</th></tr></thead>
+                <tbody>${p.kpis.map((k,ki)=>`<tr class="${PHASE_ACTIVE[k[3]]?'':'kpi-row-dimmed'}"><td>${k[0]}</td><td><input class="kpi-meta-input" value="${k[1]}" oninput="updateKpiMeta(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td><input class="kpi-freq-input" value="${k[2]}" oninput="updateKpiFreq(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td><span class="phase-tag ${k[3]}">${k[3]==='f1'?'🔴 F1':'🟡 F2'}</span></td></tr>`).join('')}</tbody>
               </table>
             </div>
           </div>
@@ -562,7 +530,19 @@ function updatePoints(id, val) {
 }
 
 function updateKpiMeta(profileId, kpiIndex, value) {
-  PROFILES.find(p=>p.id===profileId).kpis[kpiIndex][1] = value;
+  const profile = PROFILES.find(p=>p.id===profileId);
+  if (profile) {
+    profile.kpis[kpiIndex][1] = value;
+    recalcFromKPIs();
+  }
+}
+
+function updateKpiFreq(profileId, kpiIndex, value) {
+  const profile = PROFILES.find(p=>p.id===profileId);
+  if (profile) {
+    profile.kpis[kpiIndex][2] = value;
+    recalcFromKPIs();
+  }
 }
 
 function togglePhase(phase, active) {
@@ -598,17 +578,28 @@ function recalc() {
     const pct = ((p.points/total)*100).toFixed(1);
     const el = document.getElementById(`pct-${p.id}`);
     if (el) el.textContent = pct + '%';
-    if (p.assignedTo === 1) { s1pts += p.points; s1n++; }
-    else { s2pts += p.points; s2n++; }
+    if (p.assignedTo === 1) {
+      s1pts += p.points;
+      s1n += 1;
+    } else if (p.assignedTo === 2) {
+      s2pts += p.points;
+      s2n += 1;
+    } else if (p.assignedTo === 'split') {
+      s1pts += p.points / 2;
+      s2pts += p.points / 2;
+      s1n += 0.5;
+      s2n += 0.5;
+    }
   });
+
   const s1pct = ((s1pts/total)*100).toFixed(1);
   const s2pct = ((s2pts/total)*100).toFixed(1);
   const gapVal = Math.abs(s1pct - s2pct).toFixed(1);
 
   document.getElementById('s1pct').textContent = s1pct + '%';
   document.getElementById('s2pct').textContent = s2pct + '%';
-  document.getElementById('s1pts').textContent = s1pts;
-  document.getElementById('s2pts').textContent = s2pts;
+  document.getElementById('s1pts').textContent = s1pts % 1 === 0 ? s1pts : s1pts.toFixed(1);
+  document.getElementById('s2pts').textContent = s2pts % 1 === 0 ? s2pts : s2pts.toFixed(1);
   document.getElementById('s1profiles').textContent = s1n;
   document.getElementById('s2profiles').textContent = s2n;
 
@@ -639,12 +630,12 @@ function recalc() {
   CONFLICTS.forEach(([a,b,type,reason]) => {
     const pa = PROFILES.find(p=>p.id===a);
     const pb = PROFILES.find(p=>p.id===b);
-    if (pa.assignedTo === pb.assignedTo) conflicts.push(`Socio ${pa.assignedTo}: ${reason}`);
+    if (pa.assignedTo === pb.assignedTo && pa.assignedTo !== 'split') conflicts.push(`Socio ${pa.assignedTo}: ${reason}`);
   });
   OVERLOADS.forEach(([a,b,reason]) => {
     const pa = PROFILES.find(p=>p.id===a);
     const pb = PROFILES.find(p=>p.id===b);
-    if (pa.assignedTo === pb.assignedTo) overloads.push(`Socio ${pa.assignedTo}: ${reason}`);
+    if (pa.assignedTo === pb.assignedTo && pa.assignedTo !== 'split') overloads.push(`Socio ${pa.assignedTo}: ${reason}`);
   });
 
   const cAlert = document.getElementById('conflictAlert');
@@ -663,32 +654,30 @@ PROFILES.forEach(p => {
 
 // Extract numeric value from a KPI meta string
 function extractNum(str) {
-  const match = str.match(/([\d]+\.?[\d]*)/); 
+  if (!str) return null;
+  const match = String(str).match(/([\d]+\.?[\d]*)/); 
   return match ? parseFloat(match[1]) : null;
 }
 
 // Detect if a KPI is "inverse" — lower number = MORE effort/demand
-// e.g., "≤ 48h" → "≤ 24h" means double the demand, not half
 function isInverseKPI(metaStr, kpiName) {
-  const m = metaStr.toLowerCase();
-  const n = kpiName.toLowerCase();
-  // "≤" prefix means "at most X" — less is more demanding
-  if (metaStr.includes('≤') || metaStr.includes('<=')) return true;
-  // Time/aging keywords
+  const m = String(metaStr || '').toLowerCase();
+  const n = String(kpiName || '').toLowerCase();
+  if (m.includes('≤') || m.includes('<=')) return true;
   if (n.includes('tiempo') || n.includes('antigüedad') || n.includes('desviación')) return true;
   return false;
 }
 
 // Map frequency to monthly multiplier for effort normalization
 function freqMultiplier(freq) {
-  const f = freq.toLowerCase();
-  if (f.includes('diario')) return 22; // ~22 working days
-  if (f.includes('semanal')) return 4.3;
+  const f = String(freq || '').toLowerCase();
+  if (f.includes('diario') || f.includes('día')) return 22; // ~22 working days
+  if (f.includes('semanal') || f.includes('semana')) return 4.3;
   if (f.includes('mensual') || f.includes('mes')) return 1;
-  if (f.includes('trimestral')) return 0.33;
-  if (f.includes('semestral')) return 0.17;
+  if (f.includes('trimestral') || f.includes('trimestre')) return 0.33;
+  if (f.includes('semestral') || f.includes('semestre')) return 0.17;
   if (f.includes('anual') || f.includes('año')) return 0.083;
-  if (f.includes('evento') || f.includes('visita')) return 2; // estimate ~2/month
+  if (f.includes('evento') || f.includes('visita')) return 2;
   if (f.includes('única')) return 0.05;
   return 1;
 }
@@ -701,24 +690,30 @@ function recalcFromKPIs() {
     let weightedRatioSum = 0;
     let weightSum = 0;
 
-    // Scale base points by active phases
     const totalKpis = p.kpis.length;
     const activeKpis = p.kpis.filter(k => PHASE_ACTIVE[k[3]]).length;
     const phaseScale = totalKpis > 0 ? activeKpis / totalKpis : 1;
     const scaledBase = Math.max(1, Math.round(basePoints * phaseScale));
 
     p.kpis.forEach((k, i) => {
-      // Skip KPIs from inactive phases
       if (!PHASE_ACTIVE[k[3]]) return;
 
       const baseNum = extractNum(baseKpis[i].meta);
       const currentNum = extractNum(k[1]);
-      const fm = freqMultiplier(k[2]);
+      const baseFm = freqMultiplier(baseKpis[i].freq);
+      const currentFm = freqMultiplier(k[2]);
+
       if (baseNum !== null && currentNum !== null && baseNum > 0) {
         const inverse = isInverseKPI(baseKpis[i].meta, k[0]);
-        const ratio = inverse ? (baseNum / currentNum) : (currentNum / baseNum);
-        weightedRatioSum += ratio * fm;
-        weightSum += fm;
+        let ratio = inverse ? (baseNum / currentNum) : (currentNum / baseNum);
+        
+        // If frequency multiplier changed, scale ratio by frequency effort shift
+        if (baseFm > 0 && currentFm > 0) {
+          ratio = ratio * (currentFm / baseFm);
+        }
+
+        weightedRatioSum += ratio * currentFm;
+        weightSum += currentFm;
       }
     });
 
@@ -733,9 +728,8 @@ function recalcFromKPIs() {
     }
   });
 
-  render();
+  recalc();
 
-  // Show feedback
   const fb = document.getElementById('recalcFeedback');
   if (changes.length === 0) {
     fb.textContent = '✅ Todos los puntajes ya están alineados con las metas actuales.';
@@ -752,7 +746,11 @@ function recalcFromKPIs() {
 function resetToDefaults() {
   PROFILES.forEach(p => {
     p.points = BASE_POINTS[p.id];
-    BASE_KPIS[p.id].forEach((bk, i) => { p.kpis[i][1] = bk.meta; });
+    if (p.id === 2) p.assignedTo = 'split';
+    BASE_KPIS[p.id].forEach((bk, i) => {
+      p.kpis[i][1] = bk.meta;
+      p.kpis[i][2] = bk.freq;
+    });
   });
   render();
   const fb = document.getElementById('recalcFeedback');
@@ -763,7 +761,6 @@ function resetToDefaults() {
 }
 
 function exportPDF() {
-  // Expand all profiles before printing
   PROFILES.forEach(p => {
     const body = document.getElementById(`body-${p.id}`);
     if (body) body.classList.add('open');
