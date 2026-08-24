@@ -24,6 +24,7 @@ import {
   PieChart,
   TrendingUp,
   Bot,
+  Images,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -196,19 +197,34 @@ export function Sidebar({ user }: SidebarProps) {
           )}
 
           {(user.email === 'lopezboyer@gmail.com' || user.name?.toLowerCase().includes('ivan lopez')) && (
-            <Link
-              href="/configuracion/whatsapp"
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-                pathname === '/configuracion/whatsapp'
-                  ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              )}
-              title={collapsed ? 'Perry Intelligence' : undefined}
-            >
-              <Bot className="w-5 h-5 flex-shrink-0 text-emerald-400" />
-              {!collapsed && 'Perry Intelligence'}
-            </Link>
+            <>
+              <Link
+                href="/configuracion/whatsapp"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                  pathname === '/configuracion/whatsapp'
+                    ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/20'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                )}
+                title={collapsed ? 'Perry Intelligence' : undefined}
+              >
+                <Bot className="w-5 h-5 flex-shrink-0 text-emerald-400" />
+                {!collapsed && 'Perry Intelligence'}
+              </Link>
+              <Link
+                href="/galeria-evidencias"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                  pathname === '/galeria-evidencias'
+                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                )}
+                title={collapsed ? 'Galería Evidencias' : undefined}
+              >
+                <Images className="w-5 h-5 flex-shrink-0 text-indigo-400" />
+                {!collapsed && 'Galería Evidencias'}
+              </Link>
+            </>
           )}
         </nav>
 
