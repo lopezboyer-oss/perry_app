@@ -617,3 +617,26 @@ model CriticalItemLog {
 
   @@index([itemId])
 }
+
+model PerryIncidentPattern {
+  id                  String   @id @default(cuid())
+  title               String   // Título representativo de la incidencia/patrón
+  category            String   // SEGURIDAD | LOGISTICA | COTIZACIONES | PERMISOS | RECURSOS | PROVEEDORES
+  companyName         String?  // DROBOTS | OPUS INGENIUM | GRUPO CASEME | VULCAN FORGE | SAINPRO | MULTIEMPRESA
+  groupId             String?
+  incidentSummary     String   @db.Text // Descripción detallada de lo que está ocurriendo
+  recurrenceCount     Int      @default(1) // Ocurrencias detectadas
+  firstSeenAt         DateTime @default(now())
+  lastSeenAt          DateTime @default(now())
+  rawContextText      String   @db.Text // Transcripción/mensajes de origen
+  aiAnalysis          String?  @db.Text // Análisis de causa raíz por Perry IA
+  proposedImprovement String   @db.Text // Propuesta de solución operativa o de software
+  copypastaPrompt     String   @db.Text // Contexto estructurado listo para copiar y pegar a Antigravity
+  status              String   @default("DETECTADO") // DETECTADO | EN_PROGRESO | RESUELTO | ARCHIVADO
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([companyName])
+  @@index([category])
+  @@index([status])
+}

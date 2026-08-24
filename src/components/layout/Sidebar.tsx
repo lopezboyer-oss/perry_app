@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Bot,
   Images,
+  BrainCircuit,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -223,6 +224,19 @@ export function Sidebar({ user }: SidebarProps) {
               >
                 <Images className="w-5 h-5 flex-shrink-0 text-indigo-400" />
                 {!collapsed && 'Galería Evidencias'}
+              </Link>
+              <Link
+                href="/perry-improvements"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                  pathname === '/perry-improvements'
+                    ? 'bg-purple-600/20 text-purple-300 border border-purple-500/20'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                )}
+                title={collapsed ? 'Perry Improvements' : undefined}
+              >
+                <BrainCircuit className="w-5 h-5 flex-shrink-0 text-purple-400" />
+                {!collapsed && 'Perry Improvements'}
               </Link>
             </>
           )}
