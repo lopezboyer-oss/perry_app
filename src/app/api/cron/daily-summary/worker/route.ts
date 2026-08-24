@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsappGroupMessage } from '@/lib/whatsapp/service';
+import { renumberOpenCriticalItems } from '@/lib/whatsapp/critical-items';
 
 // Extend Netlify function timeout to 60s — this runs independently of cron-job.org
 export const maxDuration = 60;
@@ -20,6 +21,18 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[CRON-WORKER] Starting daily summary generation...');
+
+    // Sunday night check: renumber active critical items starting from #1 for the new weekly cycle
+    const now = new Date();
+    const dayOfWeekStr = now.toLocaleDateString('en-US', { timeZone: 'America/Tijuana', weekday: 'short' });
+    if (dayOfWeekStr === 'Sun') {
+      try {
+        console.log('[CRON-WORKER] Sunday night detected — renumbering open critical items starting from #1...');
+        await renumberOpenCriticalItems(TARGET_GROUP_ID);
+      } catch (rErr) {
+        console.error('[CRON-WORKER] Error renumbering items on Sunday night:', rErr);
+      }
+    }
 
     // 2. Call director-summary API
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
