@@ -182,26 +182,26 @@ export default function GaleriaEvidenciasPage() {
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           {/* Company Dropdown */}
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-semibold text-slate-400 mb-1 flex items-center gap-1.5">
+            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Building className="w-3.5 h-3.5 text-indigo-400" /> Empresa / Proyecto
             </label>
             <select
               value={selectedCompany}
               onChange={(e) => setSelectedCompany(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-inner"
             >
-              <option value="">Todas las empresas</option>
-              <option value="DROBOTS">Drobots (Pilot Ensamble)</option>
-              <option value="OPUS INGENIUM">Opus Ingenium (Infineon)</option>
-              <option value="GRUPO CASEME">Grupo Caseme (TMMBC)</option>
-              <option value="VULCAN FORGE">Vulcan Forge</option>
-              <option value="SAINPRO">Sainpro</option>
+              <option value="" className="bg-slate-900 text-white">Todas las empresas</option>
+              <option value="DROBOTS" className="bg-slate-900 text-white">Drobots (Pilot Ensamble)</option>
+              <option value="OPUS INGENIUM" className="bg-slate-900 text-white">Opus Ingenium (Infineon)</option>
+              <option value="GRUPO CASEME" className="bg-slate-900 text-white">Grupo Caseme (TMMBC)</option>
+              <option value="VULCAN FORGE" className="bg-slate-900 text-white">Vulcan Forge</option>
+              <option value="SAINPRO" className="bg-slate-900 text-white">Sainpro</option>
             </select>
           </div>
 
           {/* Keyword Search */}
           <div className="flex-[1.5] min-w-[240px]">
-            <label className="block text-xs font-semibold text-slate-400 mb-1 flex items-center gap-1.5">
+            <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Search className="w-3.5 h-3.5 text-indigo-400" /> Buscar por texto o remitente
             </label>
             <form onSubmit={(e) => { e.preventDefault(); fetchEvidencias(); }} className="flex gap-2">
@@ -210,11 +210,11 @@ export default function GaleriaEvidenciasPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Ej. Carlos, cotización, bomba, sticker..."
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-inner"
               />
               <button
                 type="submit"
-                className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md shadow-indigo-600/30 shrink-0"
               >
                 Buscar
               </button>
