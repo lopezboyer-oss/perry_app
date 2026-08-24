@@ -129,14 +129,6 @@ function formatDirectorSummaryForWhatsApp(summary: any): string {
     text += `\n`;
   }
 
-  if (summary.globalMaterialRequests && summary.globalMaterialRequests.length > 0) {
-    text += `📦 *SOLICITUDES DE MATERIALES (${summary.globalMaterialRequests.length})*\n`;
-    summary.globalMaterialRequests.forEach((mat: any) => {
-      text += `• *${mat.name}* (Cant: ${mat.quantity}) - _${mat.requestedInGroup}_${mat.requestedBy ? ` — Solicitó: *${mat.requestedBy}*` : ''}\n`;
-    });
-    text += `\n`;
-  }
-
   if (summary.directorRecommendations && summary.directorRecommendations.length > 0) {
     text += `👔 *RECOMENDACIONES DIRECTIVAS*\n`;
     summary.directorRecommendations.forEach((rec: string, i: number) => {

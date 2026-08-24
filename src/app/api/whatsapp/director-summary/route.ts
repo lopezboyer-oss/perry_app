@@ -106,9 +106,10 @@ export async function POST(req: NextRequest) {
       whereClause.createdAt = { gte: start3Days };
       periodLabel = 'Últimos 3 Días';
     } else {
-      // 'today'
+      // 'today' — Daily Summary 24h cycle: look back to 20:00 of previous day to avoid 20:00-23:59 window gap
       const startToday = startOfDay(localYear, localMonth, localDay);
-      whereClause.createdAt = { gte: startToday };
+      const start24hCycle = new Date(startToday.getTime() - 4 * 60 * 60 * 1000);
+      whereClause.createdAt = { gte: start24hCycle };
       periodLabel = `Hoy (${String(localDay).padStart(2,'0')}/${String(localMonth).padStart(2,'0')}/${localYear})`;
     }
 
@@ -287,7 +288,6 @@ export async function POST(req: NextRequest) {
             status: 'EN_REVISIÓN',
           })),
           globalEquipmentStatus: [],
-          globalMaterialRequests: [],
           directorRecommendations: ['Verificar la integración de los bots en los grupos de coordinación directiva.'],
           period: periodLabel,
           messageCount: logs.length,
@@ -310,6 +310,7 @@ REGLAS DE ANÁLISIS Y ESTRUCTURA OBLIGATORIAS:
 5. CONCILIACIÓN DE ASUNTOS (Cruzar Grupos Técnicos vs Coordinación vs Actividades Perry): clasifícalo como "resolvedCrossIssues" cuando se detecte resolución.
 6. PENDIENTES CRÍTICOS REALES: Incluye los PUNTOS CRÍTICOS EN SEGUIMIENTO que aparecen en la sección correspondiente. Estos ya están siendo monitoreados — inclúyelos con su status actual y último comentario.
 7. RECOMENDACIONES DIRECTIVAS: Genera recomendaciones estratégicas concisas para alta dirección, considerando tanto la información de WhatsApp como las actividades de Perry App.
+NOTA: OMITIR la sección de solicitudes de materiales.
 
 ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON sin markdown adicional):
 {
@@ -335,15 +336,6 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
       "reportedGroup": "Grupo donde se reportó",
       "reportedBy": "Nombre de la persona que reportó el problema",
       "status": "SIN_SEGUIMIENTO" | "EN_ESPERA_DE_MATERIAL" | "REQUIERE_DECISION_GERENCIAL"
-    }
-  ],
-  "globalMaterialRequests": [
-    {
-      "name": "Nombre de refacción/material",
-      "quantity": 1,
-      "providerType": "COTIZAR" | "CLIENTE",
-      "requestedInGroup": "Nombre del grupo",
-      "requestedBy": "Nombre de la persona que solicitó el material"
     }
   ],
   "directorRecommendations": [

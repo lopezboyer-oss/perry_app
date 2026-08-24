@@ -79,6 +79,7 @@ interface DirectorSummaryData {
   directorRecommendations: string[];
   period?: string;
   messageCount?: number;
+  activityCount?: number;
   totalGroupsAnalyzed?: number;
 }
 
@@ -364,14 +365,6 @@ export default function WhatsappConfigPage() {
     }
 
 
-
-    if (directorSummary.globalMaterialRequests && directorSummary.globalMaterialRequests.length > 0) {
-      text += `📦 *SOLICITUDES DE MATERIALES (${directorSummary.globalMaterialRequests.length})*\n`;
-      directorSummary.globalMaterialRequests.forEach((mat) => {
-        text += `• *${mat.name}* (Cant: ${mat.quantity}) - _${mat.requestedInGroup}_${mat.requestedBy ? ` — Solicitó: *${mat.requestedBy}*` : ''}\n`;
-      });
-      text += `\n`;
-    }
 
     if (directorSummary.directorRecommendations && directorSummary.directorRecommendations.length > 0) {
       text += `👔 *RECOMENDACIONES DIRECTIVAS*\n`;
@@ -1449,31 +1442,7 @@ export default function WhatsappConfigPage() {
               </div>
             </div>
 
-            {/* Solicitudes de Materiales */}
-              <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
-                  <Package className="w-4 h-4 text-purple-400" /> Solicitudes de Materiales ({(directorSummary.globalMaterialRequests || []).length})
-                </h4>
-                {(!directorSummary.globalMaterialRequests || directorSummary.globalMaterialRequests.length === 0) ? (
-                  <p className="text-xs text-slate-400 italic">No hay solicitudes de refacciones o insumos.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {directorSummary.globalMaterialRequests.map((mat, idx) => (
-                      <div key={idx} className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 flex items-start justify-between gap-2">
-                        <div>
-                          <div className="text-xs font-bold text-white">{mat.name}</div>
-                          <div className="text-[11px] text-slate-400">Grupo: {mat.requestedInGroup}</div>
-                          {mat.requestedBy && <div className="text-[11px] text-purple-300">Solicitó: {mat.requestedBy}</div>}
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className="text-xs font-bold text-purple-300">Cant: {mat.quantity}</span>
-                          <div className="text-[10px] text-slate-400">{mat.providerType}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+
 
             {/* Recomendaciones de Dirección */}
             {directorSummary.directorRecommendations && directorSummary.directorRecommendations.length > 0 && (

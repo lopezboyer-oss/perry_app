@@ -266,6 +266,69 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 4d. Automatic AI Critical Directive Detection (Directores/Coordinadores)
+    if (messageText && !messageText.startsWith('#')) {
+      const directiveRegex = /(favor de|por favor|necesito que|hay que|actualizar|cotizar|cotizaci[oó]n|revisar|enviar|pendiente|dar seguimiento|solicit|aprob|validar)/i;
+      const isDirectiveText = directiveRegex.test(messageText);
+      const isDirectorOrManager = /(carlos|ivan|jose|guadalupe|director|gerente|coordinador)/i.test(payload.senderName || '');
+
+      if (isDirectiveText || isDirectorOrManager) {
+        try {
+          const lowerText = messageText.toLowerCase();
+          const companyKeywords: Record<string, string[]> = {
+            'DROBOTS': ['drobots', 'drobot'],
+            'OPUS INGENIUM': ['opus', 'infineon'],
+            'GRUPO CASEME': ['caseme', 'global support'],
+            'VULCAN FORGE': ['vulcan', 'forge'],
+            'SAINPRO': ['sainpro'],
+          };
+          let detectedCompany = 'COORDINACION';
+          for (const [company, keywords] of Object.entries(companyKeywords)) {
+            if (keywords.some(kw => lowerText.includes(kw))) {
+              detectedCompany = company;
+              break;
+            }
+          }
+
+          // Check for duplicate open item created in last 24h
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          const existingItem = await prisma.criticalItemTracking.findFirst({
+            where: {
+              groupId: COORD_GROUP_ID,
+              createdAt: { gte: oneDayAgo },
+              currentStatus: { in: ['ABIERTO', 'EN_PROCESO'] },
+              issueText: { contains: messageText.substring(0, 30) },
+            },
+          });
+
+          if (!existingItem) {
+            const lastItem = await prisma.criticalItemTracking.findFirst({
+              where: { groupId: COORD_GROUP_ID },
+              orderBy: { itemNumber: 'desc' },
+            });
+            const nextNumber = (lastItem?.itemNumber || 0) + 1;
+
+            await prisma.criticalItemTracking.create({
+              data: {
+                itemNumber: nextNumber,
+                issueText: messageText.length > 280 ? `${messageText.substring(0, 277)}...` : messageText,
+                reportedGroup: groupMap.groupName || payload.groupId,
+                reportedBy: payload.senderName || payload.senderPhone || 'Director',
+                companyName: detectedCompany,
+                aiStatus: 'DETECTADO_IA',
+                currentStatus: 'ABIERTO',
+                groupId: COORD_GROUP_ID,
+                sentDate: new Date(),
+              },
+            });
+            console.log(`[CRITICAL AUTO-DETECT] Item #${nextNumber} auto-created from WhatsApp directive by ${payload.senderName}: "${messageText.substring(0, 60)}"`);
+          }
+        } catch (autoErr) {
+          console.error('[CRITICAL AUTO-DETECT] Error auto-creating critical item:', autoErr);
+        }
+      }
+    }
+
     // 5. Intelligent AI Parse with Gemini 2.5 Flash (Análisis informativo de contexto + Transcripción de Audio)
     const cleanedText = cleanTriggerTags(messageText);
     const parsed = await parseWhatsappMessageWithGemini({
