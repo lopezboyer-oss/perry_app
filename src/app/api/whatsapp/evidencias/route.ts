@@ -102,11 +102,16 @@ export async function GET(req: NextRequest) {
       if (!Array.isArray(urls) || urls.length === 0) return;
 
       const groupInfo = groupMap.get(log.groupId);
-      let companyName = groupInfo ? companyMap.get(groupInfo.companyId || '') || 'GRUPO CASEME' : 'COORDINACIÓN';
-      if (groupInfo?.groupName?.toUpperCase().includes('DROBOTS')) companyName = 'DROBOTS';
-      if (groupInfo?.groupName?.toUpperCase().includes('OPUS')) companyName = 'OPUS INGENIUM';
-      if (groupInfo?.groupName?.toUpperCase().includes('VULCAN')) companyName = 'VULCAN FORGE';
-      if (groupInfo?.groupName?.toUpperCase().includes('SAINPRO')) companyName = 'SAINPRO';
+      const gNameUpper = (groupInfo?.groupName || '').toUpperCase();
+      let companyName = groupInfo ? companyMap.get(groupInfo.companyId || '') || 'GRUPO CASEME' : 'COORDINACIÓN MULTIEMPRESA';
+      
+      if (gNameUpper.includes('DROBOTS')) companyName = 'DROBOTS';
+      else if (gNameUpper.includes('OPUS')) companyName = 'OPUS INGENIUM';
+      else if (gNameUpper.includes('VULCAN')) companyName = 'VULCAN FORGE';
+      else if (gNameUpper.includes('SAINPRO')) companyName = 'SAINPRO';
+      else if (gNameUpper.includes('ALTURA')) companyName = 'ALTURA TEAM (ELEVACIÓN)';
+      else if (gNameUpper.includes('AVANCE') || gNameUpper.includes('CONTROL')) companyName = 'CONTROL Y AVANCE';
+      else if (gNameUpper.includes('COORDINACION') || gNameUpper.includes('COORDINACIÓN')) companyName = 'COORDINACIÓN MULTIEMPRESA';
 
       let parsedInfo: any = {};
       try {

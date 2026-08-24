@@ -190,12 +190,15 @@ export default function GaleriaEvidenciasPage() {
               onChange={(e) => setSelectedCompany(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-inner"
             >
-              <option value="" className="bg-slate-900 text-white">Todas las empresas</option>
+              <option value="" className="bg-slate-900 text-white">Todas las empresas / grupos</option>
               <option value="DROBOTS" className="bg-slate-900 text-white">Drobots (Pilot Ensamble)</option>
               <option value="OPUS INGENIUM" className="bg-slate-900 text-white">Opus Ingenium (Infineon)</option>
               <option value="GRUPO CASEME" className="bg-slate-900 text-white">Grupo Caseme (TMMBC)</option>
               <option value="VULCAN FORGE" className="bg-slate-900 text-white">Vulcan Forge</option>
               <option value="SAINPRO" className="bg-slate-900 text-white">Sainpro</option>
+              <option value="CONTROL Y AVANCE" className="bg-slate-900 text-white">⚙️ Control Avance (Transversal)</option>
+              <option value="ALTURA TEAM" className="bg-slate-900 text-white">🚜 Altura Team (Equipos Elevación)</option>
+              <option value="COORDINACIÓN" className="bg-slate-900 text-white">👔 Coordinación Multiempresa</option>
             </select>
           </div>
 
