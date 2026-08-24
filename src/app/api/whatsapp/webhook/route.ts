@@ -268,11 +268,11 @@ export async function POST(req: NextRequest) {
 
     // 4d. Automatic AI Critical Directive Detection (Directores/Coordinadores)
     if (messageText && !messageText.startsWith('#')) {
-      const directiveRegex = /(favor de|por favor|necesito que|hay que|actualizar|cotizar|cotizaci[oó]n|revisar|enviar|pendiente|dar seguimiento|solicit|aprob|validar)/i;
-      const isDirectiveText = directiveRegex.test(messageText);
-      const isDirectorOrManager = /(carlos|ivan|jose|guadalupe|director|gerente|coordinador)/i.test(payload.senderName || '');
+      const actionDirectiveRegex = /(favor de|por favor|necesito que|hay que|actualizar|cotizar|cotizaci[oó]n|revisar|revisi[oó]n|enviar|pendiente|dar seguimiento|solicitud|entregable|plano|dibujo|autorizar|aprobar|cambio)/i;
+      const isGreetingOnly = /^(buenas|hola|saludos|gracias|ok|de acuerdo|enterado|enterada|perfecto|excelente)\b/i.test(messageText.trim()) && messageText.length < 80;
+      const isDirectiveText = actionDirectiveRegex.test(messageText) && !isGreetingOnly;
 
-      if (isDirectiveText || isDirectorOrManager) {
+      if (isDirectiveText) {
         try {
           const lowerText = messageText.toLowerCase();
           const companyKeywords: Record<string, string[]> = {
