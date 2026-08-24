@@ -107,8 +107,11 @@ async function handleCriticalUpdate(req: NextRequest) {
       text += `━━━━ ⛔ SIN RESPUESTA (${sinRespuesta.length}) ━━━━\n\n`;
       sinRespuesta.forEach(item => {
         const daysSince = Math.floor((now.getTime() - new Date(item.sentDate).getTime()) / (1000 * 60 * 60 * 24));
+        const originTag = (item.aiStatus === 'DETECTADO_PERRY' || item.aiStatus === 'DETECTADO_IA') 
+          ? '🤖 *Detectado por Perry*' 
+          : `👤 Reportó: ${item.reportedBy || 'Personal Operativo'}`;
         text += `#${item.itemNumber} 🔴 ${item.issueText}\n`;
-        text += `   🏢 ${item.companyName || 'N/A'} — *${daysSince > 0 ? daysSince + ' día(s) sin respuesta' : 'Hoy'}*\n\n`;
+        text += `   🏢 ${item.companyName || 'N/A'} — ${originTag} — *${daysSince > 0 ? daysSince + ' día(s) sin respuesta' : 'Hoy'}*\n\n`;
       });
     }
 

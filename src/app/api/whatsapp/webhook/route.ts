@@ -315,7 +315,7 @@ export async function POST(req: NextRequest) {
                 reportedGroup: groupMap.groupName || payload.groupId,
                 reportedBy: payload.senderName || payload.senderPhone || 'Director',
                 companyName: detectedCompany,
-                aiStatus: 'DETECTADO_IA',
+                aiStatus: 'DETECTADO_PERRY',
                 currentStatus: 'ABIERTO',
                 groupId: COORD_GROUP_ID,
                 sentDate: new Date(),
