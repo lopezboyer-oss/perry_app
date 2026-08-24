@@ -234,12 +234,15 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Get next item number
-        const lastItem = await prisma.criticalItemTracking.findFirst({
-          where: { groupId: COORD_GROUP_ID },
+        // Get next item number based on highest open item number
+        const maxOpenItem = await prisma.criticalItemTracking.findFirst({
+          where: {
+            groupId: COORD_GROUP_ID,
+            currentStatus: { in: ['ABIERTO', 'EN_PROCESO'] },
+          },
           orderBy: { itemNumber: 'desc' },
         });
-        const nextNumber = (lastItem?.itemNumber || 0) + 1;
+        const nextNumber = (maxOpenItem?.itemNumber || 0) + 1;
 
         // Create the new tracking item
         await prisma.criticalItemTracking.create({
@@ -266,13 +269,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4d. Automatic AI Critical Directive Detection (Directores/Coordinadores)
-    if (messageText && !messageText.startsWith('#')) {
-      const actionDirectiveRegex = /(favor de|por favor|necesito que|hay que|actualizar|cotizar|cotizaci[oó]n|revisar|revisi[oó]n|enviar|pendiente|dar seguimiento|solicitud|entregable|plano|dibujo|autorizar|aprobar|cambio)/i;
-      const isGreetingOnly = /^(buenas|hola|saludos|gracias|ok|de acuerdo|enterado|enterada|perfecto|excelente)\b/i.test(messageText.trim()) && messageText.length < 80;
-      const isDirectiveText = actionDirectiveRegex.test(messageText) && !isGreetingOnly;
+    // 5. Intelligent AI Parse with Gemini 2.5 Flash (Análisis informativo de contexto + Transcripción de Audio)
+    const cleanedText = cleanTriggerTags(messageText);
+    const parsed = await parseWhatsappMessageWithGemini({
+      messageText: cleanedText,
+      senderName: payload.senderName,
+      groupWorkOrderFolio: groupMap.workOrderFolio,
+      timestamp: payload.timestamp,
+      hasMedia,
+      audioUrl,
+    });
 
-      if (isDirectiveText) {
+    // 5b. Automatic AI Critical Directive Detection (Directores/Coordinadores)
+    // ONLY create a critical item if Gemini classifies it as a true critical followup or high-impact operational issue
+    if (messageText && !messageText.startsWith('#') && parsed.isCriticalFollowup) {
+      const isRoutineBroadcast = /(forms\.gle|excelente inicio de semana|buen inicio de semana|registros de horas extras|en caso de tener complicaciones|facturas pendientes de recibo|no podre ir a traila)/i.test(messageText);
+      
+      if (!isRoutineBroadcast) {
         try {
           const lowerText = messageText.toLowerCase();
           const companyKeywords: Record<string, string[]> = {
@@ -302,11 +315,14 @@ export async function POST(req: NextRequest) {
           });
 
           if (!existingItem) {
-            const lastItem = await prisma.criticalItemTracking.findFirst({
-              where: { groupId: COORD_GROUP_ID },
+            const maxOpenItem = await prisma.criticalItemTracking.findFirst({
+              where: {
+                groupId: COORD_GROUP_ID,
+                currentStatus: { in: ['ABIERTO', 'EN_PROCESO'] },
+              },
               orderBy: { itemNumber: 'desc' },
             });
-            const nextNumber = (lastItem?.itemNumber || 0) + 1;
+            const nextNumber = (maxOpenItem?.itemNumber || 0) + 1;
 
             await prisma.criticalItemTracking.create({
               data: {
@@ -328,17 +344,6 @@ export async function POST(req: NextRequest) {
         }
       }
     }
-
-    // 5. Intelligent AI Parse with Gemini 2.5 Flash (Análisis informativo de contexto + Transcripción de Audio)
-    const cleanedText = cleanTriggerTags(messageText);
-    const parsed = await parseWhatsappMessageWithGemini({
-      messageText: cleanedText,
-      senderName: payload.senderName,
-      groupWorkOrderFolio: groupMap.workOrderFolio,
-      timestamp: payload.timestamp,
-      hasMedia,
-      audioUrl,
-    });
 
     // Determine representative raw message
     let storedRawMessage = messageText;

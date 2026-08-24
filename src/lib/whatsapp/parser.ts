@@ -95,8 +95,9 @@ REGLAS DE CLASIFICACIÓN Y EXTRACCIÓN:
 10. "parts": Arreglo de refacciones/materiales identificados: [{"name": string, "quantity": number, "providerType": "COTIZAR" | "CLIENTE"}].
 11. "tags": Arreglo de palabras clave relevantes (ej: ["mantenimiento", "falla_electrica", "nota_de_voz", "evidencia_foto"]).
 12. "isOperationalEvent": boolean (true para cualquier mensaje o audio que aporte valor operativo/técnico).
-13. "isComplete": boolean (siempre true).
-14. "missingFields": siempre [].
+13. "isCriticalFollowup": boolean (true ÚNICAMENTE si el mensaje reporta un incidente crítico real, paro de línea, falla de equipo, observación de seguridad grave o directiva explícita de dirección que requiera seguimiento diario hasta resolverse. Retorna false para saludos, avisos rutinarios de ausencia, enlaces a Google Forms, mensajes motivacionales de inicio de semana o recordatorios generales de facturación/Odoo).
+14. "isComplete": boolean (siempre true).
+15. "missingFields": siempre [].
 
 RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
 {
@@ -116,6 +117,7 @@ RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
   ],
   "tags": string[],
   "isOperationalEvent": boolean,
+  "isCriticalFollowup": boolean,
   "isComplete": true,
   "missingFields": []
 }`;

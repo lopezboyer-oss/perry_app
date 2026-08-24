@@ -31,6 +31,7 @@ export interface GeminiParsedReport {
   parts: ExtractedPart[];
   tags: string[]; // e.g. ["mantenimiento", "falla_hidraulica", "refaccion", "llegada_sitio"]
   isOperationalEvent: boolean; // true if contains relevant field operations, equipment, or logistics
+  isCriticalFollowup?: boolean; // true ONLY if it is a real operational incident, customer directive, blocker, or critical issue requiring tracking
   isComplete: boolean;
   missingFields: string[];
 }
