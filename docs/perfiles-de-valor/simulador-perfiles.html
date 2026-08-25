@@ -41,11 +41,11 @@
   .bolsa-input { background:transparent; border:none; color:white; font-family:inherit; font-size:24px; font-weight:800; width:160px; text-align:center; outline:none; }
 
   /* Dashboard Cards */
-  .dashboard { display:grid; grid-template-columns:1.2fr 1fr 1.2fr; gap:16px; margin-bottom:28px; }
+  .dashboard { display:grid; grid-template-columns:1.3fr 1fr 1.3fr; gap:16px; margin-bottom:28px; }
   .dash-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; text-align:center; display:flex; flex-direction:column; justify-content:center; }
   .dash-card.socio1 { border-color:var(--accent1); background:var(--accent1-dim); }
   .dash-card.socio2 { border-color:var(--accent2); background:var(--accent2-dim); }
-  .dash-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); min-height:32px; display:flex; align-items:center; justify-content:center; }
+  .dash-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); min-height:36px; display:flex; align-items:center; justify-content:center; }
   .dash-value { font-size:32px; font-weight:800; margin:6px 0 2px; }
   .dash-amount { font-size:17px; font-weight:700; color:white; margin-bottom:4px; }
   .dash-card.socio1 .dash-value { color:var(--accent1); }
@@ -78,7 +78,7 @@
   .profile-name { font-weight:600; font-size:15px; }
   .print-assigned-tag { display:none; font-size:11px; font-weight:700; margin-left:8px; padding:2px 8px; border-radius:4px; }
 
-  .profile-controls { display:flex; align-items:center; gap:16px; }
+  .profile-controls { display:flex; align-items:center; gap:12px; }
   .points-input { width:56px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:inherit; font-size:15px; font-weight:700; text-align:center; padding:6px; outline:none; }
   .points-input:focus { border-color:var(--accent1); }
   .pct-badge { font-size:13px; font-weight:600; color:var(--text-dim); min-width:50px; text-align:right; }
@@ -221,8 +221,8 @@
       <div class="s2" id="bar2" style="width:50%;"></div>
     </div>
     <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--text-dim);">
-      <span>Socio 1: <strong id="barLabel1">0%</strong></span>
-      <span>Socio 2: <strong id="barLabel2">0%</strong></span>
+      <span>Dir. Tech & Legal: <strong id="barLabel1">0%</strong></span>
+      <span>Dir. Operaciones & Rent.: <strong id="barLabel2">0%</strong></span>
     </div>
     <div class="dash-sub" style="margin-top:8px;">Brecha: <strong id="gap">0%</strong></div>
   </div>
@@ -276,8 +276,8 @@
 <script>
 const PHASE_ACTIVE = { f1: true, f2: false };
 
-const SOCIO_1_NAME = "Director de Tecnología, Inteligencia de Negocio y Gobierno Legal";
-const SOCIO_2_NAME = "Director de Operaciones, Rentabilidad y Administración de Operaciones";
+const PUESTO_1_TITLE = "Director de Tecnología, Inteligencia de Negocio y Gobierno Legal";
+const PUESTO_2_TITLE = "Director de Operaciones, Rentabilidad y Administración de Operaciones";
 
 const PROFILES = [
   {
@@ -488,8 +488,8 @@ function render() {
     
     let tagText = "";
     let tagColor = "";
-    if (p.assignedTo === 1) { tagText = "ASIGNADO A: " + SOCIO_1_NAME; tagColor = "#6366f1"; }
-    else if (p.assignedTo === 2) { tagText = "ASIGNADO A: " + SOCIO_2_NAME; tagColor = "#0284c7"; }
+    if (p.assignedTo === 1) { tagText = "ASIGNADO A: " + PUESTO_1_TITLE; tagColor = "#6366f1"; }
+    else if (p.assignedTo === 2) { tagText = "ASIGNADO A: " + PUESTO_2_TITLE; tagColor = "#0284c7"; }
     else { tagText = "CO-DIRECCIÓN COMERCIAL (50/50)"; tagColor = "#818cf8"; }
 
     card.innerHTML = `
@@ -503,9 +503,9 @@ function render() {
         </div>
         <div class="profile-controls">
           <div class="toggle-group">
-            <button class="toggle-btn ${p.assignedTo===1?'active-s1':''}" title="${SOCIO_1_NAME}" onclick="event.stopPropagation();assign(${p.id},1)">Socio 1</button>
+            <button class="toggle-btn ${p.assignedTo===1?'active-s1':''}" title="${PUESTO_1_TITLE}" onclick="event.stopPropagation();assign(${p.id},1)">Dir. Tech & Legal</button>
             <button class="toggle-btn ${p.assignedTo==='split'?'active-split':''}" title="Co-Dirección 50/50" onclick="event.stopPropagation();assign(${p.id},'split')">Ambos (50/50)</button>
-            <button class="toggle-btn ${p.assignedTo===2?'active-s2':''}" title="${SOCIO_2_NAME}" onclick="event.stopPropagation();assign(${p.id},2)">Socio 2</button>
+            <button class="toggle-btn ${p.assignedTo===2?'active-s2':''}" title="${PUESTO_2_TITLE}" onclick="event.stopPropagation();assign(${p.id},2)">Dir. Operaciones & Rent.</button>
           </div>
           <input type="number" class="points-input" value="${p.points}" min="1" max="99"
             onclick="event.stopPropagation()" oninput="updatePoints(${p.id}, this.value)">

@@ -18,13 +18,13 @@ Cada responsabilidad se evalúa principalmente en su **🔴 FASE 1 (Urgente)** p
 
 | Puesto Ejecutivo | Perfiles Asignados | Puntos Total (F1+F2) | % Total | Puntos Fase 1 (Urgentes) | % Fase 1 | Valor Estimado (Bolsa $100k F1) |
 |---|---|---|---|---|---|---|
-| **SOCIO 1**: Director de Tecnología, Inteligencia de Negocio y Gobierno Legal | P3 + P5 + P7 + 50% P2 | 73.0 pts | **52.1%** | 34.5 pts | **46.6%** | **$46,621.62 MXN** |
-| **SOCIO 2**: Director de Operaciones, Rentabilidad y Administración de Operaciones | P1 + P4 + P6 + 50% P2 | 67.0 pts | **47.9%** | 39.5 pts | **53.4%** | **$53,378.38 MXN** |
+| **Director de Tecnología, Inteligencia de Negocio y Gobierno Legal** | P3 + P5 + P7 + 50% P2 | 73.0 pts | **52.1%** | 34.5 pts | **46.6%** | **$46,621.62 MXN** |
+| **Director de Operaciones, Rentabilidad y Administración de Operaciones** | P1 + P4 + P6 + 50% P2 | 67.0 pts | **47.9%** | 39.5 pts | **53.4%** | **$53,378.38 MXN** |
 | **TOTAL COMBINADO** | **7 Perfiles** | **140.0 pts** | **100.0%** | **74.0 pts** | **100.0%** | **$100,000.00 MXN** |
 
 ---
 
-## BLOQUE 1: PUESTO SOCIO 1 — DIRECTOR DE TECNOLOGÍA, INTELIGENCIA DE NEGOCIO Y GOBIERNO LEGAL
+## BLOQUE 1: DIRECTOR DE TECNOLOGÍA, INTELIGENCIA DE NEGOCIO Y GOBIERNO LEGAL
 
 ### Descripción General del Puesto
 Líder responsable de la **transformación digital, arquitectura de sistemas (Perry App), inteligencia analítica operativa y representación legal/fiduciaria de la empresa**. Custodia la integridad patrimonial de los activos físicos y legalización de contratos, combinándolo con la co-dirección del crecimiento comercial.
@@ -101,7 +101,7 @@ Líder responsable de la **transformación digital, arquitectura de sistemas (Pe
 
 ---
 
-### Módulo D: Co-Dirección Comercial y Estratégica (Perfil 2 - 50% Socio 1)
+### Módulo D: Co-Dirección Comercial y Estratégica (Perfil 2 - 50% Co-Dirección)
 #### 🔴 Responsabilidades FASE 1 (Urgentes)
 16. Mantener relación directa con gerentes de compras y tomadores de decisión en TMMBC y clientes clave.
 17. Agendar y sostener reuniones periódicas de alto nivel (comidas de negocios, juntas ejecutivas).
@@ -124,7 +124,7 @@ Líder responsable de la **transformación digital, arquitectura de sistemas (Pe
 
 ---
 
-## BLOQUE 2: PUESTO SOCIO 2 — DIRECTOR DE OPERACIONES, RENTABILIDAD Y ADMINISTRACIÓN DE OPERACIONES
+## BLOQUE 2: DIRECTOR DE OPERACIONES, RENTABILIDAD Y ADMINISTRACIÓN DE OPERACIONES
 
 ### Descripción General del Puesto
 Ejecutivo responsable de la **calidad técnica en campo, aseguramiento operativo, rentabilidad de proyectos (costo vs cotización), gestión del capital humano y control estricto de egresos/nómina**, complementado con la co-dirección comercial de cuentas clave.
@@ -213,7 +213,7 @@ Ejecutivo responsable de la **calidad técnica en campo, aseguramiento operativo
 
 ---
 
-### Módulo D: Co-Dirección Comercial y Estratégica (Perfil 2 - 50% Socio 2)
+### Módulo D: Co-Dirección Comercial y Estratégica (Perfil 2 - 50% Co-Dirección)
 #### 🔴 Responsabilidades FASE 1 (Urgentes)
 26. Mantener relación directa con gerentes de compras y tomadores de decisión en TMMBC y clientes clave.
 27. Agendar y sostener reuniones periódicas de alto nivel (comidas de negocios, juntas ejecutivas).
@@ -237,8 +237,8 @@ Ejecutivo responsable de la **calidad técnica en campo, aseguramiento operativo
 
 ## REGLAS DE GOBIERNO Y AUDITORÍA CRUZADA
 
-En un esquema de remuneración basada en valor y utilidades para socios, se establecen los siguientes mecanismos de control:
+En un esquema de remuneración basada en valor y utilidades, se establecen los siguientes mecanismos de control:
 
-1. **Aprobación de Cotizaciones (P4 + P2)**: El Director de Operaciones y Rentabilidad (Socio 2) revisa los márgenes técnicos de las cotizaciones elaboradas en el área comercial.
-2. **Auditoría de Activos y Contratos (P7 + P6)**: El Director de Tecnología y Gobierno Legal (Socio 1) valida la cobertura de pólizas y situación legal de los activos físicos aprobados para adquisición por la Administración (Socio 2).
-3. **Puntos Críticos Digitales (P1 + P5)**: Las alertas detectadas en campo por la auditoría (Socio 2) se alimentan directamente en Perry App (Socio 1) para dar trazabilidad objetiva e imparcial.
+1. **Aprobación de Cotizaciones (P4 + P2)**: El Director de Operaciones, Rentabilidad y Administración revisa los márgenes técnicos de las cotizaciones elaboradas en el área comercial.
+2. **Auditoría de Activos y Contratos (P7 + P6)**: El Director de Tecnología, Inteligencia y Gobierno Legal valida la cobertura de pólizas y situación legal de los activos físicos aprobados para adquisición por la Administración.
+3. **Puntos Críticos Digitales (P1 + P5)**: Las alertas detectadas en campo por la auditoría se alimentan directamente en Perry App para dar trazabilidad objetiva e imparcial.
