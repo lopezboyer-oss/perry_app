@@ -55,6 +55,25 @@
   .dash-bar .s1 { background:var(--accent1); transition:width 0.4s ease; }
   .dash-bar .s2 { background:var(--accent2); transition:width 0.4s ease; }
 
+  /* Section Header for Continuous Blocks */
+  .puesto-section-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-radius:12px; margin:28px 0 16px; color:white;
+  }
+  .puesto-section-header.p1 {
+    background:linear-gradient(135deg, #3730a3, #4f46e5);
+    box-shadow:0 4px 14px rgba(79, 70, 229, 0.25);
+  }
+  .puesto-section-header.p2 {
+    background:linear-gradient(135deg, #0369a1, #0284c7);
+    box-shadow:0 4px 14px rgba(2, 132, 199, 0.25);
+    page-break-before: always;
+    break-before: page;
+  }
+  .puesto-section-header h2 { font-size:16px; font-weight:800; margin:0; }
+  .puesto-section-header .subtext { font-size:12px; opacity:0.85; margin-top:2px; }
+  .puesto-section-badge { background:rgba(255,255,255,0.2); padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; }
+
   /* Alerts */
   .alert { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px 16px; margin-bottom:20px; display:none; }
   .alert.show { display:flex; gap:8px; align-items:flex-start; }
@@ -62,7 +81,7 @@
   .alert .text { font-size:13px; color:#fca5a5; line-height:1.5; }
 
   /* Profile Cards */
-  .profiles { display:flex; flex-direction:column; gap:16px; }
+  .profiles-block { display:flex; flex-direction:column; gap:16px; margin-bottom:24px; }
   .profile-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; transition:border-color 0.3s; }
   .profile-card.assigned-s1 { border-color:var(--accent1); }
   .profile-card.assigned-s2 { border-color:var(--accent2); }
@@ -126,7 +145,7 @@
 
   /* Action Bar */
   .action-bar { display:flex; gap:12px; justify-content:center; margin-bottom:24px; flex-wrap:wrap; }
-  .action-btn { display:flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+  .action-btn { display:flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; text-decoration:none; }
   .action-btn:hover { background:var(--surface2); border-color:var(--accent1); }
   .action-btn.primary { background:var(--accent1); border-color:var(--accent1); color:white; }
   .action-btn.primary:hover { background:#4f46e5; }
@@ -178,6 +197,9 @@
     .dash-card.socio1, .dash-card.socio2 { background:white !important; }
     .dash-value { color:#1e3a5f !important; }
     .dash-label, .dash-sub, .pct-badge { color:#333 !important; }
+    .puesto-section-header { color:black !important; background:none !important; border-bottom:2px solid #333 !important; padding:8px 0 !important; margin-top:20px !important; }
+    .puesto-section-header.p2 { page-break-before: always !important; break-before: page !important; }
+    .puesto-section-badge { display:none !important; }
     .profile-card { background:white !important; border:1px solid #ddd !important; margin-bottom:12px !important; page-break-inside:avoid; }
     .profile-header { background:#f4f6f9 !important; border-bottom:1px solid #ddd !important; }
     .profile-body { max-height:none !important; display:block !important; }
@@ -257,24 +279,27 @@
 
 <div class="action-bar">
   <button class="action-btn" onclick="toggleAllExpand(true)">
-    <span class="icon">📂</span> Expandir Todos los Perfiles
+    <span class="icon">📂</span> Expandir Todos
   </button>
   <button class="action-btn" onclick="toggleAllExpand(false)">
     <span class="icon">📁</span> Colapsar Todos
   </button>
   <button class="action-btn primary" onclick="recalcFromKPIs()">
-    <span class="icon">⚡</span> Recalcular Puntajes desde KPIs
+    <span class="icon">⚡</span> Recalcular Puntajes
   </button>
   <button class="action-btn" onclick="resetToDefaults()">
     <span class="icon">↩️</span> Restaurar Valores Base
   </button>
+  <a class="action-btn" href="Perfiles-de-Valor-GrupoCaseme.html" target="_blank">
+    <span class="icon">📄</span> Ver Documento Continuo HTML
+  </a>
   <button class="action-btn export" onclick="exportPDF()">
-    <span class="icon">📄</span> Exportar / Imprimir PDF Profesional
+    <span class="icon">📄</span> Exportar / Imprimir PDF
   </button>
 </div>
 <div class="recalc-feedback" id="recalcFeedback"></div>
 
-<div class="profiles" id="profilesContainer"></div>
+<div class="profiles-container" id="profilesContainer"></div>
 
 <div class="footer">
   <p>CONFIDENCIAL — Modelo de Remuneración por Valor · Grupo Caseme · Perry Intelligence v4.0</p>
@@ -287,6 +312,78 @@ const PUESTO_1_TITLE = "Director de Tecnología, Inteligencia de Negocio y Gobie
 const PUESTO_2_TITLE = "Director de Operaciones, Rentabilidad y Administración de Operaciones";
 
 const PROFILES = [
+  {
+    id: 5, name: 'CTO / Director de Tecnología e Innovación', points: 21, assignedTo: 1,
+    f1: [
+      'Dirigir el desarrollo y evolución de Perry App como plataforma central',
+      'Evaluar e implementar soluciones de IA, automatización y digitalización',
+      'Asegurar estabilidad y escalabilidad de la infraestructura digital',
+      'Capacitar al equipo en el uso efectivo de herramientas implementadas',
+      'Gestionar proveedores tecnológicos y herramientas digitales'
+    ],
+    f2: [
+      'Definir y mantener roadmap tecnológico anual y de mediano plazo',
+      'Implementar políticas de ciberseguridad, respaldo y recuperación',
+      'Definir estrategia tecnológica de la empresa a corto y mediano plazo',
+      'Promover la adopción de tecnología en todas las áreas',
+      'Innovar continuamente: proponer soluciones de vanguardia',
+      'Medir ROI de inversiones tecnológicas'
+    ],
+    kpis: [
+      ['Funcionalidades nuevas Perry', '≥ 2/mes', 'Mensual', 'f1'],
+      ['Uptime plataforma Perry', '≥ 99.5%', 'Mensual', 'f1'],
+      ['Adopción herramientas equipo', '≥ 80%', 'Trimestral', 'f1'],
+      ['Roadmap documentado vigente', '1 activo', 'Semestral', 'f2'],
+      ['Procesos automatizados nuevos', '≥ 1/trimestre', 'Trimestral', 'f2'],
+    ]
+  },
+  {
+    id: 3, name: 'Analista de Inteligencia Operativa y de Negocio', points: 29, assignedTo: 1,
+    f1: [
+      'Analizar tendencias de actividades: tipos, volúmenes, tiempos, cancelaciones',
+      'Detectar alertas tempranas: caídas de productividad, concentración de carga',
+      'Monitorear KPIs transversales de todas las áreas (no solo operación)'
+    ],
+    f2: [
+      'Generar reportes de análisis para dirección con datos y recomendaciones',
+      'Identificar patrones recurrentes para proponer acciones preventivas',
+      'Coordinar juntas multi-área para puntos que lo requieran',
+      'Proponer mejoras al sistema de reporteo y automatizar seguimiento',
+      'Identificar oportunidades de negocio a partir de patrones en la data'
+    ],
+    kpis: [
+      ['Alertas tempranas detectadas', 'Registro completo', 'Mensual', 'f1'],
+      ['Reportes análisis a dirección', '≥ 2/mes', 'Mensual', 'f2'],
+      ['Patrones recurrentes documentados', '≥ 1/mes', 'Mensual', 'f2'],
+      ['Monitoreo KPIs transversales', '≥ 1/mes', 'Mensual', 'f2'],
+    ]
+  },
+  {
+    id: 7, name: 'Representante Legal, Fiduciario y Control de Activos (Vehículos y Maquinaria)', points: 14, assignedTo: 1,
+    f1: [
+      'Firmar como representante legal en contratos con clientes, proveedores y financieras',
+      'Actuar como aval personal en líneas de crédito bancarias y financiamientos',
+      'Comparecer ante dependencias públicas: SAT, IMSS, STPS, Protección Civil',
+      'Atender requerimientos legales, auditorías fiscales y laborales',
+      'Supervisar cumplimiento de obligaciones regulatorias (REPSE, padrones)',
+      'Atender procesos de despido y rescisión laboral: convenios y finiquitos',
+      '🚗 CONTROL LEGAL Y PROTECCIÓN PATRIMONIAL DE ACTIVOS (VEHÍCULOS Y MAQUINARIA): Custodia legal, regularización de flota vehicular y maquinaria pesada, gestión de pólizas de seguro patrimonial, trámites de propiedad, tenencias, licencias, contratos de leasing/arrendamiento y trámites de circulación ante autoridades'
+    ],
+    f2: [
+      'Elaborar y mantener actualizada matriz de riesgos empresariales',
+      'Dar seguimiento a seguros y validar suficiencia de coberturas',
+      'Firmar escrituras, poderes notariales y documentos constitutivos',
+      'Gestionar renovaciones de permisos y licencias ante autoridades'
+    ],
+    kpis: [
+      ['Obligaciones regulatorias sin multas', '100%', 'Trimestral', 'f1'],
+      ['Requerimientos legales atendidos', '≤ 5 días', 'Por evento', 'f1'],
+      ['Contratos firmados y revisados', 'Registro completo', 'Mensual', 'f1'],
+      ['Despidos atendidos sin demanda procedente', '≥ 90%', 'Por evento', 'f1'],
+      ['🚗 Regularización y seguros de flota y maquinaria', '100% al día', 'Trimestral', 'f1'],
+      ['Matriz de riesgos actualizada', '1 activa', 'Semestral', 'f2'],
+    ]
+  },
   {
     id: 1, name: 'Auditor y Consultor Senior de Operaciones', points: 20, assignedTo: 2,
     f1: [
@@ -323,55 +420,6 @@ const PROFILES = [
     ]
   },
   {
-    id: 2, name: 'Director Comercial y Relaciones Estratégicas', points: 18, assignedTo: 'split',
-    f1: [
-      'Mantener relación directa con gerentes de compras y decisores TMMBC y clientes clave',
-      'Agendar y sostener reuniones periódicas de alto nivel (comidas, juntas ejecutivas)',
-      'Intervenir en negociaciones de contratos mayores, renovaciones y acuerdos marco',
-      'Gestionar la percepción del cliente sobre la calidad y confiabilidad de Caseme',
-      'Supervisar estratégicamente al equipo de vendedores operativos',
-      'Gestionar la recuperación de relaciones cuando hay conflictos con el cliente'
-    ],
-    f2: [
-      'Buscar nuevos mercados y sectores para reducir dependencia de TMMBC',
-      'Desarrollar nuevas líneas de negocio y servicios complementarios',
-      'Elaborar y dar seguimiento al plan comercial anual',
-      'Diseñar estrategias formales para reducir concentración de facturación',
-      'Monitorear indicador de concentración de facturación por cliente',
-      'Identificar oportunidades de proyectos antes de salgan a licitación',
-      'Representar a la empresa en eventos del sector y networking',
-      'Mentoría continua al equipo de ventas'
-    ],
-    kpis: [
-      ['Reuniones alto nivel con gerencia', '≥ 2/mes', 'Mensual', 'f1'],
-      ['Contratos renovados sin pérdida', '100%', 'Anual', 'f1'],
-      ['Conflictos atendidos', '≤ 48h respuesta', 'Por evento', 'f1'],
-      ['Nuevos clientes prospectados', '≥ 2/trimestre', 'Trimestral', 'f2'],
-      ['Concentración facturación principal', 'Reducción prog.', 'Semestral', 'f2'],
-    ]
-  },
-  {
-    id: 3, name: 'Analista de Inteligencia Operativa y de Negocio', points: 29, assignedTo: 1,
-    f1: [
-      'Analizar tendencias de actividades: tipos, volúmenes, tiempos, cancelaciones',
-      'Detectar alertas tempranas: caídas de productividad, concentración de carga',
-      'Monitorear KPIs transversales de todas las áreas (no solo operación)'
-    ],
-    f2: [
-      'Generar reportes de análisis para dirección con datos y recomendaciones',
-      'Identificar patrones recurrentes para proponer acciones preventivas',
-      'Coordinar juntas multi-área para puntos que lo requieran',
-      'Proponer mejoras al sistema de reporteo y automatizar seguimiento',
-      'Identificar oportunidades de negocio a partir de patrones en la data'
-    ],
-    kpis: [
-      ['Alertas tempranas detectadas', 'Registro completo', 'Mensual', 'f1'],
-      ['Reportes análisis a dirección', '≥ 2/mes', 'Mensual', 'f2'],
-      ['Patrones recurrentes documentados', '≥ 1/mes', 'Mensual', 'f2'],
-      ['Monitoreo KPIs transversales', '≥ 1/mes', 'Mensual', 'f2'],
-    ]
-  },
-  {
     id: 4, name: 'Controller de Costos de Proyecto', points: 19, assignedTo: 2,
     f1: [
       'Revisar cotizaciones emitidas: validar alcance, precios, márgenes',
@@ -397,31 +445,6 @@ const PROFILES = [
       ['Tasa conversión cotización→PO', '≥ 40%', 'Mensual', 'f2'],
       ['Reportes rentabilidad', '≥ 2/mes', 'Mensual', 'f2'],
       ['Edo. resultados generado', '100% meses', 'Mensual', 'f2'],
-    ]
-  },
-  {
-    id: 5, name: 'CTO / Director de Tecnología e Innovación', points: 21, assignedTo: 1,
-    f1: [
-      'Dirigir el desarrollo y evolución de Perry App como plataforma central',
-      'Evaluar e implementar soluciones de IA, automatización y digitalización',
-      'Asegurar estabilidad y escalabilidad de la infraestructura digital',
-      'Capacitar al equipo en el uso efectivo de herramientas implementadas',
-      'Gestionar proveedores tecnológicos y herramientas digitales'
-    ],
-    f2: [
-      'Definir y mantener roadmap tecnológico anual y de mediano plazo',
-      'Implementar políticas de ciberseguridad, respaldo y recuperación',
-      'Definir estrategia tecnológica de la empresa a corto y mediano plazo',
-      'Promover la adopción de tecnología en todas las áreas',
-      'Innovar continuamente: proponer soluciones de vanguardia',
-      'Medir ROI de inversiones tecnológicas'
-    ],
-    kpis: [
-      ['Funcionalidades nuevas Perry', '≥ 2/mes', 'Mensual', 'f1'],
-      ['Uptime plataforma Perry', '≥ 99.5%', 'Mensual', 'f1'],
-      ['Adopción herramientas equipo', '≥ 80%', 'Trimestral', 'f1'],
-      ['Roadmap documentado vigente', '1 activo', 'Semestral', 'f2'],
-      ['Procesos automatizados nuevos', '≥ 1/trimestre', 'Trimestral', 'f2'],
     ]
   },
   {
@@ -451,29 +474,31 @@ const PROFILES = [
     ]
   },
   {
-    id: 7, name: 'Representante Legal, Fiduciario y Control de Activos (Vehículos y Maquinaria)', points: 14, assignedTo: 1,
+    id: 2, name: 'Director Comercial y Relaciones Estratégicas (Co-Dirección 50/50)', points: 18, assignedTo: 'split',
     f1: [
-      'Firmar como representante legal en contratos con clientes, proveedores y financieras',
-      'Actuar como aval personal en líneas de crédito bancarias y financiamientos',
-      'Comparecer ante dependencias públicas: SAT, IMSS, STPS, Protección Civil',
-      'Atender requerimientos legales, auditorías fiscales y laborales',
-      'Supervisar cumplimiento de obligaciones regulatorias (REPSE, padrones)',
-      'Atender procesos de despido y rescisión laboral: convenios y finiquitos',
-      '🚗 CONTROL LEGAL Y PROTECCIÓN PATRIMONIAL DE ACTIVOS (VEHÍCULOS Y MAQUINARIA): Custodia legal, regularización de flota vehicular y maquinaria pesada, gestión de pólizas de seguro patrimonial, trámites de propiedad, tenencias, licencias, contratos de leasing/arrendamiento y trámites de circulación ante autoridades'
+      'Mantener relación directa con gerentes de compras y decisores TMMBC y clientes clave',
+      'Agendar y sostener reuniones periódicas de alto nivel (comidas, juntas ejecutivas)',
+      'Intervenir en negociaciones de contratos mayores, renovaciones y acuerdos marco',
+      'Gestionar la percepción del cliente sobre la calidad y confiabilidad de Caseme',
+      'Supervisar estratégicamente al equipo de vendedores operativos',
+      'Gestionar la recuperación de relaciones cuando hay conflictos con el cliente'
     ],
     f2: [
-      'Elaborar y mantener actualizada matriz de riesgos empresariales',
-      'Dar seguimiento a seguros y validar suficiencia de coberturas',
-      'Firmar escrituras, poderes notariales y documentos constitutivos',
-      'Gestionar renovaciones de permisos y licencias ante autoridades'
+      'Buscar nuevos mercados y sectores para reducir dependencia de TMMBC',
+      'Desarrollar nuevas líneas de negocio y servicios complementarios',
+      'Elaborar y dar seguimiento al plan comercial anual',
+      'Diseñar estrategias formales para reducir concentración de facturación',
+      'Monitorear indicador de concentración de facturación por cliente',
+      'Identificar oportunidades de proyectos antes de salgan a licitación',
+      'Representar a la empresa en eventos del sector y networking',
+      'Mentoría continua al equipo de ventas'
     ],
     kpis: [
-      ['Obligaciones regulatorias sin multas', '100%', 'Trimestral', 'f1'],
-      ['Requerimientos legales atendidos', '≤ 5 días', 'Por evento', 'f1'],
-      ['Contratos firmados y revisados', 'Registro completo', 'Mensual', 'f1'],
-      ['Despidos atendidos sin demanda procedente', '≥ 90%', 'Por evento', 'f1'],
-      ['🚗 Regularización y seguros de flota y maquinaria activas', '100% al día', 'Trimestral', 'f1'],
-      ['Matriz de riesgos actualizada', '1 activa', 'Semestral', 'f2'],
+      ['Reuniones alto nivel con gerencia', '≥ 2/mes', 'Mensual', 'f1'],
+      ['Contratos renovados sin pérdida', '100%', 'Anual', 'f1'],
+      ['Conflictos atendidos', '≤ 48h respuesta', 'Por evento', 'f1'],
+      ['Nuevos clientes prospectados', '≥ 2/trimestre', 'Trimestral', 'f2'],
+      ['Concentración facturación principal', 'Reducción prog.', 'Semestral', 'f2'],
     ]
   }
 ];
@@ -485,21 +510,15 @@ PROFILES.forEach(p => {
   BASE_KPIS[p.id] = p.kpis.map(k => ({ name: k[0], meta: k[1], freq: k[2], phase: k[3] }));
 });
 
-function render() {
-  const container = document.getElementById('profilesContainer');
-  container.innerHTML = '';
-  PROFILES.forEach(p => {
-    const card = document.createElement('div');
-    card.className = `profile-card assigned-${p.assignedTo}`;
-    card.id = `card-${p.id}`;
-    
-    let tagText = "";
-    let tagColor = "";
-    if (p.assignedTo === 1) { tagText = "ASIGNADO A: " + PUESTO_1_TITLE; tagColor = "#6366f1"; }
-    else if (p.assignedTo === 2) { tagText = "ASIGNADO A: " + PUESTO_2_TITLE; tagColor = "#0284c7"; }
-    else { tagText = "CO-DIRECCIÓN COMERCIAL (50/50)"; tagColor = "#818cf8"; }
+function createCardHTML(p) {
+  let tagText = "";
+  let tagColor = "";
+  if (p.assignedTo === 1) { tagText = "ASIGNADO A: " + PUESTO_1_TITLE; tagColor = "#6366f1"; }
+  else if (p.assignedTo === 2) { tagText = "ASIGNADO A: " + PUESTO_2_TITLE; tagColor = "#0284c7"; }
+  else { tagText = "CO-DIRECCIÓN COMERCIAL (50/50)"; tagColor = "#818cf8"; }
 
-    card.innerHTML = `
+  return `
+    <div class="profile-card assigned-${p.assignedTo}" id="card-${p.id}">
       <div class="profile-header" onclick="toggleExpand(${p.id})">
         <div class="profile-title">
           <div class="profile-num">P${p.id}</div>
@@ -540,20 +559,65 @@ function render() {
             </div>
           </div>
         </div>
-      </div>`;
-    container.appendChild(card);
+      </div>
+    </div>`;
+}
+
+function render() {
+  const container = document.getElementById('profilesContainer');
+  container.innerHTML = '';
+
+  // Section 1: Director de Tecnología, Inteligencia de Negocio y Gobierno Legal
+  const sec1 = document.createElement('div');
+  sec1.innerHTML = `
+    <div class="puesto-section-header p1">
+      <div>
+        <h2>Director de Tecnología, Inteligencia de Negocio y Gobierno Legal</h2>
+        <div class="subtext">Enfoque: Transformación Digital, Perry App, Analítica y Gobierno Patrimonial de Activos (Vehículos/Maquinaria)</div>
+      </div>
+      <div class="puesto-section-badge">Bloque Ejecutivo 1</div>
+    </div>
+    <div class="profiles-block" id="block1"></div>
+  `;
+  container.appendChild(sec1);
+  const block1 = sec1.querySelector('#block1');
+
+  // Section 2: Director de Operaciones, Rentabilidad y Administración de Operaciones
+  const sec2 = document.createElement('div');
+  sec2.innerHTML = `
+    <div class="puesto-section-header p2">
+      <div>
+        <h2>Director de Operaciones, Rentabilidad y Administración de Operaciones</h2>
+        <div class="subtext">Enfoque: Auditoría de Calidad en Campo, Control de Costos de Proyecto y Gestión Administrativa</div>
+      </div>
+      <div class="puesto-section-badge">Bloque Ejecutivo 2</div>
+    </div>
+    <div class="profiles-block" id="block2"></div>
+  `;
+  container.appendChild(sec2);
+  const block2 = sec2.querySelector('#block2');
+
+  PROFILES.forEach(p => {
+    const cardHTML = createCardHTML(p);
+    if (p.assignedTo === 1) {
+      block1.insertAdjacentHTML('beforeend', cardHTML);
+    } else if (p.assignedTo === 2) {
+      block2.insertAdjacentHTML('beforeend', cardHTML);
+    } else {
+      block1.insertAdjacentHTML('beforeend', cardHTML);
+      block2.insertAdjacentHTML('beforeend', cardHTML);
+    }
   });
+
   recalc();
 }
 
 function toggleAllExpand(expand) {
   PROFILES.forEach(p => {
-    const card = document.getElementById(`card-${p.id}`);
-    const body = document.getElementById(`body-${p.id}`);
-    if (card && body) {
-      if (expand) { card.classList.add('expanded'); body.classList.add('open'); }
-      else { card.classList.remove('expanded'); body.classList.remove('open'); }
-    }
+    const cards = document.querySelectorAll(`#card-${p.id}`);
+    const bodies = document.querySelectorAll(`#body-${p.id}`);
+    cards.forEach(card => expand ? card.classList.add('expanded') : card.classList.remove('expanded'));
+    bodies.forEach(body => expand ? body.classList.add('open') : body.classList.remove('open'));
   });
 }
 
@@ -596,10 +660,10 @@ function togglePhase(phase, active) {
 }
 
 function toggleExpand(id) {
-  const card = document.getElementById(`card-${id}`);
-  const body = document.getElementById(`body-${id}`);
-  card.classList.toggle('expanded');
-  body.classList.toggle('open');
+  const cards = document.querySelectorAll(`#card-${id}`);
+  const bodies = document.querySelectorAll(`#body-${id}`);
+  cards.forEach(card => card.classList.toggle('expanded'));
+  bodies.forEach(body => body.classList.toggle('open'));
 }
 
 function recalc() {
@@ -607,8 +671,8 @@ function recalc() {
   let s1pts=0, s2pts=0, s1n=0, s2n=0;
   PROFILES.forEach(p => {
     const pct = ((p.points/total)*100).toFixed(1);
-    const el = document.getElementById(`pct-${p.id}`);
-    if (el) el.textContent = pct + '%';
+    const elements = document.querySelectorAll(`#pct-${p.id}`);
+    elements.forEach(el => el.textContent = pct + '%');
     if (p.assignedTo === 1) { s1pts += p.points; s1n += 1; }
     else if (p.assignedTo === 2) { s2pts += p.points; s2n += 1; }
     else if (p.assignedTo === 'split') { s1pts += p.points / 2; s2pts += p.points / 2; s1n += 0.5; s2n += 0.5; }
