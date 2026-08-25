@@ -1,5 +1,16 @@
 import { GeminiParsedFinancialReport, ExtractedAccountBalance } from './types';
 
+export function normalizeCompanyName(name: string): string {
+  if (!name) return 'GRUPO CASEME';
+  const upper = name.toUpperCase().trim();
+  if (upper.includes('VULCAN') || upper.includes('BEHEMOTH')) return 'VULCAN FORGE';
+  if (upper.includes('DROBOT')) return 'DROBOTS';
+  if (upper.includes('OPUS')) return 'OPUS INGENIUM';
+  if (upper.includes('SAINPRO')) return 'SAINPRO';
+  if (upper.includes('CASEME')) return 'GRUPO CASEME';
+  return upper;
+}
+
 export async function parseFinancialMessageWithGemini(params: {
   messageText: string;
   senderName?: string;
@@ -127,9 +138,8 @@ RESPONDE ÚNICAMENTE CON UN OBJETO JSON VÁLIDO:
 
     const jsonResponse = await res.json();
     const rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) return fallbackFinancialParser(messageText, defaultCompany, formattedDate, imageUrl);
-
     const parsed: GeminiParsedFinancialReport = JSON.parse(rawText);
+    parsed.companyName = normalizeCompanyName(parsed.companyName || defaultCompany);
     return parsed;
   } catch (err) {
     console.error('[FINANCIAL PARSER] Error procesando reporte financiero con Gemini:', err);

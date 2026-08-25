@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { normalizeCompanyName } from '@/lib/whatsapp/financial-parser';
 
 // CORS support for external Antigravity tools
 export async function OPTIONS() {
@@ -83,9 +84,10 @@ export async function GET(req: NextRequest) {
     // Compute consolidated totals for latest records by company and bank/account
     const latestAccountMap = new Map<string, typeof balanceLogs[0]>();
     balanceLogs.forEach((log) => {
-      const key = `${log.companyName}_${log.bankName}_${log.accountType}_${log.currency}`;
+      const normCompany = normalizeCompanyName(log.companyName);
+      const key = `${normCompany}_${log.bankName}_${log.accountType}_${log.currency}`;
       if (!latestAccountMap.has(key)) {
-        latestAccountMap.set(key, log);
+        latestAccountMap.set(key, { ...log, companyName: normCompany });
       }
     });
 
