@@ -38,7 +38,7 @@ export interface GeminiParsedReport {
 
 export interface ExtractedAccountBalance {
   bankName: string;
-  accountType: 'MONEDA_NACIONAL' | 'DOLARES' | 'CREDITO_REVOLVENTE' | 'INVERSION';
+  accountType: 'MONEDA_NACIONAL' | 'DOLARES' | 'CREDITO_REVOLVENTE' | 'INVERSION' | 'TARJETA_EJECUTIVA';
   currency: 'MXN' | 'USD';
   initialBalance: number;
   income: number;

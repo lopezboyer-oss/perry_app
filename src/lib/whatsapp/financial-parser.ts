@@ -73,8 +73,9 @@ REGLAS DE EXTRACCIÓN FINANCIERA:
 1. "companyName": Identifica la empresa ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "BEHEMOTH DESIGN"). Si no es explícita, usa "${defaultCompany}".
 2. "reportDate": Fecha del reporte en formato "YYYY-MM-DD".
 3. "accounts": Extrae CADA banco y tipo de cuenta en la imagen o texto:
-   - "bankName": Nombre del Banco (ej: "SANTANDER", "AFIRME", "BANORTE", "BBVA", "MONEX").
-   - "accountType": "MONEDA_NACIONAL" | "DOLARES" | "CREDITO_REVOLVENTE" | "INVERSION".
+   - "bankName": Nombre del Banco (ej: "SANTANDER", "AFIRME", "BANORTE", "BBVA", "MONEX", "BANAMEX").
+   - "accountType": "MONEDA_NACIONAL" | "DOLARES" | "CREDITO_REVOLVENTE" | "INVERSION" | "TARJETA_EJECUTIVA".
+     ⚠️ REGLA BANAMEX / TARJETAS EJECUTIVAS: Las "Tarjetas Ejecutivas" o "Tarjetas Corporativas" (Banamex, etc.) NO SON DEUDA ni crédito revolvente. Son saldos de débito/viáticos a favor de la empresa transferidos desde la cuenta principal. Clasifica su accountType estrictamente como "TARJETA_EJECUTIVA".
    - "currency": "MXN" para Moneda Nacional o "USD" para Dólares.
    - "initialBalance": Saldo anterior / apertura en números decimales (ej. 10420.00).
    - "income": Total abonos / ingresos del día (ej. 60100.00).

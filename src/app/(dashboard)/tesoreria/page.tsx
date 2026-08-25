@@ -496,8 +496,14 @@ export default function TesoreriaPage() {
                         <tr key={acc.id} className="hover:bg-slate-800/40 transition-colors">
                           <td className="py-2.5 px-3 font-sans font-semibold text-slate-100 flex items-center space-x-2">
                             <span className="truncate max-w-[130px]">{acc.bankName}</span>
-                            <span className="text-[10px] font-normal px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded border border-slate-700/80 shrink-0">
-                              {acc.accountType}
+                            <span className={`text-[10px] font-normal px-1.5 py-0.5 rounded border shrink-0 ${
+                              acc.accountType === 'TARJETA_EJECUTIVA'
+                                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 font-semibold'
+                                : acc.accountType === 'CREDITO_REVOLVENTE'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-400/40 font-semibold'
+                                : 'bg-slate-800 text-slate-400 border-slate-700/80'
+                            }`}>
+                              {acc.accountType === 'TARJETA_EJECUTIVA' ? 'TARJETA EJECUTIVA (DÉBITO)' : acc.accountType}
                             </span>
                           </td>
                           <td className="py-2.5 px-2 text-center">
