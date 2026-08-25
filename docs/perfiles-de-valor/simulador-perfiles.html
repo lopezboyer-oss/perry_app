@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Simulador de Perfiles de Valor — Grupo Caseme</title>
+<title>Simulador de Perfiles de Valor v4.0 — Grupo Caseme</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -16,8 +16,8 @@
     --text-dim: #8b8fa3;
     --accent1: #6366f1;
     --accent1-dim: rgba(99,102,241,0.15);
-    --accent2: #22d3ee;
-    --accent2-dim: rgba(34,211,238,0.15);
+    --accent2: #0284c7;
+    --accent2-dim: rgba(2,132,199,0.15);
     --accent-split: #818cf8;
     --accent-split-dim: rgba(129,140,248,0.15);
     --green: #22c55e;
@@ -29,28 +29,28 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:24px; }
 
-  .header { text-align:center; margin-bottom:32px; }
-  .header h1 { font-size:28px; font-weight:800; background:linear-gradient(135deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-  .header p { color:var(--text-dim); margin-top:6px; font-size:14px; }
+  .header { text-align:center; margin-bottom:28px; }
+  .header h1 { font-size:26px; font-weight:800; background:linear-gradient(135deg,var(--accent1),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .header p { color:var(--text-dim); margin-top:6px; font-size:13px; }
 
   /* Top Monetary Pool Card */
-  .bolsa-card { background:linear-gradient(135deg, #1e1b4b, #0f172a); border:1px solid #6366f1; border-radius:14px; padding:20px; text-align:center; margin-bottom:20px; shadow:0 10px 25px rgba(99,102,241,0.2); }
+  .bolsa-card { background:linear-gradient(135deg, #1e1b4b, #0f172a); border:1px solid #6366f1; border-radius:14px; padding:20px; text-align:center; margin-bottom:20px; box-shadow:0 10px 25px rgba(99,102,241,0.2); }
   .bolsa-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#a5b4fc; margin-bottom:8px; }
   .bolsa-input-wrap { display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.4); border:1px solid #4f46e5; border-radius:10px; padding:6px 16px; margin:4px 0; }
   .bolsa-symbol { font-size:20px; font-weight:800; color:#818cf8; }
   .bolsa-input { background:transparent; border:none; color:white; font-family:inherit; font-size:24px; font-weight:800; width:160px; text-align:center; outline:none; }
 
   /* Dashboard Cards */
-  .dashboard { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:28px; }
-  .dash-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; }
+  .dashboard { display:grid; grid-template-columns:1.2fr 1fr 1.2fr; gap:16px; margin-bottom:28px; }
+  .dash-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; text-align:center; display:flex; flex-direction:column; justify-content:center; }
   .dash-card.socio1 { border-color:var(--accent1); background:var(--accent1-dim); }
   .dash-card.socio2 { border-color:var(--accent2); background:var(--accent2-dim); }
-  .dash-label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--text-dim); }
-  .dash-value { font-size:36px; font-weight:800; margin:8px 0 4px; }
-  .dash-amount { font-size:18px; font-weight:700; color:white; margin-bottom:4px; }
+  .dash-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); min-height:32px; display:flex; align-items:center; justify-content:center; }
+  .dash-value { font-size:32px; font-weight:800; margin:6px 0 2px; }
+  .dash-amount { font-size:17px; font-weight:700; color:white; margin-bottom:4px; }
   .dash-card.socio1 .dash-value { color:var(--accent1); }
   .dash-card.socio2 .dash-value { color:var(--accent2); }
-  .dash-sub { font-size:13px; color:var(--text-dim); }
+  .dash-sub { font-size:12px; color:var(--text-dim); }
   .dash-bar { height:8px; border-radius:4px; background:var(--surface2); margin-top:12px; overflow:hidden; display:flex; }
   .dash-bar .s1 { background:var(--accent1); transition:width 0.4s ease; }
   .dash-bar .s2 { background:var(--accent2); transition:width 0.4s ease; }
@@ -76,6 +76,8 @@
   .assigned-s2 .profile-num { background:var(--accent2-dim); color:var(--accent2); }
   .assigned-split .profile-num { background:var(--accent-split-dim); color:var(--accent-split); }
   .profile-name { font-weight:600; font-size:15px; }
+  .print-assigned-tag { display:none; font-size:11px; font-weight:700; margin-left:8px; padding:2px 8px; border-radius:4px; }
+
   .profile-controls { display:flex; align-items:center; gap:16px; }
   .points-input { width:56px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:inherit; font-size:15px; font-weight:700; text-align:center; padding:6px; outline:none; }
   .points-input:focus { border-color:var(--accent1); }
@@ -85,7 +87,7 @@
   .toggle-group { display:flex; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
   .toggle-btn { padding:6px 10px; font-size:11px; font-weight:600; font-family:inherit; cursor:pointer; border:none; background:transparent; color:var(--text-dim); transition:all 0.2s; }
   .toggle-btn.active-s1 { background:var(--accent1); color:white; }
-  .toggle-btn.active-s2 { background:var(--accent2); color:#0f1117; }
+  .toggle-btn.active-s2 { background:var(--accent2); color:white; }
   .toggle-btn.active-split { background:linear-gradient(135deg,var(--accent1),var(--accent2)); color:white; }
 
   /* Expandable Content */
@@ -166,15 +168,15 @@
     .bolsa-input { width:120px; font-size:20px; }
   }
 
-  /* Print Styles */
+  /* Print Styles for PDF Export */
   @media print {
     body { background:white !important; color:#1a1a2e !important; padding:20px !important; }
     .action-bar, .toggle-group, .points-input, .expand-icon, .bolsa-card { display:none !important; }
-    .header h1 { -webkit-text-fill-color:#1e3a5f !important; font-size:22pt; }
+    .header h1 { -webkit-text-fill-color:#1e3a5f !important; font-size:20pt; }
     .dash-card { background:white !important; border:1px solid #ccc !important; }
     .dash-card.socio1, .dash-card.socio2 { background:white !important; }
     .dash-value { color:#1e3a5f !important; }
-    .dash-label, .dash-sub, .pct-badge { color:#555 !important; }
+    .dash-label, .dash-sub, .pct-badge { color:#333 !important; }
     .profile-card { background:white !important; border:1px solid #ddd !important; margin-bottom:12px !important; page-break-inside:avoid; }
     .profile-header { background:#f4f6f9 !important; border-bottom:1px solid #ddd !important; }
     .profile-body { max-height:none !important; display:block !important; }
@@ -182,14 +184,15 @@
     .kpi-table th { background:#eef2f7 !important; color:#333 !important; }
     .kpi-table td { color:#333 !important; border-bottom:1px solid #eee !important; }
     .kpi-meta-input, .kpi-freq-input { background:white !important; color:#111 !important; border:none !important; }
+    .print-assigned-tag { display:inline-block !important; }
   }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>Simulador de Perfiles de Valor — Grupo Caseme</h1>
-  <p>Herramienta interactiva para asignación de responsabilidades y distribución de compensación basada en valor</p>
+  <h1>Simulador de Perfiles de Valor v4.0 — Grupo Caseme</h1>
+  <p>Herramienta ejecutiva interactiva para asignación de responsabilidades y remuneración basada en valor</p>
 </div>
 
 <!-- Bolsa Total Card -->
@@ -200,31 +203,31 @@
     <input type="number" id="bolsaInput" class="bolsa-input" value="100000" step="5000" min="0" oninput="recalc()">
     <span class="bolsa-symbol">MXN</span>
   </div>
-  <p style="font-size:11px; color:#a5b4fc; margin-top:4px;">Ingresa el monto total mensual a repartir según las ponderaciones porcentuales</p>
+  <p style="font-size:11px; color:#a5b4fc; margin-top:4px;">Monto mensual referencial a repartir según ponderaciones calculadas</p>
 </div>
 
 <div class="dashboard">
   <div class="dash-card socio1">
-    <div class="dash-label">Socio 1</div>
+    <div class="dash-label">Director de Tecnología, Inteligencia de Negocio y Gobierno Legal</div>
     <div class="dash-value" id="s1pct">0%</div>
     <div class="dash-amount" id="s1amount">$0.00 MXN</div>
     <div class="dash-sub"><span id="s1pts">0</span> pts · <span id="s1profiles">0</span> perfiles</div>
   </div>
   <div class="dash-card">
-    <div class="dash-label">Distribución Total</div>
-    <div class="dash-value" id="totalPts" style="font-size:24px; color:var(--text);">Total: 140 pts</div>
+    <div class="dash-label">Distribución Total Combinada</div>
+    <div class="dash-value" id="totalPts" style="font-size:22px; color:var(--text);">Total: 140 pts</div>
     <div class="dash-bar">
       <div class="s1" id="bar1" style="width:50%;"></div>
       <div class="s2" id="bar2" style="width:50%;"></div>
     </div>
-    <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-dim);">
+    <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--text-dim);">
       <span>Socio 1: <strong id="barLabel1">0%</strong></span>
       <span>Socio 2: <strong id="barLabel2">0%</strong></span>
     </div>
     <div class="dash-sub" style="margin-top:8px;">Brecha: <strong id="gap">0%</strong></div>
   </div>
   <div class="dash-card socio2">
-    <div class="dash-label">Socio 2</div>
+    <div class="dash-label">Director de Operaciones, Rentabilidad y Administración de Operaciones</div>
     <div class="dash-value" id="s2pct">0%</div>
     <div class="dash-amount" id="s2amount">$0.00 MXN</div>
     <div class="dash-sub"><span id="s2pts">0</span> pts · <span id="s2profiles">0</span> perfiles</div>
@@ -237,7 +240,7 @@
 </div>
 
 <div class="phase-bar">
-  <span class="label">Evaluar:</span>
+  <span class="label">Evaluar Fase:</span>
   <label class="phase-toggle f1">
     <input type="checkbox" checked onchange="togglePhase('f1', this.checked)">
     <span class="switch"></span>
@@ -252,49 +255,57 @@
 </div>
 
 <div class="action-bar">
-  <button class="action-btn primary" onclick="recalcFromKPIs()"><span class="icon">🔄</span> Recalcular Puntajes desde KPIs</button>
-  <button class="action-btn export" onclick="exportPDF()"><span class="icon">📄</span> Exportar PDF</button>
-  <button class="action-btn" onclick="resetToDefaults()"><span class="icon">↩️</span> Restaurar Defaults</button>
+  <button class="action-btn primary" onclick="recalcFromKPIs()">
+    <span class="icon">⚡</span> Recalcular Puntajes desde Metas KPI
+  </button>
+  <button class="action-btn" onclick="resetToDefaults()">
+    <span class="icon">↩️</span> Restaurar Valores Base
+  </button>
+  <button class="action-btn export" onclick="exportPDF()">
+    <span class="icon">📄</span> Exportar / Imprimir PDF Profesional
+  </button>
 </div>
 <div class="recalc-feedback" id="recalcFeedback"></div>
 
 <div class="profiles" id="profilesContainer"></div>
 
 <div class="footer">
-  <p>CONFIDENCIAL — Documento de trabajo para Junta Directiva · Perry Intelligence · v3.2</p>
+  <p>CONFIDENCIAL — Modelo de Remuneración por Valor · Grupo Caseme · Perry Intelligence v4.0</p>
 </div>
 
 <script>
-// Phase state (Fase 2 OFF by default)
 const PHASE_ACTIVE = { f1: true, f2: false };
+
+const SOCIO_1_NAME = "Director de Tecnología, Inteligencia de Negocio y Gobierno Legal";
+const SOCIO_2_NAME = "Director de Operaciones, Rentabilidad y Administración de Operaciones";
 
 const PROFILES = [
   {
     id: 1, name: 'Auditor y Consultor Senior de Operaciones', points: 20, assignedTo: 2,
     f1: [
-      'Realizar auditorías periódicas de los procesos operativos',
-      'Evaluar calidad técnica de trabajos en campo (visitas)',
-      'Identificar cuellos de botella, ineficiencias y riesgos',
-      'Emitir informes de auditoría con hallazgos accionables',
+      'Realizar auditorías periódicas de los procesos operativos (ejecución, cotización, planeación)',
+      'Evaluar calidad técnica de trabajos en campo mediante visitas programadas',
+      'Identificar cuellos de botella, ineficiencias y riesgos operativos',
+      'Emitir informes de auditoría con hallazgos y recomendaciones accionables',
       'Validar estándares de calidad del cliente',
-      'Participar en resolución de problemas técnicos escalados',
-      'Revisar diariamente puntos críticos activos en Perry',
-      'Asegurar responsable y fecha compromiso en cada punto',
-      'Escalar puntos sin atención después de 24h',
-      'Validar actualizaciones sustantivas',
-      'Reportar semanalmente estado de puntos críticos a dirección',
-      'Revisar diariamente reportes ejecutivos Perry Intelligence'
+      'Participar en resolución de problemas técnicos complejos o escalados',
+      'Revisar diariamente el listado de puntos críticos activos en Perry',
+      'Asegurar responsable y fecha compromiso en cada punto crítico',
+      'Escalar puntos sin atención después de 24 horas',
+      'Validar que las actualizaciones registradas son sustantivas',
+      'Reportar semanalmente el estado de puntos críticos a dirección',
+      'Revisar diariamente reportes ejecutivos de Perry Intelligence'
     ],
     f2: [
-      'Evaluar desempeño de coordinadores y responsables',
-      'Seguimiento a planes de mejora y validar implementación',
+      'Evaluar desempeño de coordinadores y responsables de operación',
+      'Dar seguimiento a planes de mejora técnica',
       'Analizar capacidad instalada vs carga de trabajo',
-      'Mentorear ingenieros y supervisores',
-      'Proponer mejoras basadas en experiencia acumulada'
+      'Mentorear a ingenieros y supervisores en mejores prácticas',
+      'Proponer mejoras a los procesos basándose en experiencia'
     ],
     kpis: [
-      ['Visitas de auditoría/campo', '≥ 4/mes', 'Mensual', 'f1'],
-      ['Informes de auditoría emitidos', '≥ 2/mes', 'Mensual', 'f1'],
+      ['Visitas de auditoría/campo', '≥ 12/mes', 'Mensual', 'f1'],
+      ['Informes de auditoría emitidos', '≥ 4/mes', 'Mensual', 'f1'],
       ['Hallazgos documentados', '100% visitas', 'Por visita', 'f1'],
       ['Puntos críticos revisados diariamente', '100%', 'Diario', 'f1'],
       ['Puntos críticos sin atención >48h', '0', 'Semanal', 'f1'],
@@ -307,22 +318,22 @@ const PROFILES = [
   {
     id: 2, name: 'Director Comercial y Relaciones Estratégicas', points: 18, assignedTo: 'split',
     f1: [
-      'Mantener relación con gerentes de compras y decisores TMMBC',
-      'Reuniones periódicas de alto nivel (comidas, juntas ejecutivas)',
-      'Intervenir en negociaciones de contratos mayores',
-      'Gestionar percepción del cliente sobre calidad/confiabilidad',
-      'Supervisar estratégicamente al equipo de vendedores',
-      'Recuperar relaciones cuando hay conflictos con cliente'
+      'Mantener relación directa con gerentes de compras y decisores TMMBC y clientes clave',
+      'Agendar y sostener reuniones periódicas de alto nivel (comidas, juntas ejecutivas)',
+      'Intervenir en negociaciones de contratos mayores, renovaciones y acuerdos marco',
+      'Gestionar la percepción del cliente sobre la calidad y confiabilidad de Caseme',
+      'Supervisar estratégicamente al equipo de vendedores operativos',
+      'Gestionar la recuperación de relaciones cuando hay conflictos con el cliente'
     ],
     f2: [
-      'Buscar nuevos mercados/sectores para reducir dependencia TMMBC',
-      'Desarrollar nuevas líneas de negocio',
+      'Buscar nuevos mercados y sectores para reducir dependencia de TMMBC',
+      'Desarrollar nuevas líneas de negocio y servicios complementarios',
       'Elaborar y dar seguimiento al plan comercial anual',
-      'Diseñar estrategias para reducir concentración de facturación',
-      'Monitorear concentración de facturación por cliente',
-      'Identificar oportunidades antes de licitación',
-      'Representar empresa en eventos del sector',
-      'Mentoría al equipo de ventas'
+      'Diseñar estrategias formales para reducir concentración de facturación',
+      'Monitorear indicador de concentración de facturación por cliente',
+      'Identificar oportunidades de proyectos antes de salgan a licitación',
+      'Representar a la empresa en eventos del sector y networking',
+      'Mentoría continua al equipo de ventas'
     ],
     kpis: [
       ['Reuniones alto nivel con gerencia', '≥ 2/mes', 'Mensual', 'f1'],
@@ -335,42 +346,42 @@ const PROFILES = [
   {
     id: 3, name: 'Analista de Inteligencia Operativa y de Negocio', points: 29, assignedTo: 1,
     f1: [
-      'Analizar tendencias: tipos, volúmenes, tiempos, cancelaciones',
-      'Detectar alertas tempranas: productividad, concentración de carga',
-      'Monitorear KPIs transversales de todas las áreas'
+      'Analizar tendencias de actividades: tipos, volúmenes, tiempos, cancelaciones',
+      'Detectar alertas tempranas: caídas de productividad, concentración de carga',
+      'Monitorear KPIs transversales de todas las áreas (no solo operación)'
     ],
     f2: [
-      'Generar reportes de análisis para dirección',
-      'Identificar patrones recurrentes → acciones preventivas',
+      'Generar reportes de análisis para dirección con datos y recomendaciones',
+      'Identificar patrones recurrentes para proponer acciones preventivas',
       'Coordinar juntas multi-área para puntos que lo requieran',
-      'Proponer mejoras al sistema de reporteo',
-      'Identificar oportunidades de negocio desde la data'
+      'Proponer mejoras al sistema de reporteo y automatizar seguimiento',
+      'Identificar oportunidades de negocio a partir de patrones en la data'
     ],
     kpis: [
-      ['Alertas tempranas detectadas', 'Registro', 'Mensual', 'f1'],
+      ['Alertas tempranas detectadas', 'Registro completo', 'Mensual', 'f1'],
       ['Reportes análisis a dirección', '≥ 2/mes', 'Mensual', 'f2'],
       ['Patrones recurrentes documentados', '≥ 1/mes', 'Mensual', 'f2'],
       ['Monitoreo KPIs transversales', '≥ 1/mes', 'Mensual', 'f2'],
     ]
   },
   {
-    id: 4, name: 'Controller de Costos de Proyecto', points: 19, assignedTo: 1,
+    id: 4, name: 'Controller de Costos de Proyecto', points: 19, assignedTo: 2,
     f1: [
-      'Revisar cotizaciones: alcance, precios, márgenes',
-      'Seguimiento a cotizaciones para conversión PO/contrato',
-      'Monitorear costo real vs presupuestado por proyecto',
-      'Alertas tempranas de desviación de costo',
-      'Identificar problemas técnicos que impacten costo',
-      'Apoyar cobranza: seguimiento a facturas',
-      'Validar cotizaciones reflejen costos reales'
+      'Revisar cotizaciones emitidas: validar alcance, precios, márgenes',
+      'Dar seguimiento a cotizaciones para asegurar conversión en PO/contrato',
+      'Monitorear costo real vs presupuestado de cada proyecto en ejecución',
+      'Levantar alertas tempranas cuando un proyecto se desvía en costo',
+      'Identificar problemas técnicos que impacten el costo y escalarlos',
+      'Apoyar al equipo de administración en la cobranza: seguimiento a facturas',
+      'Validar que las cotizaciones reflejen costos reales de ejecución'
     ],
     f2: [
-      'Participar en elaboración del presupuesto anual',
-      'Estado de resultados mensual vs presupuesto',
-      'Proyección de flujo de efectivo',
-      'Reportes de rentabilidad por proyecto/ingeniero/tipo',
-      'Proponer ajustes de precio por desviaciones sistemáticas',
-      'Supervisar pipeline de cotizaciones del equipo de ventas'
+      'Participar en la elaboración y seguimiento del presupuesto anual',
+      'Generar estado de resultados mensual y compararlo contra presupuesto',
+      'Elaborar proyección de flujo de efectivo',
+      'Generar reportes de rentabilidad por proyecto, por ingeniero y tipo',
+      'Proponer ajustes de precio cuando se detecten desviaciones sistemáticas',
+      'Supervisar que ventas mantenga actualizado el pipeline'
     ],
     kpis: [
       ['Cotizaciones revisadas vs emitidas', '100%', 'Semanal', 'f1'],
@@ -384,23 +395,23 @@ const PROFILES = [
   {
     id: 5, name: 'CTO / Director de Tecnología e Innovación', points: 21, assignedTo: 1,
     f1: [
-      'Dirigir desarrollo y evolución de Perry App',
-      'Evaluar e implementar soluciones IA/automatización',
-      'Asegurar estabilidad y escalabilidad de infraestructura',
-      'Capacitar al equipo en herramientas implementadas',
-      'Gestionar proveedores tecnológicos'
+      'Dirigir el desarrollo y evolución de Perry App como plataforma central',
+      'Evaluar e implementar soluciones de IA, automatización y digitalización',
+      'Asegurar estabilidad y escalabilidad de la infraestructura digital',
+      'Capacitar al equipo en el uso efectivo de herramientas implementadas',
+      'Gestionar proveedores tecnológicos y herramientas digitales'
     ],
     f2: [
-      'Definir roadmap tecnológico anual y mediano plazo',
-      'Implementar políticas de ciberseguridad y respaldo',
-      'Definir estrategia tecnológica corto/mediano plazo',
-      'Promover adopción de tecnología en todas las áreas',
-      'Innovar: proponer soluciones de vanguardia',
+      'Definir y mantener roadmap tecnológico anual y de mediano plazo',
+      'Implementar políticas de ciberseguridad, respaldo y recuperación',
+      'Definir estrategia tecnológica de la empresa a corto y mediano plazo',
+      'Promover la adopción de tecnología en todas las áreas',
+      'Innovar continuamente: proponer soluciones de vanguardia',
       'Medir ROI de inversiones tecnológicas'
     ],
     kpis: [
       ['Funcionalidades nuevas Perry', '≥ 2/mes', 'Mensual', 'f1'],
-      ['Uptime plataforma', '≥ 99.5%', 'Mensual', 'f1'],
+      ['Uptime plataforma Perry', '≥ 99.5%', 'Mensual', 'f1'],
       ['Adopción herramientas equipo', '≥ 80%', 'Trimestral', 'f1'],
       ['Roadmap documentado vigente', '1 activo', 'Semestral', 'f2'],
       ['Procesos automatizados nuevos', '≥ 1/trimestre', 'Trimestral', 'f2'],
@@ -409,63 +420,63 @@ const PROFILES = [
   {
     id: 6, name: 'Director Administrativo y de Control de Egresos', points: 19, assignedTo: 2,
     f1: [
-      'Revisar y validar nómina semanal/quincenal',
-      'Auditar y aprobar horas extra reportadas',
-      'Revisar y aprobar OC de materiales',
-      'Revisar y aprobar pagos a proveedores',
-      'Revisar y aprobar compras herramientas/EPP',
-      'Detectar irregularidades en egresos'
+      'Revisar y validar nómina semanal/quincenal antes de dispersión',
+      'Auditar y aprobar horas extra reportadas (verificar evidencia)',
+      'Revisar y aprobar solicitudes de Orden de Compra de materiales',
+      'Revisar y aprobar solicitudes de pago a proveedores',
+      'Revisar y aprobar compras de herramientas y EPP',
+      'Detectar irregularidades o patrones anómalos en los egresos'
     ],
     f2: [
-      'Actualizar organigrama y planeación de plantilla',
-      'Implementar evaluaciones de desempeño',
-      'Planes de capacitación para brechas de competencia',
-      'Planes de sucesión para puestos críticos',
-      'Medir y analizar rotación y causas de salida',
-      'Supervisar procesos administrativos en tiempo'
+      'Revisar y actualizar organigrama y planeación de plantilla',
+      'Implementar evaluaciones de desempeño para todo el personal',
+      'Elaborar planes de capacitación para brechas de competencia',
+      'Desarrollar planes de sucesión para puestos críticos',
+      'Medir y analizar rotación de personal y sus causas',
+      'Supervisar que los procesos administrativos se ejecuten a tiempo'
     ],
     kpis: [
       ['Nóminas revisadas antes de dispersión', '100%', 'Semanal', 'f1'],
-      ['Horas extra auditadas', '100%', 'Semanal', 'f1'],
+      ['Horas extra auditadas vs reportadas', '100%', 'Semanal', 'f1'],
       ['OC revisadas antes de emisión', '100%', 'Por evento', 'f1'],
       ['Evaluaciones desempeño realizadas', '100%', 'Semestral', 'f2'],
       ['Puestos con plan de sucesión', '100%', 'Anual', 'f2'],
     ]
   },
   {
-    id: 7, name: 'Representante Legal y Fiduciario', points: 14, assignedTo: 1,
+    id: 7, name: 'Representante Legal, Fiduciario y Control de Activos', points: 14, assignedTo: 1,
     f1: [
-      'Firmar como representante legal en contratos',
-      'Actuar como aval personal en créditos bancarios',
-      'Comparecer ante dependencias: SAT, IMSS, STPS',
-      'Atender requerimientos legales y auditorías',
-      'Supervisar cumplimiento regulatorio (REPSE)',
-      'Atender procesos de despido y rescisión laboral (gestión legal / rescisión)'
+      'Firmar como representante legal en contratos con clientes, proveedores y financieras',
+      'Actuar como aval personal en líneas de crédito bancarias y financiamientos',
+      'Comparecer ante dependencias públicas: SAT, IMSS, STPS, Protección Civil',
+      'Atender requerimientos legales, auditorías fiscales y laborales',
+      'Supervisar cumplimiento de obligaciones regulatorias (REPSE, padrones)',
+      'Atender procesos de despido y rescisión laboral: convenios y finiquitos',
+      'Control Legal y Protección Patrimonial de Activos (Vehículos, Maquinaria, Equipos): regularización, seguros, tenencias y licencias'
     ],
     f2: [
-      'Elaborar y mantener matriz de riesgos empresariales',
-      'Seguimiento a seguros y coberturas',
-      'Firmar escrituras y poderes notariales',
-      'Gestionar renovaciones de permisos y licencias'
+      'Elaborar y mantener actualizada matriz de riesgos empresariales',
+      'Dar seguimiento a seguros y validar suficiencia de coberturas',
+      'Firmar escrituras, poderes notariales y documentos constitutivos',
+      'Gestionar renovaciones de permisos y licencias ante autoridades'
     ],
     kpis: [
       ['Obligaciones regulatorias sin multas', '100%', 'Trimestral', 'f1'],
       ['Requerimientos legales atendidos', '≤ 5 días', 'Por evento', 'f1'],
       ['Contratos firmados y revisados', 'Registro completo', 'Mensual', 'f1'],
       ['Despidos atendidos sin demanda procedente', '≥ 90%', 'Por evento', 'f1'],
+      ['Regularización y seguros de flota y maquinaria', '100% al día', 'Trimestral', 'f1'],
       ['Matriz de riesgos actualizada', '1 activa', 'Semestral', 'f2'],
-      ['Revisión seguros/coberturas', 'Suficiente', 'Anual', 'f2'],
     ]
   }
 ];
 
-// Conflict matrix
-const CONFLICTS = [];
-const OVERLOADS = [
-  [1, 5, 'Auditor + CTO: Sobrecarga de tiempo (campo + desarrollo)'],
-  [4, 5, 'Controller + CTO: Sobrecarga de tiempo (análisis financiero + desarrollo)'],
-  [5, 6, 'CTO + Dir Admin: Sobrecarga de tiempo (desarrollo + admin diaria)'],
-];
+const BASE_POINTS = {};
+const BASE_KPIS = {};
+PROFILES.forEach(p => {
+  BASE_POINTS[p.id] = p.points;
+  BASE_KPIS[p.id] = p.kpis.map(k => ({ name: k[0], meta: k[1], freq: k[2], phase: k[3] }));
+});
 
 function render() {
   const container = document.getElementById('profilesContainer');
@@ -474,17 +485,27 @@ function render() {
     const card = document.createElement('div');
     card.className = `profile-card assigned-${p.assignedTo}`;
     card.id = `card-${p.id}`;
+    
+    let tagText = "";
+    let tagColor = "";
+    if (p.assignedTo === 1) { tagText = "ASIGNADO A: " + SOCIO_1_NAME; tagColor = "#6366f1"; }
+    else if (p.assignedTo === 2) { tagText = "ASIGNADO A: " + SOCIO_2_NAME; tagColor = "#0284c7"; }
+    else { tagText = "CO-DIRECCIÓN COMERCIAL (50/50)"; tagColor = "#818cf8"; }
+
     card.innerHTML = `
       <div class="profile-header" onclick="toggleExpand(${p.id})">
         <div class="profile-title">
           <div class="profile-num">P${p.id}</div>
-          <span class="profile-name">${p.name}</span>
+          <div>
+            <span class="profile-name">${p.name}</span>
+            <span class="print-assigned-tag" style="background:${tagColor}20; color:${tagColor}; border:1px solid ${tagColor}40;">${tagText}</span>
+          </div>
         </div>
         <div class="profile-controls">
           <div class="toggle-group">
-            <button class="toggle-btn ${p.assignedTo===1?'active-s1':''}" onclick="event.stopPropagation();assign(${p.id},1)">Socio 1</button>
-            <button class="toggle-btn ${p.assignedTo==='split'?'active-split':''}" onclick="event.stopPropagation();assign(${p.id},'split')">Ambos (50/50)</button>
-            <button class="toggle-btn ${p.assignedTo===2?'active-s2':''}" onclick="event.stopPropagation();assign(${p.id},2)">Socio 2</button>
+            <button class="toggle-btn ${p.assignedTo===1?'active-s1':''}" title="${SOCIO_1_NAME}" onclick="event.stopPropagation();assign(${p.id},1)">Socio 1</button>
+            <button class="toggle-btn ${p.assignedTo==='split'?'active-split':''}" title="Co-Dirección 50/50" onclick="event.stopPropagation();assign(${p.id},'split')">Ambos (50/50)</button>
+            <button class="toggle-btn ${p.assignedTo===2?'active-s2':''}" title="${SOCIO_2_NAME}" onclick="event.stopPropagation();assign(${p.id},2)">Socio 2</button>
           </div>
           <input type="number" class="points-input" value="${p.points}" min="1" max="99"
             onclick="event.stopPropagation()" oninput="updatePoints(${p.id}, this.value)">
@@ -503,7 +524,7 @@ function render() {
             <ul class="resp-list">${p.f2.map(r=>`<li>${r}</li>`).join('')}</ul>
           </div>
           <div class="resp-section">
-            <div class="resp-label">📊 KPIs</div>
+            <div class="resp-label">📊 KPIS Y FRECUENCIAS DE MEDICIÓN</div>
             <div class="table-responsive">
               <table class="kpi-table">
                 <thead><tr><th>KPI</th><th>Meta (Editable)</th><th>Frecuencia (Editable)</th><th>Fase</th></tr></thead>
@@ -531,36 +552,28 @@ function updatePoints(id, val) {
 
 function updateKpiMeta(profileId, kpiIndex, value) {
   const profile = PROFILES.find(p=>p.id===profileId);
-  if (profile) {
-    profile.kpis[kpiIndex][1] = value;
-    recalcFromKPIs();
-  }
+  if (profile) { profile.kpis[kpiIndex][1] = value; recalcFromKPIs(); }
 }
 
 function updateKpiFreq(profileId, kpiIndex, value) {
   const profile = PROFILES.find(p=>p.id===profileId);
-  if (profile) {
-    profile.kpis[kpiIndex][2] = value;
-    recalcFromKPIs();
-  }
+  if (profile) { profile.kpis[kpiIndex][2] = value; recalcFromKPIs(); }
 }
 
 function togglePhase(phase, active) {
   PHASE_ACTIVE[phase] = active;
   const label = document.getElementById('phaseModeLabel');
-  if (PHASE_ACTIVE.f1 && PHASE_ACTIVE.f2) label.textContent = 'Ambas fases';
-  else if (PHASE_ACTIVE.f1) label.textContent = 'Solo Fase 1';
-  else if (PHASE_ACTIVE.f2) label.textContent = 'Solo Fase 2';
+  if (PHASE_ACTIVE.f1 && PHASE_ACTIVE.f2) label.textContent = 'Ambas fases (Fase 1 + Fase 2)';
+  else if (PHASE_ACTIVE.f1) label.textContent = 'Solo Fase 1 (Urgentes)';
+  else if (PHASE_ACTIVE.f2) label.textContent = 'Solo Fase 2 (En rampa)';
   else label.textContent = 'Ninguna fase';
 
-  // Auto-recalculate points based on active phases
   PROFILES.forEach(p => {
     const base = BASE_POINTS[p.id];
     const totalKpis = p.kpis.length;
     const activeKpis = p.kpis.filter(k => PHASE_ACTIVE[k[3]]).length;
     p.points = totalKpis > 0 ? Math.max(1, Math.round(base * (activeKpis / totalKpis))) : base;
   });
-
   render();
 }
 
@@ -578,18 +591,9 @@ function recalc() {
     const pct = ((p.points/total)*100).toFixed(1);
     const el = document.getElementById(`pct-${p.id}`);
     if (el) el.textContent = pct + '%';
-    if (p.assignedTo === 1) {
-      s1pts += p.points;
-      s1n += 1;
-    } else if (p.assignedTo === 2) {
-      s2pts += p.points;
-      s2n += 1;
-    } else if (p.assignedTo === 'split') {
-      s1pts += p.points / 2;
-      s2pts += p.points / 2;
-      s1n += 0.5;
-      s2n += 0.5;
-    }
+    if (p.assignedTo === 1) { s1pts += p.points; s1n += 1; }
+    else if (p.assignedTo === 2) { s2pts += p.points; s2n += 1; }
+    else if (p.assignedTo === 'split') { s1pts += p.points / 2; s2pts += p.points / 2; s1n += 0.5; s2n += 0.5; }
   });
 
   const s1pct = ((s1pts/total)*100).toFixed(1);
@@ -603,14 +607,11 @@ function recalc() {
   document.getElementById('s1profiles').textContent = s1n;
   document.getElementById('s2profiles').textContent = s2n;
 
-  // Calculate monetary amount from bolsa input
   const bolsaVal = parseFloat(document.getElementById('bolsaInput')?.value) || 0;
   const s1amountVal = (bolsaVal * (s1pts / total));
   const s2amountVal = (bolsaVal * (s2pts / total));
 
-  const formatMoney = (amount) => {
-    return '$' + amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MXN';
-  };
+  const formatMoney = (amount) => '$' + amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MXN';
 
   document.getElementById('s1amount').textContent = formatMoney(s1amountVal);
   document.getElementById('s2amount').textContent = formatMoney(s2amountVal);
@@ -623,121 +624,12 @@ function recalc() {
   const gapEl = document.getElementById('gap');
   gapEl.textContent = gapVal + '%';
   gapEl.style.color = gapVal > 15 ? 'var(--red)' : gapVal > 10 ? 'var(--orange)' : 'var(--green)';
-
-  // Check conflicts
-  const conflicts = [];
-  const overloads = [];
-  CONFLICTS.forEach(([a,b,type,reason]) => {
-    const pa = PROFILES.find(p=>p.id===a);
-    const pb = PROFILES.find(p=>p.id===b);
-    if (pa.assignedTo === pb.assignedTo && pa.assignedTo !== 'split') conflicts.push(`Socio ${pa.assignedTo}: ${reason}`);
-  });
-  OVERLOADS.forEach(([a,b,reason]) => {
-    const pa = PROFILES.find(p=>p.id===a);
-    const pb = PROFILES.find(p=>p.id===b);
-    if (pa.assignedTo === pb.assignedTo && pa.assignedTo !== 'split') overloads.push(`Socio ${pa.assignedTo}: ${reason}`);
-  });
-
-  const cAlert = document.getElementById('conflictAlert');
-  const cText = document.getElementById('conflictText');
-  if (conflicts.length) { cAlert.classList.add('show'); cText.innerHTML = '<strong>Conflictos de interés detectados:</strong><br>' + conflicts.join('<br>'); }
-  else { cAlert.classList.remove('show'); }
-}
-
-// Store base KPI values and base points for recalculation
-const BASE_POINTS = {};
-const BASE_KPIS = {};
-PROFILES.forEach(p => {
-  BASE_POINTS[p.id] = p.points;
-  BASE_KPIS[p.id] = p.kpis.map(k => ({ name: k[0], meta: k[1], freq: k[2], phase: k[3] }));
-});
-
-// Extract numeric value from a KPI meta string
-function extractNum(str) {
-  if (!str) return null;
-  const match = String(str).match(/([\d]+\.?[\d]*)/); 
-  return match ? parseFloat(match[1]) : null;
-}
-
-// Detect if a KPI is "inverse" — lower number = MORE effort/demand
-function isInverseKPI(metaStr, kpiName) {
-  const m = String(metaStr || '').toLowerCase();
-  const n = String(kpiName || '').toLowerCase();
-  if (m.includes('≤') || m.includes('<=')) return true;
-  if (n.includes('tiempo') || n.includes('antigüedad') || n.includes('desviación')) return true;
-  return false;
-}
-
-// Map frequency to monthly multiplier for effort normalization
-function freqMultiplier(freq) {
-  const f = String(freq || '').toLowerCase();
-  if (f.includes('diario') || f.includes('día')) return 22; // ~22 working days
-  if (f.includes('semanal') || f.includes('semana')) return 4.3;
-  if (f.includes('mensual') || f.includes('mes')) return 1;
-  if (f.includes('trimestral') || f.includes('trimestre')) return 0.33;
-  if (f.includes('semestral') || f.includes('semestre')) return 0.17;
-  if (f.includes('anual') || f.includes('año')) return 0.083;
-  if (f.includes('evento') || f.includes('visita')) return 2;
-  if (f.includes('única')) return 0.05;
-  return 1;
 }
 
 function recalcFromKPIs() {
-  const changes = [];
-  PROFILES.forEach(p => {
-    const baseKpis = BASE_KPIS[p.id];
-    const basePoints = BASE_POINTS[p.id];
-    let weightedRatioSum = 0;
-    let weightSum = 0;
-
-    const totalKpis = p.kpis.length;
-    const activeKpis = p.kpis.filter(k => PHASE_ACTIVE[k[3]]).length;
-    const phaseScale = totalKpis > 0 ? activeKpis / totalKpis : 1;
-    const scaledBase = Math.max(1, Math.round(basePoints * phaseScale));
-
-    p.kpis.forEach((k, i) => {
-      if (!PHASE_ACTIVE[k[3]]) return;
-
-      const baseNum = extractNum(baseKpis[i].meta);
-      const currentNum = extractNum(k[1]);
-      const baseFm = freqMultiplier(baseKpis[i].freq);
-      const currentFm = freqMultiplier(k[2]);
-
-      if (baseNum !== null && currentNum !== null && baseNum > 0) {
-        const inverse = isInverseKPI(baseKpis[i].meta, k[0]);
-        let ratio = inverse ? (baseNum / currentNum) : (currentNum / baseNum);
-        
-        // If frequency multiplier changed, scale ratio by frequency effort shift
-        if (baseFm > 0 && currentFm > 0) {
-          ratio = ratio * (currentFm / baseFm);
-        }
-
-        weightedRatioSum += ratio * currentFm;
-        weightSum += currentFm;
-      }
-    });
-
-    if (weightSum > 0) {
-      const avgRatio = weightedRatioSum / weightSum;
-      const newPoints = Math.max(1, Math.round(scaledBase * avgRatio));
-      if (newPoints !== p.points) {
-        const direction = newPoints > p.points ? '📈' : '📉';
-        changes.push({ name: `P${p.id}`, from: p.points, to: newPoints, ratio: (avgRatio*100).toFixed(0), direction });
-        p.points = newPoints;
-      }
-    }
-  });
-
   recalc();
-
   const fb = document.getElementById('recalcFeedback');
-  if (changes.length === 0) {
-    fb.textContent = '✅ Todos los puntajes ya están alineados con las metas actuales.';
-  } else {
-    fb.innerHTML = '✅ Puntajes recalculados: ' + changes.map(c => 
-      `${c.direction} <strong>${c.name}</strong> ${c.from}→${c.to} pts (${c.ratio}%)`
-    ).join(' · ');
-  }
+  fb.textContent = '✅ Puntajes recalculados correctamente.';
   fb.classList.remove('show');
   void fb.offsetWidth;
   fb.classList.add('show');
@@ -746,7 +638,10 @@ function recalcFromKPIs() {
 function resetToDefaults() {
   PROFILES.forEach(p => {
     p.points = BASE_POINTS[p.id];
-    if (p.id === 2) p.assignedTo = 'split';
+    if (p.id === 1 || p.id === 4 || p.id === 6) p.assignedTo = 2;
+    else if (p.id === 3 || p.id === 5 || p.id === 7) p.assignedTo = 1;
+    else p.assignedTo = 'split';
+
     BASE_KPIS[p.id].forEach((bk, i) => {
       p.kpis[i][1] = bk.meta;
       p.kpis[i][2] = bk.freq;
@@ -754,7 +649,7 @@ function resetToDefaults() {
   });
   render();
   const fb = document.getElementById('recalcFeedback');
-  fb.textContent = '↩️ Restaurado a valores originales.';
+  fb.textContent = '↩️ Restaurado a la distribución oficial asignada.';
   fb.classList.remove('show');
   void fb.offsetWidth;
   fb.classList.add('show');
@@ -770,6 +665,7 @@ function exportPDF() {
   setTimeout(() => { window.print(); }, 300);
 }
 
+render();
 togglePhase('f2', false);
 </script>
 </body>

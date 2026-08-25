@@ -1,371 +1,244 @@
 # PERFILES DE VALOR — GRUPO CASEME
-## Catálogo de Responsabilidades para Socios Accionistas
-### Documento de Trabajo v3.0 | Agosto 2026
+## Catálogo Continuo de Responsabilidades por Puesto Ejecutivo
+### Documento de Trabajo v4.0 | Agosto 2026
 
 ---
 
-## CONTEXTO
+## CONTEXTO Y ESTRUCTURA
 
-Grupo Caseme opera con una estructura de ~70 colaboradores, ejecutando ~260 actividades mensuales con un portafolio concentrado en TMMBC (82.7% de la operación). Los socios accionistas poseen experiencia acumulada de 21+ años en la industria, pero actualmente sus contribuciones no están formalmente definidas ni remuneradas en proporción al valor que aportan.
+Grupo Caseme opera con una estructura de ~70 colaboradores, ejecutando ~260 actividades mensuales. Los socios accionistas aportan su liderazgo y expertise, y este documento formaliza un **modelo de compensación basada en valor y KPIs**.
 
-Este documento establece un **modelo de compensación basada en valor** con 7 perfiles de responsabilidad. Cada perfil divide sus responsabilidades en:
+Para eliminar ambigüedades y garantizar una lectura fluida, las responsabilidades se presentan divididas en **dos Puestos Ejecutivos continuos** (Director de Tecnología, Inteligencia de Negocio y Gobierno Legal vs Director de Operaciones, Rentabilidad y Administración de Operaciones), asignando el rol comercial en esquema de Co-Dirección (50% / 50%).
 
-- **🔴 FASE 1 (Urgente)**: Responsabilidades que deben ejercerse de inmediato para la estabilidad del negocio
-- **🟡 FASE 2 (En rampa)**: Responsabilidades necesarias para el crecimiento y profesionalización, pero que pueden implementarse progresivamente
+Cada responsabilidad se evalúa principalmente en su **🔴 FASE 1 (Urgente)** para la estabilidad inmediata del negocio, proyectando la incorporación progresiva de la **🟡 FASE 2 (En rampa)**.
 
 ---
 
-## PERFIL 1: AUDITOR Y CONSULTOR SENIOR DE OPERACIONES
-**Peso: 14.3%** | Puntos: 20/140
+## RESUMEN EJECUTIVO DE DISTRIBUCIÓN
 
-### Descripción
-Profesional con experiencia profunda en la industria (21+ años) que actúa como auditor interno de la operación, evaluando la eficiencia de los procesos, detectando desviaciones y proponiendo mejoras. Opera a nivel **estratégico-táctico**: no ejecuta, sino que **observa, diagnostica y prescribe**. Incluye aseguramiento de calidad técnica mediante visitas periódicas a campo y **seguimiento diario de puntos críticos** a través de Perry App.
+| Puesto Ejecutivo | Perfiles Asignados | Puntos Total (F1+F2) | % Total | Puntos Fase 1 (Urgentes) | % Fase 1 | Valor Estimado (Bolsa $100k F1) |
+|---|---|---|---|---|---|---|
+| **SOCIO 1**: Director de Tecnología, Inteligencia de Negocio y Gobierno Legal | P3 + P5 + P7 + 50% P2 | 73.0 pts | **52.1%** | 34.5 pts | **46.6%** | **$46,621.62 MXN** |
+| **SOCIO 2**: Director de Operaciones, Rentabilidad y Administración de Operaciones | P1 + P4 + P6 + 50% P2 | 67.0 pts | **47.9%** | 39.5 pts | **53.4%** | **$53,378.38 MXN** |
+| **TOTAL COMBINADO** | **7 Perfiles** | **140.0 pts** | **100.0%** | **74.0 pts** | **100.0%** | **$100,000.00 MXN** |
 
-### 🔴 Responsabilidades FASE 1 (Urgentes) — Auditoría de Campo
-1. Realizar auditorías periódicas de los procesos operativos (ejecución, cotización, planeación)
-2. Evaluar la calidad técnica de los trabajos en campo mediante visitas programadas
-3. Identificar cuellos de botella, ineficiencias y riesgos operativos
-4. Emitir informes de auditoría con hallazgos y recomendaciones accionables
-5. Validar que los estándares de calidad del cliente se estén cumpliendo
-6. Participar en la resolución de problemas técnicos complejos o escalados
+---
 
-### 🔴 Responsabilidades FASE 1 (Urgentes) — Seguimiento Operativo Digital
-7. Revisar diariamente el listado de puntos críticos activos en Perry
-8. Asegurar que cada punto crítico tiene un responsable y una fecha compromiso
-9. Escalar puntos sin atención después de 24 horas
-10. Validar que las actualizaciones registradas son sustantivas
-11. Reportar semanalmente el estado de puntos críticos a dirección
-12. Revisar diariamente los reportes ejecutivos de Perry Intelligence
+## BLOQUE 1: PUESTO SOCIO 1 — DIRECTOR DE TECNOLOGÍA, INTELIGENCIA DE NEGOCIO Y GOBIERNO LEGAL
 
-### 🟡 Responsabilidades FASE 2 (En rampa)
-13. Evaluar el desempeño de coordinadores y responsables de operación
-14. Dar seguimiento a planes de mejora y validar que se implementen realmente
-15. Analizar capacidad instalada vs carga de trabajo y necesidades futuras de recursos
-16. Mentorear a ingenieros y supervisores en mejores prácticas técnicas
-17. Proponer mejoras a los procesos basándose en la experiencia acumulada
+### Descripción General del Puesto
+Líder responsable de la **transformación digital, arquitectura de sistemas (Perry App), inteligencia analítica operativa y representación legal/fiduciaria de la empresa**. Custodia la integridad patrimonial de los activos físicos y legalización de contratos, combinándolo con la co-dirección del crecimiento comercial.
 
-### KPIs de Medición
+---
 
+### Módulo A: Tecnología, Innovación y Plataforma Digital (Perfil 5)
+#### 🔴 Responsabilidades FASE 1 (Urgentes)
+1. Dirigir el desarrollo y evolución de Perry App como plataforma central.
+2. Evaluar e implementar soluciones de IA, automatización y digitalización.
+3. Asegurar la estabilidad y escalabilidad de la infraestructura digital.
+4. Capacitar al equipo en el uso efectivo de las herramientas implementadas.
+5. Gestionar proveedores tecnológicos y herramientas digitales.
+
+#### 🟡 Responsabilidades FASE 2 (En Rampa)
+* Definir y mantener un roadmap tecnológico anual y de mediano plazo.
+* Implementar políticas de ciberseguridad, respaldo y recuperación de información.
+* Innovar continuamente y medir el ROI de inversiones tecnológicas.
+
+#### 📊 KPIs Módulo A
 | KPI | Meta | Frecuencia | Fase |
 |---|---|---|---|
-| Visitas de auditoría/campo realizadas | ≥ 4 por mes | Mensual | 🔴 F1 |
-| Informes de auditoría emitidos | ≥ 2 por mes | Mensual | 🔴 F1 |
-| Hallazgos documentados con recomendación accionable | 100% de visitas | Por visita | 🔴 F1 |
-| Incidentes de calidad detectados previo a entrega | Registro | Mensual | 🔴 F1 |
-| Puntos críticos revisados diariamente | 100% | Diario | 🔴 F1 |
-| Puntos críticos sin atención > 48 horas | 0 | Semanal | 🔴 F1 |
-| Reporte semanal de seguimiento crítico emitido | 100% de las semanas | Semanal | 🔴 F1 |
-| Revisión del reporte ejecutivo diario Perry | 100% de los días hábiles | Diario | 🔴 F1 |
-| Recomendaciones implementadas (tasa de adopción) | ≥ 70% | Trimestral | 🟡 F2 |
-| Evaluaciones de coordinadores realizadas | ≥ 1 por trimestre | Trimestral | 🟡 F2 |
-| Análisis de capacidad instalada emitido | ≥ 1 por semestre | Semestral | 🟡 F2 |
+| Funcionalidades nuevas implementadas en Perry | ≥ 2 por mes | Mensual | 🔴 F1 |
+| Uptime de la plataforma Perry App | ≥ 99.5% | Mensual | 🔴 F1 |
+| Tasa de adopción de herramientas por el equipo | ≥ 80% | Trimestral | 🔴 F1 |
+| Roadmap tecnológico documentado y vigente | 1 activo | Semestral | 🟡 F2 |
+| Procesos automatizados nuevos | ≥ 1 por trimestre | Trimestral | 🟡 F2 |
 
 ---
 
-## PERFIL 2: DIRECTOR COMERCIAL Y DE RELACIONES ESTRATÉGICAS
-**Peso: 12.9%** | Puntos: 18/140
+### Módulo B: Inteligencia Operativa y Analítica de Negocio (Perfil 3)
+#### 🔴 Responsabilidades FASE 1 (Urgentes)
+6. Analizar tendencias de actividades: tipos, volúmenes, tiempos, cancelaciones.
+7. Detectar alertas tempranas: caídas de productividad, concentración de carga, etc.
+8. Monitorear KPIs transversales de todas las áreas (no solo operación).
 
-### Descripción
-Ejecutivo senior responsable del **contacto estratégico de alto nivel** con los tomadores de decisiones del cliente y del **desarrollo de nuevas fuentes de ingreso**. No es un vendedor operativo — es el rostro de la empresa ante la gerencia del cliente. Su función es mantener las cuentas actuales, expandir la relación comercial y **reducir la dependencia de clientes principales** mediante diversificación activa.
+#### 🟡 Responsabilidades FASE 2 (En Rampa)
+* Generar reportes de análisis para dirección con datos y recomendaciones.
+* Identificar patrones recurrentes para proponer acciones preventivas.
+* Coordinar juntas multi-área para resolver puntos críticos complejos.
 
-### 🔴 Responsabilidades FASE 1 (Urgentes)
-1. Mantener relación directa con gerentes de compras y tomadores de decisión en TMMBC y clientes clave
-2. Agendar y sostener reuniones periódicas de alto nivel (comidas de negocios, juntas ejecutivas)
-3. Intervenir en negociaciones de contratos mayores, renovaciones y acuerdos marco
-4. Gestionar la percepción del cliente sobre la calidad y confiabilidad de Caseme
-5. Supervisar estratégicamente al equipo de vendedores operativos
-6. Gestionar la recuperación de relaciones cuando hay conflictos o inconformidades del cliente
+#### 📊 KPIs Módulo B
+| KPI | Meta | Frecuencia | Fase |
+|---|---|---|---|
+| Alertas tempranas detectadas y comunicadas | Registro completo | Mensual | 🔴 F1 |
+| Reportes de análisis emitidos a dirección | ≥ 2 por mes | Mensual | 🟡 F2 |
+| Patrones recurrentes documentados | ≥ 1 por mes | Mensual | 🟡 F2 |
 
-### 🟡 Responsabilidades FASE 2 (En rampa)
-7. Buscar activamente nuevos mercados y sectores industriales para reducir dependencia de TMMBC
-8. Desarrollar nuevas líneas de negocio y servicios complementarios
-9. Elaborar y dar seguimiento al plan comercial anual
-10. Diseñar estrategias formales para reducir concentración de facturación
-11. Monitorear indicador de concentración de facturación por cliente
-12. Identificar oportunidades de nuevos proyectos antes de que salgan a licitación
-13. Representar a la empresa en eventos del sector, ferias y networking institucional
-14. Dar sesiones de mentoría al equipo de ventas
+---
 
-### KPIs de Medición
+### Módulo C: Gobierno Legal, Fiduciario y Control de Activos (Perfil 7)
+#### 🔴 Responsabilidades FASE 1 (Urgentes)
+9. Firmar como representante legal en contratos con clientes, proveedores y entidades financieras.
+10. Actuar como aval personal en líneas de crédito bancarias y financiamientos.
+11. Comparecer ante dependencias públicas: SAT, IMSS, STPS, Secretaría de Economía, Protección Civil.
+12. Atender requerimientos legales, auditorías fiscales y laborales.
+13. Supervisar el cumplimiento de obligaciones regulatorias (REPSE, padrones de contratistas).
+14. Atender procesos de despido y rescisión laboral: evaluar procedencia legal, finiquitos, convenios y reducir riesgo de demanda.
+15. **Control Legal y Protección Patrimonial de Activos (Vehículos, Maquinaria y Equipos)**: Custodia legal y regularización de la flota vehicular y maquinaria pesada, gestión de pólizas de seguro patrimonial, trámites de propiedad, tenencias, licencias, contratos de leasing/arrendamiento y trámites de circulación ante autoridades regulatorias.
 
+#### 🟡 Responsabilidades FASE 2 (En Rampa)
+* Elaborar y mantener actualizada una matriz de riesgos empresariales (legales, fiscales, patrimoniales).
+* Dar seguimiento a seguros y validar suficiencia de coberturas anuales.
+
+#### 📊 KPIs Módulo C
+| KPI | Meta | Frecuencia | Fase |
+|---|---|---|---|
+| Cumplimiento de obligaciones regulatorias (sin multas) | 100% | Trimestral | 🔴 F1 |
+| Atención oportuna de requerimientos legales/fiscales | ≤ 5 días hábiles | Por evento | 🔴 F1 |
+| Contratos firmados y revisados legalmente | Registro completo | Mensual | 🔴 F1 |
+| Despidos atendidos sin demanda procedente | ≥ 90% | Por evento | 🔴 F1 |
+| Regularización y pólizas de seguro de flota y maquinaria activas | 100% al día | Trimestral | 🔴 F1 |
+| Matriz de riesgos elaborada y actualizada | 1 activa | Semestral | 🟡 F2 |
+
+---
+
+### Módulo D: Co-Dirección Comercial y Estratégica (Perfil 2 - 50% Socio 1)
+#### 🔴 Responsabilidades FASE 1 (Urgentes)
+16. Mantener relación directa con gerentes de compras y tomadores de decisión en TMMBC y clientes clave.
+17. Agendar y sostener reuniones periódicas de alto nivel (comidas de negocios, juntas ejecutivas).
+18. Intervenir en negociaciones de contratos mayores, renovaciones y acuerdos marco.
+19. Gestionar la percepción del cliente sobre la calidad y confiabilidad de Caseme.
+20. Supervisar estratégicamente al equipo de vendedores operativos.
+21. Gestionar la recuperación de relaciones cuando hay conflictos o inconformidades del cliente.
+
+#### 🟡 Responsabilidades FASE 2 (En Rampa)
+* Buscar activamente nuevos mercados y sectores para reducir dependencia de clientes principales.
+* Desarrollar nuevas líneas de negocio y servicios tecnológicos complementarios.
+
+#### 📊 KPIs Módulo D
 | KPI | Meta | Frecuencia | Fase |
 |---|---|---|---|
 | Reuniones de alto nivel con gerencia del cliente | ≥ 2 por mes | Mensual | 🔴 F1 |
 | Contratos/pólizas renovadas sin pérdida | 100% | Anual | 🔴 F1 |
 | Conflictos con cliente atendidos oportunamente | ≤ 48 horas de respuesta | Por evento | 🔴 F1 |
-| Sesiones de mentoría con equipo de ventas | ≥ 2 por mes | Mensual | 🔴 F1 |
-| Nuevos clientes contactados/prospectados | ≥ 2 por trimestre | Trimestral | 🟡 F2 |
-| Concentración de facturación en cliente principal | Reducción progresiva vs 82.7% | Semestral | 🟡 F2 |
-| Plan comercial anual elaborado | 1 por año | Anual | 🟡 F2 |
-| Facturación de nuevos clientes/líneas de negocio | Crecimiento vs año anterior | Trimestral | 🟡 F2 |
+| Nuevos clientes prospectados | ≥ 2 por trimestre | Trimestral | 🟡 F2 |
 
 ---
 
-## PERFIL 3: ANALISTA DE INTELIGENCIA OPERATIVA Y DE NEGOCIO
-**Peso: 20.7%** | Puntos: 29/140
-*Perfil enfocado en análisis estratégico de datos e inteligencia de negocio*
+## BLOQUE 2: PUESTO SOCIO 2 — DIRECTOR DE OPERACIONES, RENTABILIDAD Y ADMINISTRACIÓN DE OPERACIONES
 
-### Descripción
-Responsable de **extraer valor estratégico de la información operativa y de negocio**. Es el **cerebro analítico**: interpreta datos de Perry App, tendencias del mercado y KPIs transversales para generar insights accionables para la dirección. Con el tiempo, este perfil debe evolucionar hacia una función de **Business Intelligence empresarial** que no solo reporte "qué está pasando en la operación" sino "qué está pasando en el negocio y dónde hay que intervenir".
+### Descripción General del Puesto
+Ejecutivo responsable de la **calidad técnica en campo, aseguramiento operativo, rentabilidad de proyectos (costo vs cotización), gestión del capital humano y control estricto de egresos/nómina**, complementado con la co-dirección comercial de cuentas clave.
 
-> **Nota**: El seguimiento diario de puntos críticos y reportes Perry fue transferido al Perfil 1 (Auditor) por ser una tarea de supervisión operativa.
+---
 
-### 🔴 Responsabilidades FASE 1 (Urgentes)
-1. Analizar tendencias de actividades: tipos, volúmenes, tiempos, cancelaciones
-2. Detectar alertas tempranas: caídas de productividad, concentración de carga, etc.
-3. Monitorear KPIs transversales de todas las áreas (no solo operación)
+### Módulo A: Auditoría de Campo y Seguimiento Operativo (Perfil 1)
+#### 🔴 Responsabilidades FASE 1 (Urgentes)
+1. Realizar auditorías periódicas de los procesos operativos (ejecución, cotización, planeación).
+2. Evaluar la calidad técnica de los trabajos en campo mediante visitas programadas.
+3. Identificar cuellos de botella, ineficiencias y riesgos operativos.
+4. Emitir informes de auditoría con hallazgos y recomendaciones accionables.
+5. Validar que los estándares de calidad del cliente se estén cumpliendo.
+6. Participar en la resolución de problemas técnicos complejos o escalados.
+7. Revisar diariamente el listado de puntos críticos activos en Perry.
+8. Asegurar que cada punto crítico tiene un responsable y una fecha compromiso.
+9. Escalar puntos sin atención después de 24 horas.
+10. Validar que las actualizaciones registradas son sustantivas.
+11. Reportar semanalmente el estado de puntos críticos a dirección.
+12. Revisar diariamente los reportes ejecutivos de Perry Intelligence.
 
-### 🟡 Responsabilidades FASE 2 (En rampa)
-4. Generar reportes de análisis para dirección con datos y recomendaciones
-5. Identificar patrones recurrentes para proponer acciones preventivas
-6. Coordinar juntas de seguimiento cuando un punto requiere intervención multi-área
-7. Proponer mejoras al sistema de reporteo y automatizar seguimiento puntual
-8. Identificar oportunidades de negocio a partir de patrones en la data
+#### 🟡 Responsabilidades FASE 2 (En Rampa)
+* Evaluar el desempeño de coordinadores y responsables de operación.
+* Dar seguimiento a planes de mejora técnica y mentorear ingenieros.
 
-> **Nota de evolución**: A medida que el seguimiento puntual se automatice vía Perry, este perfil debe dedicar cada vez más tiempo al análisis estratégico y menos a perseguir actualizaciones individuales.
-
-### KPIs de Medición
-
+#### 📊 KPIs Módulo A
 | KPI | Meta | Frecuencia | Fase |
 |---|---|---|---|
-| Alertas tempranas detectadas y comunicadas | Registro | Mensual | 🔴 F1 |
-| Tiempo promedio de resolución de puntos críticos | Reducción progresiva | Mensual | 🟡 F2 |
-| Reportes de análisis emitidos a dirección | ≥ 2 por mes | Mensual | 🟡 F2 |
-| Patrones recurrentes documentados | ≥ 1 por mes | Mensual | 🟡 F2 |
-| Monitoreo de KPIs transversales reportado | ≥ 1 por mes | Mensual | 🟡 F2 |
+| Visitas de auditoría/campo realizadas | ≥ 12 por mes | Mensual | 🔴 F1 |
+| Informes de auditoría emitidos | ≥ 4 por mes | Mensual | 🔴 F1 |
+| Hallazgos documentados con recomendación accionable | 100% de visitas | Por visita | 🔴 F1 |
+| Puntos críticos revisados diariamente en Perry | 100% | Diario | 🔴 F1 |
+| Puntos críticos sin atención > 48 horas | 0 | Semanal | 🔴 F1 |
+| Reporte semanal de seguimiento crítico emitido | 100% de las semanas | Semanal | 🔴 F1 |
+| Revisión del reporte ejecutivo diario Perry Intelligence | 100% de los días hábiles | Diario | 🔴 F1 |
+| Evaluaciones de coordinadores realizadas | ≥ 1 por trimestre | Trimestral | 🟡 F2 |
 
 ---
 
-## PERFIL 4: CONTROLLER DE COSTOS DE PROYECTO
-**Peso: 13.6%** | Puntos: 19/140
+### Módulo B: Control de Costos de Proyecto y Rentabilidad (Perfil 4)
+#### 🔴 Responsabilidades FASE 1 (Urgentes)
+13. Revisar las cotizaciones emitidas: validar alcance, precios, márgenes.
+14. Dar seguimiento a cotizaciones enviadas para asegurar su conversión en PO/contrato.
+15. Monitorear el costo real vs presupuestado de cada proyecto en ejecución.
+16. Levantar alertas tempranas cuando un proyecto se desvía en costo.
+17. Identificar problemas técnicos que impacten el costo y escalarlos.
+18. Apoyar al equipo de administración en la cobranza: seguimiento a facturas.
+19. Validar que las cotizaciones reflejen correctamente los costos reales de ejecución.
 
-### Descripción
-Responsable de supervisar el **ciclo comercial y la rentabilidad de los proyectos**: desde la cotización hasta la cobranza. Actúa como puente entre ventas, ingenieros y administración, asegurando que los proyectos sean rentables y que las desviaciones sean detectadas a tiempo. Complementa esta función con una **visión financiera de la empresa** en su conjunto: presupuesto, estado de resultados y flujo de efectivo.
+#### 🟡 Responsabilidades FASE 2 (En Rampa)
+* Participar en la elaboración y seguimiento del presupuesto anual.
+* Generar estado de resultados mensual y proyecciones de flujo de efectivo.
 
-### 🔴 Responsabilidades FASE 1 (Urgentes)
-1. Revisar las cotizaciones emitidas: validar alcance, precios, márgenes
-2. Dar seguimiento a cotizaciones enviadas para asegurar su conversión en PO/contrato
-3. Monitorear el costo real vs presupuestado de cada proyecto en ejecución
-4. Levantar alertas tempranas cuando un proyecto se desvía en costo
-5. Identificar problemas técnicos que impacten el costo y escalarlos
-6. Apoyar al equipo de administración en la cobranza: seguimiento a facturas
-7. Validar que las cotizaciones reflejen correctamente los costos reales de ejecución
-
-### 🟡 Responsabilidades FASE 2 (En rampa)
-8. Participar en la elaboración y seguimiento del presupuesto anual
-9. Generar estado de resultados mensual y compararlo contra presupuesto
-10. Elaborar proyección de flujo de efectivo
-11. Generar reportes de rentabilidad por proyecto, por ingeniero y por tipo de trabajo
-12. Proponer ajustes de precio cuando se detecten desviaciones sistemáticas
-13. Supervisar que el equipo de ventas mantenga actualizado el pipeline de cotizaciones
-
-### KPIs de Medición
-
+#### 📊 KPIs Módulo B
 | KPI | Meta | Frecuencia | Fase |
 |---|---|---|---|
 | Cotizaciones revisadas vs emitidas | 100% | Semanal | 🔴 F1 |
-| Cotizaciones en seguimiento con status actualizado | 100% | Semanal | 🔴 F1 |
 | Proyectos con desviación de costo detectada oportunamente | ≥ 90% | Mensual | 🔴 F1 |
-| Alertas de desviación de costo emitidas | Registro completo | Por evento | 🔴 F1 |
 | Antigüedad promedio de cuentas por cobrar | Reducción progresiva | Mensual | 🔴 F1 |
-| Tasa de conversión cotización → PO | ≥ 40% (o benchmark actual) | Mensual | 🟡 F2 |
-| Reportes de rentabilidad emitidos | ≥ 2 por mes | Mensual | 🟡 F2 |
-| Margen promedio real vs cotizado | Desviación ≤ 10% | Trimestral | 🟡 F2 |
-| Estado de resultados mensual generado | 100% de los meses | Mensual | 🟡 F2 |
-| Proyección de flujo de efectivo actualizada | Mensual | Mensual | 🟡 F2 |
+| Tasa de conversión cotización → PO | ≥ 40% | Mensual | 🟡 F2 |
+| Reportes de rentabilidad por proyecto emitidos | ≥ 2 por mes | Mensual | 🟡 F2 |
 
 ---
 
-## PERFIL 5: CTO / DIRECTOR DE TECNOLOGÍA E INNOVACIÓN
-**Peso: 15.0%** | Puntos: 21/140
+### Módulo C: Control Administrativo, Egresos y Capital Humano (Perfil 6)
+#### 🔴 Responsabilidades FASE 1 (Urgentes)
+20. Revisar y validar la nómina semanal/quincenal antes de su dispersión.
+21. Auditar y aprobar las horas extra reportadas (verificar contra evidencia en Perry).
+22. Revisar y aprobar solicitudes de Orden de Compra de materiales.
+23. Revisar y aprobar solicitudes de pago a proveedores: anticipos y liquidaciones.
+24. Revisar y aprobar compras de herramientas y EPP.
+25. Detectar irregularidades o patrones anómalos en los egresos.
 
-### Descripción
-Líder tecnológico responsable de la **visión, estrategia y ejecución tecnológica** de la empresa. Es la fuerza detrás de Perry App y de toda iniciativa de innovación digital. Combina visión de negocio con capacidad técnica. Además de desarrollar soluciones, es responsable de la **seguridad, continuidad y gobierno de la infraestructura digital**.
+#### 🟡 Responsabilidades FASE 2 (En Rampa)
+* Revisar y actualizar el organigrama y la planeación de plantilla.
+* Implementar evaluaciones de desempeño para todo el personal y planes de sucesión.
 
-### 🔴 Responsabilidades FASE 1 (Urgentes)
-1. Dirigir el desarrollo y evolución de Perry App como plataforma central
-2. Evaluar e implementar soluciones de IA, automatización y digitalización
-3. Asegurar la estabilidad y escalabilidad de la infraestructura digital
-4. Capacitar al equipo en el uso efectivo de las herramientas implementadas
-5. Gestionar proveedores tecnológicos y herramientas digitales
-
-### 🟡 Responsabilidades FASE 2 (En rampa)
-6. Definir y mantener un roadmap tecnológico anual y de mediano plazo
-7. Implementar políticas de ciberseguridad, respaldo y recuperación de información
-8. Definir la estrategia tecnológica de la empresa a corto y mediano plazo
-9. Promover la adopción de tecnología en todas las áreas
-10. Innovar continuamente: proponer soluciones de vanguardia
-11. Medir el ROI de las inversiones tecnológicas
-
-### KPIs de Medición
-
-| KPI | Meta | Frecuencia | Fase |
-|---|---|---|---|
-| Funcionalidades nuevas implementadas en Perry | ≥ 2 por mes | Mensual | 🔴 F1 |
-| Uptime de la plataforma | ≥ 99.5% | Mensual | 🔴 F1 |
-| Incidentes de seguridad atendidos | 100% en ≤ 24h | Por evento | 🔴 F1 |
-| Tasa de adopción de herramientas por el equipo | ≥ 80% | Trimestral | 🔴 F1 |
-| Roadmap tecnológico documentado y vigente | 1 activo | Semestral | 🟡 F2 |
-| Política de respaldos implementada | Documentada y operando | Única vez | 🟡 F2 |
-| Procesos automatizados (nuevos) | ≥ 1 por trimestre | Trimestral | 🟡 F2 |
-| Reducción de tiempo en procesos manuales | Medición comparativa | Semestral | 🟡 F2 |
-| ROI de inversiones tecnológicas | Positivo | Anual | 🟡 F2 |
-
----
-
-## PERFIL 6: DIRECTOR ADMINISTRATIVO Y DE CONTROL DE EGRESOS
-**Peso: 13.6%** | Puntos: 19/140
-
-### Descripción
-Responsable de la **supervisión y aprobación de los egresos operativos** de la empresa y de la **gestión del capital humano**. Actúa como último filtro antes de que el dinero salga de la empresa y como responsable de que la organización cuente con la gente correcta, en los puestos correctos, con las capacidades correctas. Atiende los temas laborales-legales como rescisiones y despidos.
-
-### 🔴 Responsabilidades FASE 1 (Urgentes) — Control de Egresos
-1. Revisar y validar la nómina semanal/quincenal antes de su dispersión
-2. Auditar y aprobar las horas extra reportadas (verificar contra evidencia en Perry)
-3. Revisar y aprobar solicitudes de Orden de Compra de materiales
-4. Revisar y aprobar solicitudes de pago a proveedores: anticipos y liquidaciones
-5. Revisar y aprobar compras de herramientas y EPP
-6. Detectar irregularidades o patrones anómalos en los egresos
-
-### 🟡 Responsabilidades FASE 2 (En rampa) — Capital Humano
-7. Revisar y actualizar periódicamente el organigrama y la planeación de plantilla
-8. Implementar evaluaciones de desempeño para todo el personal
-9. Elaborar planes de capacitación para áreas con brechas de competencia
-10. Desarrollar planes de sucesión para puestos críticos (ingenieros clave, coordinadores)
-11. Medir y analizar rotación de personal y sus causas
-12. Supervisar que los procesos administrativos se ejecuten en tiempo y forma
-
-### KPIs de Medición
-
+#### 📊 KPIs Módulo C
 | KPI | Meta | Frecuencia | Fase |
 |---|---|---|---|
 | Nóminas revisadas antes de dispersión | 100% | Semanal | 🔴 F1 |
 | Horas extra auditadas vs reportadas | 100% | Semanal | 🔴 F1 |
 | Órdenes de compra revisadas antes de emisión | 100% | Por evento | 🔴 F1 |
-| Pagos a proveedores con documentación completa | 100% | Por evento | 🔴 F1 |
-| Irregularidades detectadas y documentadas | Registro completo | Mensual | 🔴 F1 |
-| Tiempo de atención a solicitudes de pago | ≤ 48 horas | Semanal | 🔴 F1 |
 | Evaluaciones de desempeño realizadas | 100% del personal | Semestral | 🟡 F2 |
 | Puestos críticos con plan de sucesión | 100% | Anual | 🟡 F2 |
-| Tasa de rotación documentada con causas | Registro completo | Trimestral | 🟡 F2 |
-| Plan de capacitación ejecutado | ≥ 80% de lo planeado | Semestral | 🟡 F2 |
 
 ---
 
-## PERFIL 7: REPRESENTANTE LEGAL Y FIDUCIARIO
-**Peso: 10.0%** | Puntos: 14/140
+### Módulo D: Co-Dirección Comercial y Estratégica (Perfil 2 - 50% Socio 2)
+#### 🔴 Responsabilidades FASE 1 (Urgentes)
+26. Mantener relación directa con gerentes de compras y tomadores de decisión en TMMBC y clientes clave.
+27. Agendar y sostener reuniones periódicas de alto nivel (comidas de negocios, juntas ejecutivas).
+28. Intervenir en negociaciones de contratos mayores, renovaciones y acuerdos marco.
+29. Gestionar la percepción del cliente sobre la calidad y confiabilidad de Caseme.
+30. Supervisar estratégicamente al equipo de vendedores operativos.
+31. Gestionar la recuperación de relaciones cuando hay conflictos o inconformidades del cliente.
 
-### Descripción
-Persona que ostenta la representación legal de la empresa ante terceros, incluyendo la exposición personal como aval en créditos e instrumentos financieros. Actúa como apoderado ante dependencias gubernamentales, fiscales, laborales y comerciales. Además de la función legal reactiva, este perfil incorpora una **visión preventiva de gestión de riesgos**: identificar exposiciones antes de que se materialicen y atender la gestión legal de despidos y rescisiones laborales.
+#### 🟡 Responsabilidades FASE 2 (En Rampa)
+* Elaborar y dar seguimiento al plan comercial anual conjunto.
+* Diseñar estrategias formales para mantener rentabilidad en renovaciones.
 
-### 🔴 Responsabilidades FASE 1 (Urgentes)
-1. Firmar como representante legal en contratos con clientes, proveedores y entidades financieras
-2. Actuar como aval personal en líneas de crédito bancarias y financiamientos
-3. Comparecer ante dependencias públicas: SAT, IMSS, STPS, Secretaría de Economía, Protección Civil
-4. Atender requerimientos legales, auditorías fiscales y laborales
-5. Supervisar el cumplimiento de obligaciones regulatorias (REPSE, padrones de contratistas)
-6. Atender procesos de despido y rescisión laboral: evaluar procedencia legal, finiquitos, convenios y reducir riesgo de demanda
-
-### 🟡 Responsabilidades FASE 2 (En rampa)
-7. Elaborar y mantener actualizada una matriz de riesgos empresariales (legales, fiscales, laborales, patrimoniales)
-8. Dar seguimiento a seguros y validar suficiencia de coberturas
-9. Firmar escrituras, poderes notariales y documentos constitutivos
-10. Gestionar renovaciones de permisos, licencias y registros ante autoridades
-
-### Consideraciones Especiales
-> Este perfil tiene un componente de **prima de riesgo** por la exposición patrimonial personal como aval. La valoración considera no solo el tiempo invertido sino el riesgo asumido.
-
-### KPIs de Medición
-
+#### 📊 KPIs Módulo D
 | KPI | Meta | Frecuencia | Fase |
 |---|---|---|---|
-| Cumplimiento de obligaciones regulatorias (sin multas) | 100% | Trimestral | 🔴 F1 |
-| Atención oportuna de requerimientos legales/fiscales | ≤ 5 días hábiles | Por evento | 🔴 F1 |
-| Contratos firmados y revisados | Registro completo | Mensual | 🔴 F1 |
-| Despidos atendidos sin demanda procedente | ≥ 90% | Por evento | 🔴 F1 |
-| Líneas de crédito donde funge como aval | Registro actualizado | Trimestral | 🔴 F1 |
-| Renovación oportuna de permisos y licencias | Sin vencimientos | Semestral | 🔴 F1 |
-| Matriz de riesgos elaborada y actualizada | 1 activa | Semestral | 🟡 F2 |
-| Revisión de seguros y coberturas | Suficiente | Anual | 🟡 F2 |
+| Reuniones de alto nivel con gerencia del cliente | ≥ 2 por mes | Mensual | 🔴 F1 |
+| Contratos/pólizas renovadas sin pérdida | 100% | Anual | 🔴 F1 |
+| Conflictos con cliente atendidos oportunamente | ≤ 48 horas de respuesta | Por evento | 🔴 F1 |
 
 ---
 
-## RESUMEN EJECUTIVO Y PONDERACIÓN
+## REGLAS DE GOBIERNO Y AUDITORÍA CRUZADA
 
-| # | Perfil | Peso | F1 (Urgentes) | F2 (En rampa) |
-|---|---|---|---|---|
-| 1 | **Auditor y Consultor Senior** | 14.3% | 6 responsabilidades | 5 responsabilidades |
-| 2 | **Director Comercial (Dividido 50/50)** | 12.9% | 6 responsabilidades | 8 responsabilidades |
-| 3 | **Analista Inteligencia + Seg. Operativo** | 20.7% | 8 responsabilidades | 6 responsabilidades |
-| 4 | **Controller de Costos** | 13.6% | 7 responsabilidades | 6 responsabilidades |
-| 5 | **CTO / Tecnología e Innovación** | 15.0% | 5 responsabilidades | 6 responsabilidades |
-| 6 | **Dir. Administrativo + Control Egresos** | 13.6% | 6 responsabilidades | 6 responsabilidades |
-| 7 | **Representante Legal y Fiduciario (inc. Despidos)** | 10.0% | 6 responsabilidades | 4 responsabilidades |
-| | **TOTAL** | **100%** | **44** | **41** |
+En un esquema de remuneración basada en valor y utilidades para socios, se establecen los siguientes mecanismos de control:
 
----
-
-## PROPUESTA DE DISTRIBUCIÓN ENTRE SOCIOS
-
-| | **Socio A (Control y Gobierno)** | **Socio B (Crecimiento e Innovación)** |
-|---|---|---|
-| Perfil 1 | ✅ Auditor Operaciones (14.3%) | |
-| Perfil 2 | 🤝 Director Comercial 50% (6.45%) | 🤝 Director Comercial 50% (6.45%) |
-| Perfil 3 | | ✅ Analista + Seg. Operativo (20.7%) |
-| Perfil 4 | ✅ Controller Costos (13.6%) | |
-| Perfil 5 | | ✅ CTO / Tecnología (15.0%) |
-| Perfil 6 | ✅ Dir. Admin + Control Egresos (13.6%) | |
-| Perfil 7 | ✅ Rep Legal + Despidos (10.0%) | |
-| **Total** | **57.95%** | **42.05%** |
-
----
-
-## PLAN EN RAMPA SUGERIDO
-
-| Mes | Fase | Foco |
-|---|---|---|
-| Mes 1-2 | 🔴 FASE 1 | Implementar TODAS las responsabilidades urgentes de los 7 perfiles. Periodo formativo (sin penalización económica en KPIs). |
-| Mes 3-4 | 🔴→🟡 Transición | Consolidar F1 + iniciar F2 en los perfiles de mayor impacto: Capital Humano (P6) y Diversificación Comercial (P2). |
-| Mes 5-6 | 🟡 FASE 2 | Incorporar progresivamente el resto de responsabilidades F2: presupuesto anual (P4), roadmap tecnológico (P5), matriz de riesgos (P7). |
-| Mes 7+ | 🟢 Operación plena | Todos los KPIs de ambas fases activos. Evaluación completa en junta mensual. |
-
----
-
-## PERFILES INCOMPATIBLES — CONFLICTOS DE INTERÉS
-
-Los siguientes perfiles **NO deben ser ejercidos por la misma persona**:
-
-### ⛔ Director Comercial (2) + Dir. Administrativo (6)
-Quien genera la venta NO debe aprobar los pagos derivados. Se elimina el control cruzado.
-
-### ⛔ Director Comercial (2) + Controller de Costos (4)
-Quien cotiza NO debe auditar la rentabilidad de sus propias cotizaciones. El Controller debe ser un ojo externo.
-
-### ⛔ Controller de Costos (4) + Dir. Administrativo (6)
-Quien revisa la rentabilidad NO debería aprobar los pagos. Crearía un ciclo cerrado sin contrapeso.
-
-### ✅ CTO (5) — Independiente obligatorio
-Habilidades únicas, máxima dedicación, máxima irreemplazabilidad. No fusionable por naturaleza del trabajo.
-
-### ✅ Representante Legal (7) — No fusionable estructuralmente
-Designación legal, no función operativa. El riesgo patrimonial es intransferible.
-
-### Matriz de Compatibilidad (Modelo Socios — Remuneración por Utilidad)
-
-> **Nota**: En un modelo de socios con remuneración por utilidad (no por comisión), los conflictos de interés tradicionales se mitigan porque ambos socios tienen incentivos alineados: maximizar la rentabilidad real. Las combinaciones P2+P4, P2+P6 y P4+P6 que serían conflictivas en un modelo corporativo con empleados a comisión, son compatibles cuando el vendedor es socio y su remuneración depende de la utilidad — le conviene filtrar bien los costos y pagos.
-
-|  | P1 | P2 | P3 | P4 | P5 | P6 | P7 |
-|---|---|---|---|---|---|---|---|
-| **P1 Auditor** | — | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ |
-| **P2 Comercial** | ✅ | — | ✅ | ✅ | ✅ | ✅🔍 | ✅ |
-| **P3 Analista** | ✅ | ✅ | — | ✅ | ✅ | ✅ | ✅ |
-| **P4 Controller** | ✅ | ✅ | ✅ | — | ⚠️ | ✅🔍 | ✅ |
-| **P5 CTO** | ⚠️ | ✅ | ✅ | ⚠️ | — | ⚠️ | ✅ |
-| **P6 Dir Admin** | ✅ | ✅🔍 | ✅ | ✅🔍 | ⚠️ | — | ✅ |
-| **P7 Rep Legal** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-
-*✅ Compatible | ✅🔍 Compatible con auditoría cruzada | ⚠️ Compatible pero riesgo de sobrecarga*
-
----
-
-> **Documento complementario**: Ver [01-modelo-valoracion-remuneracion.md] para el modelo de compensación basado en KPIs.
+1. **Aprobación de Cotizaciones (P4 + P2)**: El Director de Operaciones y Rentabilidad (Socio 2) revisa los márgenes técnicos de las cotizaciones elaboradas en el área comercial.
+2. **Auditoría de Activos y Contratos (P7 + P6)**: El Director de Tecnología y Gobierno Legal (Socio 1) valida la cobertura de pólizas y situación legal de los activos físicos aprobados para adquisición por la Administración (Socio 2).
+3. **Puntos Críticos Digitales (P1 + P5)**: Las alertas detectadas en campo por la auditoría (Socio 2) se alimentan directamente en Perry App (Socio 1) para dar trazabilidad objetiva e imparcial.
