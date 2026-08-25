@@ -667,3 +667,19 @@ model FinancialBalanceLog {
   @@index([companyName, reportDate])
   @@index([bankName])
 }
+
+// ─── API KEYS PARA INTEGRACIÓN EXTERNA (ACCESO EXCLUSIVO IVAN LOPEZ) ────────
+
+model PerryApiKey {
+  id          String    @id @default(cuid())
+  name        String    // e.g. "Software Antigravity - Módulo Financiero Interno"
+  key         String    @unique // e.g. "perry_sec_98f7a62bc..."
+  createdBy   String    // Email of creator (Ivan Lopez)
+  isActive    Boolean   @default(true)
+  usageCount  Int       @default(0)
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([key])
+}

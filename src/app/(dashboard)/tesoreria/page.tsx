@@ -17,6 +17,12 @@ import {
   Printer,
   Copy,
   Check,
+  Key,
+  Plus,
+  Trash2,
+  Power,
+  Code2,
+  ExternalLink,
 } from 'lucide-react';
 
 interface AccountBalance {
@@ -34,6 +40,17 @@ interface AccountBalance {
   calculatedDiff: number;
   rawMessage?: string;
   imageUrl?: string;
+  createdAt: string;
+}
+
+interface ApiKeyRecord {
+  id: string;
+  name: string;
+  key: string;
+  createdBy: string;
+  isActive: boolean;
+  usageCount: number;
+  lastUsedAt?: string;
   createdAt: string;
 }
 
@@ -63,6 +80,13 @@ export default function TesoreriaPage() {
   const [selectedCompany, setSelectedCompany] = useState<string>('TODAS');
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
 
+  // API Key Management state
+  const [showKeysModal, setShowKeysModal] = useState(false);
+  const [apiKeys, setApiKeys] = useState<ApiKeyRecord[]>([]);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+
   const fetchTreasuryData = async () => {
     setLoading(true);
     setError(null);
@@ -86,9 +110,80 @@ export default function TesoreriaPage() {
     }
   };
 
+  const fetchApiKeys = async () => {
+    try {
+      const res = await fetch('/api/treasury/keys');
+      if (res.ok) {
+        const json = await res.json();
+        setApiKeys(json.keys || []);
+      }
+    } catch (err) {
+      console.error('Error cargando API keys:', err);
+    }
+  };
+
   useEffect(() => {
     fetchTreasuryData();
   }, []);
+
+  useEffect(() => {
+    if (showKeysModal) {
+      fetchApiKeys();
+    }
+  }, [showKeysModal]);
+
+  const handleCreateKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingKey(true);
+    try {
+      const res = await fetch('/api/treasury/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newKeyName || 'Software Antigravity - Integración Interna' }),
+      });
+      if (res.ok) {
+        setNewKeyName('');
+        await fetchApiKeys();
+      }
+    } catch (err) {
+      console.error('Error creando API Key:', err);
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleToggleKey = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch('/api/treasury/keys', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isActive: !currentStatus }),
+      });
+      if (res.ok) {
+        await fetchApiKeys();
+      }
+    } catch (err) {
+      console.error('Error cambiando estatus:', err);
+    }
+  };
+
+  const handleDeleteKey = async (id: string) => {
+    if (!confirm('¿Seguro que deseas eliminar esta API Key permanentemente?')) return;
+    try {
+      const res = await fetch(`/api/treasury/keys?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        await fetchApiKeys();
+      }
+    } catch (err) {
+      console.error('Error eliminando API Key:', err);
+    }
+  };
+
+  const handleCopyKeyStr = (id: string, keyStr: string) => {
+    navigator.clipboard.writeText(keyStr);
+    setCopiedKeyId(id);
+    setTimeout(() => setCopiedKeyId(null), 2500);
+  };
 
   const formatCurrency = (amount: number, currency: string = 'MXN') => {
     return new Intl.NumberFormat('es-MX', {
@@ -205,7 +300,17 @@ export default function TesoreriaPage() {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* API Key Management Button */}
+          <button
+            onClick={() => setShowKeysModal(true)}
+            className="flex items-center space-x-1.5 px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 rounded-xl text-xs font-semibold transition-all shadow"
+            title="Gestionar API Keys de integración para otros softwares de la empresa"
+          >
+            <Key className="w-4 h-4 text-amber-400" />
+            <span>API Keys & Integraciones</span>
+          </button>
+
           <button
             onClick={handlePrintPdf}
             className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition-all shadow"
@@ -372,7 +477,7 @@ export default function TesoreriaPage() {
                   </div>
                 </div>
 
-                {/* Accounts Table — Optimized Column Widths for Screen Fit */}
+                {/* Accounts Table — Optimized Column Widths */}
                 <div className="overflow-x-auto rounded-xl border border-slate-800">
                   <table className="w-full text-left text-xs whitespace-nowrap">
                     <thead>
@@ -450,6 +555,140 @@ export default function TesoreriaPage() {
             );
           })}
       </div>
+
+      {/* API KEYS MANAGEMENT MODAL (RESTRICTED TO IVAN LOPEZ) */}
+      {showKeysModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-amber-500/20 border border-amber-500/30 rounded-xl">
+                  <Key className="w-6 h-6 text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-100">API Keys de Integración Externa</h2>
+                  <p className="text-xs text-slate-400">
+                    Credenciales de acceso para conectar otros softwares de la empresa desarrollados en Antigravity.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowKeysModal(false)}
+                className="text-slate-400 hover:text-slate-200 p-2 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Create New Key Form */}
+            <form onSubmit={handleCreateKey} className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Plus className="w-4 h-4" /> Generar Nueva API Key de Acceso
+              </h3>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  placeholder="Nombre de la app (ej: Software Antigravity - Módulo Financiero)"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  className="flex-1 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                />
+                <button
+                  type="submit"
+                  disabled={creatingKey}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl text-xs transition-all shrink-0 flex items-center justify-center space-x-1"
+                >
+                  {creatingKey ? 'Generando...' : 'Generar Key'}
+                </button>
+              </div>
+            </form>
+
+            {/* Documentation Box */}
+            <div className="bg-slate-950 p-4 rounded-xl border border-indigo-500/20 space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-indigo-400">
+                <span className="flex items-center gap-1.5">
+                  <Code2 className="w-4 h-4" /> Endpoint de Integración para el Desarrollador
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono">GET API v1</span>
+              </div>
+              <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-[11px] font-mono text-emerald-400 break-all select-all">
+                https://perryapp.netlify.app/api/v1/treasury/external-sync
+              </div>
+              <p className="text-[11px] text-slate-400">
+                El desarrollador debe enviar el encabezado HTTP <code className="text-amber-300">X-Perry-Api-Key: tu_api_key</code> en sus peticiones para obtener la JSON estructurado de saldos.
+              </p>
+            </div>
+
+            {/* Keys Table */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                API Keys Activas ({apiKeys.length})
+              </h3>
+              {apiKeys.length === 0 ? (
+                <div className="text-center py-6 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-slate-800">
+                  No hay API Keys generadas. Crea la primera arriba para compartir con el equipo de desarrollo.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {apiKeys.map((k) => (
+                    <div
+                      key={k.id}
+                      className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold text-slate-200 text-xs">{k.name}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            k.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                          }`}>
+                            {k.isActive ? 'ACTIVA' : 'REVOCADA'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <code className="text-[11px] font-mono text-amber-300 bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                            {k.key}
+                          </code>
+                          <button
+                            onClick={() => handleCopyKeyStr(k.id, k.key)}
+                            className="p-1 text-slate-400 hover:text-slate-200"
+                            title="Copiar API Key"
+                          >
+                            {copiedKeyId === k.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          Usos: {k.usageCount} | Creada: {new Date(k.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <button
+                          onClick={() => handleToggleKey(k.id, k.isActive)}
+                          className={`p-2 rounded-lg border text-xs font-semibold transition-all ${
+                            k.isActive
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
+                          }`}
+                          title={k.isActive ? 'Desactivar / Revocar' : 'Activar'}
+                        >
+                          <Power className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteKey(k.id)}
+                          className="p-2 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg transition-all"
+                          title="Eliminar permanentemente"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
