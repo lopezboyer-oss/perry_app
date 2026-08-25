@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metodología de Validación de KPIs v1.0 — Grupo Caseme</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+    --secondary: #0284c7;
+    --dark: #0f172a;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --bg-alt: #f8fafc;
+    --border: #cbd5e1;
+    --red-highlight: #dc2626;
+    --green: #16a34a;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    color: var(--text);
+    background: #fff;
+    padding: 30px 40px;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .doc-header {
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .doc-header h1 {
+    font-size: 20pt;
+    font-weight: 800;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+  }
+  .doc-header .subtitle {
+    font-size: 12pt;
+    font-weight: 600;
+    color: var(--primary);
+    margin-top: 4px;
+  }
+  .doc-header .meta {
+    font-size: 9.5pt;
+    color: var(--text-muted);
+    margin-top: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Pillars Box */
+  .pillars-card {
+    background: linear-gradient(135deg, #1e1b4b, #0f172a);
+    border: 1px solid #4f46e5;
+    border-radius: 12px;
+    padding: 20px;
+    color: white;
+    margin-bottom: 28px;
+    box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+  }
+  .pillars-card h3 {
+    font-size: 13pt;
+    font-weight: 800;
+    color: #a5b4fc;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .pillar-item {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .pillar-item strong { display: block; color: #818cf8; font-size: 10.5pt; margin-bottom: 4px; }
+  .pillar-item p { font-size: 9pt; color: #cbd5e1; margin: 0; }
+
+  /* Executive Position Blocks */
+  .puesto-block {
+    margin-bottom: 40px;
+    page-break-inside: auto;
+  }
+  .puesto-block-1, .puesto-block-2 {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  .puesto-header {
+    border-radius: 10px;
+    padding: 18px 22px;
+    color: white;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .puesto-header.puesto-1 {
+    background: linear-gradient(135deg, #3730a3, #4f46e5);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  }
+  .puesto-header.puesto-2 {
+    background: linear-gradient(135deg, #0369a1, #0284c7);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+  }
+  .puesto-header h2 { font-size: 14pt; font-weight: 800; margin: 0; line-height: 1.3; }
+  .puesto-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .titular-box-header {
+    background: rgba(255, 255, 255, 0.95);
+    color: #dc2626;
+    font-weight: 800;
+    font-size: 11pt;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-top: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+
+  /* KPI Method Cards */
+  .kpi-method-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--primary);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    page-break-inside: avoid;
+  }
+  .kpi-method-card.highlight {
+    border-left-color: #0284c7;
+    background: #f0f9ff;
+  }
+  .kpi-method-title {
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--dark);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .kpi-target-tag {
+    background: #e0e7ff;
+    color: #3730a3;
+    font-size: 8.5pt;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .method-detail {
+    font-size: 9.5pt;
+    color: #334155;
+    margin-top: 6px;
+  }
+  .method-detail strong { color: var(--dark); }
+
+  .function-badge {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    font-weight: 700;
+    font-size: 8.5pt;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .evidence-badge {
+    display: inline-block;
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 700;
+    font-size: 8.5pt;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  /* Matrix Table */
+  table.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9pt;
+    margin-top: 16px;
+  }
+  table.matrix-table th {
+    background: #1e293b;
+    color: white;
+    font-weight: 700;
+    padding: 8px 10px;
+    text-align: left;
+  }
+  table.matrix-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    color: #334155;
+  }
+  table.matrix-table tr:nth-child(even) { background: #f8fafc; }
+
+  .titular-red {
+    color: var(--red-highlight);
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  /* Print Styles */
+  @media print {
+    body { padding: 15px 25px; max-width: 100%; }
+    .puesto-block-1, .puesto-block-2 { page-break-before: always !important; break-before: page !important; }
+    .kpi-method-card { page-break-inside: avoid; }
+    .pillars-card, .puesto-header, .titular-box-header, .function-badge, .evidence-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <h1>METODOLOGÍA DE VALIDACIÓN DE KPIs — GRUPO CASEME</h1>
+  <div class="subtitle">Protocolo Práctico de Evidencia Digital, Gobernanza e Integración en Perry App</div>
+  <div class="meta">
+    <span>Documento de Trabajo v1.0</span>
+    <span>Agosto 2026</span>
+    <span>Single Source of Truth (Perry App)</span>
+  </div>
+</div>
+
+<div class="pillars-card">
+  <h3>🛡️ Los 5 Pilares de Validación Digital en Perry App</h3>
+  <p style="font-size:9.5pt; color:#e2e8f0; margin-bottom:4px;">
+    Ningún KPI se da por cumplido verbalmente. Toda medición genera evidencia digital inalterable procesada en tiempo real.
+  </p>
+  <div class="pillars-grid">
+    <div class="pillar-item">
+      <strong>1. Evidencia Digital</strong>
+      <p>Carga de fotos, geolocalización, PDF o log automático en sistema.</p>
+    </div>
+    <div class="pillar-item">
+      <strong>2. Sin Hojas Manuales</strong>
+      <p>Flujos integrados nativamente en Perry App sin archivos aislados.</p>
+    </div>
+    <div class="pillar-item">
+      <strong>3. Trazabilidad / Audit Trail</strong>
+      <p>Timestamp automático e identidad única por usuario en cada acción.</p>
+    </div>
+    <div class="pillar-item">
+      <strong>4. Flujos Ágiles</strong>
+      <p>Aprobación con 1-clic o check-in rápido sin burocracia técnica.</p>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 1 -->
+<div class="puesto-block puesto-block-1">
+  <div class="puesto-header puesto-1">
+    <div>
+      <h2>Director de Tecnología, Inteligencia de Negocio y Gobierno Legal</h2>
+      <div class="titular-box-header">TITULAR: IVAN JOSE LOPEZ BOYER</div>
+      <div style="font-size:9.5pt; opacity:0.9; margin-top:6px;">Enfoque: Innovación Digital, Perry App, Analítica Operativa, Gobierno Legal y Control de Activos</div>
+    </div>
+    <div class="puesto-badge">Puesto Ejecutivo 1</div>
+  </div>
+
+  <h3 style="font-size:12pt; color:var(--dark); margin-bottom:14px;">Mecanismos Prácticos de Validación por KPI:</h3>
+
+  <!-- KPI 1 -->
+  <div class="kpi-method-card highlight">
+    <div class="kpi-method-title">
+      <span>💻 1. Nuevas Funcionalidades en Perry App</span>
+      <span class="kpi-target-tag">Meta: ≥ 2 / mes</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Propuestas, Votación y Aprobación de Sistemas</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> El CTO registra la propuesta en Perry con justificación e impacto. Se habilita votación digital para el Consejo Directivo. Al ser aprobada y desplegada, Perry registra automáticamente el <code>release tag</code> y la versión producida.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Log de votación aprobada del Consejo + Release tag en Perry</div>
+  </div>
+
+  <!-- KPI 2 -->
+  <div class="kpi-method-card">
+    <div class="kpi-method-title">
+      <span>⚡ 2. Uptime de la Plataforma Perry App</span>
+      <span class="kpi-target-tag">Meta: ≥ 99.5% mensual</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Monitor Automatizado (Pinger / Healthcheck)</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Servicio automatizado en la nube que consulta la plataforma cada 60 segundos y genera el reporte automático mensual sin manipulación humana.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Reporte de disponibilidad de infraestructura en Perry</div>
+  </div>
+
+  <!-- KPI 3 -->
+  <div class="kpi-method-card">
+    <div class="kpi-method-title">
+      <span>👥 3. Tasa de Adopción por el Equipo</span>
+      <span class="kpi-target-tag">Meta: ≥ 80% activos</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Telemetría y Analítica de Usuarios</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Medición automática de logins e interacciones diarias de los colaboradores por área, comparados contra la plantilla de nómina.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Dashboard de métricas de adopción por departamento</div>
+  </div>
+
+  <!-- KPI 4 -->
+  <div class="kpi-method-card highlight">
+    <div class="kpi-method-title">
+      <span>🚗 4. Control Legal y Pólizas de Flota Vehicular y Maquinaria (Perfil 7)</span>
+      <span class="kpi-target-tag">Meta: 100% al día</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Control Patrimonial de Activos (Vehículos y Maquinaria)</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Expediente digital por unidad (placas, VIN, tenencias, pólizas, contrato leasing). El sistema activa un <strong>Semáforo Automático de Vencimientos</strong> a 30, 15 y 5 días para obligar la carga del documento renovado antes de la fecha límite.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Dashboard con 100% de activos en VERDE y póliza/comprobante cargado</div>
+  </div>
+
+  <!-- KPI 5 -->
+  <div class="kpi-method-card">
+    <div class="kpi-method-title">
+      <span>⚖️ 5. Cumplimiento Regulatorio y Requerimientos Legales</span>
+      <span class="kpi-target-tag">Meta: 100% sin multas / Response ≤ 5 días</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Bóveda Regulatoria y Ticketing Legal</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Carga mensual de opiniones 32-D (SAT), IMSS y REPSE, junto con registro con timestamp para requerimientos legales recibidos y contestados.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Constancias oficiales cargadas + Tickets con tiempo de respuesta</div>
+  </div>
+
+  <!-- KPI 6 -->
+  <div class="kpi-method-card">
+    <div class="kpi-method-title">
+      <span>🤝 6. Reuniones de Alto Nivel con Clientes (50% Comercial)</span>
+      <span class="kpi-target-tag">Meta: ≥ 2 / mes</span>
+    </div>
+    <div class="function-badge">Módulo Perry: CRM / Minutas Ejecutivas</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Registro inmediato de minuta tras la junta o comida de negocios con gerencia de clientes clave, anexando orden de día y compromisos.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Registro en CRM con timestamp y acuse de minuta emitida</div>
+  </div>
+</div>
+
+<!-- BLOQUE 2 -->
+<div class="puesto-block puesto-block-2">
+  <div class="puesto-header puesto-2">
+    <div>
+      <h2>Director de Operaciones, Rentabilidad y Administración de Operaciones</h2>
+      <div class="titular-box-header">TITULAR: CARLOS SEVILLA MERCADO</div>
+      <div style="font-size:9.5pt; opacity:0.9; margin-top:6px;">Enfoque: Auditoría Técnica de Campo, Control de Costos de Proyecto y Control Administrativo</div>
+    </div>
+    <div class="puesto-badge">Puesto Ejecutivo 2</div>
+  </div>
+
+  <h3 style="font-size:12pt; color:var(--dark); margin-bottom:14px;">Mecanismos Prácticos de Validación por KPI:</h3>
+
+  <!-- KPI 7 -->
+  <div class="kpi-method-card highlight">
+    <div class="kpi-method-title">
+      <span>🔍 7. Visitas de Auditoría a Campo y Proyectos</span>
+      <span class="kpi-target-tag">Meta: ≥ 12 / mes</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Check-in Móvil de Auditoría de Campo</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Al llegar a la obra o proyecto de campo, el Director activa el Check-in en Perry App. La app valida la <strong>Geolocalización GPS real</strong>, solicita mínimo 3 fotos en vivo y captura la firma digital del residente u homologo.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Registro geolocalizado en mapa con fotos con marca de agua y firma digital</div>
+  </div>
+
+  <!-- KPI 8 -->
+  <div class="kpi-method-card">
+    <div class="kpi-method-title">
+      <span>📋 8. Informes y Seguimiento de Puntos Críticos</span>
+      <span class="kpi-target-tag">Meta: 100% diario / 0 desatendidos >48h</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Generador de Informe & Monitor Crítico</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Al terminar el check-in, la app compila el Informe de Auditoría PDF. Perry audita el log de acceso diario al panel de puntos críticos y dispara alertas si hay items sin atención en 48 horas.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Informes PDF generados + Log de auditoría de actividad diaria</div>
+  </div>
+
+  <!-- KPI 9 -->
+  <div class="kpi-method-card highlight">
+    <div class="kpi-method-title">
+      <span>💰 9. Sello Digital de Cotizaciones y Control de Costos</span>
+      <span class="kpi-target-tag">Meta: 100% cotizaciones revisadas</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Flujo de Aprobación y Alertas de Margen</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Ninguna cotización comercial puede descargarse ni enviarse al cliente sin el <strong>Sello Digital del Controller</strong>. El sistema valida automáticamente que el margen no sea inferior al piso financiero autorizado.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Token de aprobación digital registrado en BD previo al envío</div>
+  </div>
+
+  <!-- KPI 10 -->
+  <div class="kpi-method-card highlight">
+    <div class="kpi-method-title">
+      <span>📝 10. Autorización Digital de Nómina, Horas Extra y Compras</span>
+      <span class="kpi-target-tag">Meta: 100% nóminas y OC revisadas</span>
+    </div>
+    <div class="function-badge">Módulo Perry: Pre-Nómina y Workflow de Compras (OC)</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> La pre-nómina y las solicitudes de OC requieren la Firma Digital del Director en Perry App. Para horas extra, Perry realiza una validación cruzada automática contra el reloj checador digital.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Firma de autorización previa a la dispersión bancaria y emisión de OC</div>
+  </div>
+
+  <!-- KPI 11 -->
+  <div class="kpi-method-card">
+    <div class="kpi-method-title">
+      <span>🤝 11. Reuniones de Alto Nivel con Clientes (50% Comercial)</span>
+      <span class="kpi-target-tag">Meta: ≥ 2 / mes</span>
+    </div>
+    <div class="function-badge">Módulo Perry: CRM / Minutas Ejecutivas</div>
+    <div class="method-detail">
+      <strong>Procedimiento Práctico:</strong> Registro de minuta ejecutiva de la reunión con gerencia de clientes en el CRM de Perry App.
+    </div>
+    <div class="evidence-badge">✅ Evidencia Auditada: Bitácora de minutas comerciales registradas en Perry</div>
+  </div>
+</div>
+
+<h3 style="font-size:13pt; color:var(--dark); margin-top:30px; margin-bottom:12px;">Matriz Resumen de Módulos Requeridos en Perry App</h3>
+<table class="matrix-table">
+  <thead>
+    <tr>
+      <th>Módulo a Habilitar en Perry App</th>
+      <th>Titular Responsable</th>
+      <th>KPIs Auditados</th>
+      <th>Tipo de Evidencia Digital</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Check-in GPS y Auditoría Móvil</strong></td>
+      <td><span class="titular-red">CARLOS SEVILLA MERCADO</span></td>
+      <td>Visitas de campo (P1)</td>
+      <td>GPS exacto, Fotos en vivo, Firma digital</td>
+    </tr>
+    <tr>
+      <td><strong>Propuestas y Aprobación de Sistemas</strong></td>
+      <td><span class="titular-red">IVAN JOSE LOPEZ BOYER</span></td>
+      <td>Nuevas funciones Perry (P5)</td>
+      <td>Votación del Consejo, Release tags</td>
+    </tr>
+    <tr>
+      <td><strong>Control Patrimonial Flota / Maquinaria</strong></td>
+      <td><span class="titular-red">IVAN JOSE LOPEZ BOYER</span></td>
+      <td>Seguros, tenencias, leasing (P7)</td>
+      <td>Expedientes digitales, Semáforo de vencimientos</td>
+    </tr>
+    <tr>
+      <td><strong>Sello Digital de Cotizaciones</strong></td>
+      <td><span class="titular-red">CARLOS SEVILLA MERCADO</span></td>
+      <td>Cotizaciones y márgenes (P4)</td>
+      <td>Token de aprobación en BD previo a envío</td>
+    </tr>
+    <tr>
+      <td><strong>Autorización de Nómina y OC</strong></td>
+      <td><span class="titular-red">CARLOS SEVILLA MERCADO</span></td>
+      <td>Nómina y compras (P6)</td>
+      <td>Firma digital previa a dispersión/emisión</td>
+    </tr>
+    <tr>
+      <td><strong>Centro de Alertas de Inteligencia</strong></td>
+      <td><span class="titular-red">IVAN JOSE LOPEZ BOYER</span></td>
+      <td>Alertas y KPIs (P3)</td>
+      <td>Log con timestamp y confirmación de lectura</td>
+    </tr>
+    <tr>
+      <td><strong>CRM / Minutas Ejecutivas</strong></td>
+      <td>Ambos (<span class="titular-red">IVAN / CARLOS</span>)</td>
+      <td>Relaciones comerciales (P2)</td>
+      <td>Minutas con acuse y compromisos registrados</td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="text-align:center; font-size:9pt; color:var(--text-muted); border-top:1px solid var(--border); padding-top:16px; margin-top:30px;">
+  CONFIDENCIAL — Protocolo de Gobernanza Digital · Grupo Caseme · Perry Intelligence v1.0
+</div>
+
+</body>
+</html>
