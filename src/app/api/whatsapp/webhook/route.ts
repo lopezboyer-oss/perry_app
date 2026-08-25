@@ -44,16 +44,83 @@ export async function POST(req: NextRequest) {
     const isPrivateChat = !payload.groupId.endsWith('@g.us');
 
     if (isPrivateChat) {
+      // A) RATE LIMITING: Solo responder MÁXIMO 1 vez por hora por remitente para evitar bucles infinitos
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const recentAutoReply = await prisma.whatsappMessageLog.findFirst({
+        where: {
+          groupId: payload.groupId,
+          status: 'AUTO_REPLIED',
+          createdAt: { gte: oneHourAgo },
+        },
+      });
+
+      if (recentAutoReply) {
+        console.log(`[WHATSAPP PRIVATE AUTO-REPLY] Throttle activo para ${payload.groupId}. Ya se respondió en la última hora.`);
+        
+        // Se registra el mensaje entrante pero NO se envía auto-respuesta para romper el bucle
+        await prisma.whatsappMessageLog.create({
+          data: {
+            messageId: payload.messageId,
+            groupId: payload.groupId,
+            senderPhone: payload.senderPhone,
+            senderName: payload.senderName || 'Contacto Directo',
+            rawMessage: payload.messageText || '[Mensaje privado 1 a 1]',
+            mediaUrls: payload.mediaUrls && payload.mediaUrls.length > 0 ? JSON.stringify(payload.mediaUrls) : null,
+            parsedData: JSON.stringify({
+              messageType: 'DIRECT_PRIVATE_CHAT',
+              summary: payload.messageText || 'Contacto directo silenciado por ventana de 1 hora (Anti-Bucle)',
+              tags: ['chat_privado', 'rate_limited_1h'],
+              isOperationalEvent: false,
+            }),
+            activityId: null,
+            status: 'THROTTLED',
+          },
+        });
+
+        return NextResponse.json({
+          status: 'Private message logged silently (throttled 1h max per sender to prevent bot loops)',
+          sender: payload.senderPhone,
+        });
+      }
+
+      // B) FILTRO ANTI-BOTS: Detectar patrones o respuestas automáticas de otros bots
+      const lowerMsg = (payload.messageText || '').toLowerCase();
+      const isOtherBot = /(respuesta auto|mensaje auto|gracias por comunicarte|nuestro horario|asistente virtual|soy un bot|bienvenido a|menu de opciones|marca 1|presiona 1|te responderemos|en un momento te atendemos)/i.test(lowerMsg);
+
+      if (isOtherBot) {
+        console.log(`[WHATSAPP PRIVATE AUTO-REPLY] Ignorado mensaje automático de otro Bot proveniente de ${payload.groupId}`);
+        await prisma.whatsappMessageLog.create({
+          data: {
+            messageId: payload.messageId,
+            groupId: payload.groupId,
+            senderPhone: payload.senderPhone,
+            senderName: payload.senderName || 'Bot Externo',
+            rawMessage: payload.messageText || '[Respuesta Automática de Bot]',
+            parsedData: JSON.stringify({
+              messageType: 'DIRECT_PRIVATE_CHAT',
+              summary: 'Mensaje entrante identificado como Bot externo',
+              tags: ['chat_privado', 'bot_externo_ignorado'],
+              isOperationalEvent: false,
+            }),
+            activityId: null,
+            status: 'OTHER_BOT_IGNORED',
+          },
+        });
+
+        return NextResponse.json({ status: 'Ignored: External bot response detected' });
+      }
+
+      // C) RESPUESTA ÚNICA (1 vez por hora)
       const privateAutoReply = `¡Hola! 🤖 Soy *Perry*, tu copiloto de inteligencia operativa.\n\nEn este momento me encuentro en fase de entrenamiento dentro de los grupos de trabajo, pero muy pronto podré asistirte de forma directa por este medio.\n\n¡Gracias por escribir! 🚀`;
 
-      // 1) Enviar respuesta cordial y profesional al usuario en privado por escrito
+      // 1) Enviar respuesta escrita
       await sendWhatsappGroupMessage({
         groupId: payload.groupId,
         messageText: privateAutoReply,
         replyToMessageId: payload.messageId,
       });
 
-      // 2) Enviar nota de voz con el mensaje hablado de Perry
+      // 2) Enviar nota de voz de Perry
       const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
       const welcomeAudioUrl = `${appBaseUrl.replace(/\/+$/, '')}/audio/perry_welcome.mp3`;
 
@@ -67,7 +134,7 @@ export async function POST(req: NextRequest) {
         console.error('[WHATSAPP VOICE AUTO-REPLY] Error enviando nota de voz en privado:', voiceErr);
       }
 
-      // Registrar el contacto privado en logs para auditoría sin crear pseudo-grupos
+      // 3) Guardar log con estatus AUTO_REPLIED para activar ventana de enfriamiento de 1 hora
       await prisma.whatsappMessageLog.create({
         data: {
           messageId: payload.messageId,
@@ -89,7 +156,7 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({
-        status: 'Direct private message handled with written auto-reply and voice note',
+        status: 'Direct private message handled with written auto-reply and voice note (1h cooldown active)',
         sender: payload.senderPhone,
       });
     }
