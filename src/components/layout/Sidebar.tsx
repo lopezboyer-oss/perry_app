@@ -33,7 +33,6 @@ import { canViewEconomicAnalysis, canAccessTreasuryDashboard } from '@/lib/permi
 
 export const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/tesoreria', label: 'Tesorería Directiva', icon: Building2 },
   { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/actividades', label: 'Actividades', icon: ClipboardList },
   { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },
@@ -61,12 +60,10 @@ export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
+  const isIvanLopez = canAccessTreasuryDashboard(user.email) || user.email === 'lopezboyer@gmail.com' || user.name?.toLowerCase().includes('ivan lopez');
   const hasSpecialReportsAccess = ['ADMIN', 'ADMINISTRACION'].includes(user.role) || user.email === 'carlos.lopez@gsingenieria.mx';
 
   const visibleNavItems = navItems.filter((item) => {
-    if (item.href === '/tesoreria') {
-      return canAccessTreasuryDashboard(user.email);
-    }
     if (item.href === '/reportes-especiales') {
       return hasSpecialReportsAccess;
     }
@@ -93,6 +90,14 @@ export function Sidebar({ user }: SidebarProps) {
     }
     return true;
   });
+
+  const ivanExclusiveItems = [
+    { href: '/tesoreria', label: 'Tesorería Directiva', icon: Building2 },
+    { href: '/configuracion/whatsapp', label: 'Perry Intelligence', icon: Bot },
+    { href: '/galeria-evidencias', label: 'Galería Evidencias', icon: Images },
+    { href: '/perry-improvements', label: 'Perry Improvements', icon: BrainCircuit },
+    { href: '/consorcio', label: 'Consorcio Multiempresa', icon: Building2 },
+  ];
 
   return (
     <>
@@ -152,12 +157,12 @@ export function Sidebar({ user }: SidebarProps) {
               </Link>
             );
           })}
-          
+
           {(user.role === 'ADMIN' || user.role === 'ADMINISTRACION' || (user as any).accessSafetyDedicado || (user as any).accessVehicles || (user as any).accessDrivers || (user as any).accessElevationEquip) && (
             <Link
               href="/usuarios"
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 mt-4 border-t border-slate-700/50 pt-4',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 mt-2 border-t border-slate-700/50 pt-3',
                 pathname === '/usuarios' || pathname.startsWith('/usuarios/')
                   ? 'bg-purple-600/20 text-purple-300 border border-purple-500/20'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -166,22 +171,6 @@ export function Sidebar({ user }: SidebarProps) {
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               {!collapsed && 'Gestión de Recursos'}
-            </Link>
-          )}
-
-          {user.role === 'ADMIN' && (
-            <Link
-              href="/consorcio"
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-                pathname === '/consorcio' || pathname.startsWith('/consorcio/')
-                  ? 'bg-cyan-600/20 text-cyan-300 border border-cyan-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              )}
-              title={collapsed ? 'Consorcio' : undefined}
-            >
-              <Building2 className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && 'Consorcio'}
             </Link>
           )}
 
@@ -201,48 +190,34 @@ export function Sidebar({ user }: SidebarProps) {
             </Link>
           )}
 
-          {(user.email === 'lopezboyer@gmail.com' || user.name?.toLowerCase().includes('ivan lopez')) && (
-            <>
-              <Link
-                href="/configuracion/whatsapp"
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-                  pathname === '/configuracion/whatsapp'
-                    ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                )}
-                title={collapsed ? 'Perry Intelligence' : undefined}
-              >
-                <Bot className="w-5 h-5 flex-shrink-0 text-emerald-400" />
-                {!collapsed && 'Perry Intelligence'}
-              </Link>
-              <Link
-                href="/galeria-evidencias"
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-                  pathname === '/galeria-evidencias'
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                )}
-                title={collapsed ? 'Galería Evidencias' : undefined}
-              >
-                <Images className="w-5 h-5 flex-shrink-0 text-indigo-400" />
-                {!collapsed && 'Galería Evidencias'}
-              </Link>
-              <Link
-                href="/perry-improvements"
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
-                  pathname === '/perry-improvements'
-                    ? 'bg-purple-600/20 text-purple-300 border border-purple-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                )}
-                title={collapsed ? 'Perry Improvements' : undefined}
-              >
-                <BrainCircuit className="w-5 h-5 flex-shrink-0 text-purple-400" />
-                {!collapsed && 'Perry Improvements'}
-              </Link>
-            </>
+          {/* SECCIÓN EXCLUSIVA IVAN LÓPEZ (COLOR CYAN AL FINAL DEL SIDEBAR) */}
+          {isIvanLopez && (
+            <div className="mt-4 border-t border-cyan-500/30 pt-3 space-y-1">
+              {!collapsed && (
+                <div className="px-3 pb-1 text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+                  <span>🔒 EXCLUSIVO IVAN LÓPEZ</span>
+                </div>
+              )}
+              {ivanExclusiveItems.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200',
+                      isActive
+                        ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/40 shadow-sm shadow-cyan-500/10'
+                        : 'text-cyan-400 hover:text-cyan-100 hover:bg-cyan-500/15'
+                    )}
+                    title={collapsed ? `${item.label} (Exclusivo)` : undefined}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0 text-cyan-400" />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
           )}
         </nav>
 
@@ -299,17 +274,17 @@ export function Sidebar({ user }: SidebarProps) {
               </Link>
             );
           })}
-          {/* Perry Intelligence — mobile */}
-          {(user.email === 'lopezboyer@gmail.com' || user.name?.toLowerCase().includes('ivan lopez')) && (
+          {/* Tesorería y Perry Intelligence — mobile (Exclusivo Ivan López en CYAN) */}
+          {isIvanLopez && (
             <Link
-              href="/configuracion/whatsapp"
+              href="/tesoreria"
               className={cn(
-                'flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg text-xs transition-colors',
-                pathname === '/configuracion/whatsapp' ? 'text-emerald-600' : 'text-slate-500'
+                'flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg text-xs transition-colors font-semibold',
+                pathname === '/tesoreria' ? 'text-cyan-600' : 'text-cyan-500 hover:text-cyan-600'
               )}
             >
-              <Bot className="w-5 h-5" />
-              <span className="truncate max-w-[60px]">Perry IA</span>
+              <Building2 className="w-5 h-5" />
+              <span className="truncate max-w-[60px]">Tesorería</span>
             </Link>
           )}
         </nav>
