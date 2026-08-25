@@ -22,6 +22,7 @@
     --accent-split-dim: rgba(129,140,248,0.15);
     --green: #22c55e;
     --red: #ef4444;
+    --red-highlight: #ef4444;
     --orange: #f59e0b;
     --phase1: #ef4444;
     --phase2: #f59e0b;
@@ -45,7 +46,8 @@
   .dash-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; text-align:center; display:flex; flex-direction:column; justify-content:center; }
   .dash-card.socio1 { border-color:var(--accent1); background:var(--accent1-dim); }
   .dash-card.socio2 { border-color:var(--accent2); background:var(--accent2-dim); }
-  .dash-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); min-height:36px; display:flex; align-items:center; justify-content:center; }
+  .dash-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); min-height:36px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .dash-name-red { color:var(--red-highlight); font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:0.8px; margin-top:4px; }
   .dash-value { font-size:32px; font-weight:800; margin:6px 0 2px; }
   .dash-amount { font-size:17px; font-weight:700; color:white; margin-bottom:4px; }
   .dash-card.socio1 .dash-value { color:var(--accent1); }
@@ -73,6 +75,19 @@
   .puesto-section-header h2 { font-size:16px; font-weight:800; margin:0; }
   .puesto-section-header .subtext { font-size:12px; opacity:0.85; margin-top:2px; }
   .puesto-section-badge { background:rgba(255,255,255,0.2); padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; }
+
+  .header-name-red {
+    background: white;
+    color: #ef4444;
+    font-weight: 800;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 6px;
+  }
 
   /* Alerts */
   .alert { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px 16px; margin-bottom:20px; display:none; }
@@ -209,6 +224,7 @@
     .kpi-table td { color:#333 !important; border-bottom:1px solid #eee !important; }
     .kpi-meta-input, .kpi-freq-input { background:white !important; color:#111 !important; border:none !important; }
     .print-assigned-tag { display:inline-block !important; }
+    .header-name-red { background:none !important; border:none !important; color:#dc2626 !important; font-size:12pt !important; padding:0 !important; margin-top:4px !important; display:block !important; }
   }
 </style>
 </head>
@@ -232,7 +248,10 @@
 
 <div class="dashboard">
   <div class="dash-card socio1">
-    <div class="dash-label">Director de Tecnología, Inteligencia de Negocio y Gobierno Legal</div>
+    <div class="dash-label">
+      <span>Director de Tecnología, Inteligencia de Negocio y Gobierno Legal</span>
+      <span class="dash-name-red">IVAN JOSE LOPEZ BOYER</span>
+    </div>
     <div class="dash-value" id="s1pct">0%</div>
     <div class="dash-amount" id="s1amount">$0.00 MXN</div>
     <div class="dash-sub"><span id="s1pts">0</span> pts · <span id="s1profiles">0</span> perfiles</div>
@@ -251,7 +270,10 @@
     <div class="dash-sub" style="margin-top:8px;">Brecha: <strong id="gap">0%</strong></div>
   </div>
   <div class="dash-card socio2">
-    <div class="dash-label">Director de Operaciones, Rentabilidad y Administración de Operaciones</div>
+    <div class="dash-label">
+      <span>Director de Operaciones, Rentabilidad y Administración de Operaciones</span>
+      <span class="dash-name-red">CARLOS SEVILLA MERCADO</span>
+    </div>
     <div class="dash-value" id="s2pct">0%</div>
     <div class="dash-amount" id="s2amount">$0.00 MXN</div>
     <div class="dash-sub"><span id="s2pts">0</span> pts · <span id="s2profiles">0</span> perfiles</div>
@@ -309,8 +331,8 @@
 <script>
 const PHASE_ACTIVE = { f1: true, f2: false };
 
-const PUESTO_1_TITLE = "Director de Tecnología, Inteligencia de Negocio y Gobierno Legal";
-const PUESTO_2_TITLE = "Director de Operaciones, Rentabilidad y Administración de Operaciones";
+const PUESTO_1_TITLE = "Director de Tecnología, Inteligencia de Negocio y Gobierno Legal (IVAN JOSE LOPEZ BOYER)";
+const PUESTO_2_TITLE = "Director de Operaciones, Rentabilidad y Administración de Operaciones (CARLOS SEVILLA MERCADO)";
 
 const PROFILES = [
   {
@@ -514,8 +536,8 @@ PROFILES.forEach(p => {
 function createCardHTML(p) {
   let tagText = "";
   let tagColor = "";
-  if (p.assignedTo === 1) { tagText = "ASIGNADO A: " + PUESTO_1_TITLE; tagColor = "#6366f1"; }
-  else if (p.assignedTo === 2) { tagText = "ASIGNADO A: " + PUESTO_2_TITLE; tagColor = "#0284c7"; }
+  if (p.assignedTo === 1) { tagText = "TITULAR: IVAN JOSE LOPEZ BOYER"; tagColor = "#dc2626"; }
+  else if (p.assignedTo === 2) { tagText = "TITULAR: CARLOS SEVILLA MERCADO"; tagColor = "#dc2626"; }
   else { tagText = "CO-DIRECCIÓN COMERCIAL (50/50)"; tagColor = "#818cf8"; }
 
   return `
@@ -525,14 +547,14 @@ function createCardHTML(p) {
           <div class="profile-num">P${p.id}</div>
           <div>
             <span class="profile-name">${p.name}</span>
-            <span class="print-assigned-tag" style="background:${tagColor}20; color:${tagColor}; border:1px solid ${tagColor}40;">${tagText}</span>
+            <span class="print-assigned-tag" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5;">${tagText}</span>
           </div>
         </div>
         <div class="profile-controls">
           <div class="toggle-group">
-            <button class="toggle-btn ${p.assignedTo===1?'active-s1':''}" title="${PUESTO_1_TITLE}" onclick="event.stopPropagation();assign(${p.id},1)">Dir. Tech & Legal</button>
+            <button class="toggle-btn ${p.assignedTo===1?'active-s1':''}" title="IVAN JOSE LOPEZ BOYER" onclick="event.stopPropagation();assign(${p.id},1)">IVAN LOPEZ</button>
             <button class="toggle-btn ${p.assignedTo==='split'?'active-split':''}" title="Co-Dirección 50/50" onclick="event.stopPropagation();assign(${p.id},'split')">Ambos (50/50)</button>
-            <button class="toggle-btn ${p.assignedTo===2?'active-s2':''}" title="${PUESTO_2_TITLE}" onclick="event.stopPropagation();assign(${p.id},2)">Dir. Operaciones & Rent.</button>
+            <button class="toggle-btn ${p.assignedTo===2?'active-s2':''}" title="CARLOS SEVILLA MERCADO" onclick="event.stopPropagation();assign(${p.id},2)">CARLOS SEVILLA</button>
           </div>
           <input type="number" class="points-input" value="${p.points}" min="1" max="99"
             onclick="event.stopPropagation()" oninput="updatePoints(${p.id}, this.value)">
@@ -574,6 +596,7 @@ function render() {
     <div class="puesto-section-header p1">
       <div>
         <h2>Director de Tecnología, Inteligencia de Negocio y Gobierno Legal</h2>
+        <div class="header-name-red">TITULAR: IVAN JOSE LOPEZ BOYER</div>
         <div class="subtext">Enfoque: Transformación Digital, Perry App, Analítica y Gobierno Patrimonial de Activos (Vehículos/Maquinaria)</div>
       </div>
       <div class="puesto-section-badge">Bloque Ejecutivo 1</div>
@@ -589,6 +612,7 @@ function render() {
     <div class="puesto-section-header p2">
       <div>
         <h2>Director de Operaciones, Rentabilidad y Administración de Operaciones</h2>
+        <div class="header-name-red">TITULAR: CARLOS SEVILLA MERCADO</div>
         <div class="subtext">Enfoque: Auditoría de Calidad en Campo, Control de Costos de Proyecto y Gestión Administrativa</div>
       </div>
       <div class="puesto-section-badge">Bloque Ejecutivo 2</div>

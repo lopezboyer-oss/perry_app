@@ -16,15 +16,16 @@ Cada responsabilidad se evalúa principalmente en su **🔴 FASE 1 (Urgente)** p
 
 ## RESUMEN EJECUTIVO DE DISTRIBUCIÓN
 
-| Puesto Ejecutivo | Perfiles Asignados | Puntos Total (F1+F2) | % Total | Puntos Fase 1 (Urgentes) | % Fase 1 | Valor Estimado (Bolsa $100k F1) |
-|---|---|---|---|---|---|---|
-| **Director de Tecnología, Inteligencia de Negocio y Gobierno Legal** | P3 + P5 + P7 + 50% P2 | 73.0 pts | **52.1%** | 34.5 pts | **46.6%** | **$46,621.62 MXN** |
-| **Director de Operaciones, Rentabilidad y Administración de Operaciones** | P1 + P4 + P6 + 50% P2 | 67.0 pts | **47.9%** | 39.5 pts | **53.4%** | **$53,378.38 MXN** |
-| **TOTAL COMBINADO** | **7 Perfiles** | **140.0 pts** | **100.0%** | **74.0 pts** | **100.0%** | **$100,000.00 MXN** |
+| Puesto Ejecutivo | Titular Asignado | Perfiles Asignados | Puntos Total (F1+F2) | % Total | Puntos Fase 1 (Urgentes) | % Fase 1 | Valor Estimado (Bolsa $100k F1) |
+|---|---|---|---|---|---|---|---|
+| **Director de Tecnología, Inteligencia de Negocio y Gobierno Legal** | **IVAN JOSE LOPEZ BOYER** | P3 + P5 + P7 + 50% P2 | 73.0 pts | **52.1%** | 34.5 pts | **46.6%** | **$46,621.62 MXN** |
+| **Director de Operaciones, Rentabilidad y Administración de Operaciones** | **CARLOS SEVILLA MERCADO** | P1 + P4 + P6 + 50% P2 | 67.0 pts | **47.9%** | 39.5 pts | **53.4%** | **$53,378.38 MXN** |
+| **TOTAL COMBINADO** | - | **7 Perfiles** | **140.0 pts** | **100.0%** | **74.0 pts** | **100.0%** | **$100,000.00 MXN** |
 
 ---
 
 ## BLOQUE 1: DIRECTOR DE TECNOLOGÍA, INTELIGENCIA DE NEGOCIO Y GOBIERNO LEGAL
+### TITULAR: IVAN JOSE LOPEZ BOYER
 
 ### Descripción General del Puesto
 Líder responsable de la **transformación digital, arquitectura de sistemas (Perry App), inteligencia analítica operativa y representación legal/fiduciaria de la empresa**. Custodia la integridad patrimonial de los activos físicos y legalización de contratos, combinándolo con la co-dirección del crecimiento comercial.
@@ -125,6 +126,7 @@ Líder responsable de la **transformación digital, arquitectura de sistemas (Pe
 ---
 
 ## BLOQUE 2: DIRECTOR DE OPERACIONES, RENTABILIDAD Y ADMINISTRACIÓN DE OPERACIONES
+### TITULAR: CARLOS SEVILLA MERCADO
 
 ### Descripción General del Puesto
 Ejecutivo responsable de la **calidad técnica en campo, aseguramiento operativo, rentabilidad de proyectos (costo vs cotización), gestión del capital humano y control estricto de egresos/nómina**, complementado con la co-dirección comercial de cuentas clave.
