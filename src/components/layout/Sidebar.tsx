@@ -29,10 +29,11 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { canViewEconomicAnalysis } from '@/lib/permissions';
+import { canViewEconomicAnalysis, canAccessTreasuryDashboard } from '@/lib/permissions';
 
 export const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/tesoreria', label: 'Tesorería Directiva', icon: Building2 },
   { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/actividades', label: 'Actividades', icon: ClipboardList },
   { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },
@@ -63,6 +64,9 @@ export function Sidebar({ user }: SidebarProps) {
   const hasSpecialReportsAccess = ['ADMIN', 'ADMINISTRACION'].includes(user.role) || user.email === 'carlos.lopez@gsingenieria.mx';
 
   const visibleNavItems = navItems.filter((item) => {
+    if (item.href === '/tesoreria') {
+      return canAccessTreasuryDashboard(user.email);
+    }
     if (item.href === '/reportes-especiales') {
       return hasSpecialReportsAccess;
     }

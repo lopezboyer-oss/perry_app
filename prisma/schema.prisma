@@ -641,3 +641,29 @@ model PerryIncidentPattern {
   @@index([category])
   @@index([status])
 }
+
+// ─── CONTROL DE TESORERÍA Y SALDOS DIARIOS (ACCESO EXCLUSIVO IVAN LOPEZ) ───
+
+model FinancialBalanceLog {
+  id                 String   @id @default(cuid())
+  groupId            String?
+  companyName        String   // "GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "BEHEMOTH DESIGN"
+  reportDate         DateTime @default(now())
+  bankName           String   // "SANTANDER", "AFIRME", "BANORTE", "BBVA", "MONEX", etc.
+  accountType        String   @default("MONEDA_NACIONAL") // "MONEDA_NACIONAL", "DOLARES", "CREDITO_REVOLVENTE", "INVERSION"
+  currency           String   @default("MXN") // "MXN", "USD"
+  initialBalance     Float    @default(0)
+  income             Float    @default(0)
+  expenses           Float    @default(0)
+  finalBalance       Float    @default(0)
+  isCalculatedMatch  Boolean  @default(true)
+  calculatedDiff     Float    @default(0)
+  rawMessage         String?  @db.Text
+  imageUrl           String?  @db.Text
+  parsedData         String?  @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([companyName, reportDate])
+  @@index([bankName])
+}

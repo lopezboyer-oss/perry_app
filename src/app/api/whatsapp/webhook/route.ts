@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { parseWhatsappMessageWithGemini } from '@/lib/whatsapp/parser';
+import { parseFinancialMessageWithGemini } from '@/lib/whatsapp/financial-parser';
 import { sendWhatsappGroupMessage, sendWhatsappVoiceNote } from '@/lib/whatsapp/service';
 import { IncomingWhatsappPayload } from '@/lib/whatsapp/types';
 
@@ -334,6 +335,78 @@ export async function POST(req: NextRequest) {
 
         console.log(`[CRITICAL TRACKING] New item #${nextNumber} added by ${payload.senderName} — "${issueDescription}" (${detectedCompany})`);
       }
+    }
+
+    // 4d. Manejo de Grupos ADMINISTRATIVO_FINANCIERO
+    if (groupMap.groupCategory === 'ADMINISTRATIVO_FINANCIERO') {
+      const cleanedFinancialText = cleanTriggerTags(messageText);
+      const financialReport = await parseFinancialMessageWithGemini({
+        messageText: cleanedFinancialText,
+        senderName: payload.senderName || payload.senderPhone,
+        groupName: groupMap.groupName || 'Administración',
+        timestamp: payload.timestamp,
+        imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
+      });
+
+      // Save extracted bank account balances to FinancialBalanceLog in Supabase
+      if (financialReport.accounts && financialReport.accounts.length > 0) {
+        for (const acc of financialReport.accounts) {
+          await prisma.financialBalanceLog.create({
+            data: {
+              groupId: payload.groupId,
+              companyName: financialReport.companyName || groupMap.groupName || 'GRUPO CASEME',
+              reportDate: new Date(financialReport.reportDate || Date.now()),
+              bankName: acc.bankName || 'BANCO',
+              accountType: acc.accountType || 'MONEDA_NACIONAL',
+              currency: acc.currency || 'MXN',
+              initialBalance: acc.initialBalance || 0,
+              income: acc.income || 0,
+              expenses: acc.expenses || 0,
+              finalBalance: acc.finalBalance || 0,
+              isCalculatedMatch: acc.isCalculatedMatch !== undefined ? acc.isCalculatedMatch : true,
+              calculatedDiff: acc.calculatedDiff || 0,
+              rawMessage: payload.messageText || null,
+              imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
+              parsedData: JSON.stringify(financialReport),
+            },
+          });
+        }
+      }
+
+      // Check if there is a mathematical discrepancy in any account
+      if (financialReport.hasErrors && financialReport.errorSummary) {
+        console.warn(`[FINANCIAL AUDIT WARN] ${groupMap.groupName}: ${financialReport.errorSummary}`);
+        
+        // Notify gently ONLY in the admin group about the mathematical difference
+        const warnMessage = `⚠️ *Perry Intelligence — Validación de Saldos*\n\nSe detectó una observación matemática en el reporte de *${financialReport.companyName}*:\n\n${financialReport.errorSummary}\n\n_Por favor verificar los montos reportados. 🤖_`;
+        
+        await sendWhatsappGroupMessage({
+          groupId: payload.groupId,
+          messageText: warnMessage,
+          replyToMessageId: payload.messageId,
+        });
+      }
+
+      // Save raw message log
+      await prisma.whatsappMessageLog.create({
+        data: {
+          messageId: payload.messageId,
+          groupId: payload.groupId,
+          senderPhone: payload.senderPhone,
+          senderName: payload.senderName || 'Administrador',
+          rawMessage: payload.messageText || '[Reporte Financiero / Saldos]',
+          mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+          parsedData: JSON.stringify(financialReport),
+          status: 'FINANCIAL_LOGGED',
+        },
+      });
+
+      return NextResponse.json({
+        status: 'Financial balance logged and validated silently',
+        company: financialReport.companyName,
+        accountsCount: financialReport.accounts?.length || 0,
+        hasErrors: financialReport.hasErrors,
+      });
     }
 
     // 5. Intelligent AI Parse with Gemini 2.5 Flash (Análisis informativo de contexto + Transcripción de Audio)

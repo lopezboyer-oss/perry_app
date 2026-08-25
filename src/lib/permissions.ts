@@ -56,3 +56,10 @@ export const canAccessWhatsappCoPilot = (email: string) => {
   const allowedEmails = ['lopezboyer@gmail.com'];
   return allowedEmails.includes(email);
 };
+
+/** Access to Treasury Dashboard & Financial Balances — RESTRICTED TO IVAN LOPEZ ONLY */
+export const canAccessTreasuryDashboard = (email: string) => {
+  const normalized = (email || '').toLowerCase().trim();
+  const allowed = ['lopezboyer@gmail.com', 'ivanjoselopezboyer@gmail.com', 'ivan@grupocaseme.com'];
+  return allowed.some(e => normalized.includes(e) || normalized.includes('lopezboyer'));
+};

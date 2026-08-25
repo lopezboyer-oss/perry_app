@@ -36,4 +36,24 @@ export interface GeminiParsedReport {
   missingFields: string[];
 }
 
+export interface ExtractedAccountBalance {
+  bankName: string;
+  accountType: 'MONEDA_NACIONAL' | 'DOLARES' | 'CREDITO_REVOLVENTE' | 'INVERSION';
+  currency: 'MXN' | 'USD';
+  initialBalance: number;
+  income: number;
+  expenses: number;
+  finalBalance: number;
+  isCalculatedMatch: boolean;
+  calculatedDiff: number;
+}
+
+export interface GeminiParsedFinancialReport {
+  companyName: string;
+  reportDate: string;
+  hasErrors: boolean;
+  errorSummary: string | null;
+  accounts: ExtractedAccountBalance[];
+}
+
 
