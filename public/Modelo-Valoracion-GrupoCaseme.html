@@ -1,0 +1,448 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>Modelo de Valoración y Remuneración — Grupo Caseme</title><style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; font-size: 11pt; line-height: 1.6; color: #1a1a2e; background: #fff; padding: 40px 50px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22pt; font-weight: 700; color: #0f0f23; border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 8px; }
+  h2 { font-size: 16pt; font-weight: 700; color: #1e3a5f; margin-top: 32px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; page-break-after: avoid; }
+  h3 { font-size: 12pt; font-weight: 600; color: #334155; margin-top: 18px; margin-bottom: 8px; page-break-after: avoid; }
+  p { margin-bottom: 10px; }
+  strong { color: #1e3a5f; }
+  hr { border: none; border-top: 1px solid #cbd5e1; margin: 28px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 10pt; }
+  thead th { background: #1e3a5f; color: white; font-weight: 600; text-align: left; padding: 8px 12px; }
+  tbody td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  ol, ul { margin-left: 24px; margin-bottom: 12px; }
+  li { margin-bottom: 4px; }
+  blockquote { border-left: 4px solid #2563eb; background: #eff6ff; padding: 12px 16px; margin: 12px 0; border-radius: 0 8px 8px 0; font-size: 10pt; color: #334155; }
+  blockquote strong { color: #1e40af; }
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 10pt; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 16px; border-radius: 8px; margin: 12px 0; overflow-x: auto; }
+  pre code { background: transparent; color: inherit; }
+  del { color: #94a3b8; }
+  @media print { body { padding: 20px 30px; } h2 { page-break-before: auto; } table, blockquote { page-break-inside: avoid; } }
+</style></head><body><h1>PERFILES DE VALOR — GRUPO CASEME</h1>
+<h2>Fase 2: Modelo de Valoración y Remuneración</h2>
+<h3>Documento de Trabajo para Junta Directiva | Agosto 2026</h3>
+<hr>
+<h2>1. PARÁMETROS BASE</h2>
+<table>
+<thead>
+<tr>
+<th>Parámetro</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Socios accionistas</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Referencia histórica por socio</td>
+<td>$25,000 MXN netos / semana</td>
+</tr>
+<tr>
+<td>Referencia mensual por socio</td>
+<td>~$100,000 MXN netos / mes</td>
+</tr>
+<tr>
+<td>Bolsa mensual combinada histórica</td>
+<td>~$200,000 MXN netos / mes</td>
+</tr>
+<tr>
+<td>Estado actual</td>
+<td>$0 — suspendido hasta implementar modelo basado en valor</td>
+</tr>
+<tr>
+<td>Mecanismo de pago</td>
+<td>100% variable por cumplimiento de KPIs</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. ARQUITECTURA DEL MODELO</h2>
+<h3>Fórmula de Compensación Mensual por Socio:</h3>
+<pre><code>Compensación = Σ (Peso del Perfil × Puntaje KPI del Perfil × Bolsa Mensual)
+</code></pre>
+<p>Donde:</p>
+<ul>
+<li><strong>Peso del Perfil</strong> = porcentaje del perfil según puntuación multi-factor</li>
+<li><strong>Puntaje KPI</strong> = 0% a 100% según cumplimiento de las metas del perfil</li>
+<li><strong>Bolsa Mensual</strong> = monto total disponible para compensación de socios</li>
+</ul>
+<h3>Bolsa Mensual: Monto Fijo</h3>
+<p><strong>Decisión acordada</strong>: La bolsa mensual será un <strong>monto fijo</strong> definido en base a la posibilidad económica actual de la empresa. Este monto se revisará trimestralmente y puede ajustarse según el desempeño financiero.</p>
+<table>
+<thead>
+<tr>
+<th>Parámetro</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Tipo de bolsa</td>
+<td><strong>Monto fijo mensual</strong></td>
+</tr>
+<tr>
+<td>Monto</td>
+<td><strong>Por definir en junta directiva</strong></td>
+</tr>
+<tr>
+<td>Revisión del monto</td>
+<td>Trimestral</td>
+</tr>
+<tr>
+<td>Referencia histórica</td>
+<td>$200,000 MXN/mes combinado (2 socios)</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>3. PUNTUACIÓN Y PESO DE CADA PERFIL</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Perfil</th>
+<th>Impacto</th>
+<th>Expertise</th>
+<th>Tiempo</th>
+<th>Riesgo</th>
+<th>Reemplazo</th>
+<th>Total</th>
+<th><strong>Peso</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Auditor/Consultor Operaciones</td>
+<td>5</td>
+<td>5</td>
+<td>3</td>
+<td>2</td>
+<td>5</td>
+<td>20</td>
+<td><strong>14.3%</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Director Comercial</td>
+<td>5</td>
+<td>4</td>
+<td>3</td>
+<td>2</td>
+<td>4</td>
+<td>18</td>
+<td><strong>12.9%</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Analista Inteligencia + Seg. Operativo</td>
+<td>4+4</td>
+<td>3+3</td>
+<td>3+4</td>
+<td>1+1</td>
+<td>3+3</td>
+<td>29</td>
+<td><strong>20.7%</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Controller Costos de Proyecto</td>
+<td>5</td>
+<td>5</td>
+<td>4</td>
+<td>1</td>
+<td>4</td>
+<td>19</td>
+<td><strong>13.6%</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>CTO / Tecnología e Innovación</td>
+<td>5</td>
+<td>5</td>
+<td>5</td>
+<td>1</td>
+<td>5</td>
+<td>21</td>
+<td><strong>15.0%</strong></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Dir. Administrativo / Control Egresos</td>
+<td>5</td>
+<td>4</td>
+<td>4</td>
+<td>3</td>
+<td>3</td>
+<td>19</td>
+<td><strong>13.6%</strong></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Representante Legal/Fiduciario</td>
+<td>3</td>
+<td>3</td>
+<td>1</td>
+<td>5</td>
+<td>2</td>
+<td>14</td>
+<td><strong>10.0%</strong></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><strong>140</strong></td>
+<td><strong>100%</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>4. DISTRIBUCIÓN PROPUESTA ENTRE SOCIOS</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Socio A (Control y Gobierno)</strong></th>
+<th><strong>Socio B (Crecimiento e Innovación)</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Perfil 1</td>
+<td>✅ Auditor Operaciones (14.3%)</td>
+<td></td>
+</tr>
+<tr>
+<td>Perfil 2</td>
+<td></td>
+<td>✅ Director Comercial (12.9%)</td>
+</tr>
+<tr>
+<td>Perfil 3</td>
+<td></td>
+<td>✅ Analista + Seg. Operativo (20.7%)</td>
+</tr>
+<tr>
+<td>Perfil 4</td>
+<td>✅ Controller Costos (13.6%)</td>
+<td></td>
+</tr>
+<tr>
+<td>Perfil 5</td>
+<td></td>
+<td>✅ CTO / Tecnología (15.0%)</td>
+</tr>
+<tr>
+<td>Perfil 6</td>
+<td>✅ Dir. Admin / Egresos (13.6%)</td>
+<td></td>
+</tr>
+<tr>
+<td>Perfil 7</td>
+<td>✅ Rep Legal (10.0%)</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>51.5%</strong></td>
+<td><strong>48.6%</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Diferencia de 2.9% — se compensa naturalmente con la evaluación de KPIs.</p>
+</blockquote>
+<hr>
+<h2>5. MECANISMO DE EVALUACIÓN KPI</h2>
+<p>Cada perfil se evalúa mensualmente con un <strong>puntaje de 0% a 100%</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Rango KPI</th>
+<th>Significado</th>
+<th>Factor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>90% — 100%</td>
+<td>Excepcional</td>
+<td>100% de la asignación</td>
+</tr>
+<tr>
+<td>70% — 89%</td>
+<td>Cumplimiento satisfactorio</td>
+<td>Se paga el % real</td>
+</tr>
+<tr>
+<td>50% — 69%</td>
+<td>Cumplimiento parcial</td>
+<td>Se paga el % real</td>
+</tr>
+<tr>
+<td>0% — 49%</td>
+<td>Incumplimiento</td>
+<td>Se paga el % real (o $0 si es &lt; 25%)</td>
+</tr>
+</tbody></table>
+<h3>Ejemplo de Evaluación KPI — Perfil 1 (Auditor de Operaciones):</h3>
+<table>
+<thead>
+<tr>
+<th>KPI</th>
+<th>Meta</th>
+<th>Resultado</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Visitas de campo realizadas</td>
+<td>≥ 4/mes</td>
+<td>3 realizadas</td>
+<td>75%</td>
+</tr>
+<tr>
+<td>Informes de auditoría emitidos</td>
+<td>≥ 2/mes</td>
+<td>2 emitidos</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Hallazgos documentados</td>
+<td>100% de visitas</td>
+<td>3/3 documentados</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>Recomendaciones implementadas</td>
+<td>≥ 70%</td>
+<td>60% implementadas</td>
+<td>86%</td>
+</tr>
+<tr>
+<td><strong>Promedio KPI del Perfil</strong></td>
+<td></td>
+<td></td>
+<td><strong>90%</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>6. SIMULACIÓN NUMÉRICA</h2>
+<h3>Supuestos:</h3>
+<ul>
+<li>Bolsa mensual combinada: <strong>$200,000 MXN</strong> (referencia histórica)</li>
+<li>Los perfiles se distribuyen entre 2 socios</li>
+</ul>
+<h3>Escenario ejemplo:</h3>
+<p><strong>Socio A</strong> ejerce: Auditor Operaciones (17.2%) + Director Comercial (15.5%) + Rep Legal (12.1%)
+<strong>Socio B</strong> ejerce: CTO (18.1%) + Controller Costos (16.4%) + Seg. Crítico (12.9%) + Analista Intel (12.1% compartido 50%)</p>
+<table>
+<thead>
+<tr>
+<th>Socio</th>
+<th>Perfil</th>
+<th>Peso</th>
+<th>KPI</th>
+<th>Compensación</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>A</strong></td>
+<td>Auditor Operaciones</td>
+<td>17.2%</td>
+<td>90%</td>
+<td>$30,960</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td>Director Comercial</td>
+<td>15.5%</td>
+<td>80%</td>
+<td>$24,800</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td>Rep Legal</td>
+<td>12.1%</td>
+<td>100%</td>
+<td>$24,200</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Subtotal Socio A</strong></td>
+<td><strong>44.8%</strong></td>
+<td></td>
+<td><strong>$79,960</strong></td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>CTO / Tecnología</td>
+<td>18.1%</td>
+<td>95%</td>
+<td>$34,390</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>Controller Costos</td>
+<td>16.4%</td>
+<td>85%</td>
+<td>$27,880</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>Seg. Crítico</td>
+<td>12.9%</td>
+<td>75%</td>
+<td>$19,350</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>Analista Intel (50%)</td>
+<td>6.05%</td>
+<td>70%</td>
+<td>$8,470</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Subtotal Socio B</strong></td>
+<td><strong>53.45%</strong></td>
+<td></td>
+<td><strong>$90,090</strong></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>TOTAL PAGADO</strong></td>
+<td></td>
+<td></td>
+<td><strong>$170,050</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Los $29,950 restantes (de la bolsa de $200K) no se pagan porque los KPIs no fueron 100%. <strong>Eso es dinero que se queda en la empresa</strong>, incentivando al máximo cumplimiento.</p>
+</blockquote>
+<hr>
+<h2>7. REGLAS DE GOBIERNO</h2>
+<ol>
+<li><strong>Evaluación mensual</strong>: Los KPIs se revisan en <strong>Junta Mensual de Consejo Directivo</strong></li>
+<li><strong>Evidencia</strong>: Los KPIs deben sustentarse con evidencia verificable (reportes de Perry, correos, minutas, fotos de campo)</li>
+<li><strong>Revisión trimestral</strong>: Los pesos, metas de KPI y el monto de la bolsa pueden ajustarse trimestralmente por acuerdo mutuo</li>
+<li><strong>Transparencia total</strong>: El cálculo es visible para ambos socios — sin discrecionalidad</li>
+<li><strong>Acta de junta</strong>: Cada evaluación mensual queda documentada en acta con las puntuaciones y el monto resultante</li>
+<li><strong>Período de gracia</strong>: Los primeros 2 meses se evalúan pero con carácter formativo (sin penalización económica)</li>
+</ol>
+<hr>
+<h2>8. PRÓXIMOS PASOS</h2>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> <del>Definir mecanismo de la bolsa</del> → <strong>Monto fijo mensual</strong></li>
+<li><input disabled="" type="checkbox"> Definir el monto de la bolsa en junta directiva</li>
+<li><input disabled="" type="checkbox"> Asignar perfiles entre los 2 socios (llenar la plantilla del punto 4)</li>
+<li><input checked="" disabled="" type="checkbox"> <del>Definir quién evalúa los KPIs</del> → <strong>Junta Mensual de Consejo Directivo</strong></li>
+<li><input disabled="" type="checkbox"> Establecer fecha de inicio del modelo</li>
+<li><input disabled="" type="checkbox"> Definir si se aplica período de gracia (2 meses formativos)</li>
+<li><input disabled="" type="checkbox"> Generar documento final para firma en junta directiva</li>
+</ul>
+<div style='margin-top: 40px; padding-top: 16px; border-top: 2px solid #1e3a5f; font-size: 9pt; color: #64748b; text-align: center;'>
+  <strong>CONFIDENCIAL</strong> — Documento de trabajo para Junta Directiva de Grupo Caseme<br>
+  Generado por Perry Intelligence | Agosto 2026
+</div></body></html>
