@@ -92,7 +92,7 @@
 
   /* Expandable Content */
   .profile-body { max-height:0; overflow:hidden; transition:max-height 0.4s ease; }
-  .profile-body.open { max-height:2000px; }
+  .profile-body.open { max-height:3000px; }
   .profile-content { padding:16px 20px 20px; }
 
   .resp-section { margin-bottom:16px; }
@@ -102,6 +102,7 @@
   .resp-label .dot.f2 { background:var(--phase2); }
   .resp-list { list-style:none; }
   .resp-list li { font-size:13px; color:var(--text-dim); padding:4px 0 4px 16px; position:relative; line-height:1.5; }
+  .resp-list li.highlight-item { color:#38bdf8; font-weight:600; background:rgba(56,189,248,0.1); border-left:3px solid #38bdf8; border-radius:4px; padding-left:12px; margin:4px 0; }
   .resp-list li::before { content:'›'; position:absolute; left:0; color:var(--text-dim); font-weight:700; }
 
   .table-responsive { width:100%; overflow-x:auto; }
@@ -255,8 +256,14 @@
 </div>
 
 <div class="action-bar">
+  <button class="action-btn" onclick="toggleAllExpand(true)">
+    <span class="icon">📂</span> Expandir Todos los Perfiles
+  </button>
+  <button class="action-btn" onclick="toggleAllExpand(false)">
+    <span class="icon">📁</span> Colapsar Todos
+  </button>
   <button class="action-btn primary" onclick="recalcFromKPIs()">
-    <span class="icon">⚡</span> Recalcular Puntajes desde Metas KPI
+    <span class="icon">⚡</span> Recalcular Puntajes desde KPIs
   </button>
   <button class="action-btn" onclick="resetToDefaults()">
     <span class="icon">↩️</span> Restaurar Valores Base
@@ -444,7 +451,7 @@ const PROFILES = [
     ]
   },
   {
-    id: 7, name: 'Representante Legal, Fiduciario y Control de Activos', points: 14, assignedTo: 1,
+    id: 7, name: 'Representante Legal, Fiduciario y Control de Activos (Vehículos y Maquinaria)', points: 14, assignedTo: 1,
     f1: [
       'Firmar como representante legal en contratos con clientes, proveedores y financieras',
       'Actuar como aval personal en líneas de crédito bancarias y financiamientos',
@@ -452,7 +459,7 @@ const PROFILES = [
       'Atender requerimientos legales, auditorías fiscales y laborales',
       'Supervisar cumplimiento de obligaciones regulatorias (REPSE, padrones)',
       'Atender procesos de despido y rescisión laboral: convenios y finiquitos',
-      'Control Legal y Protección Patrimonial de Activos (Vehículos, Maquinaria, Equipos): regularización, seguros, tenencias y licencias'
+      '🚗 CONTROL LEGAL Y PROTECCIÓN PATRIMONIAL DE ACTIVOS (VEHÍCULOS Y MAQUINARIA): Custodia legal, regularización de flota vehicular y maquinaria pesada, gestión de pólizas de seguro patrimonial, trámites de propiedad, tenencias, licencias, contratos de leasing/arrendamiento y trámites de circulación ante autoridades'
     ],
     f2: [
       'Elaborar y mantener actualizada matriz de riesgos empresariales',
@@ -465,7 +472,7 @@ const PROFILES = [
       ['Requerimientos legales atendidos', '≤ 5 días', 'Por evento', 'f1'],
       ['Contratos firmados y revisados', 'Registro completo', 'Mensual', 'f1'],
       ['Despidos atendidos sin demanda procedente', '≥ 90%', 'Por evento', 'f1'],
-      ['Regularización y seguros de flota y maquinaria', '100% al día', 'Trimestral', 'f1'],
+      ['🚗 Regularización y seguros de flota y maquinaria activas', '100% al día', 'Trimestral', 'f1'],
       ['Matriz de riesgos actualizada', '1 activa', 'Semestral', 'f2'],
     ]
   }
@@ -513,11 +520,11 @@ function render() {
           <span class="expand-icon">▾</span>
         </div>
       </div>
-      <div class="profile-body" id="body-${p.id}">
+      <div class="profile-body open" id="body-${p.id}">
         <div class="profile-content">
           <div class="resp-section ${PHASE_ACTIVE.f1?'':'phase-dimmed'}">
             <div class="resp-label"><span class="dot f1"></span> FASE 1 — URGENTES (${p.f1.length})</div>
-            <ul class="resp-list">${p.f1.map(r=>`<li>${r}</li>`).join('')}</ul>
+            <ul class="resp-list">${p.f1.map(r=>`<li class="${r.includes('VEHÍCULOS')||r.includes('Vehículos')?'highlight-item':''}">${r}</li>`).join('')}</ul>
           </div>
           <div class="resp-section ${PHASE_ACTIVE.f2?'':'phase-dimmed'}">
             <div class="resp-label"><span class="dot f2"></span> FASE 2 — EN RAMPA (${p.f2.length})</div>
@@ -528,7 +535,7 @@ function render() {
             <div class="table-responsive">
               <table class="kpi-table">
                 <thead><tr><th>KPI</th><th>Meta (Editable)</th><th>Frecuencia (Editable)</th><th>Fase</th></tr></thead>
-                <tbody>${p.kpis.map((k,ki)=>`<tr class="${PHASE_ACTIVE[k[3]]?'':'kpi-row-dimmed'}"><td>${k[0]}</td><td><input class="kpi-meta-input" value="${k[1]}" oninput="updateKpiMeta(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td><input class="kpi-freq-input" value="${k[2]}" oninput="updateKpiFreq(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td><span class="phase-tag ${k[3]}">${k[3]==='f1'?'🔴 F1':'🟡 F2'}</span></td></tr>`).join('')}</tbody>
+                <tbody>${p.kpis.map((k,ki)=>`<tr class="${PHASE_ACTIVE[k[3]]?'':'kpi-row-dimmed'} ${k[0].includes('flota')||k[0].includes('vehículo')?'highlight-row':''}"><td>${k[0]}</td><td><input class="kpi-meta-input" value="${k[1]}" oninput="updateKpiMeta(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td><input class="kpi-freq-input" value="${k[2]}" oninput="updateKpiFreq(${p.id},${ki},this.value)" onclick="event.stopPropagation()" ${PHASE_ACTIVE[k[3]]?'':'disabled'}></td><td><span class="phase-tag ${k[3]}">${k[3]==='f1'?'🔴 F1':'🟡 F2'}</span></td></tr>`).join('')}</tbody>
               </table>
             </div>
           </div>
@@ -537,6 +544,17 @@ function render() {
     container.appendChild(card);
   });
   recalc();
+}
+
+function toggleAllExpand(expand) {
+  PROFILES.forEach(p => {
+    const card = document.getElementById(`card-${p.id}`);
+    const body = document.getElementById(`body-${p.id}`);
+    if (card && body) {
+      if (expand) { card.classList.add('expanded'); body.classList.add('open'); }
+      else { card.classList.remove('expanded'); body.classList.remove('open'); }
+    }
+  });
 }
 
 function assign(id, socio) {
@@ -656,12 +674,7 @@ function resetToDefaults() {
 }
 
 function exportPDF() {
-  PROFILES.forEach(p => {
-    const body = document.getElementById(`body-${p.id}`);
-    if (body) body.classList.add('open');
-    const card = document.getElementById(`card-${p.id}`);
-    if (card) card.classList.add('expanded');
-  });
+  toggleAllExpand(true);
   setTimeout(() => { window.print(); }, 300);
 }
 
