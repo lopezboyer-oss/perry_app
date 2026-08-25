@@ -27,10 +27,13 @@ export async function POST(req: NextRequest) {
     } catch {}
     const period: string = body.period || 'today';
 
-    // 1. Fetch all WhatsApp group mappings + company metadata
+    // 1. Fetch WhatsApp group mappings (only OPERACIONAL & COORDINACION groups to protect financial/consorcio data) + company metadata
     const [groups, companies] = await Promise.all([
       prisma.whatsappGroupMapping.findMany({
-        where: { isActive: true },
+        where: {
+          isActive: true,
+          groupCategory: { in: ['OPERACIONAL', 'COORDINACION'] },
+        },
       }),
       prisma.company.findMany({
         select: { id: true, name: true, shortName: true, color: true },

@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { groupId, groupName, workOrderFolio, companyId, isActive } = body;
+    const { groupId, groupName, workOrderFolio, companyId, groupCategory, isActive } = body;
 
     if (!groupId || !groupId.trim()) {
       return NextResponse.json({ error: 'El ID del grupo (groupId / JID) es obligatorio' }, { status: 400 });
@@ -125,12 +125,14 @@ export async function POST(req: NextRequest) {
         groupName: groupName ? groupName.trim() : 'Grupo WhatsApp Operaciones',
         workOrderFolio: workOrderFolio ? workOrderFolio.trim() : null,
         companyId: companyId ? companyId.trim() : null,
+        groupCategory: groupCategory ? groupCategory.trim() : 'OPERACIONAL',
         isActive: isActive !== undefined ? isActive : true,
       },
       update: {
         groupName: groupName !== undefined ? (groupName ? groupName.trim() : null) : undefined,
         workOrderFolio: workOrderFolio !== undefined ? (workOrderFolio ? workOrderFolio.trim() : null) : undefined,
         companyId: companyId !== undefined ? (companyId ? companyId.trim() : null) : undefined,
+        groupCategory: groupCategory !== undefined ? (groupCategory ? groupCategory.trim() : 'OPERACIONAL') : undefined,
         isActive: isActive !== undefined ? isActive : undefined,
       },
     });

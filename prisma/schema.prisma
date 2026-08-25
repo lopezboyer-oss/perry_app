@@ -549,6 +549,7 @@ model WhatsappGroupMapping {
   groupName      String?
   workOrderFolio String?  // Default Work Order Folio for this group (e.g. "S06447")
   companyId      String?
+  groupCategory  String   @default("OPERACIONAL") // OPERACIONAL | COORDINACION | ADMINISTRATIVO_FINANCIERO | CONSORCIO | RESERVADO_DIRECCION
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
