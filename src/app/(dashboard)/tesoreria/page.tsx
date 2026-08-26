@@ -582,16 +582,16 @@ export default function TesoreriaPage() {
                             </button>
                           ) : null}
 
-                          {/* Token Signature Button */}
+                          {/* Token Signature Button / Comprobante */}
                           {pay.tokenHash ? (
                             <a
-                              href={`/nominas/firmar/${pay.tokenHash}`}
+                              href={isAppr ? `/nominas/comprobante/${pay.tokenHash}` : `/nominas/firmar/${pay.tokenHash}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="flex-1 py-2 px-3 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-bold rounded-xl text-xs text-center transition-all flex items-center justify-center space-x-1.5"
+                              className={`flex-1 py-2 px-3 ${isAppr ? 'bg-emerald-600/20 hover:bg-emerald-600/30 border-emerald-500/30 text-emerald-300' : 'bg-indigo-600/20 hover:bg-indigo-600/30 border-indigo-500/30 text-indigo-300'} border font-bold rounded-xl text-xs text-center transition-all flex items-center justify-center space-x-1.5`}
                             >
-                              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                              <span>{isAppr ? 'Ver Registro Tokenizado' : '✍️ Firma Digital'}</span>
+                              <Sparkles className={`w-3.5 h-3.5 ${isAppr ? 'text-emerald-400' : 'text-indigo-400'}`} />
+                              <span>{isAppr ? '📜 Comprobante Firma' : '✍️ Firma Digital'}</span>
                             </a>
                           ) : (
                             <span className="text-[10px] text-slate-500">Sin token generado</span>

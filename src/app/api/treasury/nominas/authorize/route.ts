@@ -123,8 +123,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Send approval notification to group with explicit Director Name
+    // Send approval notification to group with explicit Director Name and Receipt Link
     if (log.groupId) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
+      const receiptUrl = `${appUrl}/nominas/comprobante/${token}`;
+
       const text = `✅ *NÓMINA APROBADA Y TOKENIZADA POR DIRECCIÓN*\n` +
         `🏢 *Empresa:* ${log.companyName}\n` +
         `📅 *Periodo:* ${log.periodNumber || 'Raya Semanal'}\n` +
@@ -132,6 +135,7 @@ export async function POST(req: NextRequest) {
         `✍️ *Firmado por:* ${signerName}\n` +
         `🔒 *Hash de Token:* ${token.substring(0, 18)}...\n` +
         `⏱️ *Fecha y Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Tijuana' })}\n\n` +
+        `📥 *Descargar Comprobante Digital (Imagen/PDF):*\n${receiptUrl}\n\n` +
         `_Autorización digital inmutable tokenizada en Perry App 🤖_`;
 
       await sendWhatsappGroupMessage({
