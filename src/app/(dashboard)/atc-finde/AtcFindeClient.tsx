@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
+import { exportWeekendPDFClient } from '@/lib/pdf/weekend-pdf-exporter';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 
@@ -895,41 +896,21 @@ export function AtcFindeClient({
   };
 
   // ── PDF EXPORT (Ejecutivo Gráfico) ──
-  const [exportingPdf, setExportingPdf] = useState(false);
-
-  const exportPDF = async () => {
-    setExportingPdf(true);
+  const exportPDF = () => {
     try {
-      const res = await fetch('/api/weekend-export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          weekendOf,
-          companyId: activeCompanyId || null,
-        }),
+      exportWeekendPDFClient({
+        activities,
+        techAssignments,
+        safetyAssignments,
+        userSafetyAssignments,
+        equipAssignments,
+        technicians,
+        weekendOf,
+        companyName,
       });
-
-      if (!res.ok) {
-        const d = await res.json();
-        alert(d.error || 'Error al generar el PDF');
-        return;
-      }
-
-      const blob = await res.blob();
-      const dlUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = dlUrl;
-      const safeCompany = companyName.replace(/[^a-zA-Z0-9]/g, '_');
-      link.download = `Plan_Finde_${weekendOf}_${safeCompany}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(dlUrl);
     } catch (err) {
-      console.error('Error exportando PDF:', err);
-      alert('Error de conexión al generar PDF');
-    } finally {
-      setExportingPdf(false);
+      console.error('Error generando PDF:', err);
+      alert('Error al generar la vista previa de PDF');
     }
   };
 
@@ -1405,8 +1386,8 @@ export function AtcFindeClient({
           )}
           <button onClick={() => setShowEquipReportModal(true)} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100 leading-tight text-center">🏗️ Reporte<br/>Equipos</button>
           <button onClick={exportCSV} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100 leading-tight text-center"><Download size={12} /> Exportar<br/>Excel</button>
-          <button onClick={exportPDF} disabled={exportingPdf} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-indigo-50 !text-indigo-700 !border-indigo-300 hover:!bg-indigo-100 disabled:opacity-50 leading-tight text-center">
-            {exportingPdf ? <><Loader2 size={12} className="animate-spin" /> Generando...</> : <><Download size={12} /> Exportar<br/>PDF</>}
+          <button onClick={exportPDF} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-indigo-50 !text-indigo-700 !border-indigo-300 hover:!bg-indigo-100 leading-tight text-center">
+            <Download size={12} /> Exportar<br/>PDF
           </button>
           {['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole) && (
             <button onClick={exportMultiCompanyExcel} disabled={exportingMulti} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-violet-50 !text-violet-700 !border-violet-300 hover:!bg-violet-100 disabled:opacity-50 leading-tight text-center">

@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/utils';
 import { TimeInput24h } from '@/components/ui/TimeInput24h';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
+import { exportWeekendPDFClient } from '@/lib/pdf/weekend-pdf-exporter';
 
 interface Activity {
   id: string; title: string; type: string; status: string; date: string;
@@ -314,40 +315,21 @@ export function PlanesPasadosClient({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
-  const [exportingPdf, setExportingPdf] = useState(false);
-
-  const exportPDF = async () => {
+  const exportPDF = () => {
     if (!selectedWeekend) return;
-    setExportingPdf(true);
     try {
-      const res = await fetch('/api/weekend-export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          weekendOf: selectedWeekend,
-        }),
+      exportWeekendPDFClient({
+        activities,
+        techAssignments,
+        safetyAssignments,
+        userSafetyAssignments,
+        equipAssignments,
+        weekendOf: selectedWeekend,
+        companyName: 'CONSORCIO MULTIEMPRESA',
       });
-
-      if (!res.ok) {
-        const d = await res.json();
-        alert(d.error || 'Error al generar el PDF');
-        return;
-      }
-
-      const blob = await res.blob();
-      const dlUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = dlUrl;
-      link.download = `Plan_Finde_${selectedWeekend}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(dlUrl);
     } catch (err) {
-      console.error('Error exportando PDF:', err);
-      alert('Error de conexión al generar PDF');
-    } finally {
-      setExportingPdf(false);
+      console.error('Error generando PDF:', err);
+      alert('Error al generar la vista previa de PDF');
     }
   };
 
@@ -363,14 +345,9 @@ export function PlanesPasadosClient({
         {selectedWeekend && (
           <button
             onClick={exportPDF}
-            disabled={exportingPdf}
-            className="btn-secondary !text-xs !py-2 !px-3 !gap-1.5 !bg-indigo-50 !text-indigo-700 !border-indigo-300 hover:!bg-indigo-100 disabled:opacity-50 font-semibold"
+            className="btn-secondary !text-xs !py-2 !px-3 !gap-1.5 !bg-indigo-50 !text-indigo-700 !border-indigo-300 hover:!bg-indigo-100 font-semibold"
           >
-            {exportingPdf ? (
-              <><Loader2 size={14} className="animate-spin" /> Generando PDF...</>
-            ) : (
-              <><Download size={14} /> Exportar Plan a PDF</>
-            )}
+            <Download size={14} /> Exportar Plan a PDF
           </button>
         )}
       </div>
