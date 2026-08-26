@@ -241,44 +241,33 @@ const steps = [
     ),
   },
   {
-    id: 'oportunidades',
-    title: 'Oportunidades (Seguimiento de Cotizaciones)',
+    id: 'trabajos-abiertos',
+    title: 'Trabajos Abiertos (Folios Odoo)',
     perryMood: 'teaching',
     content: (
       <>
         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-5 flex gap-3">
           <Lightbulb className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-indigo-800">
-            <strong>Las oportunidades se generan automáticamente</strong> al registrar actividades tipo <strong>Cotización</strong> con un folio Odoo asignado. No necesitas crear oportunidades manualmente.
+            <strong>El módulo de Trabajos Abiertos</strong> te permite dar seguimiento a las actividades y órdenes en ejecución con folios Odoo.
           </p>
         </div>
 
         <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
-          Registra una Cotización con Folio Odoo
+          Asigna Folios Odoo a las actividades
         </h4>
         <p className="text-slate-600 mb-5 ml-8">
-          Al crear una actividad tipo <strong>Cotización</strong>, llena el campo <strong>&quot;Folio Odoo&quot;</strong> (ej: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-indigo-700 font-mono text-xs">S00123</code>). Esto vincula la actividad a una oportunidad rastreable.
+          Al registrar o editar actividades, llena el campo <strong>&quot;Folio Odoo&quot;</strong> (ej: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-indigo-700 font-mono text-xs">S00123</code>).
         </p>
 
         <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">2</span>
-          El sistema agrupa por folio
-        </h4>
-        <p className="text-slate-600 mb-5 ml-8">
-          Todas las actividades con el mismo folio se agrupan en una <strong>oportunidad</strong>. El sistema calcula automáticamente: actividades totales, tiempo invertido, lead time y estado.
-        </p>
-
-        <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">3</span>
-          Consulta en la página Oportunidades
+          Consulta el tablero de Trabajos Abiertos
         </h4>
         <p className="text-slate-600 mb-3 ml-8">
-          Ve a <strong>&quot;Oportunidades&quot;</strong> en el menú lateral para ver el tablero con KPIs y el listado completo. Puedes filtrar por estado, responsable o buscar por folio.
+          Ve a <strong>&quot;Trabajos Abiertos&quot;</strong> en el menú lateral para ver el listado de folios y su estado de ejecución en tiempo real.
         </p>
-        <div className="ml-8 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
-          ⚠️ Si una actividad aparece con <strong>&quot;SIN FOLIO ODOO&quot;</strong> en rojo, haz clic en ella para editar y agregar el folio correspondiente.
-        </div>
       </>
     ),
   },

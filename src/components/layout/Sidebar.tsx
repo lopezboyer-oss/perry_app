@@ -45,8 +45,6 @@ export const navItems = [
   { href: '/trabajos-abiertos', label: 'Trabajos Abiertos', icon: ClipboardList },
   { href: '/reportes-especiales', label: 'Rep. Especiales', icon: PieChart },
   { href: '/analisis-economico', label: 'Análisis Económico', icon: TrendingUp },
-  { href: '/oportunidades', label: 'Oportunidades', icon: Target, disabled: true },
-  { href: '/analitica', label: 'Analítica', icon: BarChart3, disabled: true },
   { href: '/guia', label: 'Guía Perry', icon: HelpCircle },
   { href: '/dashboard-cliente', label: 'Cliente Tier 1', icon: BarChart3 },
 ];

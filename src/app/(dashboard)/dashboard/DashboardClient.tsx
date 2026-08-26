@@ -614,9 +614,9 @@ export function DashboardClient({ data }: { data: DashboardData }) {
       {data.oppsByStatus.length > 0 && (
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-800">Estado de Oportunidades</h3>
-            <Link href="/oportunidades" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-              Ver todas →
+            <h3 className="text-lg font-semibold text-slate-800">Estado de Cotizaciones y Folios</h3>
+            <Link href="/trabajos-abiertos" className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+              Ver Trabajos Abiertos →
             </Link>
           </div>
           <div className="flex flex-wrap gap-3">

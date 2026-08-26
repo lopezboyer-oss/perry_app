@@ -261,7 +261,7 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
                 <DetailItem icon={User} label="Contacto" value={activity.contact?.name || '—'} />
                 <DetailItem label="Folio ODOO" value={
                   activity.workOrderFolio ? (
-                    <Link href={`/oportunidades/${activity.workOrderFolio}`} className="font-mono font-bold text-indigo-600 hover:text-indigo-700">
+                    <Link href={`/trabajos-abiertos?search=${activity.workOrderFolio}`} className="font-mono font-bold text-indigo-600 hover:text-indigo-700">
                       #{activity.workOrderFolio}
                     </Link>
                   ) : '—'

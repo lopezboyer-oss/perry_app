@@ -247,14 +247,14 @@ export function PerfilesGuide() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {[
-                { page: 'Dashboard & Analítica', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Dashboard General', values: [1, 1, 1, 1, 1, 0] },
                 { page: 'Actividades (Listado & Crear)', values: [1, 1, 1, 1, 1, 0] },
                 { page: 'Control de Asistencia', values: [1, 1, 1, 1, 1, 1] },
                 { page: 'ATC Finde (Plan Finde)', values: [1, 1, 1, 1, 1, 2] },
                 { page: 'Reg. Equipos (Checklist)', values: [1, 1, 1, 1, 1, 0] },
                 { page: 'Planes Pasados (Historial)', values: [1, 1, 1, 1, 1, 0] },
                 { page: 'Recibos (Facturación Odoo)', values: [1, 1, 1, 1, 1, 0] },
-                { page: 'Oportunidades (Odoo)', values: [1, 1, 1, 1, 1, 0] },
+                { page: 'Trabajos Abiertos (Odoo)', values: [1, 1, 1, 1, 1, 0] },
                 { page: 'Alarma TERA (Monitoreo)', values: [1, 1, 1, 1, 0, 0] },
                 { page: 'Gestión de Clientes', values: [1, 1, 1, 1, 0, 0] },
                 { page: 'Guía Perry', values: [1, 1, 1, 1, 1, 0] },
