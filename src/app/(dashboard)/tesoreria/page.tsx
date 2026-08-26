@@ -28,6 +28,7 @@ import {
   Eye,
   X,
   ImageIcon,
+  Sparkles,
 } from 'lucide-react';
 
 interface AccountBalance {
