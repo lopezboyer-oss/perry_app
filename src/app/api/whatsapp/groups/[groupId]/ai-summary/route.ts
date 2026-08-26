@@ -49,6 +49,14 @@ export async function POST(
       return NextResponse.json({ error: 'Grupo no encontrado' }, { status: 404 });
     }
 
+    // 1b. Security Check: Financial, Consorcio or Reserved groups require Ivan Lopez permissions
+    if (['ADMINISTRATIVO_FINANCIERO', 'CONSORCIO', 'RESERVADO_DIRECCION'].includes(group.groupCategory)) {
+      const email = (session?.user as any)?.email || '';
+      if (!canAccessTreasuryDashboard(email)) {
+        return NextResponse.json({ error: 'Acceso restringido a este grupo de administración/finanzas' }, { status: 403 });
+      }
+    }
+
     // 2. Calculate date range based on period (Tijuana timezone — DST-aware)
     const TIMEZONE = 'America/Tijuana';
     const now = new Date();

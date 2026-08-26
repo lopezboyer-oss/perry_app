@@ -120,7 +120,10 @@ export async function POST(req: NextRequest) {
     const activityDateStart = whereClause.createdAt?.gte || new Date(0);
     const activityDateEnd = whereClause.createdAt?.lte || new Date();
 
-    // 3. Fetch logs for ALL groups within period
+    // 3. Fetch logs ONLY for OPERACIONAL & COORDINACION groups within period
+    const operationalGroupIds = groups.map((g) => g.groupId).filter(Boolean);
+    whereClause.groupId = { in: operationalGroupIds };
+
     const logs = await prisma.whatsappMessageLog.findMany({
       where: whereClause,
       take: 150,
@@ -136,6 +139,9 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    // Double security check: filter out any non-operational group logs
+    const safeLogs = logs.filter((l) => l.groupId && operationalGroupIds.includes(l.groupId));
 
     // 3b. Fetch Perry App activities for the same period
     const activities = await prisma.activity.findMany({
@@ -164,7 +170,7 @@ export async function POST(req: NextRequest) {
       orderBy: { itemNumber: 'asc' },
     });
 
-    if (logs.length === 0 && activities.length === 0) {
+    if (safeLogs.length === 0 && activities.length === 0) {
       return NextResponse.json({
         summary: {
           executiveSummary: `No se registraron mensajes ni actividades durante el período: ${periodLabel}.`,
@@ -193,11 +199,11 @@ export async function POST(req: NextRequest) {
     let promptData = `=== REPORTE MULTI-GRUPO DE PERRY INTELLIGENCE PARA DIRECCIÓN ===\n`;
     promptData += `PERÍODO DE ANÁLISIS: ${periodLabel}\n`;
     promptData += `GRUPOS REGISTRADOS: ${groups.length}\n`;
-    promptData += `REGISTROS ENCONTRADOS EN EL PERÍODO: ${logs.length}\n\n`;
+    promptData += `REGISTROS ENCONTRADOS EN EL PERÍODO: ${safeLogs.length}\n\n`;
 
     // Group logs by group name / JID
     const logsByGroup = new Map<string, { company: string; logs: any[] }>();
-    logs.forEach((log) => {
+    safeLogs.forEach((log) => {
       const gName = log.groupId ? (groupNameMap.get(log.groupId) || log.groupId) : 'Chat Directo 1-a-1';
       const cName = log.groupId ? (groupCompanyMap.get(log.groupId) || 'Empresa General') : 'Directo';
       if (!logsByGroup.has(gName)) logsByGroup.set(gName, { company: cName, logs: [] });
