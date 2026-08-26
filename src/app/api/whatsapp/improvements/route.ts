@@ -20,10 +20,8 @@ export async function GET(req: NextRequest) {
     const shouldScan = searchParams.get('scan') === 'true';
 
     if (shouldScan) {
+      // Execute Gemini AI analysis ONLY when explicitly requested by clicking the Scan button
       await scanAndGenerateRealTimeImprovements();
-    } else {
-      // Auto seed / scan initial patterns if empty
-      await seedOrAnalyzeInitialPatterns();
     }
     const category = searchParams.get('category') || '';
     const company = searchParams.get('company') || '';

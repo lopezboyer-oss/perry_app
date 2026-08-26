@@ -104,17 +104,17 @@ export default function PerryImprovementsPage() {
     }
   };
 
-  // Update status
+  // Update status (Instant optimistic update, 0 AI tokens)
   const handleStatusChange = async (id: string, newStatus: string) => {
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, status: newStatus as any } : item))
+    );
     try {
-      const res = await fetch('/api/whatsapp/improvements', {
+      await fetch('/api/whatsapp/improvements', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
       });
-      if (res.ok) {
-        fetchImprovements();
-      }
     } catch (err) {
       console.error('Error actualizando estatus:', err);
     }
