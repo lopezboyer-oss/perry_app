@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { parseWhatsappMessageWithGemini } from '@/lib/whatsapp/parser';
 import { parseFinancialMessageWithGemini } from '@/lib/whatsapp/financial-parser';
+import { parsePayrollMessageWithGemini } from '@/lib/whatsapp/payroll-parser';
 import { sendWhatsappGroupMessage, sendWhatsappVoiceNote } from '@/lib/whatsapp/service';
 import { IncomingWhatsappPayload } from '@/lib/whatsapp/types';
+import crypto from 'crypto';
 
 // Webhook Verification (GET)
 export async function GET(req: NextRequest) {
@@ -339,9 +341,121 @@ export async function POST(req: NextRequest) {
 
     // 4d. Manejo de Grupos ADMINISTRATIVO_FINANCIERO
     if (groupMap.groupCategory === 'ADMINISTRATIVO_FINANCIERO') {
-      const cleanedFinancialText = cleanTriggerTags(messageText);
+      const cleanedText = cleanTriggerTags(messageText);
+
+      // Check if message is a Payroll Report (Nómina / Raya / Finiquito / Vacaciones)
+      const isPayrollKeyword = /n[oó]mina|raya|finiquito|sueldo|vacaciones|percepcion|deducci[oó]n|raya\s*\d+/i.test(cleanedText);
+
+      let isPayroll = isPayrollKeyword;
+      let payrollReport: any = null;
+
+      if (isPayrollKeyword || mediaUrls.length > 0) {
+        payrollReport = await parsePayrollMessageWithGemini({
+          messageText: cleanedText,
+          senderName: payload.senderName || payload.senderPhone,
+          groupName: groupMap.groupName || 'Administración',
+          timestamp: payload.timestamp,
+          imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
+        });
+
+        if (payrollReport && payrollReport.isPayrollReport) {
+          isPayroll = true;
+        }
+      }
+
+      if (isPayroll && payrollReport) {
+        console.log(`[PAYROLL INGESTION] Processing payroll for ${payrollReport.companyName} (${payrollReport.periodNumber})...`);
+
+        // Check if an existing PayrollLog for same company & period/date exists (anti-duplicate / manual signature update)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const existingPayroll = await prisma.payrollLog.findFirst({
+          where: {
+            companyName: payrollReport.companyName,
+            createdAt: { gte: sevenDaysAgo },
+            OR: [
+              { periodNumber: payrollReport.periodNumber },
+              { periodNumber: { contains: (payrollReport.periodNumber || '').split(' ')[1] || 'Raya' } },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (existingPayroll && mediaUrls.length > 0) {
+          // Director re-uploaded signed payroll image — Update existing record cleanly!
+          await prisma.payrollLog.update({
+            where: { id: existingPayroll.id },
+            data: {
+              signedImageUrl: mediaUrls[0],
+              signedBy: payload.senderName || payload.senderPhone || 'Director',
+              signedAt: new Date(),
+              status: 'APROBADA_FIRMA_MANUAL',
+            },
+          });
+
+          console.log(`[PAYROLL INGESTION] Updated existing payroll #${existingPayroll.id} with manual signature image from ${payload.senderName}`);
+        } else {
+          // New unsigned payroll report — Create new record & generate token
+          const randomToken = 'pay_token_' + crypto.randomBytes(16).toString('hex');
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
+          const signUrl = `${appUrl}/nominas/firmar/${randomToken}`;
+
+          await prisma.payrollLog.create({
+            data: {
+              groupId: payload.groupId,
+              companyName: payrollReport.companyName,
+              periodNumber: payrollReport.periodNumber || 'Raya Semanal',
+              reportDate: new Date(payrollReport.reportDate || Date.now()),
+              totalAmount: payrollReport.totalAmount || 0,
+              employeeCount: payrollReport.employeeCount || 0,
+              bankBreakdown: payrollReport.bankBreakdown ? JSON.stringify(payrollReport.bankBreakdown) : null,
+              observations: payrollReport.observations || payload.messageText || null,
+              rawMessage: payload.messageText || null,
+              imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
+              senderName: payload.senderName || payload.senderPhone,
+              senderPhone: payload.senderPhone,
+              status: 'PENDIENTE_FIRMA',
+              tokenHash: randomToken,
+            },
+          });
+
+          // Send 1-click tokenized authorization link to WhatsApp Admin Group
+          const notifMsg = `📋 *NÓMINA DETECTADA — ${payrollReport.companyName.toUpperCase()}*\n` +
+            `📅 *Periodo:* ${payrollReport.periodNumber || 'Raya Semanal'}\n` +
+            `💰 *Gran Total:* $${(payrollReport.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` +
+            `${payrollReport.observations ? `📝 *Obs:* ${payrollReport.observations}\n` : ''}\n` +
+            `✍️ *Autorizar y Firmar Digitalmente en Perry App:* \n${signUrl}\n\n` +
+            `_Estatus: ⏳ Pendiente de Firma Directiva 🤖_`;
+
+          await sendWhatsappGroupMessage({
+            groupId: payload.groupId,
+            messageText: notifMsg,
+          });
+        }
+
+        // Save raw message log SILENTLY without warnings
+        await prisma.whatsappMessageLog.create({
+          data: {
+            messageId: payload.messageId,
+            groupId: payload.groupId,
+            senderPhone: payload.senderPhone,
+            senderName: payload.senderName || 'Administrador',
+            rawMessage: payload.messageText || '[Reporte de Nómina]',
+            mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+            parsedData: JSON.stringify(payrollReport),
+            status: 'PAYROLL_LOGGED',
+          },
+        });
+
+        return NextResponse.json({
+          status: 'Payroll logged silently and digital token link generated',
+          company: payrollReport.companyName,
+          period: payrollReport.periodNumber,
+        });
+      }
+
+      // Default Bank Account Balance Processing (Only if NOT payroll)
       const financialReport = await parseFinancialMessageWithGemini({
-        messageText: cleanedFinancialText,
+        messageText: cleanedText,
         senderName: payload.senderName || payload.senderPhone,
         groupName: groupMap.groupName || 'Administración',
         timestamp: payload.timestamp,
@@ -351,6 +465,9 @@ export async function POST(req: NextRequest) {
       // Save extracted bank account balances to FinancialBalanceLog in Supabase
       if (financialReport.accounts && financialReport.accounts.length > 0) {
         for (const acc of financialReport.accounts) {
+          // Ignore zeroed account items if initial, income and final are all 0
+          if (acc.initialBalance === 0 && acc.income === 0 && acc.finalBalance === 0) continue;
+
           await prisma.financialBalanceLog.create({
             data: {
               groupId: payload.groupId,
@@ -373,11 +490,11 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Check if there is a mathematical discrepancy in any account
-      if (financialReport.hasErrors && financialReport.errorSummary) {
+      // Check if there is a mathematical discrepancy ONLY if it's a real bank balance report with non-zero accounts
+      const hasRealAccounts = financialReport.accounts && financialReport.accounts.some(a => a.initialBalance > 0 || a.finalBalance > 0);
+      if (financialReport.hasErrors && financialReport.errorSummary && hasRealAccounts) {
         console.warn(`[FINANCIAL AUDIT WARN] ${groupMap.groupName}: ${financialReport.errorSummary}`);
         
-        // Notify gently ONLY in the admin group about the mathematical difference
         const warnMessage = `⚠️ *Perry Intelligence — Validación de Saldos*\n\nSe detectó una observación matemática en el reporte de *${financialReport.companyName}*:\n\n${financialReport.errorSummary}\n\n_Por favor verificar los montos reportados. 🤖_`;
         
         await sendWhatsappGroupMessage({

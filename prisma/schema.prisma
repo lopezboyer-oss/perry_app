@@ -683,3 +683,33 @@ model PerryApiKey {
 
   @@index([key])
 }
+
+// ─── CONTROL DE NÓMINAS Y FIRMAS DIGITALES TOKENIZADAS (ACCESO DIRECTIVO) ───
+
+model PayrollLog {
+  id                 String    @id @default(cuid())
+  groupId            String?
+  companyName        String    // "OPUS INGENIUM", "DROBOTS", "VULCAN FORGE", "GRUPO CASEME"
+  periodNumber       String?   // e.g. "Raya 34", "Semana 34"
+  reportDate         DateTime  @default(now())
+  totalAmount        Float     @default(0)
+  employeeCount      Int       @default(0)
+  bankBreakdown      String?   @db.Text // JSON: [{ bankOrSource: string, amount: number }]
+  observations       String?   @db.Text
+  rawMessage         String?   @db.Text
+  imageUrl           String?   @db.Text
+  signedImageUrl     String?   @db.Text
+  senderName         String?
+  senderPhone        String?
+  status             String    @default("PENDIENTE_FIRMA") // "PENDIENTE_FIRMA", "APROBADA_FIRMA_MANUAL", "APROBADA_TOKENIZADA", "RECHAZADA"
+  signedBy           String?   // User / Director who authorized
+  signedAt           DateTime?
+  tokenHash          String?   @unique // Hash token for 1-click digital authorization URL
+  ipAddress          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([companyName, reportDate])
+  @@index([tokenHash])
+  @@index([status])
+}

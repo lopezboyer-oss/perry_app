@@ -75,6 +75,8 @@ interface TreasuryData {
 
 export default function TesoreriaPage() {
   const [data, setData] = useState<TreasuryData | null>(null);
+  const [payrolls, setPayrolls] = useState<any[]>([]);
+  const [activeView, setActiveView] = useState<'BALANCES' | 'NOMINAS'>('BALANCES');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<string>('TODAS');
@@ -91,9 +93,13 @@ export default function TesoreriaPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/treasury/balances');
-      if (!res.ok) {
-        if (res.status === 403) {
+      const [balRes, payRes] = await Promise.all([
+        fetch('/api/treasury/balances'),
+        fetch('/api/treasury/nominas'),
+      ]);
+
+      if (!balRes.ok) {
+        if (balRes.status === 403) {
           setError('Acceso denegado: Este módulo de Tesorería Directiva es de uso exclusivo para IVAN LOPEZ.');
         } else {
           setError('Error al cargar la información de tesorería.');
@@ -101,8 +107,13 @@ export default function TesoreriaPage() {
         setLoading(false);
         return;
       }
-      const json = await res.json();
+      const json = await balRes.json();
       setData(json);
+
+      if (payRes.ok) {
+        const payJson = await payRes.json();
+        setPayrolls(payJson.logs || []);
+      }
     } catch (err: any) {
       setError(err.message || 'Error de conexión');
     } finally {
@@ -330,6 +341,140 @@ export default function TesoreriaPage() {
         </div>
       </div>
 
+      {/* Main View Switcher (Saldos vs Nóminas) */}
+      <div className="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-2xl w-fit shadow-lg">
+        <button
+          onClick={() => setActiveView('BALANCES')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeView === 'BALANCES'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <Landmark className="w-4 h-4" />
+          <span>Saldos Bancarios & Flujo</span>
+        </button>
+        <button
+          onClick={() => setActiveView('NOMINAS')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeView === 'NOMINAS'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <FileText className="w-4 h-4 text-emerald-400" />
+          <span>Control de Nóminas & Firmas ({payrolls.length})</span>
+        </button>
+      </div>
+
+      {activeView === 'NOMINAS' ? (
+        /* VISTA DE CONTROL DE NÓMINAS Y FIRMAS TOKENIZADAS */
+        <div className="space-y-6">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                  Histórico de Nóminas & Firmas Tokenizadas
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Registro de dispersiones salariales enviadas por WhatsApp o Perry App con estatus de autorización directiva.
+                </p>
+              </div>
+            </div>
+
+            {payrolls.length === 0 ? (
+              <div className="text-center py-10 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-slate-800">
+                No hay nóminas registradas aún. Al compartir una imagen de nómina en los grupos de administración, Perry la procesará automáticamente.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {payrolls.map((pay) => {
+                  let breakdownList: any[] = [];
+                  try { if (pay.bankBreakdown) breakdownList = JSON.parse(pay.bankBreakdown); } catch {}
+
+                  const isAppr = pay.status === 'APROBADA_TOKENIZADA' || pay.status === 'APROBADA_FIRMA_MANUAL';
+                  const isRej = pay.status === 'RECHAZADA';
+
+                  return (
+                    <div
+                      key={pay.id}
+                      className="bg-slate-950 border border-slate-800 p-5 rounded-2xl space-y-3 shadow-lg flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-100 text-sm flex items-center gap-2">
+                            🏢 {pay.companyName}
+                          </span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            isAppr
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : isRej
+                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                              : 'bg-amber-500/10 text-amber-300 border border-amber-500/20 animate-pulse'
+                          }`}>
+                            {isAppr ? '✅ APROBADA' : isRej ? '❌ RECHAZADA' : '⏳ PENDIENTE'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400 font-semibold">{pay.periodNumber || 'Raya Semanal'}</span>
+                          <span className="text-slate-500 font-mono">
+                            {new Date(pay.reportDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+
+                        <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-center space-y-0.5">
+                          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Monto Total Dispersado</p>
+                          <div className="text-xl font-black text-emerald-400 font-mono">
+                            {formatCurrency(pay.totalAmount, 'MXN')}
+                          </div>
+                        </div>
+
+                        {breakdownList.length > 0 && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Desglose por Fuente:</p>
+                            <div className="bg-slate-900 p-2 rounded-lg text-[11px] space-y-1 divide-y divide-slate-800">
+                              {breakdownList.map((b: any, bIdx: number) => (
+                                <div key={bIdx} className="flex justify-between pt-0.5">
+                                  <span className="text-slate-300">{b.bankOrSource}</span>
+                                  <span className="font-mono text-emerald-400 font-bold">{formatCurrency(b.amount, 'MXN')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {pay.observations && (
+                          <p className="text-[11px] text-slate-400 italic bg-slate-900/50 p-2 rounded-lg border border-slate-800">
+                            "{pay.observations}"
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action & Token Link */}
+                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                        {pay.tokenHash ? (
+                          <a
+                            href={`/nominas/firmar/${pay.tokenHash}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex-1 py-2 px-3 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-bold rounded-xl text-xs text-center transition-all flex items-center justify-center space-x-1"
+                          >
+                            <span>✍️ Panel de Firma Tokenizada</span>
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-slate-500">Sin token generado</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Summary Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Liquidez Total MXN */}
@@ -561,6 +706,8 @@ export default function TesoreriaPage() {
             );
           })}
       </div>
+      </>
+      )}
 
       {/* API KEYS MANAGEMENT MODAL (RESTRICTED TO IVAN LOPEZ) */}
       {showKeysModal && (
