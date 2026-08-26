@@ -69,9 +69,15 @@ async function handleCriticalUpdate(req: NextRequest) {
     let text = `🚨 *ACTUALIZACIÓN DE PUNTOS CRÍTICOS*\n`;
     text += `📅 ${dateStr} — 12:00 PM — Perry Intelligence\n\n`;
 
+    // Filter out any accidentally ingested system update messages
+    const validOpenItems = openItems.filter(i => {
+      const isSystemMsg = /(ACTUALIZACIÓN DE PUNTOS|SEGUIMIENTO DE PUNTOS|Perry Intelligence|━━━━)/i.test(i.issueText);
+      return !isSystemMsg;
+    });
+
     // Group by status
-    const enProceso = openItems.filter(i => i.currentStatus === 'EN_PROCESO');
-    const sinRespuesta = openItems.filter(i => i.currentStatus === 'ABIERTO');
+    const enProceso = validOpenItems.filter(i => i.currentStatus === 'EN_PROCESO');
+    const sinRespuesta = validOpenItems.filter(i => i.currentStatus === 'ABIERTO');
 
     if (enProceso.length > 0) {
       text += `━━━━ 🔄 EN PROCESO (${enProceso.length}) ━━━━\n\n`;

@@ -558,13 +558,11 @@ export async function POST(req: NextRequest) {
       audioUrl,
     });
 
-    // 5b. Automatic AI Critical Directive Detection (Directores/Coordinadores)
-    // ONLY create a critical item if group is OPERACIONAL or COORDINACION
     const isOperationalGroup = !groupMap.groupCategory || groupMap.groupCategory === 'OPERACIONAL' || groupMap.groupCategory === 'COORDINACION';
     if (isOperationalGroup && messageText && !messageText.startsWith('#') && parsed.isCriticalFollowup) {
-      const isRoutineBroadcast = /(forms\.gle|excelente inicio de semana|buen inicio de semana|registros de horas extras|en caso de tener complicaciones|facturas pendientes de recibo|no podre ir a traila)/i.test(messageText);
+      const isSystemOrRoutineBroadcast = /(ACTUALIZACIÓN DE PUNTOS|SEGUIMIENTO DE PUNTOS|Perry Intelligence|forms\.gle|excelente inicio de semana|buen inicio de semana|registros de horas extras|en caso de tener complicaciones|facturas pendientes de recibo|no podre ir a traila|bloqueo de energia|n[oó]mina|raya|saldos|━━━━)/i.test(messageText);
       
-      if (!isRoutineBroadcast) {
+      if (!isSystemOrRoutineBroadcast) {
         try {
           const lowerText = messageText.toLowerCase();
           const companyKeywords: Record<string, string[]> = {
