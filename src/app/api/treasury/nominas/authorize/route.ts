@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
+import { canAuthorizePayroll, resolveDirectorSignerName } from '@/lib/permissions';
 import { sendWhatsappGroupMessage } from '@/lib/whatsapp/service';
 
 export async function GET(req: NextRequest) {
@@ -19,7 +21,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Nómina no encontrada o token inválido' }, { status: 404 });
     }
 
-    return NextResponse.json({ log });
+    // Check user session status if available
+    const session = await auth();
+    const userEmail = (session?.user as any)?.email || '';
+    const userName = (session?.user as any)?.name || '';
+    const isDirector = canAuthorizePayroll(userEmail, (session?.user as any)?.role);
+    const signerName = isDirector ? resolveDirectorSignerName(userEmail, userName) : null;
+
+    return NextResponse.json({
+      log,
+      userSession: {
+        isAuthenticated: Boolean(session?.user),
+        email: userEmail,
+        isDirector,
+        signerName,
+      },
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Error de servidor' }, { status: 500 });
   }
@@ -27,8 +44,27 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Acceso no autenticado: Debes iniciar sesión con tu cuenta de Dirección General en Perry App para autorizar esta nómina.' },
+        { status: 401 }
+      );
+    }
+
+    const userEmail = (session.user as any)?.email || '';
+    const userRole = (session.user as any)?.role || '';
+    const userName = (session.user as any)?.name || '';
+
+    if (!canAuthorizePayroll(userEmail, userRole)) {
+      return NextResponse.json(
+        { error: 'Acceso restringido: Tu cuenta de usuario no cuenta con privilegios directivos para autorizar nóminas.' },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
-    const { token, action, signedBy, notes } = body;
+    const { token, action, notes } = body;
 
     if (!token) {
       return NextResponse.json({ error: 'Token no proporcionado' }, { status: 400 });
@@ -43,7 +79,7 @@ export async function POST(req: NextRequest) {
     }
 
     const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'IP_DESCONOCIDA';
-    const signerName = signedBy || 'Ivan López (Dirección)';
+    const signerName = resolveDirectorSignerName(userEmail, userName);
 
     if (action === 'REJECT') {
       const updated = await prisma.payrollLog.update({
@@ -52,20 +88,20 @@ export async function POST(req: NextRequest) {
           status: 'RECHAZADA',
           signedBy: signerName,
           signedAt: new Date(),
-          observations: notes ? `RECHAZADA: ${notes}` : log.observations,
+          observations: notes ? `RECHAZADA por ${signerName}: ${notes}` : log.observations,
           ipAddress: clientIp,
         },
       });
 
-      // Send rejection notification to group if groupId is present
+      // Send rejection notification to WhatsApp group
       if (log.groupId) {
         const text = `❌ *NÓMINA RECHAZADA POR DIRECCIÓN*\n` +
           `🏢 *Empresa:* ${log.companyName}\n` +
           `📅 *Periodo:* ${log.periodNumber || 'Raya Semanal'}\n` +
-          `💰 *Monto:* $${log.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}\n` +
+          `💰 *Monto:* $${log.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` +
           `👤 *Revisó:* ${signerName}\n` +
-          `${notes ? `📝 *Motivo:* ${notes}\n` : ''}` +
-          `_Procesado vía Perry Intelligence 🤖_`;
+          `${notes ? `📝 *Motivo:* ${notes}\n` : ''}\n` +
+          `_Notificación automática Perry Intelligence 🤖_`;
 
         await sendWhatsappGroupMessage({
           groupId: log.groupId,
@@ -87,7 +123,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Send approval notification to group if groupId is present
+    // Send approval notification to group with explicit Director Name
     if (log.groupId) {
       const text = `✅ *NÓMINA APROBADA Y TOKENIZADA POR DIRECCIÓN*\n` +
         `🏢 *Empresa:* ${log.companyName}\n` +

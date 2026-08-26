@@ -36,16 +36,23 @@ interface PayrollRecord {
   createdAt: string;
 }
 
+interface UserSessionInfo {
+  isAuthenticated: boolean;
+  email: string;
+  isDirector: boolean;
+  signerName: string | null;
+}
+
 export default function FirmarNominaPage() {
   const params = useParams();
   const router = useRouter();
   const token = params.token as string;
 
   const [log, setLog] = useState<PayrollRecord | null>(null);
+  const [userSession, setUserSession] = useState<UserSessionInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [signerName, setSignerName] = useState('Ivan López (Dirección)');
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -62,6 +69,7 @@ export default function FirmarNominaPage() {
       }
       const json = await res.json();
       setLog(json.log);
+      setUserSession(json.userSession || null);
     } catch (err: any) {
       setError(err.message || 'Error de conexión');
     } finally {
@@ -83,7 +91,6 @@ export default function FirmarNominaPage() {
         body: JSON.stringify({
           token,
           action,
-          signedBy: signerName || 'Ivan López (Dirección)',
           notes: rejectReason,
         }),
       });
@@ -97,8 +104,8 @@ export default function FirmarNominaPage() {
       setLog(json.log);
       setSuccessMsg(
         action === 'APPROVE'
-          ? 'Nómina autorizada y tokenizada con éxito. Se ha enviado la confirmación al grupo de WhatsApp.'
-          : 'La nómina ha sido rechazada. Se ha notificado al grupo de WhatsApp.'
+          ? `Nómina autorizada y tokenizada con éxito por ${json.log.signedBy}. Se ha notificado al grupo de WhatsApp.`
+          : `La nómina ha sido rechazada por ${json.log.signedBy}. Se ha notificado al grupo de WhatsApp.`
       );
     } catch (err: any) {
       setError(err.message || 'Error autorizando nómina');
@@ -265,62 +272,91 @@ export default function FirmarNominaPage() {
         {/* Action Buttons for Unapproved Status */}
         {!isApproved && !isRejected && (
           <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Nombre del Director Autorizante:</label>
-              <select
-                value={signerName}
-                onChange={(e) => setSignerName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
-              >
-                <option value="Ivan López (Dirección)">Ivan López (Director de Tecnología y BI)</option>
-                <option value="Carlos Sevilla (Dirección)">Carlos Sevilla (Director de Operaciones)</option>
-              </select>
-            </div>
-
-            {!showRejectForm ? (
-              <div className="flex flex-col sm:flex-row gap-3">
+            {!userSession?.isAuthenticated ? (
+              <div className="bg-amber-950/30 border border-amber-500/30 p-5 rounded-2xl text-center space-y-3 shadow-xl">
+                <AlertCircle className="w-8 h-8 text-amber-400 mx-auto animate-bounce" />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">Sesión Directiva Requerida</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Para garantizar la validez e infalsificabilidad legal de la firma tokenizada, debes iniciar sesión con tu cuenta de Dirección General en Perry App.
+                  </p>
+                </div>
                 <button
-                  onClick={() => handleAuthorize('APPROVE')}
-                  disabled={submitting}
-                  className="flex-1 py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl text-xs shadow-xl transition-all flex items-center justify-center space-x-2"
+                  onClick={() => router.push(`/login?callbackUrl=/nominas/firmar/${token}`)}
+                  className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all"
                 >
-                  <Sparkles className="w-4 h-4 text-emerald-200" />
-                  <span>{submitting ? 'Procesando Firma...' : '✍️ Autorizar y Firmar Digitalmente'}</span>
+                  🔐 Iniciar Sesión en Perry App para Firmar
                 </button>
-                <button
-                  onClick={() => setShowRejectForm(true)}
-                  disabled={submitting}
-                  className="py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-2xl text-xs transition-all"
-                >
-                  Rechazar
-                </button>
+              </div>
+            ) : !userSession?.isDirector ? (
+              <div className="bg-rose-950/30 border border-rose-500/30 p-5 rounded-2xl text-center space-y-2 shadow-xl">
+                <XCircle className="w-8 h-8 text-rose-500 mx-auto" />
+                <h3 className="text-sm font-bold text-slate-100">Acceso Restringido Directivo</h3>
+                <p className="text-xs text-slate-400">
+                  La sesión activa (<strong className="text-slate-200">{userSession.email}</strong>) no cuenta con privilegios de Dirección General para autorizar la nómina.
+                </p>
               </div>
             ) : (
-              <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <label className="text-xs font-bold text-rose-400">Motivo de Rechazo:</label>
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Escribe el motivo del rechazo para notificar al asistente..."
-                  className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-rose-500"
-                  rows={2}
-                />
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => setShowRejectForm(false)}
-                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={() => handleAuthorize('REJECT')}
-                    disabled={submitting}
-                    className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl"
-                  >
-                    Confirmar Rechazo
-                  </button>
+              <>
+                <div className="bg-emerald-950/40 border border-emerald-500/30 p-3.5 rounded-xl flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-2">
+                    <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Sesión Directiva Verificada</p>
+                      <p className="font-bold text-emerald-300 text-xs">{userSession.signerName}</p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono border border-emerald-500/30">
+                    {userSession.email}
+                  </span>
                 </div>
-              </div>
+
+                {!showRejectForm ? (
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={() => handleAuthorize('APPROVE')}
+                      disabled={submitting}
+                      className="flex-1 py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl text-xs shadow-xl transition-all flex items-center justify-center space-x-2"
+                    >
+                      <Sparkles className="w-4 h-4 text-emerald-200" />
+                      <span>{submitting ? 'Procesando Firma Tokenizada...' : `✍️ Autorizar y Firmar como ${userSession.signerName?.split(' ')[0]}`}</span>
+                    </button>
+                    <button
+                      onClick={() => setShowRejectForm(true)}
+                      disabled={submitting}
+                      className="py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-2xl text-xs transition-all"
+                    >
+                      Rechazar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <label className="text-xs font-bold text-rose-400">Motivo de Rechazo:</label>
+                    <textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      placeholder="Escribe el motivo del rechazo para notificar al asistente..."
+                      className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-rose-500"
+                      rows={2}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={() => setShowRejectForm(false)}
+                        className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => handleAuthorize('REJECT')}
+                        disabled={submitting}
+                        className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl"
+                      >
+                        Confirmar Rechazo
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

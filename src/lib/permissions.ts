@@ -63,3 +63,32 @@ export const canAccessTreasuryDashboard = (email: string) => {
   const allowed = ['lopezboyer@gmail.com', 'ivanjoselopezboyer@gmail.com', 'ivan@grupocaseme.com'];
   return allowed.some(e => normalized.includes(e) || normalized.includes('lopezboyer'));
 };
+
+/** Resolves official Director name for tokenized digital signatures */
+export const resolveDirectorSignerName = (email: string, userName?: string): string => {
+  const normEmail = (email || '').toLowerCase().trim();
+  if (['lopezboyer@gmail.com', 'ivanjoselopezboyer@gmail.com', 'ivan@grupocaseme.com'].includes(normEmail) || normEmail.includes('lopezboyer')) {
+    return 'IVAN JOSE LOPEZ BOYER';
+  }
+  if (['carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx', 'caseme1970@gmail.com'].includes(normEmail) || normEmail.includes('carlos')) {
+    return 'CARLOS SEVILLA MERCADO';
+  }
+  if (userName) return userName.toUpperCase();
+  return normEmail.split('@')[0].toUpperCase();
+};
+
+/** Checks if email belongs to an authorized C-Suite Director who can sign payrolls */
+export const canAuthorizePayroll = (email: string, role?: string): boolean => {
+  const normEmail = (email || '').toLowerCase().trim();
+  const directorEmails = [
+    'lopezboyer@gmail.com',
+    'ivanjoselopezboyer@gmail.com',
+    'ivan@grupocaseme.com',
+    'carlos.sevilla@grupocaseme.com',
+    'carlos.lopez@gsingenieria.mx',
+    'caseme1970@gmail.com',
+  ];
+  if (directorEmails.some(e => normEmail.includes(e) || normEmail.includes('lopezboyer') || normEmail.includes('carlos'))) return true;
+  if (role === 'ADMIN') return true;
+  return false;
+};
