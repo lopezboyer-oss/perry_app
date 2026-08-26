@@ -316,6 +316,16 @@ export async function POST(req: NextRequest) {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      break-after: avoid-page !important;
+    }
+
+    .section-bar + .act-card,
+    .section-bar + .multiday-card {
+      page-break-before: avoid !important;
+      break-before: avoid !important;
+      break-before: avoid-page !important;
     }
 
     .section-bar.blue { background: #0284c7; }
