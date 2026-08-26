@@ -14,6 +14,45 @@ export async function POST(req: NextRequest) {
   return handleCriticalUpdate(req);
 }
 
+function cleanCriticalIssueTitle(rawText: string): string {
+  if (!rawText) return 'Punto crítico en seguimiento';
+
+  let cleaned = rawText.trim();
+
+  // If text contains structured fields like ACTIVIDAD: ... AREA: ...
+  const actividadMatch = cleaned.match(/ACTIVIDAD:\s*([^\n]+)/i);
+  const areaMatch = cleaned.match(/AREA:\s*([^\n]+)/i);
+  const supervisorMatch = cleaned.match(/SUPERVISOR:\s*([^\n]+)/i);
+
+  if (actividadMatch) {
+    const act = actividadMatch[1].trim();
+    const area = areaMatch ? areaMatch[1].trim() : '';
+    const sup = supervisorMatch ? supervisorMatch[1].trim() : '';
+    let result = act;
+    if (area) result += ` (${area})`;
+    if (sup) result += ` — ${sup}`;
+    return result;
+  }
+
+  // Remove linebreaks and extra spaces
+  cleaned = cleaned.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Strip leading company prefix if redundant
+  cleaned = cleaned.replace(/^[\-\s]*(DROBOTS|OPUS INGENIUM|OPUS|CASEME|VULCAN|GLOBAL)[\-\s:]*/i, '');
+
+  // Truncate at first period if reasonable
+  const firstSentence = cleaned.split('.')[0];
+  if (firstSentence.length > 20 && firstSentence.length <= 90) {
+    return firstSentence.trim();
+  }
+
+  if (cleaned.length > 90) {
+    return `${cleaned.substring(0, 87).trim()}...`;
+  }
+
+  return cleaned;
+}
+
 async function handleCriticalUpdate(req: NextRequest) {
   try {
     // Auth
@@ -82,7 +121,8 @@ async function handleCriticalUpdate(req: NextRequest) {
     if (enProceso.length > 0) {
       text += `━━━━ 🔄 EN PROCESO (${enProceso.length}) ━━━━\n\n`;
       enProceso.forEach(item => {
-        text += `#${item.itemNumber} 🔴 ${item.issueText}\n`;
+        const cleanTitle = cleanCriticalIssueTitle(item.issueText);
+        text += `#${item.itemNumber} 🔴 ${cleanTitle}\n`;
         text += `   🏢 ${item.companyName || 'N/A'}\n`;
         // Show log entries
         const logEntries = item.logs.length > 0 ? item.logs : (item.feedbackBy ? [{
@@ -112,11 +152,12 @@ async function handleCriticalUpdate(req: NextRequest) {
     if (sinRespuesta.length > 0) {
       text += `━━━━ ⛔ SIN RESPUESTA (${sinRespuesta.length}) ━━━━\n\n`;
       sinRespuesta.forEach(item => {
+        const cleanTitle = cleanCriticalIssueTitle(item.issueText);
         const daysSince = Math.floor((now.getTime() - new Date(item.sentDate).getTime()) / (1000 * 60 * 60 * 24));
         const originTag = (item.aiStatus === 'DETECTADO_PERRY' || item.aiStatus === 'DETECTADO_IA') 
           ? '🤖 *Detectado por Perry*' 
           : `👤 Reportó: ${item.reportedBy || 'Personal Operativo'}`;
-        text += `#${item.itemNumber} 🔴 ${item.issueText}\n`;
+        text += `#${item.itemNumber} 🔴 ${cleanTitle}\n`;
         text += `   🏢 ${item.companyName || 'N/A'} — ${originTag} — *${daysSince > 0 ? daysSince + ' día(s) sin respuesta' : 'Hoy'}*\n\n`;
       });
     }
@@ -124,8 +165,9 @@ async function handleCriticalUpdate(req: NextRequest) {
     if (closedToday.length > 0) {
       text += `━━━━ ✅ CERRADOS HOY (${closedToday.length}) ━━━━\n\n`;
       closedToday.forEach(item => {
+        const cleanTitle = cleanCriticalIssueTitle(item.issueText);
         const icon = item.currentStatus === 'DESCARTADO' ? '🗑️' : '✅';
-        text += `#${item.itemNumber} ${icon} ${item.issueText.substring(0, 60)}${item.issueText.length > 60 ? '...' : ''}\n`;
+        text += `#${item.itemNumber} ${icon} ${cleanTitle}\n`;
         text += `   ${item.feedbackBy ? `Por: *${item.feedbackBy}*` : ''}${item.feedbackText ? ` — "${item.feedbackText}"` : ''}\n\n`;
       });
     }
