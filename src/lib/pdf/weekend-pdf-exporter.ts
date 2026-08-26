@@ -234,7 +234,40 @@ export function exportWeekendPDFClient({
       text-transform: uppercase;
     }
 
-    /* Section Bar */
+    .act-card {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .multiday-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+      background: #f8fafc !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .header-banner {
+      background: #0f172a !important;
+      color: #ffffff !important;
+      padding: 14px 18px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
     .section-bar {
       background: #1e293b !important;
       color: #ffffff !important;
@@ -246,102 +279,8 @@ export function exportWeekendPDFClient({
       display: flex;
       align-items: center;
       justify-content: space-between;
-    }
-
-    .section-bar.blue { background: #0284c7 !important; }
-    .section-bar.dark-blue { background: #0f172a !important; }
-
-    /* Multi-day Card */
-    .multiday-card {
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 12px;
-      background: #f8fafc !important;
-    }
-
-    .multiday-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 6px;
-      margin-bottom: 8px;
-    }
-
-    .multiday-title {
-      font-size: 12px;
-      font-weight: 800;
-      color: #1e3a8a;
-    }
-
-    .pill-green {
-      background: #dcfce7 !important;
-      color: #166534 !important;
-      border: 1px solid #86efac;
-      padding: 2px 6px;
-      border-radius: 9999px;
-      font-size: 8.5px;
-      font-weight: 800;
-    }
-
-    .pill-blue {
-      background: #dbeafe !important;
-      color: #1e40af !important;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 8.5px;
-      font-weight: 800;
-    }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      font-size: 9.5px;
-      margin-bottom: 8px;
-    }
-
-    .meta-item { color: #475569; }
-    .meta-item strong { color: #0f172a; }
-
-    .days-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-
-    .day-subcard {
-      background: #ffffff !important;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 6px 8px;
-    }
-
-    .day-subcard-header {
-      font-size: 8.5px;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
-      display: inline-block;
-      margin-bottom: 4px;
-    }
-
-    /* Individual Grid */
-    .grid-2col {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .act-card {
-      background: #ffffff !important;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      page-break-after: avoid !important;
+      break-after: avoid !important;
     }
 
     .act-card-header {
