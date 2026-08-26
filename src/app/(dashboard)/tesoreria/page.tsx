@@ -298,41 +298,48 @@ export default function TesoreriaPage() {
     );
   }
 
+  const currentUserEmail = (data?.accessGrantedTo || '').toLowerCase().trim();
+  const isIvanLopezOnly =
+    ['lopezboyer@gmail.com', 'ivanjoselopezboyer@gmail.com', 'ivan@grupocaseme.com'].includes(currentUserEmail) ||
+    currentUserEmail.includes('lopezboyer');
   const companiesList = data ? Object.keys(data.companyBreakdown) : [];
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6 p-4 sm:p-6 text-slate-100 max-w-7xl mx-auto pb-20">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/20 p-5 sm:p-6 rounded-2xl shadow-xl">
-        <div className="space-y-1">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 bg-indigo-600/20 border border-indigo-400/30 rounded-xl">
-              <Landmark className="w-7 h-7 text-indigo-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
-                Bóveda de Tesorería Directiva
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Acceso Directivo
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400">
-                Consolidado en tiempo real de cuentas bancarias, ingresos, egresos y liquidez multiempresa Perry Intelligence.
-              </p>
-            </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl">
+        <div className="flex items-center space-x-4">
+          <div className="p-3 bg-indigo-600/20 border border-indigo-500/30 rounded-2xl">
+            <Landmark className="w-7 h-7 text-indigo-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
+              Bóveda de Tesorería Directiva
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> Acceso Directivo
+              </span>
+            </h1>
+            <p className="text-xs text-slate-400">
+              Consolidado en tiempo real de cuentas bancarias, ingresos, egresos y liquidez multiempresa Perry Intelligence.
+            </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* API Key Management Button */}
-          <button
-            onClick={() => setShowKeysModal(true)}
-            className="flex items-center space-x-1.5 px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 rounded-xl text-xs font-semibold transition-all shadow"
-            title="Gestionar API Keys de integración para otros softwares de la empresa"
-          >
-            <Key className="w-4 h-4 text-amber-400" />
-            <span>API Keys & Integraciones</span>
-          </button>
+          {/* API Key Management Button — EXCLUSIVO IVAN LÓPEZ */}
+          {isIvanLopezOnly && (
+            <button
+              onClick={() => {
+                fetchApiKeys();
+                setShowKeysModal(true);
+              }}
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300 rounded-xl text-xs font-semibold transition-all shadow"
+              title="Gestionar API Keys de integración para otros softwares de la empresa"
+            >
+              <Key className="w-4 h-4 text-amber-400" />
+              <span>API Keys & Integraciones</span>
+            </button>
+          )}
 
           <button
             onClick={handlePrintPdf}

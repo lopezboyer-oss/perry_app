@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
-import { canAccessTreasuryDashboard } from '@/lib/permissions';
+import { canManageApiKeys } from '@/lib/permissions';
 import crypto from 'crypto';
 
-// GET all API Keys (Restricted to IVAN LOPEZ)
+// GET all API Keys (Restricted STRICTLY to IVAN LOPEZ)
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
     }
 
     const email = (session.user as any)?.email || '';
-    if (!canAccessTreasuryDashboard(email)) {
-      return NextResponse.json({ error: 'Acceso restringido (Solo IVAN LOPEZ)' }, { status: 403 });
+    if (!canManageApiKeys(email)) {
+      return NextResponse.json({ error: 'Acceso restringido a gestión de API Keys (Solo IVAN LOPEZ)' }, { status: 403 });
     }
 
     const keys = await prisma.perryApiKey.findMany({
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const email = (session.user as any)?.email || '';
-    if (!canAccessTreasuryDashboard(email)) {
+    if (!canManageApiKeys(email)) {
       return NextResponse.json({ error: 'Acceso restringido (Solo IVAN LOPEZ)' }, { status: 403 });
     }
 

@@ -57,6 +57,13 @@ export const canAccessWhatsappCoPilot = (email: string) => {
   return allowedEmails.includes(email);
 };
 
+/** Access to Manage External API Keys — RESTRICTED STRICTLY TO IVAN LOPEZ ONLY */
+export const canManageApiKeys = (email: string) => {
+  const normalized = (email || '').toLowerCase().trim();
+  const allowed = ['lopezboyer@gmail.com', 'ivanjoselopezboyer@gmail.com', 'ivan@grupocaseme.com'];
+  return allowed.some(e => normalized.includes(e) || normalized.includes('lopezboyer'));
+};
+
 /** Access to Treasury Dashboard & Financial Balances — RESTRICTED TO DIRECTORS (IVAN LOPEZ & ENRIQUE LOPEZ) */
 export const canAccessTreasuryDashboard = (email: string) => {
   const normalized = (email || '').toLowerCase().trim();
