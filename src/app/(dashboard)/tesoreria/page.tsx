@@ -112,7 +112,7 @@ export default function TesoreriaPage() {
 
       if (!balRes.ok) {
         if (balRes.status === 403) {
-          setError('Acceso denegado: Este módulo de Tesorería Directiva es de uso exclusivo para IVAN LOPEZ.');
+          setError('Acceso denegado: Este módulo de Tesorería Directiva es de uso exclusivo para la Dirección General.');
         } else {
           setError('Error al cargar la información de tesorería.');
         }
@@ -313,7 +313,7 @@ export default function TesoreriaPage() {
               <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
                 Bóveda de Tesorería Directiva
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Exclusivo Ivan López
+                  <ShieldCheck className="w-3.5 h-3.5" /> Acceso Directivo
                 </span>
               </h1>
               <p className="text-xs text-slate-400">

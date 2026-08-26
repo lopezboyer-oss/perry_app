@@ -60,7 +60,10 @@ export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  const isIvanLopez = canAccessTreasuryDashboard(user.email) || user.email === 'lopezboyer@gmail.com' || user.name?.toLowerCase().includes('ivan lopez');
+  const isDirectorExclusive = canAccessTreasuryDashboard(user.email) ||
+    ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'enrique.lopez@grupocaseme.com'].includes(user.email?.toLowerCase().trim()) ||
+    user.name?.toLowerCase().includes('ivan lopez') ||
+    user.name?.toLowerCase().includes('enrique lopez');
   const hasSpecialReportsAccess = ['ADMIN', 'ADMINISTRACION'].includes(user.role) || user.email === 'carlos.lopez@gsingenieria.mx';
 
   const visibleNavItems = navItems.filter((item) => {
@@ -190,12 +193,12 @@ export function Sidebar({ user }: SidebarProps) {
             </Link>
           )}
 
-          {/* SECCIÓN EXCLUSIVA IVAN LÓPEZ (COLOR CYAN AL FINAL DEL SIDEBAR) */}
-          {isIvanLopez && (
+          {/* SECCIÓN EXCLUSIVA DIRECCIÓN (COLOR CYAN AL FINAL DEL SIDEBAR) */}
+          {isDirectorExclusive && (
             <div className="mt-4 border-t border-cyan-500/30 pt-3 space-y-1">
               {!collapsed && (
                 <div className="px-3 pb-1 text-[10px] font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1">
-                  <span>🔒 EXCLUSIVO IVAN LÓPEZ</span>
+                  <span>🔒 ACCESO DIRECTIVO</span>
                 </div>
               )}
               {ivanExclusiveItems.map((item) => {
@@ -274,8 +277,8 @@ export function Sidebar({ user }: SidebarProps) {
               </Link>
             );
           })}
-          {/* Tesorería y Perry Intelligence — mobile (Exclusivo Ivan López en CYAN) */}
-          {isIvanLopez && (
+          {/* Tesorería y Perry Intelligence — mobile (Exclusivo Dirección en CYAN) */}
+          {isDirectorExclusive && (
             <Link
               href="/tesoreria"
               className={cn(

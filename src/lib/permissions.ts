@@ -57,11 +57,17 @@ export const canAccessWhatsappCoPilot = (email: string) => {
   return allowedEmails.includes(email);
 };
 
-/** Access to Treasury Dashboard & Financial Balances — RESTRICTED TO IVAN LOPEZ ONLY */
+/** Access to Treasury Dashboard & Financial Balances — RESTRICTED TO DIRECTORS (IVAN LOPEZ & ENRIQUE LOPEZ) */
 export const canAccessTreasuryDashboard = (email: string) => {
   const normalized = (email || '').toLowerCase().trim();
-  const allowed = ['lopezboyer@gmail.com', 'ivanjoselopezboyer@gmail.com', 'ivan@grupocaseme.com'];
-  return allowed.some(e => normalized.includes(e) || normalized.includes('lopezboyer'));
+  const allowed = [
+    'lopezboyer@gmail.com',
+    'ivanjoselopezboyer@gmail.com',
+    'ivan@grupocaseme.com',
+    'enrique.lopez.gsi@gmail.com',
+    'enrique.lopez@grupocaseme.com',
+  ];
+  return allowed.some(e => normalized.includes(e) || normalized.includes('lopezboyer') || normalized.includes('enrique.lopez'));
 };
 
 /** Resolves official Director name for tokenized digital signatures */
@@ -69,6 +75,9 @@ export const resolveDirectorSignerName = (email: string, userName?: string): str
   const normEmail = (email || '').toLowerCase().trim();
   if (['lopezboyer@gmail.com', 'ivanjoselopezboyer@gmail.com', 'ivan@grupocaseme.com'].includes(normEmail) || normEmail.includes('lopezboyer')) {
     return 'IVAN JOSE LOPEZ BOYER';
+  }
+  if (['enrique.lopez.gsi@gmail.com', 'enrique.lopez@grupocaseme.com'].includes(normEmail) || normEmail.includes('enrique.lopez')) {
+    return 'JOSE ENRIQUE LOPEZ BOYER';
   }
   if (['carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx', 'caseme1970@gmail.com'].includes(normEmail) || normEmail.includes('carlos')) {
     return 'CARLOS SEVILLA MERCADO';
@@ -84,11 +93,13 @@ export const canAuthorizePayroll = (email: string, role?: string): boolean => {
     'lopezboyer@gmail.com',
     'ivanjoselopezboyer@gmail.com',
     'ivan@grupocaseme.com',
+    'enrique.lopez.gsi@gmail.com',
+    'enrique.lopez@grupocaseme.com',
     'carlos.sevilla@grupocaseme.com',
     'carlos.lopez@gsingenieria.mx',
     'caseme1970@gmail.com',
   ];
-  if (directorEmails.some(e => normEmail.includes(e) || normEmail.includes('lopezboyer') || normEmail.includes('carlos'))) return true;
+  if (directorEmails.some(e => normEmail.includes(e) || normEmail.includes('lopezboyer') || normEmail.includes('enrique.lopez') || normEmail.includes('carlos'))) return true;
   if (role === 'ADMIN') return true;
   return false;
 };
