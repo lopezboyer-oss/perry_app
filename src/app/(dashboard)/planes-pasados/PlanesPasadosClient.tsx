@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import React, { useState, useRef } from 'react';
-import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { CalendarDays, Clock, Loader2, ImagePlus, Trash2, Eye, X, AlertTriangle, ShieldCheck, Download } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { TimeInput24h } from '@/components/ui/TimeInput24h';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
@@ -314,6 +314,43 @@ export function PlanesPasadosClient({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const exportPDF = async () => {
+    if (!selectedWeekend) return;
+    setExportingPdf(true);
+    try {
+      const res = await fetch('/api/weekend-export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weekendOf: selectedWeekend,
+        }),
+      });
+
+      if (!res.ok) {
+        const d = await res.json();
+        alert(d.error || 'Error al generar el PDF');
+        return;
+      }
+
+      const blob = await res.blob();
+      const dlUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.download = `Plan_Finde_${selectedWeekend}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(dlUrl);
+    } catch (err) {
+      console.error('Error exportando PDF:', err);
+      alert('Error de conexión al generar PDF');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   return (
     <div className="space-y-5 pb-20 md:pb-0 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -323,6 +360,19 @@ export function PlanesPasadosClient({
           </h1>
           <p className="text-slate-500 text-sm mt-1">Consulta y completa el horario real de planes anteriores</p>
         </div>
+        {selectedWeekend && (
+          <button
+            onClick={exportPDF}
+            disabled={exportingPdf}
+            className="btn-secondary !text-xs !py-2 !px-3 !gap-1.5 !bg-indigo-50 !text-indigo-700 !border-indigo-300 hover:!bg-indigo-100 disabled:opacity-50 font-semibold"
+          >
+            {exportingPdf ? (
+              <><Loader2 size={14} className="animate-spin" /> Generando PDF...</>
+            ) : (
+              <><Download size={14} /> Exportar Plan a PDF</>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Weekend Selector */}
