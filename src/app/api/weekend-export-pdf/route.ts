@@ -304,27 +304,7 @@ export async function POST(req: NextRequest) {
       text-transform: uppercase;
     }
 
-    .act-card {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 10px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-
-    .multiday-card {
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 16px;
-      background: #f8fafc;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-
+    /* Section Bar */
     .section-bar {
       background: #1e293b;
       color: #ffffff;
@@ -336,8 +316,106 @@ export async function POST(req: NextRequest) {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      page-break-after: avoid !important;
-      break-after: avoid !important;
+    }
+
+    .section-bar.blue { background: #0284c7; }
+    .section-bar.dark-blue { background: #0f172a; }
+
+    /* Multi-day Card */
+    .multiday-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      background: #f8fafc;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .multiday-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .multiday-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+
+    .pill-green {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .pill-blue {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      font-size: 10px;
+      margin-bottom: 10px;
+    }
+
+    .meta-item { color: #475569; }
+    .meta-item strong { color: #0f172a; }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .day-subcard {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .day-subcard-header {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    /* Individual Grid */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .act-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
 
     .act-card-header {
