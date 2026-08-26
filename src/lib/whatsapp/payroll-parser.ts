@@ -2,6 +2,7 @@ import { normalizeCompanyName } from './financial-parser';
 
 export interface GeminiParsedPayrollReport {
   isPayrollReport: boolean;
+  isMainPayrollReport: boolean; // true si es la nomina principal con dispersión total, false si es solo reporte de asistencia/horas extra
   companyName: string;
   periodNumber: string;
   reportDate: string;
@@ -63,16 +64,17 @@ export async function parsePayrollMessageWithGemini(params: {
   const prompt = `Analiza detenidamente esta imagen y/o texto recibido en el grupo de WhatsApp "${groupName || 'ADMINISTRACION'}":
 
 INSTRUCCIONES DE EXTRACCIÓN DE NÓMINA / RAYA SEMANAL:
-1. "isPayrollReport": boolean (true si la imagen o texto corresponde a un reporte de Nómina, Raya Semanal, Dispersión de Sueldos o Finiquitos. false si es un estado de cuenta o saldo bancario).
-2. "companyName": Nombre de la empresa ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE"). Si no se especifica, usa "${defaultCompany}".
-3. "periodNumber": Período o número de raya (ej. "Raya 34", "Raya 35", "Semana 34"). Extrae del texto o del título de la hoja.
-4. "reportDate": Fecha del reporte en formato "YYYY-MM-DD" (por defecto "${formattedDate}").
-5. "totalAmount": Gran Total a pagar de la nómina en número decimal (ej. 35150.60).
-6. "employeeCount": Número total de empleados o renglones listados en la nómina (0 si no es visible).
-7. "bankBreakdown": Lista de desembolsos por banco o fuente de pago:
+1. "isPayrollReport": boolean (true si la imagen o texto corresponde a un reporte de Nómina, Raya Semanal, Dispersión de Sueldos, Asistencia o Finiquitos. false si es un estado de cuenta o saldo bancario).
+2. "isMainPayrollReport": boolean (true si el documento es la NÓMINA PRINCIPAL / DISPERSIÓN COMPLETA DE SUELDOS. false si es ÚNICAMENTE un reporte auxiliar de Tiempo Extra, Horas Extra o Asistencia).
+3. "companyName": Nombre de la empresa ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE"). Si no se especifica, usa "${defaultCompany}".
+4. "periodNumber": Período o número de raya (ej. "Raya 34", "Raya 35", "Semana 34"). Extrae del texto o del título de la hoja.
+5. "reportDate": Fecha del reporte en formato "YYYY-MM-DD" (por defecto "${formattedDate}").
+6. "totalAmount": Gran Total a pagar de la nómina en número decimal (ej. 35150.60).
+7. "employeeCount": Número total de empleados o renglones listados en la nómina (0 si no es visible).
+8. "bankBreakdown": Lista de desembolsos por banco o fuente de pago:
    - "bankOrSource": Nombre de la fuente/banco (ej. "SANTANDER", "BANAMEX", "BBVA", "CAJA CHICA", "EFECTIVO").
    - "amount": Monto asignado a esa fuente en número decimal.
-8. "observations": Notas adicionales, faltas, vacaciones o comentarios visibles (ej. "Periodo de vacaciones de ORNELAS TORRES YESSENIA").
+9. "observations": Notas adicionales, faltas, vacaciones o comentarios visibles (ej. "Periodo de vacaciones de ORNELAS TORRES YESSENIA").
 
 ⚠️ CONSIDERACIÓN DE VARIACIÓN MULTIEMPRESA Y FORMATOS DE EXCEL:
 - Las 4 empresas (GRUPO CASEME, DROBOTS, OPUS INGENIUM, VULCAN FORGE) manejan plantillas de Excel/imágenes con estructuras de columnas diferentes y distinta cantidad de personal (desde 3 hasta más de 50 empleados).
@@ -85,6 +87,7 @@ TEXTO ACOMPAÑANTE EN EL MENSAJE:
 Responde ÚNICAMENTE en formato JSON plano válido sin marcas de markdown:
 {
   "isPayrollReport": boolean,
+  "isMainPayrollReport": boolean,
   "companyName": string,
   "periodNumber": string,
   "reportDate": "YYYY-MM-DD",
@@ -142,6 +145,7 @@ function fallbackPayrollParser(
 
   return {
     isPayrollReport: true,
+    isMainPayrollReport: true,
     companyName: normalizeCompanyName(companyName),
     periodNumber,
     reportDate: dateStr,

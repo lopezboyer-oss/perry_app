@@ -381,18 +381,34 @@ export async function POST(req: NextRequest) {
         });
 
         if (existingPayroll && mediaUrls.length > 0) {
-          // Director re-uploaded signed payroll image — Update existing record cleanly!
-          await prisma.payrollLog.update({
-            where: { id: existingPayroll.id },
-            data: {
-              signedImageUrl: mediaUrls[0],
-              signedBy: payload.senderName || payload.senderPhone || 'Director',
-              signedAt: new Date(),
-              status: 'APROBADA_FIRMA_MANUAL',
-            },
-          });
+          // If incoming document is a Main Payroll Report OR has higher amount than an overtime sheet, update main payroll data!
+          if (payrollReport.isMainPayrollReport || (payrollReport.totalAmount > existingPayroll.totalAmount)) {
+            await prisma.payrollLog.update({
+              where: { id: existingPayroll.id },
+              data: {
+                totalAmount: payrollReport.totalAmount || existingPayroll.totalAmount,
+                employeeCount: payrollReport.employeeCount || existingPayroll.employeeCount,
+                bankBreakdown: payrollReport.bankBreakdown ? JSON.stringify(payrollReport.bankBreakdown) : existingPayroll.bankBreakdown,
+                observations: payrollReport.observations ? `${payrollReport.observations}` : existingPayroll.observations,
+                imageUrl: mediaUrls[0] || existingPayroll.imageUrl,
+              },
+            });
 
-          console.log(`[PAYROLL INGESTION] Updated existing payroll #${existingPayroll.id} with manual signature image from ${payload.senderName}`);
+            console.log(`[PAYROLL INGESTION] Promoted existing payroll #${existingPayroll.id} for ${payrollReport.companyName} with Main Payroll sheet data.`);
+          } else {
+            // Director re-uploaded signed payroll image — Update existing record cleanly!
+            await prisma.payrollLog.update({
+              where: { id: existingPayroll.id },
+              data: {
+                signedImageUrl: mediaUrls[0],
+                signedBy: payload.senderName || payload.senderPhone || 'Director',
+                signedAt: new Date(),
+                status: 'APROBADA_FIRMA_MANUAL',
+              },
+            });
+
+            console.log(`[PAYROLL INGESTION] Updated existing payroll #${existingPayroll.id} with manual signature image from ${payload.senderName}`);
+          }
         } else {
           // New unsigned payroll report — Create new record & generate token
           const randomToken = 'pay_token_' + crypto.randomBytes(16).toString('hex');
