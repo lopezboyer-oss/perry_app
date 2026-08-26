@@ -133,9 +133,16 @@ Responde ÚNICAMENTE un array JSON plano válido sin marcas de markdown:
 
     const resJson = await response.json();
     const rawText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const jsonStr = rawText.replace(/```json\n?|```/gi, '').trim();
+    let cleanJsonStr = rawText.replace(/```json\n?|```/gi, '').trim();
+    const jsonMatch = cleanJsonStr.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    if (jsonMatch) cleanJsonStr = jsonMatch[0];
 
-    const parsedPatterns: IncidentPatternData[] = JSON.parse(jsonStr);
+    if (!cleanJsonStr || !cleanJsonStr.startsWith('[')) {
+      console.warn('[PATTERN-DETECTOR] Gemini returned non-JSON text:', rawText);
+      return { status: 'No patterns found in text' };
+    }
+
+    const parsedPatterns: IncidentPatternData[] = JSON.parse(cleanJsonStr);
     let createdCount = 0;
     let updatedCount = 0;
 
