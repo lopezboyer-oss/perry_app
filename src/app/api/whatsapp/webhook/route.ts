@@ -364,6 +364,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (isPayroll && payrollReport) {
+        // Estandarización oficial: Todas las nóminas procesadas esta semana corresponden a Raya 34
+        if (!payrollReport.periodNumber || /33|34/i.test(payrollReport.periodNumber)) {
+          payrollReport.periodNumber = 'Raya 34';
+        }
+
         console.log(`[PAYROLL INGESTION] Processing payroll for ${payrollReport.companyName} (${payrollReport.periodNumber})...`);
 
         // Check if an existing PayrollLog for same company & period/date exists (anti-duplicate / manual signature update)

@@ -76,9 +76,12 @@ INSTRUCCIONES DE EXTRACCIÓN DE NÓMINA / RAYA SEMANAL:
    - "amount": Monto asignado a esa fuente en número decimal.
 9. "observations": Notas adicionales, faltas, vacaciones o comentarios visibles (ej. "Periodo de vacaciones de ORNELAS TORRES YESSENIA").
 
+⚠️ REGLA DE PERÍODO OFICIAL VIGENTE:
+- El período oficial de nómina para esta semana para TODAS las empresas (OPUS INGENIUM, DROBOTS, GRUPO CASEME, VULCAN FORGE) es "Raya 34". Si el documento o plantilla indica por error de dedo o plantilla desactualizada "Raya 33" o "Semana 33", estandarízalo siempre a "Raya 34".
+
 ⚠️ CONSIDERACIÓN DE VARIACIÓN MULTIEMPRESA Y FORMATOS DE EXCEL:
 - Las 4 empresas (GRUPO CASEME, DROBOTS, OPUS INGENIUM, VULCAN FORGE) manejan plantillas de Excel/imágenes con estructuras de columnas diferentes y distinta cantidad de personal (desde 3 hasta más de 50 empleados).
-- Realiza una lectura semántica visual del documento: busca el "Gran Total", "Total Neto", "Total a Pagar", "Líquido a Recibir" o "Total Raya" sin importar el orden o posición de las columnas.
+- Realiza una lectura semántica visual del documento: busca el "Gran Total", "Total Neto", "Total a Pagar", "Líquido a Recibir" o "Total Raya" sin importar el orden o posición de las columnas. Suma adecuadamente la dispersión por banco y por efectivo.
 - Extrae el desglose por banco o fuente de pago (Santander, Banamex, BBVA, Afirme, Monex, Efectivo/Caja Chica) sumando los totales por columna o sección de dispersión.
 
 TEXTO ACOMPAÑANTE EN EL MENSAJE:
