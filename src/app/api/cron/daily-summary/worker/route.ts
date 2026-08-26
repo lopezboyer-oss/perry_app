@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsappGroupMessage } from '@/lib/whatsapp/service';
 import { renumberOpenCriticalItems } from '@/lib/whatsapp/critical-items';
 
+import { scanAndGenerateRealTimeImprovements } from '@/lib/whatsapp/pattern-detector';
+
 // Extend Netlify function timeout to 60s — this runs independently of cron-job.org
 export const maxDuration = 60;
 
@@ -21,6 +23,14 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[CRON-WORKER] Starting daily summary generation...');
+
+    // Auto-scan and feed Perry Improvements in real-time
+    try {
+      console.log('[CRON-WORKER] Triggering Perry Improvements live AI scan...');
+      await scanAndGenerateRealTimeImprovements();
+    } catch (pErr) {
+      console.error('[CRON-WORKER] Error running Perry Improvements live scan:', pErr);
+    }
 
     // Sunday night check: renumber active critical items starting from #1 for the new weekly cycle
     const now = new Date();

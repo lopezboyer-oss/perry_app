@@ -46,9 +46,25 @@ export default function PerryImprovementsPage() {
   const [newAnalysis, setNewAnalysis] = useState('');
   const [newProposal, setNewProposal] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const userEmail = (session?.user as any)?.email || '';
   const isAuthorized = canAccessWhatsappCoPilot(userEmail);
+
+  const handleLiveScan = async () => {
+    setScanning(true);
+    try {
+      const res = await fetch('/api/whatsapp/improvements?scan=true');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items || []);
+      }
+    } catch (err) {
+      console.error('Error escaneando mejoras en vivo:', err);
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const fetchImprovements = async () => {
     setLoading(true);
@@ -183,12 +199,23 @@ export default function PerryImprovementsPage() {
             </div>
           </div>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-indigo-600/30 shrink-0"
-          >
-            <Plus className="w-4 h-4" /> Registrar Patrón / Incidencia
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={handleLiveScan}
+              disabled={scanning}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-600/30 shrink-0"
+            >
+              <Sparkles className={`w-4 h-4 ${scanning ? 'animate-spin' : ''}`} />
+              {scanning ? 'Escaneando con IA...' : '⚡ Escanear Actividad Reciente (IA)'}
+            </button>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-indigo-600/30 shrink-0"
+            >
+              <Plus className="w-4 h-4" /> Registrar Patrón / Incidencia
+            </button>
+          </div>
         </div>
       </div>
 

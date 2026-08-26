@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { canAccessWhatsappCoPilot } from '@/lib/permissions';
-import { seedOrAnalyzeInitialPatterns, buildAntigravityCopypastaPrompt } from '@/lib/whatsapp/pattern-detector';
+import { seedOrAnalyzeInitialPatterns, scanAndGenerateRealTimeImprovements, buildAntigravityCopypastaPrompt } from '@/lib/whatsapp/pattern-detector';
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,10 +16,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Acceso restringido a dirección' }, { status: 403 });
     }
 
-    // Auto seed patterns if empty
-    await seedOrAnalyzeInitialPatterns();
-
     const { searchParams } = new URL(req.url);
+    const shouldScan = searchParams.get('scan') === 'true';
+
+    if (shouldScan) {
+      await scanAndGenerateRealTimeImprovements();
+    } else {
+      // Auto seed / scan initial patterns if empty
+      await seedOrAnalyzeInitialPatterns();
+    }
     const category = searchParams.get('category') || '';
     const company = searchParams.get('company') || '';
     const status = searchParams.get('status') || '';
