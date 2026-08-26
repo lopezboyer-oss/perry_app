@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   Landmark,
+  FileText,
   TrendingUp,
   Building2,
   DollarSign,
@@ -382,13 +383,13 @@ export default function TesoreriaPage() {
               </div>
             </div>
 
-            {payrolls.length === 0 ? (
+            {(!payrolls || payrolls.length === 0) ? (
               <div className="text-center py-10 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-slate-800">
                 No hay nóminas registradas aún. Al compartir una imagen de nómina en los grupos de administración, Perry la procesará automáticamente.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {payrolls.map((pay) => {
+                {(payrolls || []).map((pay) => {
                   let breakdownList: any[] = [];
                   try { if (pay.bankBreakdown) breakdownList = JSON.parse(pay.bankBreakdown); } catch {}
 
@@ -419,14 +420,14 @@ export default function TesoreriaPage() {
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-400 font-semibold">{pay.periodNumber || 'Raya Semanal'}</span>
                           <span className="text-slate-500 font-mono">
-                            {new Date(pay.reportDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {pay.reportDate ? new Date(pay.reportDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
                           </span>
                         </div>
 
                         <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-center space-y-0.5">
                           <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Monto Total Dispersado</p>
                           <div className="text-xl font-black text-emerald-400 font-mono">
-                            {formatCurrency(pay.totalAmount, 'MXN')}
+                            {formatCurrency(pay.totalAmount || 0, 'MXN')}
                           </div>
                         </div>
 
