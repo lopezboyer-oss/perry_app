@@ -24,6 +24,10 @@ import {
   Power,
   Code2,
   ExternalLink,
+  Search,
+  Eye,
+  X,
+  ImageIcon,
 } from 'lucide-react';
 
 interface AccountBalance {
@@ -82,6 +86,12 @@ export default function TesoreriaPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCompany, setSelectedCompany] = useState<string>('TODAS');
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
+  const [payrollSearch, setPayrollSearch] = useState('');
+  const [activeImageModal, setActiveImageModal] = useState<{
+    title: string;
+    imageUrl: string;
+    signedImageUrl?: string | null;
+  } | null>(null);
 
   // API Key Management state
   const [showKeysModal, setShowKeysModal] = useState(false);
@@ -369,109 +379,222 @@ export default function TesoreriaPage() {
       </div>
 
       {activeView === 'NOMINAS' ? (
-        /* VISTA DE CONTROL DE NÓMINAS Y FIRMAS TOKENIZADAS */
+        /* VISTA DE CONTROL DE NÓMINAS Y FIRMAS TOKENIZADAS CON FILTROS Y VISOR DE IMÁGENES */
         <div className="space-y-6">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
                 <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                  Histórico de Nóminas & Firmas Tokenizadas
+                  <FileText className="w-5 h-5 text-emerald-400" />
+                  Control de Nóminas & Firmas Tokenizadas
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Registro de dispersiones salariales enviadas por WhatsApp o Perry App con estatus de autorización directiva.
+                  Histórico consecutivo de dispersiones salariales por semana y empresa con verificación de firma directiva.
                 </p>
+              </div>
+
+              {/* Input de Búsqueda por Período / Raya */}
+              <div className="relative min-w-[240px]">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={payrollSearch}
+                  onChange={(e) => setPayrollSearch(e.target.value)}
+                  placeholder="Buscar semana o raya (ej. Raya 34)..."
+                  className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
               </div>
             </div>
 
-            {(!payrolls || payrolls.length === 0) ? (
-              <div className="text-center py-10 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-slate-800">
-                No hay nóminas registradas aún. Al compartir una imagen de nómina en los grupos de administración, Perry la procesará automáticamente.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(payrolls || []).map((pay) => {
-                  let breakdownList: any[] = [];
-                  try { if (pay.bankBreakdown) breakdownList = JSON.parse(pay.bankBreakdown); } catch {}
+            {/* Selector Superior de Empresas (Filtro por Empresa) */}
+            <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 overflow-x-auto">
+              <button
+                onClick={() => setSelectedCompany('TODAS')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  selectedCompany === 'TODAS'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                }`}
+              >
+                🌐 Todas las Empresas ({(payrolls || []).length})
+              </button>
+              {['GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE'].map((comp) => {
+                const compCount = (payrolls || []).filter((p) => p.companyName === comp).length;
+                return (
+                  <button
+                    key={comp}
+                    onClick={() => setSelectedCompany(comp)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+                      selectedCompany === comp
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>🏢 {comp}</span>
+                    <span className="px-1.5 py-0.2 text-[10px] rounded-full bg-slate-900/60 text-slate-300 font-mono">
+                      {compCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-                  const isAppr = pay.status === 'APROBADA_TOKENIZADA' || pay.status === 'APROBADA_FIRMA_MANUAL';
-                  const isRej = pay.status === 'RECHAZADA';
+            {/* Renderizado de Tarjetas de Nómina Filtradas */}
+            {(() => {
+              const filteredPayrolls = (payrolls || []).filter((p) => {
+                const matchesCompany = selectedCompany === 'TODAS' || p.companyName === selectedCompany;
+                const searchLower = payrollSearch.toLowerCase().trim();
+                const matchesSearch =
+                  !searchLower ||
+                  (p.periodNumber || '').toLowerCase().includes(searchLower) ||
+                  (p.companyName || '').toLowerCase().includes(searchLower) ||
+                  (p.observations || '').toLowerCase().includes(searchLower);
+                return matchesCompany && matchesSearch;
+              });
 
-                  return (
-                    <div
-                      key={pay.id}
-                      className="bg-slate-950 border border-slate-800 p-5 rounded-2xl space-y-3 shadow-lg flex flex-col justify-between"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-100 text-sm flex items-center gap-2">
-                            🏢 {pay.companyName}
-                          </span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            isAppr
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : isRej
-                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                              : 'bg-amber-500/10 text-amber-300 border border-amber-500/20 animate-pulse'
-                          }`}>
-                            {isAppr ? '✅ APROBADA' : isRej ? '❌ RECHAZADA' : '⏳ PENDIENTE'}
-                          </span>
-                        </div>
+              if (filteredPayrolls.length === 0) {
+                return (
+                  <div className="text-center py-12 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-slate-800 space-y-2">
+                    <FileText className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p>No se encontraron nóminas registradas para los filtros seleccionados.</p>
+                    <p className="text-[11px] text-slate-600">Al compartir una imagen de nómina en los grupos de administración de WhatsApp, Perry la procesará automáticamente.</p>
+                  </div>
+                );
+              }
 
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-400 font-semibold">{pay.periodNumber || 'Raya Semanal'}</span>
-                          <span className="text-slate-500 font-mono">
-                            {pay.reportDate ? new Date(pay.reportDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
-                          </span>
-                        </div>
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {filteredPayrolls.map((pay) => {
+                    let breakdownList: any[] = [];
+                    try {
+                      if (pay.bankBreakdown) breakdownList = JSON.parse(pay.bankBreakdown);
+                    } catch {}
 
-                        <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-center space-y-0.5">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Monto Total Dispersado</p>
-                          <div className="text-xl font-black text-emerald-400 font-mono">
-                            {formatCurrency(pay.totalAmount || 0, 'MXN')}
+                    const isAppr = pay.status === 'APROBADA_TOKENIZADA' || pay.status === 'APROBADA_FIRMA_MANUAL';
+                    const isRej = pay.status === 'RECHAZADA';
+
+                    return (
+                      <div
+                        key={pay.id}
+                        className="bg-slate-950 border border-slate-800 p-5 rounded-2xl space-y-4 shadow-xl flex flex-col justify-between hover:border-slate-700 transition-all"
+                      >
+                        <div className="space-y-3">
+                          {/* Top Header */}
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-100 text-sm flex items-center gap-2">
+                              🏢 {pay.companyName}
+                            </span>
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                isAppr
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : isRej
+                                  ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                  : 'bg-amber-500/10 text-amber-300 border border-amber-500/20 animate-pulse'
+                              }`}
+                            >
+                              {isAppr ? '✅ APROBADA' : isRej ? '❌ RECHAZADA' : '⏳ PENDIENTE'}
+                            </span>
                           </div>
-                        </div>
 
-                        {breakdownList.length > 0 && (
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase">Desglose por Fuente:</p>
-                            <div className="bg-slate-900 p-2 rounded-lg text-[11px] space-y-1 divide-y divide-slate-800">
-                              {breakdownList.map((b: any, bIdx: number) => (
-                                <div key={bIdx} className="flex justify-between pt-0.5">
-                                  <span className="text-slate-300">{b.bankOrSource}</span>
-                                  <span className="font-mono text-emerald-400 font-bold">{formatCurrency(b.amount, 'MXN')}</span>
-                                </div>
-                              ))}
+                          {/* Period & Date */}
+                          <div className="flex items-center justify-between text-xs bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <span className="text-slate-200 font-bold text-xs">{pay.periodNumber || 'Raya Semanal'}</span>
+                            <span className="text-slate-400 font-mono text-[11px]">
+                              {pay.reportDate ? new Date(pay.reportDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}
+                            </span>
+                          </div>
+
+                          {/* Total Amount Box */}
+                          <div className="bg-gradient-to-br from-indigo-950/40 to-slate-950 p-4 rounded-xl border border-indigo-500/20 text-center space-y-0.5 shadow-inner">
+                            <p className="text-[10px] text-indigo-300 uppercase tracking-widest font-bold">Monto Total de Dispersión</p>
+                            <div className="text-2xl font-black text-emerald-400 font-mono tracking-tight">
+                              {formatCurrency(pay.totalAmount || 0, 'MXN')}
                             </div>
+                            {pay.employeeCount > 0 && (
+                              <p className="text-[10px] text-slate-500">{pay.employeeCount} empleados registrados</p>
+                            )}
                           </div>
-                        )}
 
-                        {pay.observations && (
-                          <p className="text-[11px] text-slate-400 italic bg-slate-900/50 p-2 rounded-lg border border-slate-800">
-                            "{pay.observations}"
-                          </p>
-                        )}
-                      </div>
+                          {/* Breakdown List */}
+                          {breakdownList.length > 0 && (
+                            <div className="space-y-1.5">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Desglose por Banco / Fuente:</p>
+                              <div className="bg-slate-900 p-2.5 rounded-xl text-xs space-y-1 divide-y divide-slate-800/80 border border-slate-800">
+                                {breakdownList.map((b: any, bIdx: number) => (
+                                  <div key={bIdx} className="flex justify-between pt-1">
+                                    <span className="text-slate-300 font-medium">{b.bankOrSource}</span>
+                                    <span className="font-mono text-emerald-400 font-bold">{formatCurrency(b.amount, 'MXN')}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
-                      {/* Action & Token Link */}
-                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
-                        {pay.tokenHash ? (
-                          <a
-                            href={`/nominas/firmar/${pay.tokenHash}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex-1 py-2 px-3 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-bold rounded-xl text-xs text-center transition-all flex items-center justify-center space-x-1"
-                          >
-                            <span>✍️ Panel de Firma Tokenizada</span>
-                          </a>
-                        ) : (
-                          <span className="text-[10px] text-slate-500">Sin token generado</span>
-                        )}
+                          {/* Observations */}
+                          {pay.observations && (
+                            <div className="bg-slate-900/40 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 italic">
+                              <span className="font-bold text-amber-400 uppercase not-italic block text-[10px]">Observaciones:</span>
+                              "{pay.observations}"
+                            </div>
+                          )}
+
+                          {/* Signer Audit Info if Approved */}
+                          {isAppr && pay.signedBy && (
+                            <div className="bg-emerald-950/30 border border-emerald-500/20 p-2.5 rounded-xl text-[11px] space-y-0.5">
+                              <div className="text-emerald-400 font-bold flex items-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                <span>Firmado por: {pay.signedBy}</span>
+                              </div>
+                              {pay.signedAt && (
+                                <p className="text-slate-400 text-[10px]">
+                                  {new Date(pay.signedAt).toLocaleString('es-MX', { timeZone: 'America/Tijuana' })}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Buttons Bar */}
+                        <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
+                          {/* Image Viewer Button */}
+                          {pay.imageUrl || pay.signedImageUrl ? (
+                            <button
+                              onClick={() =>
+                                setActiveImageModal({
+                                  title: `${pay.companyName} — ${pay.periodNumber || 'Raya Semanal'}`,
+                                  imageUrl: pay.imageUrl,
+                                  signedImageUrl: pay.signedImageUrl,
+                                })
+                              }
+                              className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center space-x-1.5 transition-all"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Ver Hoja</span>
+                            </button>
+                          ) : null}
+
+                          {/* Token Signature Button */}
+                          {pay.tokenHash ? (
+                            <a
+                              href={`/nominas/firmar/${pay.tokenHash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex-1 py-2 px-3 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-bold rounded-xl text-xs text-center transition-all flex items-center justify-center space-x-1.5"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>{isAppr ? 'Ver Registro Tokenizado' : '✍️ Firma Digital'}</span>
+                            </a>
+                          ) : (
+                            <span className="text-[10px] text-slate-500">Sin token generado</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       ) : (
@@ -839,6 +962,52 @@ export default function TesoreriaPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HIGH RESOLUTION PAYROLL IMAGE LIGHTBOX MODAL */}
+      {activeImageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl">
+                  <ImageIcon className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-100">{activeImageModal.title}</h3>
+                  <p className="text-[11px] text-slate-400">Hoja de Nómina / Raya Semanal procesada por Perry Intelligence</p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <a
+                  href={activeImageModal.signedImageUrl || activeImageModal.imageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Abrir Original
+                </a>
+                <button
+                  onClick={() => setActiveImageModal(null)}
+                  className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Image Content */}
+            <div className="p-4 flex-1 overflow-auto bg-black flex items-center justify-center">
+              <img
+                src={activeImageModal.signedImageUrl || activeImageModal.imageUrl}
+                alt="Hoja de Nómina"
+                className="max-h-[75vh] w-auto object-contain rounded-lg border border-slate-800 shadow-2xl"
+              />
             </div>
           </div>
         </div>
