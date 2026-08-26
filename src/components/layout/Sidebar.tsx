@@ -36,7 +36,6 @@ export const navItems = [
   { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/actividades', label: 'Actividades', icon: ClipboardList },
   { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },
-  { href: '/summer-shut-down', label: 'Summer Shut Down', icon: Sun },
   { href: '/planes-pasados', label: 'Planes Pasados', icon: Clock },
   { href: '/alarma-tera', label: 'Alarma TERA', icon: AlertTriangle },
   { href: '/man-power', label: 'Man Power', icon: Target },
@@ -77,7 +76,7 @@ export function Sidebar({ user }: SidebarProps) {
       return ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'INGENIERO'].includes(user.role);
     }
     if (user.role === 'TECNICO') {
-      if ((user as any).isCruzVerde && (item.href === '/atc-finde' || item.href === '/summer-shut-down')) {
+      if ((user as any).isCruzVerde && item.href === '/atc-finde') {
         return true;
       }
       return item.href === '/registro-personal';

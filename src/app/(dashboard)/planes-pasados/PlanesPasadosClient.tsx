@@ -327,7 +327,7 @@ export function PlanesPasadosClient({
 
       {/* Weekend Selector */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-        <label className="block text-sm font-medium text-slate-700 mb-2">Seleccionar Plan del Fin de Semana:</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Seleccionar Plan del Fin de Semana / Plan Especial:</label>
         <div className="flex flex-wrap gap-2">
           {weekendDates.length === 0 && <p className="text-sm text-slate-400">No hay planes registrados aún.</p>}
           {weekendDates.map((d) => (
@@ -337,14 +337,34 @@ export function PlanesPasadosClient({
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 selectedWeekend === d
                   ? 'bg-indigo-600 text-white shadow-md'
+                  : d === '2026-07-11'
+                  ? 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 font-semibold'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {d} — {getSunday(d)}
+              {d === '2026-07-11' ? '☀️ 2026-07-11 — Summer Shut Down (11-19 Jul)' : `${d} — ${getSunday(d)}`}
             </button>
           ))}
         </div>
       </div>
+
+      {/* Special Banner for Summer Shut Down 2026 */}
+      {selectedWeekend === '2026-07-11' && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-orange-500/10 border border-amber-400/40 rounded-xl p-4 flex items-center justify-between shadow-sm animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-xl shadow-md shrink-0">
+              ☀️
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-800 text-sm">Plan Especial: Summer Shut Down 2026</h3>
+              <p className="text-xs text-slate-600">Periodo extendido de mantenimiento corporativo del 11 al 19 de Julio de 2026 (9 Días de Operación Especial)</p>
+            </div>
+          </div>
+          <span className="hidden sm:inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-300 shrink-0">
+            CONCLUIDO Y ARCHIVADO
+          </span>
+        </div>
+      )}
 
       {/* ── CANCELLED ACTIVITIES CARD ── */}
       {selectedWeekend && (() => {
