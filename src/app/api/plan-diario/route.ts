@@ -9,12 +9,14 @@ export async function GET(req: NextRequest) {
     const dateStr = searchParams.get('date') || new Date().toISOString().split('T')[0];
     const company = searchParams.get('company');
 
-    const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
-    const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
+    // Flexible 48-hour date window around targetDate to catch all timezone offsets (e.g. 12:00 UTC)
+    const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+    const windowStart = new Date(targetDate.getTime() - 24 * 60 * 60 * 1000);
+    const windowEnd = new Date(targetDate.getTime() + 48 * 60 * 60 * 1000);
 
-    // 1. Query registered DailyWorkPlan records
+    // 1. Query registered DailyWorkPlan records for the target date
     const whereClause: any = {
-      planDate: startOfDay,
+      planDate: targetDate,
     };
 
     if (company && company !== 'TODAS') {
@@ -42,15 +44,12 @@ export async function GET(req: NextRequest) {
       orderBy: { companyName: 'asc' },
     });
 
-    // 2. Query core operational Activity records from Perry DB (excluding RASTRILLO and COTIZACION)
-    const coreActivities = await prisma.activity.findMany({
+    // 2. Query ALL operational Activity records in Perry DB around date window
+    const coreActivitiesRaw = await prisma.activity.findMany({
       where: {
         date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-        type: {
-          notIn: ['RASTRILLO', 'COTIZACION'],
+          gte: windowStart,
+          lte: windowEnd,
         },
       },
       include: {
@@ -59,6 +58,14 @@ export async function GET(req: NextRequest) {
         user: true,
       },
       orderBy: { createdAt: 'asc' },
+    });
+
+    // Filter activities strictly matching target ISO date (YYYY-MM-DD) and excluding RASTRILLO/COTIZACION
+    const coreActivities = coreActivitiesRaw.filter((act) => {
+      const actIsoDate = act.date.toISOString().slice(0, 10);
+      if (actIsoDate !== dateStr) return false;
+      const typeUpper = (act.type || '').toUpperCase();
+      return !['RASTRILLO', 'COTIZACION'].includes(typeUpper);
     });
 
     // Map core activities into plans by company name
@@ -77,11 +84,21 @@ export async function GET(req: NextRequest) {
 
     // Merge core activities that aren't already represented in DailyWorkPlanActivity
     coreActivities.forEach((act) => {
-      const compName = (act.company?.name || 'GRUPO CASEME').toUpperCase();
+      let compName = (act.company?.name || 'GRUPO CASEME').toUpperCase();
+
+      // If user filtered by a specific company, align auto-incorporated activity
+      if (company && company !== 'TODAS') {
+        const selectedUpper = company.toUpperCase();
+        if (!compName.includes(selectedUpper) && !selectedUpper.includes(compName)) {
+          // If activity company doesn't match selected company, skip when specific company filtered
+          return;
+        }
+      }
+
       if (!companyPlanMap[compName]) {
         companyPlanMap[compName] = {
           id: `auto-${compName}`,
-          planDate: startOfDay,
+          planDate: targetDate,
           companyName: compName,
           status: 'PUBLICADO',
           activities: [],
@@ -98,6 +115,7 @@ export async function GET(req: NextRequest) {
         existingActs.push({
           id: act.id,
           title: act.title,
+          type: act.type || 'EJECUCION',
           assignedPersonnel: act.notes || '',
           dayOfWeek: 'LUNES-VIERNES',
           startTime: act.startTime || '08:00 AM',
@@ -200,7 +218,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Fecha y Empresa son requeridas' }, { status: 400 });
     }
 
-    const targetDate = new Date(`${date}T00:00:00.000Z`);
+    const targetDate = new Date(`${date}T12:00:00.000Z`);
 
     // Upsert DailyWorkPlan
     const plan = await prisma.dailyWorkPlan.upsert({
