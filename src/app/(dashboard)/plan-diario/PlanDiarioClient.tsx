@@ -1353,16 +1353,52 @@ export function PlanDiarioClient({
     } catch { /* silent */ }
   };
 
+  const todayDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Tijuana' });
+  const tomorrowObj = new Date(`${todayDateStr}T12:00:00`);
+  tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+  const tomorrowDateStr = tomorrowObj.toLocaleDateString('en-CA', { timeZone: 'America/Tijuana' });
+
+  const isTodayActive = weekendOf === todayDateStr;
+  const isTomorrowActive = weekendOf === tomorrowDateStr;
+
   return (
     <div className="space-y-5 pb-20 md:pb-0 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-3">
-            <CalendarDays className="w-8 h-8 text-indigo-600" /> Plan ATC FINDE
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-3">
+              <CalendarDays className="w-8 h-8 text-indigo-600" /> Plan Diario de Trabajo
+            </h1>
+
+            {/* HOY & MAÑANA Quick Filter Buttons */}
+            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+              <button
+                onClick={() => router.push(`/plan-diario?date=${todayDateStr}`)}
+                className={`px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all ${
+                  isTodayActive
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                📅 HOY ({todayDateStr})
+              </button>
+
+              <button
+                onClick={() => router.push(`/plan-diario?date=${tomorrowDateStr}`)}
+                className={`px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all ${
+                  isTomorrowActive
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+              >
+                🌅 MAÑANA ({tomorrowDateStr})
+              </button>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <p className="text-slate-500 text-sm">Plan: <span className="font-semibold text-indigo-600">{weekendLabel}</span></p>
+            <p className="text-slate-500 text-sm">Fecha Seleccionada: <span className="font-semibold text-indigo-600">{weekendOf}</span></p>
             {/* Extra day badges */}
             {planDays.filter(d => d.isExtra).map(d => (
               <span key={d.date} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">

@@ -12,18 +12,23 @@ export const metadata = {
   description: 'Control de actividades diarias, recursos asignados y trazabilidad operativa de Perry.',
 };
 
-export default async function PlanDiarioPage() {
+export default async function PlanDiarioPage({
+  searchParams,
+}: {
+  searchParams?: { date?: string };
+}) {
   const session = await auth();
   if (!session) redirect('/login');
 
   const role = session.user.role;
   const userId = session.user.id;
   
-  // Today's date by default (e.g. "2026-08-27")
+  // Today's date by default (e.g. "2026-08-27") or requested query parameter date
   const todayStr = getTijuanaToday();
+  const selectedDateStr = searchParams?.date || todayStr;
 
-  // Range for query — Today (start of day to end of day)
-  const d = parseLocalDate(todayStr);
+  // Range for query — Selected date (start of day to end of day)
+  const d = parseLocalDate(selectedDateStr);
   const startOfDay = new Date(d); startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(d); endOfDay.setHours(23, 59, 59, 999);
   
@@ -222,8 +227,8 @@ export default async function PlanDiarioPage() {
       userId={userId}
       userName={session.user.name || 'Desconocido'}
       currentUserEmail={session.user.email || ''}
-      weekendOf={todayStr}
-      weekendLabel={`Plan Diario del ${todayStr}`}
+      weekendOf={selectedDateStr}
+      weekendLabel={`Plan Diario del ${selectedDateStr}`}
       planDays={planDays}
       companyName={companyName}
       userIsSafetyAuditor={!!(session.user as any).isSafetyAuditor}
