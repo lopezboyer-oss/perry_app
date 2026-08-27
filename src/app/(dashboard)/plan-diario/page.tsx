@@ -149,7 +149,14 @@ export default async function PlanDiarioPage({
     }),
     prisma.user.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, role: true },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        userCompanies: {
+          select: { company: { select: { name: true } } },
+        },
+      },
       orderBy: { name: 'asc' },
     }),
     prisma.dailyWorkPlanPersonnelStatus.findMany({
@@ -254,7 +261,12 @@ export default async function PlanDiarioPage({
         companyName: a.company?.name || companyName,
       }))}
       preloadedConflicts={preloadedConflicts}
-      allPersonnelUsers={allPersonnelUsers}
+      allPersonnelUsers={allPersonnelUsers.map(u => ({
+        id: u.id,
+        name: u.name,
+        role: u.role,
+        companyName: u.userCompanies?.[0]?.company?.name || null,
+      }))}
       initialPersonnelStatusList={initialPersonnelStatusList.map(ps => ({
         id: ps.id,
         personName: ps.personName,

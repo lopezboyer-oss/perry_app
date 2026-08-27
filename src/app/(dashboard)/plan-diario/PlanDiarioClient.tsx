@@ -294,17 +294,39 @@ export function PlanDiarioClient({
   const [statusModalNotes, setStatusModalNotes] = useState('');
   const [savingStatusModal, setSavingStatusModal] = useState(false);
 
+  const isCompanyMatch = (originCo: string | null | undefined) => {
+    if (!companyName || companyName === 'Todas las empresas' || companyName === 'TODAS' || companyName === 'Todas') return true;
+    if (!originCo) return true;
+    const currentUpper = companyName.toUpperCase().trim();
+    const originUpper = originCo.toUpperCase().trim();
+    if (currentUpper.includes('CASEME') || currentUpper.includes('GLOBAL')) {
+      return originUpper.includes('CASEME') || originUpper.includes('GLOBAL');
+    }
+    return currentUpper.includes(originUpper) || originUpper.includes(currentUpper);
+  };
+
   // Full personnel list (technicians, supervisors, engineers, etc.)
   const fullPersonnelList = (() => {
-    const namesMap = new Map<string, { id: string; name: string; subtitle: string }>();
+    const namesMap = new Map<string, { id: string; name: string; subtitle: string; companyName?: string | null }>();
     (allPersonnelUsers || []).forEach(u => {
       if (u && u.name) {
-        namesMap.set(u.name.toLowerCase().trim(), { id: u.id, name: u.name, subtitle: `Perfil: ${u.role || 'Usuario'}` });
+        namesMap.set(u.name.toLowerCase().trim(), {
+          id: u.id,
+          name: u.name,
+          subtitle: `Perfil: ${u.role || 'Usuario'}`,
+          companyName: (u as any).companyName || null,
+        });
       }
     });
     (technicians || []).forEach(t => {
       if (t && t.name && !namesMap.has(t.name.toLowerCase().trim())) {
-        namesMap.set(t.name.toLowerCase().trim(), { id: t.id, name: t.name, subtitle: `Técnico ${t.type || ''}` });
+        const techCo = (t as any).contractor?.name || (t.type ? `Técnico ${t.type}` : null);
+        namesMap.set(t.name.toLowerCase().trim(), {
+          id: t.id,
+          name: t.name,
+          subtitle: `Técnico ${t.type || ''}`,
+          companyName: techCo,
+        });
       }
     });
     return Array.from(namesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
@@ -314,7 +336,9 @@ export function PlanDiarioClient({
     setStatusModalType(type);
     setStatusSearchTerm('');
     setStatusModalNotes('');
-    const existingNames = personnelStatusList.filter(s => s.statusType === type).map(s => s.personName);
+    const existingNames = personnelStatusList
+      .filter(s => s.statusType === type && isCompanyMatch(s.originCompany))
+      .map(s => s.personName);
     setSelectedNamesForModal(new Set(existingNames));
   };
 
@@ -2980,7 +3004,14 @@ export function PlanDiarioClient({
                       }`}
                     >
                       <div>
-                        <p className="text-xs font-bold text-slate-800">{person.name}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs font-bold text-slate-800">{person.name}</p>
+                          {person.companyName && (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                              {person.companyName}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-slate-500">{person.subtitle}</p>
                       </div>
                       <input
