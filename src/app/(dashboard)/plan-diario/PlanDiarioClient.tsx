@@ -677,8 +677,9 @@ export function PlanDiarioClient({
       // Safety Dedicado = only safetyAssignments with role !== DESIGNADO
       const dedicados = allSafetyForAct.filter((x) => x.role !== 'DESIGNADO').map((x) => x.safetyDedicado.name).join(', ');
       const eqs = equipAssignments.filter((x) => x.activityId === a.id).map((x) => x.equip.name).join(', ');
-      const d = new Date(a.date);
-      const dayLabel = dayNames[d.getUTCDay()] || '';
+      const dateOnlyStr = a.date.substring(0, 10);
+      const d = parseLocalDate(dateOnlyStr);
+      const dayLabel = dayNames[d.getDay()] || '';
       const isLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
       return {
         num: i + 1,
@@ -710,7 +711,7 @@ export function PlanDiarioClient({
     let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8">
 <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
-<x:Name>Plan Finde</x:Name>
+<x:Name>Plan Diario</x:Name>
 <x:WorksheetOptions><x:DisplayGridlines/><x:FitToPage/><x:Print><x:FitWidth>1</x:FitWidth></x:Print></x:WorksheetOptions>
 </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
 </head><body>
@@ -720,7 +721,7 @@ export function PlanDiarioClient({
     html += colWidths.map(w => `<col width="${w}">`).join('');
 
     // Title row
-    html += `<tr><td colspan="${headers.length}" ${titleStyle}>📋 PLAN FINDE — ${weekendLabel} · ${companyName}</td></tr>`;
+    html += `<tr><td colspan="${headers.length}" ${titleStyle}>📋 PLAN DIARIO DE TRABAJO — ${weekendLabel} · ${companyName}</td></tr>`;
 
     // Header row
     html += '<tr>' + headers.map(h => `<th ${thStyle}>${h}</th>`).join('') + '</tr>';

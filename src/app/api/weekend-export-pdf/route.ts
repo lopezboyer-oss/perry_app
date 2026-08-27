@@ -14,43 +14,35 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const weekendOf = body.weekendOf || '2026-08-22';
+    const weekendOf = body.weekendOf || new Date().toISOString().slice(0, 10);
     const companyId = body.companyId || null;
 
-    // Calculate Saturday and Sunday dates
-    const [year, month, day] = weekendOf.split('-').map(Number);
-    const satDateObj = new Date(year, month - 1, day);
-    const sunDateObj = new Date(satDateObj);
-    sunDateObj.setDate(sunDateObj.getDate() + 1);
-
-    const formatDayNum = (d: Date) => String(d.getDate()).padStart(2, '0');
+    const daysOfWeekFull = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+    const daysOfWeekTitle = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const monthNamesEs = [
       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
-    const monthNamesEsShort = [
-      'AGO', 'AGO', 'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'
-    ];
 
-    const satDayNum = formatDayNum(satDateObj);
-    const sunDayNum = formatDayNum(sunDateObj);
-    const monthName = monthNamesEs[satDateObj.getMonth()];
-    const satMonthShort = monthNamesEsShort[satDateObj.getMonth() + 1] || 'AGO';
-    const sunMonthShort = monthNamesEsShort[sunDateObj.getMonth() + 1] || 'AGO';
+    const formatDayNum = (d: Date) => String(d.getDate()).padStart(2, '0');
 
-    // Fetch Extra Plan Days
+    // Parse target base date
+    const targetDateObj = parseLocalDate(weekendOf);
+    const baseDayNameUpper = daysOfWeekFull[targetDateObj.getDay()];
+    const baseDayNameTitle = daysOfWeekTitle[targetDateObj.getDay()];
+    const baseDayNum = formatDayNum(targetDateObj);
+    const baseMonthName = monthNamesEs[targetDateObj.getMonth()];
+    const baseYear = targetDateObj.getFullYear();
+
+    // Fetch Extra Plan Days if any
     const extraDays = await prisma.extraPlanDay.findMany({
       where: { weekendOf },
-      orderBy: { date: 'asc' }
+      orderBy: { date: 'asc' },
     });
 
-    const allDates = [...new Set([
-      weekendOf,
-      `${sunDateObj.getFullYear()}-${String(sunDateObj.getMonth() + 1).padStart(2, '0')}-${String(sunDateObj.getDate()).padStart(2, '0')}`,
-      ...extraDays.map(d => d.date)
-    ])].sort();
+    const allDates = [...new Set([weekendOf, ...extraDays.map((d) => d.date)])].sort();
 
-    const dateRanges = allDates.map(dateStr => {
+    const dateRanges = allDates.map((dateStr) => {
       const d = parseLocalDate(dateStr);
       const start = new Date(d); start.setHours(0, 0, 0, 0);
       const end = new Date(d); end.setHours(23, 59, 59, 999);
@@ -74,7 +66,7 @@ export async function POST(req: NextRequest) {
       userSafetyAssignments,
       vehicleAssignments,
       driverAssignments,
-      equipAssignments
+      equipAssignments,
     ] = await Promise.all([
       prisma.activity.findMany({
         where: {
@@ -91,43 +83,43 @@ export async function POST(req: NextRequest) {
       }),
       prisma.weekendTechAssignment.findMany({
         where: { weekendOf },
-        include: { technician: true }
+        include: { technician: true },
       }),
       prisma.weekendSafetyAssignment.findMany({
         where: { weekendOf },
-        include: { safetyDedicado: true }
+        include: { safetyDedicado: true },
       }),
       prisma.weekendUserSafetyAssignment.findMany({
         where: { weekendOf },
-        include: { user: { select: { id: true, name: true } } }
+        include: { user: { select: { id: true, name: true } } },
       }),
       prisma.weekendVehicleAssignment.findMany({
         where: { weekendOf },
-        include: { vehicle: true }
+        include: { vehicle: true },
       }),
       prisma.weekendDriverAssignment.findMany({
         where: { weekendOf },
-        include: { driver: true }
+        include: { driver: true },
       }),
       prisma.weekendEquipAssignment.findMany({
         where: { weekendOf },
-        include: { equip: true }
+        include: { equip: true },
       }),
     ]);
 
     // Map activity helper
     const getTechsForActivity = (actId: string) => {
-      const assigned = techAssignments.filter(t => t.activityId === actId);
-      if (assigned.length > 0) return assigned.map(t => t.technician?.name || 'Técnico').join(', ');
+      const assigned = techAssignments.filter((t) => t.activityId === actId);
+      if (assigned.length > 0) return assigned.map((t) => t.technician?.name || 'Técnico').join(', ');
       return '—';
     };
 
     const getSafetyForActivity = (actId: string) => {
-      const assignedUser = userSafetyAssignments.find(u => u.activityId === actId);
+      const assignedUser = userSafetyAssignments.find((u) => u.activityId === actId);
       if (assignedUser?.user?.name) {
         return { isDedicated: true, name: assignedUser.user.name };
       }
-      const assignedExt = safetyAssignments.find(s => s.activityId === actId);
+      const assignedExt = safetyAssignments.find((s) => s.activityId === actId);
       if (assignedExt?.safetyDedicado?.name) {
         return { isDedicated: true, name: assignedExt.safetyDedicado.name };
       }
@@ -135,7 +127,7 @@ export async function POST(req: NextRequest) {
     };
 
     const getEquipForActivity = (actId: string) => {
-      const assigned = equipAssignments.find(e => e.activityId === actId);
+      const assigned = equipAssignments.find((e) => e.activityId === actId);
       if (assigned?.equip) {
         const typeStr = assigned.equip.type || 'EQUIPO';
         const ownership = assigned.equip.ownership === 'RENTADO' ? 'RENTADO' : 'PROPIO';
@@ -144,59 +136,21 @@ export async function POST(req: NextRequest) {
       return 'N/A';
     };
 
-    // Separate activities into Saturday, Sunday, Multiday
-    const satStr = weekendOf;
-    const sunStr = `${sunDateObj.getFullYear()}-${String(sunDateObj.getMonth() + 1).padStart(2, '0')}-${String(sunDateObj.getDate()).padStart(2, '0')}`;
-
-    // Group activities by title/folio if multi-day or single day
-    const satActs: any[] = [];
-    const sunActs: any[] = [];
-    const multiActs: any[] = [];
-
-    // Find multidía activities (activities with same title or folio on both Saturday & Sunday)
-    const actMap = new Map<string, { sat?: any; sun?: any }>();
-    activities.forEach(act => {
-      const actDateStr = act.date.toISOString().substring(0, 10);
-      const key = (act.workOrderFolio ? `FOLIO_${act.workOrderFolio}` : `TITLE_${act.title}`).toLowerCase().trim();
-
-      if (!actMap.has(key)) actMap.set(key, {});
-      const item = actMap.get(key)!;
-      if (actDateStr === satStr) item.sat = act;
-      else if (actDateStr === sunStr) item.sun = act;
+    // Group activities by date
+    const actsByDate: Record<string, any[]> = {};
+    allDates.forEach((dStr) => {
+      actsByDate[dStr] = [];
     });
 
-    const processedIds = new Set<string>();
-
-    actMap.forEach((val) => {
-      if (val.sat && val.sun) {
-        processedIds.add(val.sat.id);
-        processedIds.add(val.sun.id);
-        multiActs.push({
-          title: val.sat.title,
-          folio: val.sat.workOrderFolio || val.sun.workOrderFolio || null,
-          client: val.sat.client?.name || val.sat.contact?.name || '—',
-          supervisor: val.sat.user?.name || val.sun.user?.name || '—',
-          responsible: val.sat.user?.name || 'Carlos Lopez',
-          loto: val.sat.loto || val.sun.loto,
-          equip: getEquipForActivity(val.sat.id) !== 'N/A' ? getEquipForActivity(val.sat.id) : getEquipForActivity(val.sun.id),
-          satTime: `${val.sat.startTime || '14:00'} - ${val.sat.endTime || '20:00'} HRS`,
-          satTechs: getTechsForActivity(val.sat.id),
-          satSafety: getSafetyForActivity(val.sat.id),
-          sunTime: `${val.sun.startTime || '08:00'} - ${val.sun.endTime || '14:00'} HRS`,
-          sunTechs: getTechsForActivity(val.sun.id),
-          sunSafety: getSafetyForActivity(val.sun.id),
-        });
-      }
-    });
-
-    activities.forEach(act => {
-      if (processedIds.has(act.id)) return;
-      const actDateStr = act.date.toISOString().substring(0, 10);
+    activities.forEach((act) => {
+      const actDateStr = act.date.toISOString().slice(0, 10);
       const itemData = {
         id: act.id,
         title: act.title,
         folio: act.workOrderFolio,
-        time: `${act.startTime || '08:00'} - ${act.endTime || '17:00'} hrs${act.startTime && Number(act.startTime.substring(0, 2)) >= 18 ? ' (Nocturno)' : ''}`,
+        time: `${act.startTime || '08:00'} - ${act.endTime || '17:00'} hrs${
+          act.startTime && Number(act.startTime.substring(0, 2)) >= 18 ? ' (Nocturno)' : ''
+        }`,
         client: act.client?.name || act.contact?.name || '—',
         supervisor: act.user?.name || '—',
         techs: getTechsForActivity(act.id),
@@ -206,18 +160,19 @@ export async function POST(req: NextRequest) {
         notes: act.weekendNotes,
       };
 
-      if (actDateStr === satStr) {
-        satActs.push(itemData);
+      if (actsByDate[actDateStr]) {
+        actsByDate[actDateStr].push(itemData);
       } else {
-        sunActs.push(itemData);
+        // Fallback for timezone edge cases
+        const firstKey = allDates[0];
+        if (actsByDate[firstKey]) actsByDate[firstKey].push(itemData);
       }
     });
 
     // KPI Counts
     const totalActsCount = activities.length;
-    const multidayCount = multiActs.length;
-    const elevationEquipCount = activities.filter(a => getEquipForActivity(a.id) !== 'N/A').length;
-    const safetyDedicatedCount = activities.filter(a => getSafetyForActivity(a.id).isDedicated).length;
+    const elevationEquipCount = activities.filter((a) => getEquipForActivity(a.id) !== 'N/A').length;
+    const safetyDedicatedCount = activities.filter((a) => getSafetyForActivity(a.id).isDedicated).length;
 
     const generationTime = new Date().toLocaleString('es-MX', {
       timeZone: 'America/Tijuana',
@@ -234,7 +189,7 @@ export async function POST(req: NextRequest) {
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Plan de Trabajo Fin de Semana — ${companyName}</title>
+  <title>Plan de Trabajo — ${companyName}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
@@ -279,40 +234,27 @@ export async function POST(req: NextRequest) {
 
     .kpi-container {
       display: flex;
-      gap: 8px;
+      gap: 10px;
     }
 
     .kpi-box {
-      background: #1e293b;
-      border: 1px solid #334155;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 8px;
       padding: 6px 12px;
       text-align: center;
-      min-width: 76px;
     }
 
-    .kpi-val {
-      font-size: 15px;
-      font-weight: 900;
-      color: #ffffff;
-    }
+    .kpi-val { font-size: 16px; font-weight: 900; color: #38bdf8; }
+    .kpi-lbl { font-size: 8px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; }
 
-    .kpi-lbl {
-      font-size: 8px;
-      font-weight: 800;
-      color: #94a3b8;
-      text-transform: uppercase;
-    }
-
-    /* Section Bar */
     .section-bar {
-      background: #1e293b;
       color: #ffffff;
+      font-weight: 800;
+      font-size: 11px;
       padding: 6px 12px;
       border-radius: 6px;
-      font-size: 11px;
-      font-weight: 800;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -321,98 +263,11 @@ export async function POST(req: NextRequest) {
       break-after: avoid-page !important;
     }
 
-    .section-bar + .act-card,
-    .section-bar + .multiday-card {
-      page-break-before: avoid !important;
-      break-before: avoid !important;
-      break-before: avoid-page !important;
-    }
-
-    .section-bar.blue { background: #0284c7; }
     .section-bar.dark-blue { background: #0f172a; }
 
-    /* Multi-day Card */
-    .multiday-card {
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 16px;
-      background: #f8fafc;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-
-    .multiday-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 8px;
-      margin-bottom: 10px;
-    }
-
-    .multiday-title {
-      font-size: 13px;
-      font-weight: 800;
-      color: #1e3a8a;
-    }
-
-    .pill-green {
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #86efac;
-      padding: 2px 8px;
-      border-radius: 9999px;
-      font-size: 9px;
-      font-weight: 800;
-    }
-
-    .pill-blue {
-      background: #dbeafe;
-      color: #1e40af;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 9px;
-      font-weight: 800;
-    }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      font-size: 10px;
-      margin-bottom: 10px;
-    }
-
-    .meta-item { color: #475569; }
-    .meta-item strong { color: #0f172a; }
-
-    .days-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-    }
-
-    .day-subcard {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 8px 10px;
-    }
-
-    .day-subcard-header {
-      font-size: 9px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 4px;
-      display: inline-block;
-      margin-bottom: 6px;
-    }
-
-    /* Individual Grid */
     .grid-2col {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: ${allDates.length > 1 ? 'repeat(2, 1fr)' : '1fr'};
       gap: 14px;
       margin-bottom: 16px;
     }
@@ -520,17 +375,13 @@ export async function POST(req: NextRequest) {
   <!-- HEADER BANNER -->
   <div class="header-banner">
     <div class="title-group">
-      <h1>PLAN DE TRABAJO FIN DE SEMANA | ${companyName.toUpperCase()}</h1>
-      <p>Ventana Operativa: Sábado ${satDayNum} de ${monthName} - Domingo ${sunDayNum} de ${monthName} de ${satDateObj.getFullYear()}</p>
+      <h1>PLAN DE TRABAJO | ${companyName.toUpperCase()}</h1>
+      <p>Fecha Operativa: ${baseDayNameTitle} ${baseDayNum} de ${baseMonthName} de ${baseYear}</p>
     </div>
     <div class="kpi-container">
       <div class="kpi-box">
         <div class="kpi-val">${String(totalActsCount).padStart(2, '0')}</div>
         <div class="kpi-lbl">ACT. TOTALES</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-val">${String(multidayCount).padStart(2, '0')}</div>
-        <div class="kpi-lbl">AMBOS DÍAS</div>
       </div>
       <div class="kpi-box">
         <div class="kpi-val">${String(elevationEquipCount).padStart(2, '0')}</div>
@@ -543,114 +394,65 @@ export async function POST(req: NextRequest) {
     </div>
   </div>
 
-  <!-- MULTI-DAY SECTION -->
-  ${multiActs.length > 0 ? `
-    <div class="section-bar blue">
-      <span>🌀 ACTIVIDAD CONTINUA / MULTIDÍA (SÁBADO ${satDayNum} Y DOMINGO ${sunDayNum} DE ${monthName.toUpperCase()})</span>
-    </div>
-
-    ${multiActs.map((m, idx) => `
-      <div class="multiday-card">
-        <div class="multiday-header">
-          <div class="multiday-title">Items #${String(idx + 1).padStart(2, '0')} — ${m.title}</div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <span class="pill-green">EJECUCIÓN SÁBADO + DOMINGO</span>
-            <span class="pill-blue">ODOO: #${m.folio || 'N/A'}</span>
-          </div>
-        </div>
-        <div class="meta-grid">
-          <div class="meta-item"><strong>CONTACTO / CLIENTE:</strong> ${m.client}</div>
-          <div class="meta-item"><strong>ING. RESPONSABLE:</strong> ${m.responsible}</div>
-          <div class="meta-item"><strong>SUP. OPERATIVO:</strong> ${m.supervisor}</div>
-          <div class="meta-item"><strong>CONDICIONES:</strong> LOTO: ${m.loto ? 'SI' : 'NO'} | ELEVACIÓN: ${m.equip}</div>
-        </div>
-
-        <div class="days-grid">
-          <div class="day-subcard">
-            <div class="day-subcard-header pill-blue">SÁBADO ${satDayNum} ${satMonthShort} • ${m.satTime}</div>
-            <div style="font-size:9.5px; color:#475569;">
-              <div><strong>TÉCNICOS:</strong> ${m.satTechs}</div>
-              <div><strong>SAFETY:</strong> ${m.satSafety.isDedicated ? `<span class="pill-green">🛡️ ${m.satSafety.name} (DEDICADO)</span>` : 'NO DEDICADO'}</div>
-            </div>
-          </div>
-          <div class="day-subcard">
-            <div class="day-subcard-header pill-green">DOMINGO ${sunDayNum} ${sunMonthShort} • ${m.sunTime}</div>
-            <div style="font-size:9.5px; color:#475569;">
-              <div><strong>TÉCNICOS:</strong> ${m.sunTechs}</div>
-              <div><strong>SAFETY:</strong> ${m.sunSafety.isDedicated ? `<span class="pill-green">🛡️ ${m.sunSafety.name} (DEDICADO)</span>` : 'NO DEDICADO'}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `).join('')}
-  ` : ''}
-
-  <!-- INDIVIDUAL DAYS 2-COLUMN GRID -->
+  <!-- INDIVIDUAL DAYS GRID -->
   <div class="grid-2col">
-    <!-- SATURDAY COLUMN -->
-    <div>
-      <div class="section-bar dark-blue">
-        <span>SÁBADO ${satDayNum} DE ${monthName.toUpperCase()} ${satDateObj.getFullYear()}</span>
-        <span>${satActs.length} ACTIVIDADES INDIVIDUALES</span>
-      </div>
+    ${allDates
+      .map((dStr) => {
+        const dObj = parseLocalDate(dStr);
+        const dDayNameUpper = daysOfWeekFull[dObj.getDay()];
+        const dDayNum = formatDayNum(dObj);
+        const dMonthName = monthNamesEs[dObj.getMonth()];
+        const dayActs = actsByDate[dStr] || [];
 
-      ${satActs.length === 0 ? '<div style="font-size:10px; color:#94a3b8; padding:10px;">Sin actividades registradas para este día.</div>' : ''}
-      ${satActs.map((act, idx) => `
-        <div class="act-card">
-          <div class="act-card-header">
-            <span class="act-num-time">#${String(idx + 1).padStart(2, '0')} &nbsp; ${act.time}</span>
-            <span class="act-odoo">ODOO: #${act.folio || 'N/A'}</span>
+        return `
+        <div>
+          <div class="section-bar dark-blue">
+            <span>${dDayNameUpper} ${dDayNum} DE ${dMonthName.toUpperCase()} ${dObj.getFullYear()}</span>
+            <span>${dayActs.length} ACTIVIDADES</span>
           </div>
-          <div class="act-card-title">${act.title}</div>
-          <div class="act-meta">
-            <div><strong>CONTACTO:</strong> ${act.client}</div>
-            <div><strong>ING / SUP:</strong> ${act.supervisor}</div>
-            <div><strong>TÉCNICOS:</strong> ${act.techs}</div>
-          </div>
-          <div class="badges-row">
-            <span class="badge">LOTO: ${act.loto ? 'SI' : 'NO'}</span>
-            <span class="badge ${act.safety.isDedicated ? 'green' : ''}">SAFETY: ${act.safety.isDedicated ? act.safety.name : 'NO'}</span>
-            <span class="badge ${act.equip !== 'N/A' ? 'yellow' : ''}">ELEVACIÓN: ${act.equip !== 'N/A' ? `🚜 ${act.equip}` : 'N/A'}</span>
-          </div>
-          ${act.notes ? `<div class="note-tag"><strong>Nota Ing:</strong> ${act.notes}</div>` : ''}
+
+          ${
+            dayActs.length === 0
+              ? '<div style="font-size:10px; color:#94a3b8; padding:10px;">Sin actividades registradas para este día.</div>'
+              : ''
+          }
+          ${dayActs
+            .map(
+              (act, idx) => `
+            <div class="act-card">
+              <div class="act-card-header">
+                <span class="act-num-time">#${String(idx + 1).padStart(2, '0')} &nbsp; ${act.time}</span>
+                <span class="act-odoo">ODOO: #${act.folio || 'N/A'}</span>
+              </div>
+              <div class="act-card-title">${act.title}</div>
+              <div class="act-meta">
+                <div><strong>CONTACTO / CLIENTE:</strong> ${act.client}</div>
+                <div><strong>RESPONSABLE / SUP:</strong> ${act.supervisor}</div>
+                <div><strong>TÉCNICOS:</strong> ${act.techs}</div>
+              </div>
+              <div class="badges-row">
+                <span class="badge">LOTO: ${act.loto ? 'SI' : 'NO'}</span>
+                <span class="badge ${act.safety.isDedicated ? 'green' : ''}">SAFETY: ${
+                act.safety.isDedicated ? act.safety.name : 'NO'
+              }</span>
+                <span class="badge ${act.equip !== 'N/A' ? 'yellow' : ''}">ELEVACIÓN: ${
+                act.equip !== 'N/A' ? `🚜 ${act.equip}` : 'N/A'
+              }</span>
+              </div>
+              ${act.notes ? `<div class="note-tag"><strong>Nota Ing:</strong> ${act.notes}</div>` : ''}
+            </div>
+          `
+            )
+            .join('')}
         </div>
-      `).join('')}
-    </div>
-
-    <!-- SUNDAY COLUMN -->
-    <div>
-      <div class="section-bar dark-blue">
-        <span>DOMINGO ${sunDayNum} DE ${monthName.toUpperCase()} ${sunDateObj.getFullYear()}</span>
-        <span>${sunActs.length} ACTIVIDADES INDIVIDUALES</span>
-      </div>
-
-      ${sunActs.length === 0 ? '<div style="font-size:10px; color:#94a3b8; padding:10px;">Sin actividades registradas para este día.</div>' : ''}
-      ${sunActs.map((act, idx) => `
-        <div class="act-card">
-          <div class="act-card-header">
-            <span class="act-num-time">#${String(idx + 1 + satActs.length).padStart(2, '0')} &nbsp; ${act.time}</span>
-            <span class="act-odoo">ODOO: #${act.folio || 'N/A'}</span>
-          </div>
-          <div class="act-card-title">${act.title}</div>
-          <div class="act-meta">
-            <div><strong>CONTACTO:</strong> ${act.client}</div>
-            <div><strong>ING / SUP:</strong> ${act.supervisor}</div>
-            <div><strong>TÉCNICOS:</strong> ${act.techs}</div>
-          </div>
-          <div class="badges-row">
-            <span class="badge">LOTO: ${act.loto ? 'SI' : 'NO'}</span>
-            <span class="badge ${act.safety.isDedicated ? 'green' : ''}">SAFETY: ${act.safety.isDedicated ? act.safety.name : 'NO'}</span>
-            <span class="badge ${act.equip !== 'N/A' ? 'yellow' : ''}">ELEVACIÓN: ${act.equip !== 'N/A' ? `🚜 ${act.equip}` : 'N/A'}</span>
-          </div>
-          ${act.notes ? `<div class="note-tag"><strong>Nota Ing:</strong> ${act.notes}</div>` : ''}
-        </div>
-      `).join('')}
-    </div>
+      `;
+      })
+      .join('')}
   </div>
 
   <!-- FOOTER -->
   <div class="footer">
-    <span>${companyName.toUpperCase()} • Control Operativo de Fin de Semana | Perry Intelligence | Generado: ${generationTime} hrs</span>
+    <span>${companyName.toUpperCase()} • Control Operativo de Trabajo | Perry Intelligence | Generado: ${generationTime} hrs</span>
     <span>Página 1 de 1</span>
   </div>
 
@@ -675,17 +477,17 @@ export async function POST(req: NextRequest) {
     await browser.close();
 
     const safeCompany = companyName.replace(/[^a-zA-Z0-9]/g, '_');
-    const fileName = `Plan_Finde_${weekendOf}_${safeCompany}.pdf`;
+    const fileName = `Plan_Trabajo_${weekendOf}_${safeCompany}.pdf`;
 
     return new NextResponse(Buffer.from(pdfBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `inline; filename="${fileName}"`,
       },
     });
   } catch (error: any) {
-    console.error('[WEEKEND-EXPORT-PDF] Error generating PDF:', error);
+    console.error('[WORK-EXPORT-PDF] Error generating PDF:', error);
     return NextResponse.json({ error: error.message || 'Error al generar PDF' }, { status: 500 });
   }
 }
