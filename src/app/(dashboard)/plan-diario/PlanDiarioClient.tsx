@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Calendar,
   Building,
@@ -16,6 +16,8 @@ import {
   Briefcase,
   X,
   Building2,
+  Search,
+  ChevronDown,
 } from 'lucide-react';
 import { exportDailyPlanPDFClient } from '@/lib/pdf/daily-plan-pdf-exporter';
 
@@ -60,6 +62,19 @@ interface Warning {
   assignments: { companyName: string; activityTitle: string }[];
 }
 
+interface CatalogOption {
+  id: string;
+  name: string;
+  badge?: string;
+}
+
+interface Catalogs {
+  technicians: CatalogOption[];
+  supervisors: CatalogOption[];
+  safetyStaff: CatalogOption[];
+  clients: CatalogOption[];
+}
+
 interface PlanDiarioClientProps {
   user: {
     name?: string | null;
@@ -69,6 +84,232 @@ interface PlanDiarioClientProps {
     baseCompany?: { name?: string | null } | null;
   };
   initialActiveCompany: string;
+}
+
+// ─── SEARCHABLE MULTI-SELECT DROPDOWN FOR PERSONNEL ────────────────
+function PersonnelMultiDropdown({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: CatalogOption[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [manualName, setManualName] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Parse comma or line separated items
+  const items = (value || '')
+    .split(/[\n,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const addItem = (name: string) => {
+    if (!name.trim()) return;
+    const clean = name.trim();
+    if (!items.includes(clean)) {
+      const updated = [...items, clean].join(', ');
+      onChange(updated);
+    }
+  };
+
+  const removeItem = (index: number) => {
+    const updated = items.filter((_, i) => i !== index);
+    onChange(updated.join(', '));
+  };
+
+  const filtered = options.filter(
+    (o) => !items.includes(o.name) && o.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative" ref={ref}>
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 min-h-[46px] flex flex-wrap items-center gap-1.5 focus-within:border-indigo-500 transition-all">
+        {items.map((item, idx) => (
+          <span
+            key={idx}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-950/80 text-indigo-200 border border-indigo-500/40"
+          >
+            👤 {item}
+            <button
+              type="button"
+              onClick={() => removeItem(idx)}
+              className="hover:text-rose-400 text-slate-400 p-0.5 rounded-full"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </span>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all"
+        >
+          <Plus className="w-3.5 h-3.5" /> {items.length === 0 ? placeholder : 'Agregar Personal'}
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-72 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 p-3 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+            <input
+              type="text"
+              className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-slate-950 text-white border border-slate-800 rounded-xl focus:outline-none focus:border-indigo-500"
+              placeholder="Buscar en catálogo de técnicos..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <ul className="max-h-48 overflow-y-auto space-y-1 divide-y divide-slate-800/40">
+            {filtered.length === 0 ? (
+              <li className="text-xs text-slate-500 text-center py-2">No hay coincidencias</li>
+            ) : (
+              filtered.map((opt) => (
+                <li
+                  key={opt.id}
+                  onClick={() => {
+                    addItem(opt.name);
+                    setSearch('');
+                  }}
+                  className="flex items-center justify-between px-2.5 py-2 text-xs text-slate-200 rounded-xl cursor-pointer hover:bg-indigo-600/20 hover:text-white font-medium transition-colors"
+                >
+                  <span>👤 {opt.name}</span>
+                  {opt.badge && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{opt.badge}</span>}
+                </li>
+              ))
+            )}
+          </ul>
+
+          {/* Add custom text option */}
+          <div className="pt-2 border-t border-slate-800 flex items-center gap-1.5">
+            <input
+              type="text"
+              placeholder="Escribir nombre externo..."
+              value={manualName}
+              onChange={(e) => setManualName(e.target.value)}
+              className="bg-slate-950 text-white text-xs px-2.5 py-1.5 rounded-lg border border-slate-800 flex-1 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (manualName.trim()) {
+                  addItem(manualName);
+                  setManualName('');
+                }
+              }}
+              className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-indigo-500"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SEARCHABLE SINGLE-SELECT DROPDOWN ──────────────────────────────
+function SingleSearchDropdown({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: CatalogOption[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filtered = options.filter((o) => o.name.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="relative" ref={ref}>
+      <div
+        onClick={() => setOpen(!open)}
+        className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-all min-h-[42px]"
+      >
+        <span className={value ? 'font-bold text-white' : 'text-slate-500'}>{value || placeholder}</span>
+        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+      </div>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-64 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 p-2.5 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+            <input
+              type="text"
+              className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-slate-950 text-white border border-slate-800 rounded-xl focus:outline-none focus:border-indigo-500"
+              placeholder="Buscar o escribir opción..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <ul className="max-h-44 overflow-y-auto space-y-1 divide-y divide-slate-800/40">
+            {search.trim().length > 0 && !options.some((o) => o.name.toLowerCase() === search.trim().toLowerCase()) && (
+              <li
+                onClick={() => {
+                  onChange(search.trim());
+                  setOpen(false);
+                  setSearch('');
+                }}
+                className="px-2.5 py-2 text-xs text-indigo-300 font-bold hover:bg-indigo-600/20 rounded-xl cursor-pointer"
+              >
+                + Usar &quot;{search.trim()}&quot;
+              </li>
+            )}
+
+            {filtered.map((opt) => (
+              <li
+                key={opt.id}
+                onClick={() => {
+                  onChange(opt.name);
+                  setOpen(false);
+                  setSearch('');
+                }}
+                className={`px-2.5 py-2 text-xs rounded-xl cursor-pointer hover:bg-indigo-600/20 hover:text-white transition-colors flex items-center justify-between ${
+                  value === opt.name ? 'bg-indigo-600/30 text-indigo-200 font-black' : 'text-slate-300'
+                }`}
+              >
+                <span>{opt.name}</span>
+                {opt.badge && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{opt.badge}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClientProps) {
@@ -90,11 +331,36 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Catalog State
+  const [catalogs, setCatalogs] = useState<Catalogs>({
+    technicians: [],
+    supervisors: [],
+    safetyStaff: [],
+    clients: [],
+  });
+
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState(selectedCompany === 'TODAS' ? 'GRUPO CASEME' : selectedCompany);
   const [modalActivities, setModalActivities] = useState<Activity[]>([]);
   const [modalPersonnelStatus, setModalPersonnelStatus] = useState<PersonnelStatus[]>([]);
+
+  // Fetch Database Catalogs
+  useEffect(() => {
+    fetch('/api/plan-diario/catalogs')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.technicians) {
+          setCatalogs({
+            technicians: (data.technicians || []).map((t: any) => ({ id: t.id, name: t.name, badge: t.type || 'Técnico' })),
+            supervisors: (data.supervisors || []).map((s: any) => ({ id: s.id, name: s.name, badge: s.role || 'Staff' })),
+            safetyStaff: (data.safetyStaff || []).map((sf: any) => ({ id: sf.id, name: sf.name, badge: 'Safety' })),
+            clients: (data.clients || []).map((c: any) => ({ id: c.id, name: c.name })),
+          });
+        }
+      })
+      .catch((err) => console.error('Error cargando catálogos:', err));
+  }, []);
 
   // Fetch Plans from API
   const fetchPlans = async () => {
@@ -335,7 +601,7 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
         <div className="flex items-center gap-2 bg-indigo-950/60 border border-indigo-500/30 px-4 py-2 rounded-xl text-indigo-300 font-black text-xs shadow-inner">
           <Building2 className="w-4 h-4 text-indigo-400 shrink-0" />
           <span>
-            Empresa Seleccionada: {' '}
+            Empresa Seleccionada:{' '}
             <strong className="text-white">
               {selectedCompany === 'TODAS' ? '🌐 TODAS (VISTA CONSOLIDADA)' : selectedCompany}
             </strong>
@@ -668,6 +934,7 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {/* Activity Title */}
                       <div className="md:col-span-2">
                         <label className="text-[10px] font-bold text-slate-400 block mb-1">Título de Actividad / Trabajo:</label>
                         <input
@@ -683,43 +950,61 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                         />
                       </div>
 
+                      {/* Client / Plant Picker */}
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Cliente / Planta:</label>
-                        <input
-                          type="text"
-                          placeholder="ej. INFINEON, TMMBC, FACILITIES"
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Cliente / Planta (Buscador BD):</label>
+                        <SingleSearchDropdown
                           value={act.clientName}
-                          onChange={(e) => {
+                          options={catalogs.clients}
+                          placeholder="Seleccionar o buscar cliente..."
+                          onChange={(val) => {
                             const copy = [...modalActivities];
-                            copy[idx].clientName = e.target.value;
+                            copy[idx].clientName = val;
                             setModalActivities(copy);
                           }}
-                          className="bg-slate-900 border border-slate-800 text-white text-xs font-bold p-2.5 rounded-xl w-full focus:outline-none focus:border-indigo-500"
                         />
                       </div>
 
-                      <div className="md:col-span-2">
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">
-                          Personas Asignadas (Personal + Empresa si es Soporte Cruzado):
-                        </label>
-                        <textarea
-                          rows={2}
-                          placeholder="ej. Drobots (Jose Centeno, Luis Centeno) | Global Support (Mauricio Velasquez)"
+                      {/* Personnel Picker (Searchable Multi-Select) */}
+                      <div className="md:col-span-2 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-slate-400 block">
+                            Personas Asignadas (Buscador Oficial de Técnicos & Personal BD):
+                          </label>
+                          <label className="inline-flex items-center gap-1.5 text-[10px] font-bold text-sky-400 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={act.isCrossSupport}
+                              onChange={(e) => {
+                                const copy = [...modalActivities];
+                                copy[idx].isCrossSupport = e.target.checked;
+                                if (e.target.checked && !copy[idx].crossSupportCompany) {
+                                  copy[idx].crossSupportCompany = 'GLOBAL SUPPORT';
+                                }
+                                setModalActivities(copy);
+                              }}
+                              className="rounded border-slate-800 bg-slate-900 text-sky-500 focus:ring-0"
+                            />
+                            🤝 SOPORTE CRUZADO INTER-EMPRESA
+                          </label>
+                        </div>
+                        <PersonnelMultiDropdown
                           value={act.assignedPersonnel}
-                          onChange={(e) => {
+                          options={catalogs.technicians}
+                          placeholder="👥 Seleccionar personal de catálogo BD..."
+                          onChange={(val) => {
                             const copy = [...modalActivities];
-                            copy[idx].assignedPersonnel = e.target.value;
-                            // Auto-detect cross support
-                            if (e.target.value.toLowerCase().includes('global') || e.target.value.toLowerCase().includes('soporte')) {
+                            copy[idx].assignedPersonnel = val;
+                            if (val.toLowerCase().includes('global') || val.toLowerCase().includes('soporte')) {
                               copy[idx].isCrossSupport = true;
                               copy[idx].crossSupportCompany = 'GLOBAL SUPPORT';
                             }
                             setModalActivities(copy);
                           }}
-                          className="bg-slate-900 border border-slate-800 text-white text-xs p-2.5 rounded-xl w-full focus:outline-none focus:border-indigo-500"
                         />
                       </div>
 
+                      {/* Schedule */}
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 block mb-1">Horario & Día:</label>
                         <div className="flex items-center gap-2">
@@ -737,42 +1022,58 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                         </div>
                       </div>
 
+                      {/* Supervisor Operativo Picker */}
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Supervisor Operativo:</label>
-                        <input
-                          type="text"
-                          placeholder="ej. Jordan Zellhubert"
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Supervisor Operativo (BD):</label>
+                        <SingleSearchDropdown
                           value={act.supervisorOperativo}
-                          onChange={(e) => {
+                          options={catalogs.supervisors}
+                          placeholder="Seleccionar supervisor..."
+                          onChange={(val) => {
                             const copy = [...modalActivities];
-                            copy[idx].supervisorOperativo = e.target.value;
+                            copy[idx].supervisorOperativo = val;
                             setModalActivities(copy);
                           }}
-                          className="bg-slate-900 border border-slate-800 text-white text-xs p-2.5 rounded-xl w-full"
                         />
                       </div>
 
+                      {/* Supervisor Cotizador Picker */}
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Supervisor Cotizador / TMMBC:</label>
-                        <input
-                          type="text"
-                          placeholder="ej. Javier Oropeza"
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Supervisor Cotizador (BD):</label>
+                        <SingleSearchDropdown
                           value={act.supervisorCotizador}
-                          onChange={(e) => {
+                          options={catalogs.supervisors}
+                          placeholder="Seleccionar cotizador..."
+                          onChange={(val) => {
                             const copy = [...modalActivities];
-                            copy[idx].supervisorCotizador = e.target.value;
+                            copy[idx].supervisorCotizador = val;
                             setModalActivities(copy);
                           }}
-                          className="bg-slate-900 border border-slate-800 text-white text-xs p-2.5 rounded-xl w-full"
                         />
                       </div>
 
+                      {/* Safety Dedicated Staff Picker */}
                       <div>
+                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Safety Dedicado (BD):</label>
+                        <SingleSearchDropdown
+                          value={act.safetyDedicado}
+                          options={catalogs.safetyStaff}
+                          placeholder="Seleccionar safety..."
+                          onChange={(val) => {
+                            const copy = [...modalActivities];
+                            copy[idx].safetyDedicado = val;
+                            setModalActivities(copy);
+                          }}
+                        />
+                      </div>
+
+                      {/* Quotation Folio & PO */}
+                      <div className="md:col-span-3">
                         <label className="text-[10px] font-bold text-slate-400 block mb-1">Cotización / PO (Odoo):</label>
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
-                            placeholder="Cot. S02389"
+                            placeholder="Folio Cotización (ej. Cot. S02389)"
                             value={act.cotizacionFolio}
                             onChange={(e) => {
                               const copy = [...modalActivities];
@@ -783,7 +1084,7 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                           />
                           <input
                             type="text"
-                            placeholder="PO 45204634"
+                            placeholder="P.O. Cliente (ej. PO 45204634)"
                             value={act.poNumber}
                             onChange={(e) => {
                               const copy = [...modalActivities];
@@ -830,17 +1131,18 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                       <option value="TRAILA_PERRY">OFICINA / TRAILA</option>
                     </select>
 
-                    <input
-                      type="text"
-                      placeholder="Nombre del Colaborador (ej. Victor Piña)"
-                      value={ps.personName}
-                      onChange={(e) => {
-                        const copy = [...modalPersonnelStatus];
-                        copy[idx].personName = e.target.value;
-                        setModalPersonnelStatus(copy);
-                      }}
-                      className="bg-slate-900 border border-slate-800 text-white text-xs font-bold p-2 rounded-lg flex-1 min-w-[200px]"
-                    />
+                    <div className="flex-1 min-w-[240px]">
+                      <SingleSearchDropdown
+                        value={ps.personName}
+                        options={catalogs.technicians}
+                        placeholder="Seleccionar colaborador del padrón..."
+                        onChange={(val) => {
+                          const copy = [...modalPersonnelStatus];
+                          copy[idx].personName = val;
+                          setModalPersonnelStatus(copy);
+                        }}
+                      />
+                    </div>
 
                     <button
                       onClick={() => setModalPersonnelStatus(modalPersonnelStatus.filter((_, i) => i !== idx))}
