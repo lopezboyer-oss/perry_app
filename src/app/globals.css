@@ -95,6 +95,36 @@ body {
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
+/* Force dark color-scheme for inputs, date/time pickers and native selects */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+select {
+  color-scheme: dark;
+}
+
+/* Ensure native select option popups render with dark background and crisp white text */
+select option {
+  background-color: #090d16 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Fix webkit autofill white background override in Chrome/Safari */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #090d16 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Force 24-hour format on time inputs */
 input[type="time"] {
   -webkit-appearance: none;

@@ -595,6 +595,7 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
+            style={{ colorScheme: 'dark' }}
             className="bg-slate-950 border border-slate-800 text-white font-bold text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
           />
         </div>
@@ -901,10 +902,11 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                 <select
                   value={editingCompany}
                   onChange={(e) => setEditingCompany(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 text-white font-bold text-sm px-4 py-2.5 rounded-xl w-full max-w-xs focus:outline-none focus:border-indigo-500"
+                  style={{ colorScheme: 'dark' }}
+                  className="bg-slate-950 border border-slate-800 text-white font-bold text-sm px-4 py-2.5 rounded-xl w-full max-w-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
                 >
                   {['GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE'].map((c) => (
-                    <option key={c} value={c}>
+                    <option key={c} value={c} className="bg-slate-950 text-white font-bold py-1">
                       {c}
                     </option>
                   ))}
@@ -1136,12 +1138,13 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                         copy[idx].statusType = e.target.value;
                         setModalPersonnelStatus(copy);
                       }}
-                      className="bg-slate-900 border border-slate-800 text-white text-xs font-bold p-2 rounded-lg"
+                      style={{ colorScheme: 'dark' }}
+                      className="bg-slate-950 border border-slate-800 text-white text-xs font-bold p-2.5 rounded-xl cursor-pointer"
                     >
-                      <option value="DESCANSO">DESCANSO</option>
-                      <option value="VACACIONES">VACACIONES</option>
-                      <option value="COMPRAS">COMPRAS / LOGÍSTICA</option>
-                      <option value="TRAILA_PERRY">OFICINA / TRAILA</option>
+                      <option value="DESCANSO" className="bg-slate-950 text-white font-bold">DESCANSO</option>
+                      <option value="VACACIONES" className="bg-slate-950 text-white font-bold">VACACIONES</option>
+                      <option value="COMPRAS" className="bg-slate-950 text-white font-bold">COMPRAS / LOGÍSTICA</option>
+                      <option value="TRAILA_PERRY" className="bg-slate-950 text-white font-bold">OFICINA / TRAILA</option>
                     </select>
 
                     <div className="flex-1 min-w-[240px]">
