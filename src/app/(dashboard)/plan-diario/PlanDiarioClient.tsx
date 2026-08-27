@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar,
   Building,
@@ -17,7 +17,6 @@ import {
   X,
 } from 'lucide-react';
 import { exportDailyPlanPDFClient } from '@/lib/pdf/daily-plan-pdf-exporter';
-import { useSession } from 'next-auth/react';
 
 const COMPANIES = ['TODAS', 'GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE'];
 
@@ -62,9 +61,17 @@ interface Warning {
   assignments: { companyName: string; activityTitle: string }[];
 }
 
-export function PlanDiarioClient() {
-  const { data: session } = useSession();
-  const user = session?.user as any;
+interface PlanDiarioClientProps {
+  user: {
+    name?: string | null;
+    email?: string | null;
+    role?: string | null;
+    companyName?: string | null;
+    baseCompany?: { name?: string | null } | null;
+  };
+}
+
+export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
   const userRole = user?.role || 'INGENIERO';
   const userEmail = (user?.email || '').toLowerCase().trim();
 
@@ -80,7 +87,7 @@ export function PlanDiarioClient() {
   // Empresa base del usuario
   const userCompany = (user?.companyName || user?.baseCompany?.name || '').toUpperCase().trim();
 
-  // Initial date defaults to 2026-08-27 (where initial seeded data lives) or today's date
+  // Initial date defaults to 2026-08-27 (where initial seeded data lives)
   const [selectedDate, setSelectedDate] = useState('2026-08-27');
   const [selectedCompany, setSelectedCompany] = useState('TODAS');
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -242,7 +249,9 @@ export function PlanDiarioClient() {
   };
 
   const handleExportExcel = () => {
-    window.open(`/api/plan-diario/export-excel?date=${selectedDate}&company=${encodeURIComponent(selectedCompany)}`, '_blank');
+    if (typeof window !== 'undefined') {
+      window.open(`/api/plan-diario/export-excel?date=${selectedDate}&company=${encodeURIComponent(selectedCompany)}`, '_blank');
+    }
   };
 
   // Calculate Metrics safely
