@@ -829,7 +829,10 @@ const SCHEDULE_TYPE_COLORS: Record<string, { bg: string; border: string; text: s
   DISENO: { bg: 'bg-rose-200', border: 'border-rose-400', text: 'text-rose-900' },
   CONSORCIO: { bg: 'bg-cyan-200', border: 'border-cyan-400', text: 'text-cyan-900' },
   CAPACITACION: { bg: 'bg-teal-200', border: 'border-teal-400', text: 'text-teal-900' },
-  SOPORTE_INTERNO: { bg: 'bg-slate-200', border: 'border-slate-400', text: 'text-slate-900' },
+  SOPORTE_INTERNO: { bg: 'bg-indigo-200', border: 'border-indigo-400', text: 'text-indigo-900' },
+  DESCANSO: { bg: 'bg-emerald-200', border: 'border-emerald-400', text: 'text-emerald-900' },
+  VACACIONES: { bg: 'bg-sky-200', border: 'border-sky-400', text: 'text-sky-900' },
+  INCAPACIDAD: { bg: 'bg-orange-200', border: 'border-orange-400', text: 'text-orange-900' },
 };
 
 function ScheduleTimeline({

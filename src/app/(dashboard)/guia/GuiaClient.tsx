@@ -116,6 +116,9 @@ const steps = [
             { type: 'Actividades en Traila / Oficina', color: 'bg-cyan-500', bg: 'bg-cyan-50 border-cyan-100', desc: 'Trabajos de mantenimiento, trabajos de fabricación o trabajos de limpieza que se ejecuten en traila u oficinas administrativas.', examples: '"Pintura y mantenimiento de traila", "Fabricación de soportes en taller", "Limpieza de instalaciones"' },
             { type: 'Capacitación', color: 'bg-teal-500', bg: 'bg-teal-50 border-teal-100', desc: 'Actividades cuando una persona o técnico está recibiendo algún tipo de curso, entrenamiento o capacitación.', examples: '"Curso DC-3 trabajos en alturas", "Capacitación inductiva de seguridad", "Entrenamiento técnico"' },
             { type: 'Soporte Interempresa', color: 'bg-indigo-500', bg: 'bg-indigo-50 border-indigo-100', desc: 'Cuando un técnico o recurso humano está apoyando y trabajando para otra empresa del consorcio distinta a la que pertenece como base.', examples: '"Apoyo de técnico CASEME a DROBOTS en andenes", "Soporte cruzado interempresa"' },
+            { type: 'Descanso', color: 'bg-emerald-500', bg: 'bg-emerald-50 border-emerald-100', desc: 'Día de descanso oficial, franco o programado para el colaborador.', examples: '"Día franco semanal", "Descanso oficial programado"' },
+            { type: 'Vacaciones', color: 'bg-sky-500', bg: 'bg-sky-50 border-sky-100', desc: 'Periodo vacacional autorizado y registrado para el colaborador.', examples: '"Vacaciones de ley autorizadas", "Periodo vacacional anual"' },
+            { type: 'Incapacidad', color: 'bg-orange-500', bg: 'bg-orange-50 border-orange-100', desc: 'Incapacidad médica (IMSS o interna) registrada para el personal.', examples: '"Incapacidad por enfermedad general IMSS", "Incapacidad por riesgo de trabajo"' },
           ].map((item) => (
             <div key={item.type} className={cn('border rounded-xl p-4', item.bg)}>
               <div className="flex items-center gap-2 mb-2">
