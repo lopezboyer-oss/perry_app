@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ClipboardPlus,
   HelpCircle,
+  Calendar,
   CalendarDays,
   Sun,
   LogOut,
