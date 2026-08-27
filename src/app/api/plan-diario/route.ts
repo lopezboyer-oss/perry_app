@@ -9,10 +9,12 @@ export async function GET(req: NextRequest) {
     const dateStr = searchParams.get('date') || new Date().toISOString().split('T')[0];
     const company = searchParams.get('company');
 
-    const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+    const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
+    const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
 
+    // 1. Query registered DailyWorkPlan records
     const whereClause: any = {
-      planDate: targetDate,
+      planDate: startOfDay,
     };
 
     if (company && company !== 'TODAS') {
@@ -40,26 +42,95 @@ export async function GET(req: NextRequest) {
       orderBy: { companyName: 'asc' },
     });
 
-    // Detect Double-Assignment / Overlapping Technician Warnings for the day across ALL companies
-    const allPlansForDay = await prisma.dailyWorkPlan.findMany({
-      where: { planDate: targetDate },
-      include: { activities: true, personnelStatus: true },
+    // 2. Query core operational Activity records from Perry DB (excluding RASTRILLO and COTIZACION)
+    const coreActivities = await prisma.activity.findMany({
+      where: {
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        type: {
+          notIn: ['RASTRILLO', 'COTIZACION'],
+        },
+      },
+      include: {
+        company: true,
+        client: true,
+        user: true,
+      },
+      orderBy: { createdAt: 'asc' },
     });
 
+    // Map core activities into plans by company name
+    const companyPlanMap: Record<string, any> = {};
+
+    plans.forEach((p) => {
+      companyPlanMap[p.companyName.toUpperCase()] = {
+        id: p.id,
+        planDate: p.planDate,
+        companyName: p.companyName,
+        status: p.status,
+        activities: [...(p.activities || [])],
+        personnelStatus: [...(p.personnelStatus || [])],
+      };
+    });
+
+    // Merge core activities that aren't already represented in DailyWorkPlanActivity
+    coreActivities.forEach((act) => {
+      const compName = (act.company?.name || 'GRUPO CASEME').toUpperCase();
+      if (!companyPlanMap[compName]) {
+        companyPlanMap[compName] = {
+          id: `auto-${compName}`,
+          planDate: startOfDay,
+          companyName: compName,
+          status: 'PUBLICADO',
+          activities: [],
+          personnelStatus: [],
+        };
+      }
+
+      const existingActs = companyPlanMap[compName].activities;
+      const isAlreadyInPlan = existingActs.some(
+        (ea: any) => ea.title.toUpperCase().trim() === act.title.toUpperCase().trim()
+      );
+
+      if (!isAlreadyInPlan) {
+        existingActs.push({
+          id: act.id,
+          title: act.title,
+          assignedPersonnel: act.notes || '',
+          dayOfWeek: 'LUNES-VIERNES',
+          startTime: act.startTime || '08:00 AM',
+          clientName: act.client?.name || act.location || 'PLANT/CLIENT',
+          supervisorOperativo: act.user?.name || '',
+          supervisorCotizador: '',
+          supervisorTMMBC: '',
+          safetyDedicado: '',
+          cotizacionFolio: act.workOrderFolio || '',
+          poNumber: act.purchaseOrder || '',
+          isCrossSupport: false,
+          crossSupportCompany: '',
+          notes: act.result || '',
+          isAutoIncorporated: true,
+        });
+      }
+    });
+
+    const finalPlans = Object.values(companyPlanMap);
+
+    // 3. Detect Double-Assignment / Overlapping Technician Warnings
     const personMap: Record<string, { companyName: string; activityTitle: string }[]> = {};
 
-    allPlansForDay.forEach((p) => {
-      p.activities.forEach((act) => {
+    finalPlans.forEach((p: any) => {
+      (p.activities || []).forEach((act: any) => {
         if (!act.assignedPersonnel) return;
 
-        // Parse personnel list (comma separated or multiline)
         const names = act.assignedPersonnel
           .split(/[\n,;]/)
-          .map((n) => n.trim())
-          .filter((n) => n.length > 2 && !/^\d+[- ]/.test(n));
+          .map((n: string) => n.trim())
+          .filter((n: string) => n.length > 2 && !/^\d+[- ]/.test(n));
 
-        names.forEach((name) => {
-          // Clean name string if company is attached e.g. "Mauricio (Global)" -> "Mauricio"
+        names.forEach((name: string) => {
           const cleanName = name.replace(/\([^)]*\)/g, '').trim().toUpperCase();
           if (cleanName.length < 3) return;
 
@@ -74,7 +145,6 @@ export async function GET(req: NextRequest) {
       });
     });
 
-    // Filter persons with 2 or more assignments on the same day
     const warnings: Array<{
       personName: string;
       count: number;
@@ -93,10 +163,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       date: dateStr,
-      plans,
+      plans: finalPlans,
       warnings,
     });
   } catch (error: any) {
+    console.error('Error in GET /api/plan-diario:', error);
     return NextResponse.json({ error: error.message || 'Error consultando Plan Diario' }, { status: 500 });
   }
 }
@@ -110,12 +181,14 @@ export async function POST(req: NextRequest) {
 
     const userRole = (session.user as any)?.role || 'INGENIERO';
     const userEmail = ((session.user as any)?.email || '').toLowerCase().trim();
-    const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(e => userEmail.includes(e.split('@')[0]));
+    const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(
+      (e) => userEmail.includes(e.split('@')[0])
+    );
     const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
 
     if (!canEdit) {
       return NextResponse.json(
-        { error: 'Acceso restringido: Solo Dirección (ADMIN), Administración y Supervisores pueden modificar el Plan Diario. Tu perfil tiene permisos únicamente de visualización.' },
+        { error: 'Acceso restringido: Solo Dirección (ADMIN), Administración y Supervisores pueden modificar el Plan Diario.' },
         { status: 403 }
       );
     }
@@ -156,7 +229,13 @@ export async function POST(req: NextRequest) {
       orderBy: { activityOrder: 'asc' },
     });
 
-    // Replace activities if provided
+    // Resolve Company ID from name
+    const companyRecord = await prisma.company.findFirst({
+      where: { name: { contains: companyName, mode: 'insensitive' } },
+      select: { id: true },
+    });
+
+    // Replace activities in DailyWorkPlan AND sync to core Activity table
     if (Array.isArray(activities)) {
       await prisma.dailyWorkPlanActivity.deleteMany({
         where: { dailyWorkPlanId: plan.id },
@@ -166,10 +245,9 @@ export async function POST(req: NextRequest) {
         await prisma.dailyWorkPlanActivity.createMany({
           data: activities.map((act: any, idx: number) => {
             const existingAct = existingPlanActivities[idx] || existingPlanActivities.find((ea) => ea.id === act.id);
-            // If user cannot manage safety, preserve existing safetyDedicado assignment
             const resolvedSafety = userCanManageSafety
-              ? (act.safetyDedicado || null)
-              : (existingAct?.safetyDedicado || act.safetyDedicado || null);
+              ? act.safetyDedicado || null
+              : existingAct?.safetyDedicado || act.safetyDedicado || null;
 
             return {
               dailyWorkPlanId: plan.id,
@@ -191,6 +269,29 @@ export async function POST(req: NextRequest) {
             };
           }),
         });
+
+        // Sync to core Activity model for Perry ecosystem
+        for (const act of activities) {
+          if (!act.title || !act.title.trim()) continue;
+          try {
+            await prisma.activity.create({
+              data: {
+                title: act.title.trim(),
+                type: act.type || 'EJECUCION',
+                date: targetDate,
+                companyId: companyRecord?.id || null,
+                workOrderFolio: act.cotizacionFolio || null,
+                purchaseOrder: act.poNumber || null,
+                startTime: act.startTime || '08:00 AM',
+                status: 'PUBLICADO',
+                notes: act.assignedPersonnel || null,
+                location: act.clientName || null,
+              },
+            });
+          } catch (e) {
+            // Ignore duplicate activity sync errors silently
+          }
+        }
       }
     }
 
@@ -216,13 +317,19 @@ export async function POST(req: NextRequest) {
     const updatedPlan = await prisma.dailyWorkPlan.findUnique({
       where: { id: plan.id },
       include: {
-        activities: { orderBy: { activityOrder: 'asc' } },
+        activities: {
+          orderBy: { activityOrder: 'asc' },
+        },
         personnelStatus: true,
       },
     });
 
-    return NextResponse.json({ success: true, plan: updatedPlan });
+    return NextResponse.json({
+      message: 'Plan Diario guardado exitosamente',
+      plan: updatedPlan,
+    });
   } catch (error: any) {
+    console.error('Error in POST /api/plan-diario:', error);
     return NextResponse.json({ error: error.message || 'Error guardando Plan Diario' }, { status: 500 });
   }
 }
@@ -236,32 +343,29 @@ export async function DELETE(req: NextRequest) {
 
     const userRole = (session.user as any)?.role || 'INGENIERO';
     const userEmail = ((session.user as any)?.email || '').toLowerCase().trim();
-    const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(e => userEmail.includes(e.split('@')[0]));
-    const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
+    const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(
+      (e) => userEmail.includes(e.split('@')[0])
+    );
+    const canDelete = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
 
-    if (!canEdit) {
-      return NextResponse.json(
-        { error: 'Acceso restringido: Solo Dirección (ADMIN), Administración y Supervisores pueden eliminar registros del Plan Diario.' },
-        { status: 403 }
-      );
+    if (!canDelete) {
+      return NextResponse.json({ error: 'Acceso restringido para eliminar planes' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
     const planId = searchParams.get('planId');
-    const activityId = searchParams.get('activityId');
 
-    if (activityId) {
-      await prisma.dailyWorkPlanActivity.delete({ where: { id: activityId } });
-      return NextResponse.json({ success: true, deleted: 'activity' });
+    if (!planId) {
+      return NextResponse.json({ error: 'planId es requerido' }, { status: 400 });
     }
 
-    if (planId) {
-      await prisma.dailyWorkPlan.delete({ where: { id: planId } });
-      return NextResponse.json({ success: true, deleted: 'plan' });
-    }
+    await prisma.dailyWorkPlan.delete({
+      where: { id: planId },
+    });
 
-    return NextResponse.json({ error: 'ID no proporcionado' }, { status: 400 });
+    return NextResponse.json({ message: 'Plan Diario eliminado exitosamente' });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Error eliminando registro' }, { status: 500 });
+    console.error('Error in DELETE /api/plan-diario:', error);
+    return NextResponse.json({ error: error.message || 'Error eliminando Plan Diario' }, { status: 500 });
   }
 }

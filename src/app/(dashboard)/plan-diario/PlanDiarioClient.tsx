@@ -787,11 +787,18 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                               <td className="py-3.5 px-4 font-black text-slate-400 text-center">{idx + 1}</td>
                               <td className="py-3.5 px-4">
                                 <span className="font-extrabold text-white text-sm block leading-snug">{act.title}</span>
-                                {isCross && (
-                                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-extrabold">
-                                    🤝 SOPORTE CRUZADO INTER-EMPRESA
-                                  </span>
-                                )}
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  {(act as any).isAutoIncorporated && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-extrabold">
+                                      ⚡ AUTO-INCORPORADO DESDE PERRY
+                                    </span>
+                                  )}
+                                  {isCross && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-extrabold">
+                                      🤝 SOPORTE CRUZADO INTER-EMPRESA
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="py-3.5 px-4 font-medium text-slate-300">
                                 <div className="whitespace-pre-line leading-relaxed">{act.assignedPersonnel || '-'}</div>
@@ -938,9 +945,9 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {/* Activity Title */}
-                      <div className="md:col-span-2">
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Título de Actividad / Trabajo:</label>
+                      {/* Activity Title & Type */}
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="text-[10px] font-bold text-slate-400 block">Título de Actividad / Trabajo:</label>
                         <input
                           type="text"
                           placeholder="ej. REPARACIÓN CON SOLDADURA EN ANDÉN AD13"
@@ -952,6 +959,25 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                           }}
                           className="bg-slate-900 border border-slate-800 text-white text-xs font-bold p-2.5 rounded-xl w-full focus:outline-none focus:border-indigo-500"
                         />
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-slate-400">Tipo:</span>
+                          <select
+                            value={(act as any).type || 'EJECUCION'}
+                            onChange={(e) => {
+                              const copy = [...modalActivities];
+                              (copy[idx] as any).type = e.target.value;
+                              setModalActivities(copy);
+                            }}
+                            style={{ colorScheme: 'dark' }}
+                            className="bg-slate-950 border border-slate-800 text-white text-xs font-bold px-3 py-1 rounded-lg cursor-pointer"
+                          >
+                            <option value="EJECUCION" className="bg-slate-950 text-white font-bold">⚙️ EJECUCIÓN (OPERATIVO)</option>
+                            <option value="MANTENIMIENTO" className="bg-slate-950 text-white font-bold">🛠️ MANTENIMIENTO PLANTA</option>
+                            <option value="FABRICACION" className="bg-slate-950 text-white font-bold">🏗️ FABRICACIÓN / TALLER</option>
+                            <option value="INSTALACION" className="bg-slate-950 text-white font-bold">🔌 INSTALACIÓN</option>
+                            <option value="MANTENIMIENTO_OFICINA_TRAILA" className="bg-slate-950 text-amber-300 font-bold">🏢 MANTENIMIENTO OFICINA / TRAILA</option>
+                          </select>
+                        </div>
                       </div>
 
                       {/* Client / Plant Picker */}
