@@ -20,29 +20,22 @@ export function exportWeekendPDFClient({
   weekendOf,
   companyName,
 }: ExportPDFParams) {
-  // Calculate Saturday and Sunday dates
-  const [year, month, day] = weekendOf.split('-').map(Number);
-  const satDateObj = new Date(year, month - 1, day);
-  const sunDateObj = new Date(satDateObj);
-  sunDateObj.setDate(sunDateObj.getDate() + 1);
-
-  const formatDayNum = (d: Date) => String(d.getDate()).padStart(2, '0');
+  const daysOfWeekFull = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+  const daysOfWeekTitle = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
   const monthNamesEs = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
-  const monthNamesEsShort = [
-    'AGO', 'AGO', 'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'
-  ];
 
-  const satDayNum = formatDayNum(satDateObj);
-  const sunDayNum = formatDayNum(sunDateObj);
-  const monthName = monthNamesEs[satDateObj.getMonth()];
-  const satMonthShort = monthNamesEsShort[satDateObj.getMonth() + 1] || 'AGO';
-  const sunMonthShort = monthNamesEsShort[sunDateObj.getMonth() + 1] || 'AGO';
+  const formatDayNum = (d: Date) => String(d.getDate()).padStart(2, '0');
 
-  const satStr = weekendOf;
-  const sunStr = `${sunDateObj.getFullYear()}-${String(sunDateObj.getMonth() + 1).padStart(2, '0')}-${String(sunDateObj.getDate()).padStart(2, '0')}`;
+  // Parse target base date
+  const targetDateObj = parseLocalDate(weekendOf);
+  const baseDayNameUpper = daysOfWeekFull[targetDateObj.getDay()];
+  const baseDayNameTitle = daysOfWeekTitle[targetDateObj.getDay()];
+  const baseDayNum = formatDayNum(targetDateObj);
+  const baseMonthName = monthNamesEs[targetDateObj.getMonth()];
+  const baseYear = targetDateObj.getFullYear();
 
   // Helper mappings
   const getTechsForActivity = (actId: string) => {
@@ -75,54 +68,23 @@ export function exportWeekendPDFClient({
     return 'N/A';
   };
 
-  // Group activities into multiday vs Saturday vs Sunday
-  const satActs: any[] = [];
-  const sunActs: any[] = [];
-  const multiActs: any[] = [];
+  // Collect all unique date strings
+  const actDates = activities.map(a => typeof a.date === 'string' ? a.date.substring(0, 10) : new Date(a.date).toISOString().substring(0, 10));
+  const uniqueDates = [...new Set([weekendOf, ...actDates])].sort();
 
-  const actMap = new Map<string, { sat?: any; sun?: any }>();
-  activities.forEach(act => {
-    const actDateStr = typeof act.date === 'string' ? act.date.substring(0, 10) : new Date(act.date).toISOString().substring(0, 10);
-    const key = (act.workOrderFolio ? `FOLIO_${act.workOrderFolio}` : `TITLE_${act.title}`).toLowerCase().trim();
-
-    if (!actMap.has(key)) actMap.set(key, {});
-    const item = actMap.get(key)!;
-    if (actDateStr === satStr) item.sat = act;
-    else if (actDateStr === sunStr) item.sun = act;
-  });
-
-  const processedIds = new Set<string>();
-
-  actMap.forEach((val) => {
-    if (val.sat && val.sun) {
-      processedIds.add(val.sat.id);
-      processedIds.add(val.sun.id);
-      multiActs.push({
-        title: val.sat.title,
-        folio: val.sat.workOrderFolio || val.sun.workOrderFolio || null,
-        client: val.sat.client?.name || val.sat.contact?.name || '—',
-        supervisor: val.sat.user?.name || val.sun.user?.name || '—',
-        responsible: val.sat.user?.name || 'Carlos Lopez',
-        loto: val.sat.loto || val.sun.loto,
-        equip: getEquipForActivity(val.sat.id) !== 'N/A' ? getEquipForActivity(val.sat.id) : getEquipForActivity(val.sun.id),
-        satTime: `${val.sat.startTime || '14:00'} - ${val.sat.endTime || '20:00'} HRS`,
-        satTechs: getTechsForActivity(val.sat.id),
-        satSafety: getSafetyForActivity(val.sat.id),
-        sunTime: `${val.sun.startTime || '08:00'} - ${val.sun.endTime || '14:00'} HRS`,
-        sunTechs: getTechsForActivity(val.sun.id),
-        sunSafety: getSafetyForActivity(val.sun.id),
-      });
-    }
-  });
+  // Group activities by date
+  const actsByDate: Record<string, any[]> = {};
+  uniqueDates.forEach(dStr => { actsByDate[dStr] = []; });
 
   activities.forEach(act => {
-    if (processedIds.has(act.id)) return;
     const actDateStr = typeof act.date === 'string' ? act.date.substring(0, 10) : new Date(act.date).toISOString().substring(0, 10);
     const itemData = {
       id: act.id,
       title: act.title,
       folio: act.workOrderFolio,
-      time: `${act.startTime || '08:00'} - ${act.endTime || '17:00'} hrs${act.startTime && Number(act.startTime.substring(0, 2)) >= 18 ? ' (Nocturno)' : ''}`,
+      time: `${act.startTime || '08:00'} - ${act.endTime || '17:00'} hrs${
+        act.startTime && Number(act.startTime.substring(0, 2)) >= 18 ? ' (Nocturno)' : ''
+      }`,
       client: act.client?.name || act.contact?.name || '—',
       supervisor: act.user?.name || '—',
       techs: getTechsForActivity(act.id),
@@ -132,20 +94,21 @@ export function exportWeekendPDFClient({
       notes: act.weekendNotes,
     };
 
-    if (actDateStr === satStr) {
-      satActs.push(itemData);
+    if (actsByDate[actDateStr]) {
+      actsByDate[actDateStr].push(itemData);
     } else {
-      sunActs.push(itemData);
+      const firstKey = uniqueDates[0];
+      if (actsByDate[firstKey]) actsByDate[firstKey].push(itemData);
     }
   });
 
   // KPI Counts
   const totalActsCount = activities.length;
-  const multidayCount = multiActs.length;
   const elevationEquipCount = activities.filter(a => getEquipForActivity(a.id) !== 'N/A').length;
   const safetyDedicatedCount = activities.filter(a => getSafetyForActivity(a.id).isDedicated).length;
 
   const generationTime = new Date().toLocaleString('es-MX', {
+    timeZone: 'America/Tijuana',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -154,18 +117,20 @@ export function exportWeekendPDFClient({
     hour12: false,
   });
 
+  // Build Printable HTML
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Por favor habilita las ventanas emergentes en tu navegador para generar el PDF.');
+    return;
+  }
+
   const htmlContent = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Plan de Trabajo Fin de Semana — ${companyName}</title>
+  <title>Plan de Trabajo — ${companyName}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-    @page {
-      size: letter landscape;
-      margin: 8mm;
-    }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
@@ -174,186 +139,84 @@ export function exportWeekendPDFClient({
       color: #0f172a;
       background-color: #ffffff;
       line-height: 1.35;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      padding: 12px;
+      -webkit-print-color-adjust: exact;
+      padding: 24px;
     }
 
     .header-banner {
-      background: #0f172a !important;
-      color: #ffffff !important;
-      padding: 14px 18px;
-      border-radius: 10px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 16px 20px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .title-group h1 {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 900;
       letter-spacing: 0.5px;
-      color: #ffffff !important;
+      color: #ffffff;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
     .title-group p {
-      font-size: 10.5px;
-      color: #38bdf8 !important;
+      font-size: 11px;
+      color: #38bdf8;
       font-weight: 600;
       margin-top: 2px;
     }
 
     .kpi-container {
       display: flex;
-      gap: 6px;
+      gap: 10px;
     }
 
     .kpi-box {
-      background: #1e293b !important;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px 12px;
       text-align: center;
-      min-width: 72px;
     }
 
-    .kpi-val {
-      font-size: 14px;
-      font-weight: 900;
-      color: #ffffff !important;
-    }
+    .kpi-val { font-size: 16px; font-weight: 900; color: #38bdf8; }
+    .kpi-lbl { font-size: 8px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; }
 
-    .kpi-lbl {
-      font-size: 7.5px;
-      font-weight: 800;
-      color: #94a3b8 !important;
-      text-transform: uppercase;
-    }
-
-    /* Section Bar */
     .section-bar {
-      background: #1e293b !important;
-      color: #ffffff !important;
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 10.5px;
+      color: #ffffff;
       font-weight: 800;
-      margin-bottom: 8px;
+      font-size: 11px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       page-break-after: avoid !important;
       break-after: avoid !important;
-      break-after: avoid-page !important;
     }
 
-    .section-bar + .act-card,
-    .section-bar + .multiday-card {
-      page-break-before: avoid !important;
-      break-before: avoid !important;
-      break-before: avoid-page !important;
-    }
+    .section-bar.dark-blue { background: #0f172a; }
 
-    .section-bar.blue { background: #0284c7 !important; }
-    .section-bar.dark-blue { background: #0f172a !important; }
-
-    /* Multi-day Card */
-    .multiday-card {
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 12px;
-      background: #f8fafc !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-
-    .multiday-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 6px;
-      margin-bottom: 8px;
-    }
-
-    .multiday-title {
-      font-size: 12px;
-      font-weight: 800;
-      color: #1e3a8a;
-    }
-
-    .pill-green {
-      background: #dcfce7 !important;
-      color: #166534 !important;
-      border: 1px solid #86efac;
-      padding: 2px 6px;
-      border-radius: 9999px;
-      font-size: 8.5px;
-      font-weight: 800;
-    }
-
-    .pill-blue {
-      background: #dbeafe !important;
-      color: #1e40af !important;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 8.5px;
-      font-weight: 800;
-    }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
-      font-size: 9.5px;
-      margin-bottom: 8px;
-    }
-
-    .meta-item { color: #475569; }
-    .meta-item strong { color: #0f172a; }
-
-    .days-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-
-    .day-subcard {
-      background: #ffffff !important;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 6px 8px;
-    }
-
-    .day-subcard-header {
-      font-size: 8.5px;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
-      display: inline-block;
-      margin-bottom: 4px;
-    }
-
-    /* Individual Grid */
     .grid-2col {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 12px;
+      grid-template-columns: ${uniqueDates.length > 1 ? 'repeat(2, 1fr)' : '1fr'};
+      gap: 14px;
+      margin-bottom: 16px;
     }
 
     .act-card {
-      background: #ffffff !important;
+      background: #ffffff;
       border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
@@ -362,74 +225,74 @@ export function exportWeekendPDFClient({
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
 
     .act-num-time {
-      font-size: 9.5px;
+      font-size: 10px;
       font-weight: 900;
       color: #0284c7;
-      background: #e0f2fe !important;
-      padding: 1px 5px;
+      background: #e0f2fe;
+      padding: 2px 6px;
       border-radius: 4px;
     }
 
     .act-odoo {
-      font-size: 8.5px;
+      font-size: 9px;
       font-weight: 700;
       color: #64748b;
     }
 
     .act-card-title {
-      font-size: 10.5px;
+      font-size: 11px;
       font-weight: 800;
       color: #0f172a;
-      margin-bottom: 4px;
-      line-height: 1.2;
+      margin-bottom: 6px;
+      line-height: 1.25;
     }
 
     .act-meta {
-      font-size: 9px;
+      font-size: 9.5px;
       color: #475569;
-      line-height: 1.35;
-      margin-bottom: 5px;
+      line-height: 1.4;
+      margin-bottom: 6px;
     }
 
     .badges-row {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
-      font-size: 8px;
+      font-size: 8.5px;
       font-weight: 800;
     }
 
     .badge {
-      background: #f1f5f9 !important;
-      color: #475569 !important;
+      background: #f1f5f9;
+      color: #475569;
       border: 1px solid #cbd5e1;
-      padding: 1px 5px;
+      padding: 2px 6px;
       border-radius: 4px;
     }
 
     .badge.yellow {
-      background: #fef3c7 !important;
-      color: #92400e !important;
+      background: #fef3c7;
+      color: #92400e;
       border-color: #fde68a;
     }
 
     .badge.green {
-      background: #dcfce7 !important;
-      color: #166534 !important;
+      background: #dcfce7;
+      color: #166534;
       border-color: #86efac;
     }
 
     .note-tag {
-      font-size: 8.5px;
+      font-size: 9px;
       color: #0369a1;
-      background: #f0f9ff !important;
+      background: #f0f9ff;
       border-left: 3px solid #0284c7;
-      padding: 2px 5px;
-      margin-top: 4px;
+      padding: 3px 6px;
+      margin-top: 6px;
       border-radius: 0 4px 4px 0;
     }
 
@@ -437,11 +300,11 @@ export function exportWeekendPDFClient({
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 8px;
+      font-size: 8.5px;
       color: #64748b;
       border-top: 1px solid #cbd5e1;
-      padding-top: 6px;
-      margin-top: 10px;
+      padding-top: 8px;
+      margin-top: 12px;
     }
   </style>
 </head>
@@ -450,17 +313,13 @@ export function exportWeekendPDFClient({
   <!-- HEADER BANNER -->
   <div class="header-banner">
     <div class="title-group">
-      <h1>PLAN DE TRABAJO FIN DE SEMANA | ${companyName.toUpperCase()}</h1>
-      <p>Ventana Operativa: Sábado ${satDayNum} de ${monthName} - Domingo ${sunDayNum} de ${monthName} de ${satDateObj.getFullYear()}</p>
+      <h1>PLAN DE TRABAJO | ${companyName.toUpperCase()}</h1>
+      <p>Fecha Operativa: ${baseDayNameTitle} ${baseDayNum} de ${baseMonthName} de ${baseYear}</p>
     </div>
     <div class="kpi-container">
       <div class="kpi-box">
         <div class="kpi-val">${String(totalActsCount).padStart(2, '0')}</div>
         <div class="kpi-lbl">ACT. TOTALES</div>
-      </div>
-      <div class="kpi-box">
-        <div class="kpi-val">${String(multidayCount).padStart(2, '0')}</div>
-        <div class="kpi-lbl">AMBOS DÍAS</div>
       </div>
       <div class="kpi-box">
         <div class="kpi-val">${String(elevationEquipCount).padStart(2, '0')}</div>
@@ -473,131 +332,77 @@ export function exportWeekendPDFClient({
     </div>
   </div>
 
-  <!-- MULTI-DAY SECTION -->
-  ${multiActs.length > 0 ? `
-    <div class="section-bar blue">
-      <span>🌀 ACTIVIDAD CONTINUA / MULTIDÍA (SÁBADO ${satDayNum} Y DOMINGO ${sunDayNum} DE ${monthName.toUpperCase()})</span>
-    </div>
-
-    ${multiActs.map((m, idx) => `
-      <div class="multiday-card">
-        <div class="multiday-header">
-          <div class="multiday-title">Items #${String(idx + 1).padStart(2, '0')} — ${m.title}</div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <span class="pill-green">EJECUCIÓN SÁBADO + DOMINGO</span>
-            <span class="pill-blue">ODOO: #${m.folio || 'N/A'}</span>
-          </div>
-        </div>
-        <div class="meta-grid">
-          <div class="meta-item"><strong>CONTACTO / CLIENTE:</strong> ${m.client}</div>
-          <div class="meta-item"><strong>ING. RESPONSABLE:</strong> ${m.responsible}</div>
-          <div class="meta-item"><strong>SUP. OPERATIVO:</strong> ${m.supervisor}</div>
-          <div class="meta-item"><strong>CONDICIONES:</strong> LOTO: ${m.loto ? 'SI' : 'NO'} | ELEVACIÓN: ${m.equip}</div>
-        </div>
-
-        <div class="days-grid">
-          <div class="day-subcard">
-            <div class="day-subcard-header pill-blue">SÁBADO ${satDayNum} ${satMonthShort} • ${m.satTime}</div>
-            <div style="font-size:9px; color:#475569;">
-              <div><strong>TÉCNICOS:</strong> ${m.satTechs}</div>
-              <div><strong>SAFETY:</strong> ${m.satSafety.isDedicated ? `<span class="pill-green">🛡️ ${m.satSafety.name} (DEDICADO)</span>` : 'NO DEDICADO'}</div>
-            </div>
-          </div>
-          <div class="day-subcard">
-            <div class="day-subcard-header pill-green">DOMINGO ${sunDayNum} ${sunMonthShort} • ${m.sunTime}</div>
-            <div style="font-size:9px; color:#475569;">
-              <div><strong>TÉCNICOS:</strong> ${m.sunTechs}</div>
-              <div><strong>SAFETY:</strong> ${m.sunSafety.isDedicated ? `<span class="pill-green">🛡️ ${m.sunSafety.name} (DEDICADO)</span>` : 'NO DEDICADO'}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `).join('')}
-  ` : ''}
-
-  <!-- INDIVIDUAL DAYS 2-COLUMN GRID -->
+  <!-- INDIVIDUAL DAYS GRID -->
   <div class="grid-2col">
-    <!-- SATURDAY COLUMN -->
-    <div>
-      <div class="section-bar dark-blue">
-        <span>SÁBADO ${satDayNum} DE ${monthName.toUpperCase()} ${satDateObj.getFullYear()}</span>
-        <span>${satActs.length} ACTIVIDADES INDIVIDUALES</span>
-      </div>
+    ${uniqueDates
+      .map((dStr) => {
+        const dObj = parseLocalDate(dStr);
+        const dDayNameUpper = daysOfWeekFull[dObj.getDay()];
+        const dDayNum = formatDayNum(dObj);
+        const dMonthName = monthNamesEs[dObj.getMonth()];
+        const dayActs = actsByDate[dStr] || [];
 
-      ${satActs.length === 0 ? '<div style="font-size:9px; color:#94a3b8; padding:8px;">Sin actividades registradas para este día.</div>' : ''}
-      ${satActs.map((act, idx) => `
-        <div class="act-card">
-          <div class="act-card-header">
-            <span class="act-num-time">#${String(idx + 1).padStart(2, '0')} &nbsp; ${act.time}</span>
-            <span class="act-odoo">ODOO: #${act.folio || 'N/A'}</span>
+        return `
+        <div>
+          <div class="section-bar dark-blue">
+            <span>${dDayNameUpper} ${dDayNum} DE ${dMonthName.toUpperCase()} ${dObj.getFullYear()}</span>
+            <span>${dayActs.length} ACTIVIDADES</span>
           </div>
-          <div class="act-card-title">${act.title}</div>
-          <div class="act-meta">
-            <div><strong>CONTACTO:</strong> ${act.client}</div>
-            <div><strong>ING / SUP:</strong> ${act.supervisor}</div>
-            <div><strong>TÉCNICOS:</strong> ${act.techs}</div>
-          </div>
-          <div class="badges-row">
-            <span class="badge">LOTO: ${act.loto ? 'SI' : 'NO'}</span>
-            <span class="badge ${act.safety.isDedicated ? 'green' : ''}">SAFETY: ${act.safety.isDedicated ? act.safety.name : 'NO'}</span>
-            <span class="badge ${act.equip !== 'N/A' ? 'yellow' : ''}">ELEVACIÓN: ${act.equip !== 'N/A' ? `🚜 ${act.equip}` : 'N/A'}</span>
-          </div>
-          ${act.notes ? `<div class="note-tag"><strong>Nota Ing:</strong> ${act.notes}</div>` : ''}
+
+          ${
+            dayActs.length === 0
+              ? '<div style="font-size:9px; color:#94a3b8; padding:8px;">Sin actividades registradas para este día.</div>'
+              : ''
+          }
+          ${dayActs
+            .map(
+              (act, idx) => `
+            <div class="act-card">
+              <div class="act-card-header">
+                <span class="act-num-time">#${String(idx + 1).padStart(2, '0')} &nbsp; ${act.time}</span>
+                <span class="act-odoo">ODOO: #${act.folio || 'N/A'}</span>
+              </div>
+              <div class="act-card-title">${act.title}</div>
+              <div class="act-meta">
+                <div><strong>CONTACTO / CLIENTE:</strong> ${act.client}</div>
+                <div><strong>RESPONSABLE / SUP:</strong> ${act.supervisor}</div>
+                <div><strong>TÉCNICOS:</strong> ${act.techs}</div>
+              </div>
+              <div class="badges-row">
+                <span class="badge">LOTO: ${act.loto ? 'SI' : 'NO'}</span>
+                <span class="badge ${act.safety.isDedicated ? 'green' : ''}">SAFETY: ${
+                act.safety.isDedicated ? act.safety.name : 'NO'
+              }</span>
+                <span class="badge ${act.equip !== 'N/A' ? 'yellow' : ''}">ELEVACIÓN: ${
+                act.equip !== 'N/A' ? `🚜 ${act.equip}` : 'N/A'
+              }</span>
+              </div>
+              ${act.notes ? `<div class="note-tag"><strong>Nota Ing:</strong> ${act.notes}</div>` : ''}
+            </div>
+          `
+            )
+            .join('')}
         </div>
-      `).join('')}
-    </div>
-
-    <!-- SUNDAY COLUMN -->
-    <div>
-      <div class="section-bar dark-blue">
-        <span>DOMINGO ${sunDayNum} DE ${monthName.toUpperCase()} ${sunDateObj.getFullYear()}</span>
-        <span>${sunActs.length} ACTIVIDADES INDIVIDUALES</span>
-      </div>
-
-      ${sunActs.length === 0 ? '<div style="font-size:9px; color:#94a3b8; padding:8px;">Sin actividades registradas para este día.</div>' : ''}
-      ${sunActs.map((act, idx) => `
-        <div class="act-card">
-          <div class="act-card-header">
-            <span class="act-num-time">#${String(idx + 1 + satActs.length).padStart(2, '0')} &nbsp; ${act.time}</span>
-            <span class="act-odoo">ODOO: #${act.folio || 'N/A'}</span>
-          </div>
-          <div class="act-card-title">${act.title}</div>
-          <div class="act-meta">
-            <div><strong>CONTACTO:</strong> ${act.client}</div>
-            <div><strong>ING / SUP:</strong> ${act.supervisor}</div>
-            <div><strong>TÉCNICOS:</strong> ${act.techs}</div>
-          </div>
-          <div class="badges-row">
-            <span class="badge">LOTO: ${act.loto ? 'SI' : 'NO'}</span>
-            <span class="badge ${act.safety.isDedicated ? 'green' : ''}">SAFETY: ${act.safety.isDedicated ? act.safety.name : 'NO'}</span>
-            <span class="badge ${act.equip !== 'N/A' ? 'yellow' : ''}">ELEVACIÓN: ${act.equip !== 'N/A' ? `🚜 ${act.equip}` : 'N/A'}</span>
-          </div>
-          ${act.notes ? `<div class="note-tag"><strong>Nota Ing:</strong> ${act.notes}</div>` : ''}
-        </div>
-      `).join('')}
-    </div>
+      `;
+      })
+      .join('')}
   </div>
 
   <!-- FOOTER -->
   <div class="footer">
-    <span>${companyName.toUpperCase()} • Control Operativo de Fin de Semana | Perry Intelligence | Generado: ${generationTime} hrs</span>
+    <span>${companyName.toUpperCase()} • Control Operativo de Trabajo | Perry Intelligence | Generado: ${generationTime} hrs</span>
     <span>Página 1 de 1</span>
   </div>
 
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
 </body>
 </html>`;
 
-  // Open print popup window
-  const printWindow = window.open('', '_blank', 'width=1100,height=850');
-  if (printWindow) {
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
-  } else {
-    alert('Por favor habilita las ventanas emergentes en tu navegador para generar el PDF.');
-  }
+  printWindow.document.open();
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
 }
