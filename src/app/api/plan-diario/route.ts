@@ -15,7 +15,17 @@ export async function GET(req: NextRequest) {
     };
 
     if (company && company !== 'TODAS') {
-      whereClause.companyName = company;
+      const compUpper = company.toUpperCase();
+      if (compUpper.includes('CASEME') || compUpper.includes('GLOBAL')) {
+        whereClause.companyName = {
+          in: ['GRUPO CASEME', 'GLOBAL SUPPORT', 'CASEME'],
+        };
+      } else {
+        whereClause.companyName = {
+          contains: company,
+          mode: 'insensitive',
+        };
+      }
     }
 
     const plans = await prisma.dailyWorkPlan.findMany({

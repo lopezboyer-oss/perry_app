@@ -254,15 +254,39 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
     }
   };
 
-  // Calculate Metrics safely
-  const totalActivities = (plans || []).reduce((acc, p) => acc + (p?.activities?.length || 0), 0);
-  const totalCrossSupport = (plans || []).reduce(
+  // Filter plans strictly for display based on selectedCompany
+  const displayPlans = (plans || []).filter((plan) => {
+    if (!selectedCompany || selectedCompany === 'TODAS') return true;
+    const pName = (plan.companyName || '').toUpperCase();
+    const sName = selectedCompany.toUpperCase();
+    if (sName.includes('CASEME') || sName.includes('GLOBAL')) {
+      return pName.includes('CASEME') || pName.includes('GLOBAL');
+    }
+    return pName.includes(sName) || sName.includes(pName);
+  });
+
+  // Filter warnings strictly for display based on selectedCompany
+  const displayWarnings = (warnings || []).filter((w) => {
+    if (!selectedCompany || selectedCompany === 'TODAS') return true;
+    const sName = selectedCompany.toUpperCase();
+    return (w.assignments || []).some((a) => {
+      const cName = (a.companyName || '').toUpperCase();
+      if (sName.includes('CASEME') || sName.includes('GLOBAL')) {
+        return cName.includes('CASEME') || cName.includes('GLOBAL');
+      }
+      return cName.includes(sName) || sName.includes(cName);
+    });
+  });
+
+  // Calculate Metrics safely from displayPlans & displayWarnings
+  const totalActivities = displayPlans.reduce((acc, p) => acc + (p?.activities?.length || 0), 0);
+  const totalCrossSupport = displayPlans.reduce(
     (acc, p) =>
       acc +
       (p?.activities || []).filter((a) => a?.isCrossSupport || (a?.assignedPersonnel || '').toLowerCase().includes('global')).length,
     0
   );
-  const totalRestPersonnel = (plans || []).reduce((acc, p) => acc + (p?.personnelStatus?.length || 0), 0);
+  const totalRestPersonnel = displayPlans.reduce((acc, p) => acc + (p?.personnelStatus?.length || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -366,10 +390,10 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
           </div>
         </div>
 
-        <div className={`bg-slate-900 p-5 rounded-2xl border ${(warnings || []).length > 0 ? 'border-amber-500/50 bg-amber-950/10' : 'border-slate-800'} flex items-center justify-between shadow-md`}>
+        <div className={`bg-slate-900 p-5 rounded-2xl border ${displayWarnings.length > 0 ? 'border-amber-500/50 bg-amber-950/10' : 'border-slate-800'} flex items-center justify-between shadow-md`}>
           <div>
             <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">Sobre-Asignación</span>
-            <span className="text-2xl font-black text-amber-300">{(warnings || []).length} Alertas Preventivas</span>
+            <span className="text-2xl font-black text-amber-300">{displayWarnings.length} Alertas Preventivas</span>
           </div>
           <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
             <AlertTriangle className="w-6 h-6" />
@@ -388,7 +412,7 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
       </div>
 
       {/* Technician Overlap Warning Banner */}
-      {(warnings || []).length > 0 && (
+      {displayWarnings.length > 0 && (
         <div className="bg-amber-950/30 border border-amber-500/40 rounded-2xl p-4 md:p-5 space-y-3">
           <div className="flex items-center gap-2 text-amber-400 font-extrabold text-sm uppercase tracking-wide">
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
@@ -399,7 +423,7 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
             <span className="text-amber-300 font-bold block mt-0.5">Nota: Este aviso es informativo y no limita su registro.</span>
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
-            {warnings.map((w, idx) => (
+            {displayWarnings.map((w, idx) => (
               <div key={idx} className="bg-slate-900/90 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200">
                 <span className="font-extrabold text-white text-sm block mb-1">👤 {w.personName} ({w.count} Asignaciones)</span>
                 <ul className="space-y-1 text-[11px] text-slate-300 pl-2">
@@ -421,13 +445,17 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
           <div className="inline-block animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full mb-3"></div>
           <p className="text-slate-400 text-sm font-bold">Cargando Plan Diario...</p>
         </div>
-      ) : (plans || []).length === 0 ? (
+      ) : displayPlans.length === 0 ? (
         <div className="bg-slate-900 p-12 rounded-3xl border border-slate-800 text-center space-y-4">
           <div className="w-16 h-16 bg-slate-800 text-slate-500 rounded-2xl flex items-center justify-center mx-auto">
             <Calendar className="w-8 h-8" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">No hay plan diario registrado para esta fecha</h3>
+            <h3 className="text-lg font-bold text-white">
+              {selectedCompany === 'TODAS'
+                ? 'No hay plan diario registrado para esta fecha'
+                : `No hay plan registrado para ${selectedCompany} en esta fecha`}
+            </h3>
             <p className="text-slate-400 text-xs mt-1">
               {canEdit
                 ? 'Haz clic en "Cargar Nuevo Plan" para registrar las actividades y personal.'
@@ -445,7 +473,7 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
         </div>
       ) : (
         <div className="space-y-6">
-          {(plans || []).map((plan) => {
+          {displayPlans.map((plan) => {
             const activities = plan.activities || [];
             const personnelStatus = plan.personnelStatus || [];
 
