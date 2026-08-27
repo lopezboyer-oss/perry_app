@@ -713,3 +713,60 @@ model PayrollLog {
   @@index([tokenHash])
   @@index([status])
 }
+
+// ─── PLAN DIARIO (LUNES A VIERNES) ─────────────────────────────────────────
+
+model DailyWorkPlan {
+  id           String   @id @default(cuid())
+  planDate     DateTime
+  companyName  String   // "GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE"
+  status       String   @default("PUBLICADO") // "BORRADOR", "PUBLICADO"
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  activities      DailyWorkPlanActivity[]
+  personnelStatus DailyWorkPlanPersonnelStatus[]
+
+  @@unique([planDate, companyName])
+  @@index([planDate])
+  @@index([companyName])
+}
+
+model DailyWorkPlanActivity {
+  id                  String   @id @default(cuid())
+  dailyWorkPlanId     String
+  dailyWorkPlan       DailyWorkPlan @relation(fields: [dailyWorkPlanId], references: [id], onDelete: Cascade)
+  activityOrder       Int      @default(1)
+  title               String   @db.Text
+  assignedPersonnel   String   @db.Text // Comma list or text: "Jose Centeno, Mauricio Velazquez (Global Support)"
+  dayOfWeek           String   // JUEVES, VIERNES, etc.
+  startTime           String?  @default("08:00 AM")
+  clientName          String?  
+  supervisorOperativo String?
+  supervisorCotizador String?
+  supervisorTMMBC     String?  
+  safetyDedicado      String?
+  cotizacionFolio     String?  // e.g. "OS-408", "S02389"
+  poNumber            String?  // e.g. "4520463471"
+  isCrossSupport      Boolean  @default(false)
+  crossSupportCompany String?  // e.g. "GLOBAL SUPPORT"
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([dailyWorkPlanId])
+}
+
+model DailyWorkPlanPersonnelStatus {
+  id              String   @id @default(cuid())
+  dailyWorkPlanId String
+  dailyWorkPlan   DailyWorkPlan @relation(fields: [dailyWorkPlanId], references: [id], onDelete: Cascade)
+  personName      String
+  statusType      String   // "DESCANSO", "VACACIONES", "COMPRAS", "INCAPACIDAD", "OFICINA_PERRY"
+  originCompany   String?  
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  @@index([dailyWorkPlanId])
+}

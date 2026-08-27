@@ -36,6 +36,7 @@ export const navItems = [
   { href: '/actividades/nueva', label: 'Nueva Actividad', icon: ClipboardPlus },
   { href: '/actividades', label: 'Actividades', icon: ClipboardList },
   { href: '/atc-finde', label: 'ATC Finde', icon: CalendarDays },
+  { href: '/plan-diario', label: 'Plan Diario', icon: Calendar },
   { href: '/planes-pasados', label: 'Planes Pasados', icon: Clock },
   { href: '/alarma-tera', label: 'Alarma TERA', icon: AlertTriangle },
   { href: '/man-power', label: 'Man Power', icon: Target },
