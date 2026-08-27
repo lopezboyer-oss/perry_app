@@ -373,7 +373,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
       {form.type === 'CAPACITACION' || form.type === 'SOPORTE_INTERNO' ? (
         <div className="card p-6">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">
-            {form.type === 'CAPACITACION' ? 'Detalles de Capacitación' : 'Detalles de Soporte Interno'}
+            {form.type === 'CAPACITACION' ? 'Detalles de Capacitación' : 'Detalles de Soporte Interempresa'}
           </h2>
           <div className="grid grid-cols-1 gap-4">
             <div>

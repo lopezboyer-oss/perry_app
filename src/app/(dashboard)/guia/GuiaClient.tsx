@@ -78,7 +78,7 @@ const steps = [
               <tbody className="divide-y divide-slate-100">
                 <tr><td className="px-4 py-2.5 font-medium">📅 Fecha</td><td className="px-4 py-2.5 text-slate-600">Día en que realizaste la actividad</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">📝 Título</td><td className="px-4 py-2.5 text-slate-600">Descripción breve. Ej: <em>"Instalación de guarda para botonera"</em></td></tr>
-                <tr><td className="px-4 py-2.5 font-medium">🏷️ Tipo</td><td className="px-4 py-2.5 text-slate-600">Rastrillo, Cotización, Ejecución, Planeación, Diseño o Consorcio</td></tr>
+                <tr><td className="px-4 py-2.5 font-medium">🏷️ Tipo</td><td className="px-4 py-2.5 text-slate-600">Rastrillo, Cotización, Ejecución, Planeación, Diseño, Actividades en Traila / Oficina o Soporte Interempresa</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">🏢 Cliente</td><td className="px-4 py-2.5 text-slate-600">Selecciona el cliente asociado</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">⏰ Hora inicio / fin</td><td className="px-4 py-2.5 text-slate-600">La duración se calcula automáticamente</td></tr>
                 <tr><td className="px-4 py-2.5 font-medium">✅ Resultado</td><td className="px-4 py-2.5 text-slate-600">Qué lograste. Ej: <em>"Cotización enviada $45,000"</em></td></tr>

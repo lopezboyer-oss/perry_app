@@ -120,9 +120,9 @@ export const activityTypeLabels: Record<string, string> = {
   EJECUCION: 'Ejecución',
   PLANEACION: 'Planeación',
   DISENO: 'Diseño',
-  CONSORCIO: 'Consorcio',
+  CONSORCIO: 'Actividades en Traila / Oficina',
   CAPACITACION: 'Capacitación',
-  SOPORTE_INTERNO: 'Soporte Interno',
+  SOPORTE_INTERNO: 'Soporte Interempresa',
 };
 
 /**
