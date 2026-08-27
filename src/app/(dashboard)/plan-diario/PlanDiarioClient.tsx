@@ -223,6 +223,8 @@ export function PlanDiarioClient({
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
   userRole, userId, userName, currentUserEmail = '', weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, allCompanyActivities, preloadedConflicts,
+  allPersonnelUsers = [],
+  initialPersonnelStatusList = [],
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -296,10 +298,12 @@ export function PlanDiarioClient({
   const fullPersonnelList = (() => {
     const namesMap = new Map<string, { id: string; name: string; subtitle: string }>();
     (allPersonnelUsers || []).forEach(u => {
-      namesMap.set(u.name.toLowerCase().trim(), { id: u.id, name: u.name, subtitle: `Perfil: ${u.role}` });
+      if (u && u.name) {
+        namesMap.set(u.name.toLowerCase().trim(), { id: u.id, name: u.name, subtitle: `Perfil: ${u.role || 'Usuario'}` });
+      }
     });
     (technicians || []).forEach(t => {
-      if (!namesMap.has(t.name.toLowerCase().trim())) {
+      if (t && t.name && !namesMap.has(t.name.toLowerCase().trim())) {
         namesMap.set(t.name.toLowerCase().trim(), { id: t.id, name: t.name, subtitle: `Técnico ${t.type || ''}` });
       }
     });
