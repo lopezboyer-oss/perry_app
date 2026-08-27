@@ -20,6 +20,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { exportDailyPlanPDFClient } from '@/lib/pdf/daily-plan-pdf-exporter';
+import { useSession } from 'next-auth/react';
 
 const COMPANIES = ['TODAS', 'GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE'];
 
@@ -65,12 +66,37 @@ interface Warning {
 }
 
 export function PlanDiarioClient() {
+  const { data: session } = useSession();
+  const user = session?.user as any;
+  const userRole = user?.role || 'INGENIERO';
+  const userEmail = (user?.email || '').toLowerCase().trim();
+
+  // Roles 1 a 3 pueden cargar/editar: ADMIN (Perfil 1), ADMINISTRACION (Perfil 2), SUPERVISOR (Perfil 3) o Directores
+  const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(e => userEmail.includes(e.split('@')[0]));
+  const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
+
+  // Roles 1 y 2 pueden filtrar todas las empresas (Vista Consolidada): ADMIN, ADMINISTRACION o Directores
+  const canFilterAllCompanies = isDirector || ['ADMIN', 'ADMINISTRACION'].includes(userRole);
+
+  // Empresa base del usuario
+  const userCompany = (user?.companyName || user?.baseCompany?.name || '').toUpperCase().trim();
+
   const [selectedDate, setSelectedDate] = useState('2026-08-27');
   const [selectedCompany, setSelectedCompany] = useState('TODAS');
   const [plans, setPlans] = useState<Plan[]>([]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+
+  // Restriccion automatica por empresa si no es Admin/Administracion
+  useEffect(() => {
+    if (!canFilterAllCompanies && userCompany) {
+      const match = COMPANIES.find((c) => c !== 'TODAS' && (userCompany.includes(c) || c.includes(userCompany)));
+      if (match) {
+        setSelectedCompany(match);
+      }
+    }
+  }, [canFilterAllCompanies, userCompany]);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -244,12 +270,18 @@ export function PlanDiarioClient() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => handleOpenModal()}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg shadow-indigo-900/30 flex items-center gap-2 transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4" /> ➕ Cargar / Editar Plan
-          </button>
+          {canEdit ? (
+            <button
+              onClick={() => handleOpenModal()}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg shadow-indigo-900/30 flex items-center gap-2 transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4" /> ➕ Cargar / Editar Plan
+            </button>
+          ) : (
+            <div className="bg-slate-950 border border-slate-800 text-slate-400 text-xs font-bold py-2.5 px-3.5 rounded-xl flex items-center gap-2">
+              <span>👁️ Vista de Lectura (Perfil Ingeniero)</span>
+            </div>
+          )}
           <button
             onClick={handleExportPDF}
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs py-2.5 px-4 rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95"
@@ -278,9 +310,14 @@ export function PlanDiarioClient() {
           />
         </div>
 
-        {/* Company Filter Tabs */}
+        {/* Company Filter Tabs (Restricted by Role & Company) */}
         <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          {COMPANIES.map((comp) => (
+          {COMPANIES.filter((comp) => {
+            if (canFilterAllCompanies) return true;
+            if (comp === 'TODAS') return false;
+            if (!userCompany) return true;
+            return userCompany.includes(comp) || comp.includes(userCompany);
+          }).map((comp) => (
             <button
               key={comp}
               onClick={() => setSelectedCompany(comp)}
@@ -407,20 +444,22 @@ export function PlanDiarioClient() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleOpenModal(plan.companyName)}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs py-2 px-3 rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all"
-                  >
-                    <Edit className="w-3.5 h-3.5 text-indigo-400" /> Editar Plan
-                  </button>
-                  <button
-                    onClick={() => handleDeletePlan(plan.id)}
-                    className="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-bold text-xs py-2 px-3 rounded-xl border border-rose-800/40 flex items-center gap-1.5 transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
-                  </button>
-                </div>
+                {canEdit && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenModal(plan.companyName)}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs py-2 px-3 rounded-xl border border-slate-700 flex items-center gap-1.5 transition-all"
+                    >
+                      <Edit className="w-3.5 h-3.5 text-indigo-400" /> Editar Plan
+                    </button>
+                    <button
+                      onClick={() => handleDeletePlan(plan.id)}
+                      className="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-bold text-xs py-2 px-3 rounded-xl border border-rose-800/40 flex items-center gap-1.5 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Activity Table */}

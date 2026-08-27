@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
@@ -91,6 +92,23 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Acceso no autenticado' }, { status: 401 });
+    }
+
+    const userRole = (session.user as any)?.role || 'INGENIERO';
+    const userEmail = ((session.user as any)?.email || '').toLowerCase().trim();
+    const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(e => userEmail.includes(e.split('@')[0]));
+    const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
+
+    if (!canEdit) {
+      return NextResponse.json(
+        { error: 'Acceso restringido: Solo Dirección (ADMIN), Administración y Supervisores pueden modificar el Plan Diario. Tu perfil tiene permisos únicamente de visualización.' },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { date, companyName, activities, personnelStatus } = body;
 
@@ -184,6 +202,23 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Acceso no autenticado' }, { status: 401 });
+    }
+
+    const userRole = (session.user as any)?.role || 'INGENIERO';
+    const userEmail = ((session.user as any)?.email || '').toLowerCase().trim();
+    const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(e => userEmail.includes(e.split('@')[0]));
+    const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
+
+    if (!canEdit) {
+      return NextResponse.json(
+        { error: 'Acceso restringido: Solo Dirección (ADMIN), Administración y Supervisores pueden eliminar registros del Plan Diario.' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const planId = searchParams.get('planId');
     const activityId = searchParams.get('activityId');
