@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendWhatsappGroupMessage } from '@/lib/whatsapp/service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const groupId = '120363367042076187@g.us'; // ADMINISTRACION GRUPO CASEME
