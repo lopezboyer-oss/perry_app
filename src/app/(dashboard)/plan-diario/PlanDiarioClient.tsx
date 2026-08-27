@@ -20,6 +20,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { exportDailyPlanPDFClient } from '@/lib/pdf/daily-plan-pdf-exporter';
+import { canManageSafetyDedicado } from '@/lib/permissions';
 
 interface Activity {
   id?: string;
@@ -321,6 +322,7 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
     (e) => userEmail && userEmail.includes(e.split('@')[0])
   );
   const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
+  const canManageSafety = canManageSafetyDedicado(userRole, userEmail);
 
   // Active company selected from top-right global CompanySwitcher
   const selectedCompany = initialActiveCompany || 'TODAS';
@@ -1052,19 +1054,30 @@ export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClien
                         />
                       </div>
 
-                      {/* Safety Dedicated Staff Picker */}
+                      {/* Safety Dedicated Staff Picker (Restricted to Safety Coordinators & Admin) */}
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">Safety Dedicado (BD):</label>
-                        <SingleSearchDropdown
-                          value={act.safetyDedicado}
-                          options={catalogs.safetyStaff}
-                          placeholder="Seleccionar safety..."
-                          onChange={(val) => {
-                            const copy = [...modalActivities];
-                            copy[idx].safetyDedicado = val;
-                            setModalActivities(copy);
-                          }}
-                        />
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10px] font-bold text-slate-400 block">Safety Dedicado (BD):</label>
+                          {!canManageSafety && (
+                            <span className="text-[9px] font-extrabold text-amber-400">🔒 Exclusivo Coordinador Safety</span>
+                          )}
+                        </div>
+                        {canManageSafety ? (
+                          <SingleSearchDropdown
+                            value={act.safetyDedicado}
+                            options={catalogs.safetyStaff}
+                            placeholder="Seleccionar safety..."
+                            onChange={(val) => {
+                              const copy = [...modalActivities];
+                              copy[idx].safetyDedicado = val;
+                              setModalActivities(copy);
+                            }}
+                          />
+                        ) : (
+                          <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-400 font-semibold opacity-70">
+                            {act.safetyDedicado || '— (Sin asignación)'}
+                          </div>
+                        )}
                       </div>
 
                       {/* Quotation Folio & PO */}

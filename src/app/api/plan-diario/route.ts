@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { canManageSafetyDedicado } from '@/lib/permissions';
 
 export async function GET(req: NextRequest) {
   try {
@@ -147,6 +148,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const userCanManageSafety = canManageSafetyDedicado(userRole, userEmail);
+
+    // Fetch existing activities if safety protection is needed
+    const existingPlanActivities = await prisma.dailyWorkPlanActivity.findMany({
+      where: { dailyWorkPlanId: plan.id },
+      orderBy: { activityOrder: 'asc' },
+    });
+
     // Replace activities if provided
     if (Array.isArray(activities)) {
       await prisma.dailyWorkPlanActivity.deleteMany({
@@ -155,24 +164,32 @@ export async function POST(req: NextRequest) {
 
       if (activities.length > 0) {
         await prisma.dailyWorkPlanActivity.createMany({
-          data: activities.map((act: any, idx: number) => ({
-            dailyWorkPlanId: plan.id,
-            activityOrder: idx + 1,
-            title: act.title || 'Actividad Sin Título',
-            assignedPersonnel: act.assignedPersonnel || '',
-            dayOfWeek: act.dayOfWeek || 'JUEVES',
-            startTime: act.startTime || '08:00 AM',
-            clientName: act.clientName || null,
-            supervisorOperativo: act.supervisorOperativo || null,
-            supervisorCotizador: act.supervisorCotizador || null,
-            supervisorTMMBC: act.supervisorTMMBC || null,
-            safetyDedicado: act.safetyDedicado || null,
-            cotizacionFolio: act.cotizacionFolio || null,
-            poNumber: act.poNumber || null,
-            isCrossSupport: Boolean(act.isCrossSupport),
-            crossSupportCompany: act.crossSupportCompany || null,
-            notes: act.notes || null,
-          })),
+          data: activities.map((act: any, idx: number) => {
+            const existingAct = existingPlanActivities[idx] || existingPlanActivities.find((ea) => ea.id === act.id);
+            // If user cannot manage safety, preserve existing safetyDedicado assignment
+            const resolvedSafety = userCanManageSafety
+              ? (act.safetyDedicado || null)
+              : (existingAct?.safetyDedicado || act.safetyDedicado || null);
+
+            return {
+              dailyWorkPlanId: plan.id,
+              activityOrder: idx + 1,
+              title: act.title || 'Actividad Sin Título',
+              assignedPersonnel: act.assignedPersonnel || '',
+              dayOfWeek: act.dayOfWeek || 'JUEVES',
+              startTime: act.startTime || '08:00 AM',
+              clientName: act.clientName || null,
+              supervisorOperativo: act.supervisorOperativo || null,
+              supervisorCotizador: act.supervisorCotizador || null,
+              supervisorTMMBC: act.supervisorTMMBC || null,
+              safetyDedicado: resolvedSafety,
+              cotizacionFolio: act.cotizacionFolio || null,
+              poNumber: act.poNumber || null,
+              isCrossSupport: Boolean(act.isCrossSupport),
+              crossSupportCompany: act.crossSupportCompany || null,
+              notes: act.notes || null,
+            };
+          }),
         });
       }
     }

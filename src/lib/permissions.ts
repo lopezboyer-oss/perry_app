@@ -31,9 +31,18 @@ export const canViewAllCompanies = (role: string) => role === 'ADMIN';
 /** Roles que pueden acceder a la gestión de usuarios */
 export const canManageUsers = (role: string) => ['ADMIN', 'ADMINISTRACION'].includes(role);
 
-/** Roles con acceso a auditoría safety */
-export const canEditAudit = (role: string) => ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(role);
-export const canViewAudit = (role: string) => ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(role);
+/** Roles con acceso a auditoría safety y asignación de Safety Dedicado */
+export const canEditAudit = (role: string) => ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role);
+export const canViewAudit = (role: string) => ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role);
+
+/** Asignación exclusiva de Safety Dedicado — Coordinador de Safety & Dirección */
+export const canManageSafetyDedicado = (role: string, email?: string) => {
+  const norm = (email || '').toLowerCase().trim();
+  if (['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com'].some(e => norm.includes(e.split('@')[0]))) {
+    return true;
+  }
+  return ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR_SAFETY_LP'].includes(role);
+};
 
 /** Odoo company IDs to exclude (test company) */
 export const EXCLUDED_ODOO_COMPANY_IDS = [6];
