@@ -155,7 +155,10 @@ export default async function PlanDiarioPage({
     prisma.dailyWorkPlanPersonnelStatus.findMany({
       where: {
         dailyWorkPlan: {
-          planDate: startOfDay,
+          planDate: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
         },
       },
       orderBy: { personName: 'asc' },

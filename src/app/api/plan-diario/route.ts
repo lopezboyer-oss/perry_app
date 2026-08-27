@@ -259,8 +259,18 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      const startRange = new Date(`${date}T00:00:00.000Z`);
+      const endRange = new Date(`${date}T23:59:59.999Z`);
       const updatedStatuses = await prisma.dailyWorkPlanPersonnelStatus.findMany({
-        where: { dailyWorkPlanId: plan.id },
+        where: {
+          dailyWorkPlan: {
+            planDate: {
+              gte: startRange,
+              lte: endRange,
+            },
+          },
+        },
+        orderBy: { personName: 'asc' },
       });
 
       return NextResponse.json({ ok: true, personnelStatus: updatedStatuses });
