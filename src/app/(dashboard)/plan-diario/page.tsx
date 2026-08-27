@@ -82,7 +82,7 @@ export default async function PlanDiarioPage({
     techAssignments, safetyAssignments,
     vehicleAssignments, driverAssignments, equipAssignments,
     safetyDesignadoUsers, userSafetyAssignments,
-    allCompanyActivities,
+    allCompanyActivities, allPersonnelUsers, initialPersonnelStatusList,
   ] = await Promise.all([
     prisma.activity.findMany({
       where,
@@ -128,13 +128,13 @@ export default async function PlanDiarioPage({
     prisma.vehicle.findMany({ where: { isActive: true, isAvailable: true }, orderBy: { name: 'asc' } }),
     prisma.driver.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
     prisma.elevationEquip.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } }),
-    prisma.weekendTechAssignment.findMany({ where: { weekendOf: todayStr }, include: { technician: true } }),
-    prisma.weekendSafetyAssignment.findMany({ where: { weekendOf: todayStr }, include: { safetyDedicado: true } }),
-    prisma.weekendVehicleAssignment.findMany({ where: { weekendOf: todayStr }, include: { vehicle: true } }),
-    prisma.weekendDriverAssignment.findMany({ where: { weekendOf: todayStr }, include: { driver: true } }),
-    prisma.weekendEquipAssignment.findMany({ where: { weekendOf: todayStr }, include: { equip: true } }),
+    prisma.weekendTechAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { technician: true } }),
+    prisma.weekendSafetyAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { safetyDedicado: true } }),
+    prisma.weekendVehicleAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { vehicle: true } }),
+    prisma.weekendDriverAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { driver: true } }),
+    prisma.weekendEquipAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { equip: true } }),
     prisma.user.findMany({ where: { isActive: true, isSafetyDesignado: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
-    prisma.weekendUserSafetyAssignment.findMany({ where: { weekendOf: todayStr }, include: { user: { select: { id: true, name: true } } } }),
+    prisma.weekendUserSafetyAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { user: { select: { id: true, name: true } } } }),
     prisma.activity.findMany({
       where: allCompanyWhere,
       select: {
@@ -146,6 +146,19 @@ export default async function PlanDiarioPage({
         company: { select: { id: true, name: true } },
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+    }),
+    prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.dailyWorkPlanPersonnelStatus.findMany({
+      where: {
+        dailyWorkPlan: {
+          planDate: startOfDay,
+        },
+      },
+      orderBy: { personName: 'asc' },
     }),
   ]);
 
@@ -238,6 +251,14 @@ export default async function PlanDiarioPage({
         companyName: a.company?.name || companyName,
       }))}
       preloadedConflicts={preloadedConflicts}
+      allPersonnelUsers={allPersonnelUsers}
+      initialPersonnelStatusList={initialPersonnelStatusList.map(ps => ({
+        id: ps.id,
+        personName: ps.personName,
+        statusType: ps.statusType,
+        originCompany: ps.originCompany,
+        notes: ps.notes,
+      }))}
     />
   );
 }

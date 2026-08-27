@@ -102,6 +102,8 @@ interface Props {
   allCompanyActivities: AllCompanyActivity[];
   preloadedConflicts: Record<string, string[]>;
   currentUserEmail?: string;
+  allPersonnelUsers?: { id: string; name: string; role: string }[];
+  initialPersonnelStatusList?: { id: string; personName: string; statusType: string; originCompany?: string | null; notes?: string | null }[];
 }
 
 // ─── MULTI-SELECT DROPDOWN ──────────────────────────────────────
@@ -281,6 +283,93 @@ export function PlanDiarioClient({
   const [extraDayDate, setExtraDayDate] = useState('');
   const [extraDayLabel, setExtraDayLabel] = useState('');
   const [extraDaySaving, setExtraDaySaving] = useState(false);
+
+  // Personnel Status Modal State (DESCANSOS, VACACIONES, INCAPACIDAD)
+  const [personnelStatusList, setPersonnelStatusList] = useState<{ id: string; personName: string; statusType: string; originCompany?: string | null; notes?: string | null }[]>(initialPersonnelStatusList || []);
+  const [statusModalType, setStatusModalType] = useState<'DESCANSO' | 'VACACIONES' | 'INCAPACIDAD' | null>(null);
+  const [statusSearchTerm, setStatusSearchTerm] = useState('');
+  const [selectedNamesForModal, setSelectedNamesForModal] = useState<Set<string>>(new Set());
+  const [statusModalNotes, setStatusModalNotes] = useState('');
+  const [savingStatusModal, setSavingStatusModal] = useState(false);
+
+  // Full personnel list (technicians, supervisors, engineers, etc.)
+  const fullPersonnelList = (() => {
+    const namesMap = new Map<string, { id: string; name: string; subtitle: string }>();
+    (allPersonnelUsers || []).forEach(u => {
+      namesMap.set(u.name.toLowerCase().trim(), { id: u.id, name: u.name, subtitle: `Perfil: ${u.role}` });
+    });
+    (technicians || []).forEach(t => {
+      if (!namesMap.has(t.name.toLowerCase().trim())) {
+        namesMap.set(t.name.toLowerCase().trim(), { id: t.id, name: t.name, subtitle: `Técnico ${t.type || ''}` });
+      }
+    });
+    return Array.from(namesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
+  const openStatusModal = (type: 'DESCANSO' | 'VACACIONES' | 'INCAPACIDAD') => {
+    setStatusModalType(type);
+    setStatusSearchTerm('');
+    setStatusModalNotes('');
+    const existingNames = personnelStatusList.filter(s => s.statusType === type).map(s => s.personName);
+    setSelectedNamesForModal(new Set(existingNames));
+  };
+
+  const saveStatusModal = async () => {
+    if (!statusModalType) return;
+    setSavingStatusModal(true);
+    try {
+      const res = await fetch('/api/plan-diario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save-status-type',
+          date: weekendOf,
+          companyName: companyName,
+          statusType: statusModalType,
+          personNames: Array.from(selectedNamesForModal),
+          notes: statusModalNotes || null,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.personnelStatus) {
+        setPersonnelStatusList(data.personnelStatus);
+        setStatusModalType(null);
+      } else {
+        alert(data.error || 'Error al guardar');
+      }
+    } catch {
+      alert('Error de conexión');
+    } finally {
+      setSavingStatusModal(false);
+    }
+  };
+
+  const removePersonStatus = async (id: string, personName: string, type: string) => {
+    if (!confirm(`¿Remover a ${personName} de la lista de ${type}?`)) return;
+    const newNames = personnelStatusList
+      .filter(s => s.statusType === type && s.personName !== personName)
+      .map(s => s.personName);
+
+    try {
+      const res = await fetch('/api/plan-diario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save-status-type',
+          date: weekendOf,
+          companyName: companyName,
+          statusType: type,
+          personNames: newNames,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.personnelStatus) {
+        setPersonnelStatusList(data.personnelStatus);
+      }
+    } catch {
+      alert('Error de conexión');
+    }
+  };
 
   const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
@@ -1417,6 +1506,15 @@ export function PlanDiarioClient({
               <Plus size={12} /> Día<br/>Extra
             </button>
           )}
+          <button onClick={() => openStatusModal('DESCANSO')} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-emerald-50 !text-emerald-700 !border-emerald-300 hover:!bg-emerald-100 leading-tight text-center font-bold">
+            🟢 Registar<br/>Descansos
+          </button>
+          <button onClick={() => openStatusModal('VACACIONES')} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-sky-50 !text-sky-700 !border-sky-300 hover:!bg-sky-100 leading-tight text-center font-bold">
+            🔵 Registrar<br/>Vacaciones
+          </button>
+          <button onClick={() => openStatusModal('INCAPACIDAD')} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-orange-50 !text-orange-700 !border-orange-300 hover:!bg-orange-100 leading-tight text-center font-bold">
+            🟠 Registrar<br/>Incapacidad
+          </button>
           <button onClick={() => { setSelectedTechId(assignedTechs[0]?.id || null); setShowTechPlansModal(true); }} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-sky-50 !text-sky-700 !border-sky-300 hover:!bg-sky-100 leading-tight text-center">📋 Planes<br/>Técnicos</button>
           {assignedContractors.length > 0 && (
             <button onClick={() => { setSelectedContractorId(assignedContractors[0]?.id || null); setShowContractorPlansModal(true); }} className="btn-secondary !text-[10px] !py-1 !px-2 !bg-purple-50 !text-purple-700 !border-purple-300 hover:!bg-purple-100 leading-tight text-center">🏭 Plan<br/>Contratista</button>
@@ -1550,6 +1648,133 @@ export function PlanDiarioClient({
                 );
               })}
             </div>
+          </div>
+        );
+      })()}
+
+      {/* ── PERSONNEL STATUS CARDS (DESCANSOS, VACACIONES, INCAPACIDAD) ── */}
+      {(() => {
+        const descansos = personnelStatusList.filter(s => s.statusType === 'DESCANSO');
+        const vacaciones = personnelStatusList.filter(s => s.statusType === 'VACACIONES');
+        const incapacidades = personnelStatusList.filter(s => s.statusType === 'INCAPACIDAD');
+
+        if (descansos.length === 0 && vacaciones.length === 0 && incapacidades.length === 0) return null;
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in">
+            {/* 🟢 DESCANSOS */}
+            {descansos.length > 0 && (
+              <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-extrabold text-emerald-900 flex items-center gap-2">
+                    🟢 DESCANSOS ({descansos.length})
+                  </h3>
+                  {canEditFields && (
+                    <button
+                      onClick={() => openStatusModal('DESCANSO')}
+                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300 transition-colors"
+                    >
+                      + Editar Lista
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {descansos.map(item => (
+                    <div key={item.id || item.personName} className="bg-white rounded-xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                        {item.notes && <p className="text-[10px] text-slate-500 italic mt-0.5">📝 {item.notes}</p>}
+                      </div>
+                      {canEditFields && (
+                        <button
+                          onClick={() => removePersonStatus(item.id, item.personName, 'DESCANSO')}
+                          className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                          title="Remover de la lista"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 🔵 VACACIONES */}
+            {vacaciones.length > 0 && (
+              <div className="bg-sky-50/70 border border-sky-200 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-extrabold text-sky-900 flex items-center gap-2">
+                    🔵 VACACIONES ({vacaciones.length})
+                  </h3>
+                  {canEditFields && (
+                    <button
+                      onClick={() => openStatusModal('VACACIONES')}
+                      className="text-[11px] font-bold text-sky-700 hover:text-sky-900 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-300 transition-colors"
+                    >
+                      + Editar Lista
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {vacaciones.map(item => (
+                    <div key={item.id || item.personName} className="bg-white rounded-xl p-3 border border-sky-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                        {item.notes && <p className="text-[10px] text-slate-500 italic mt-0.5">📝 {item.notes}</p>}
+                      </div>
+                      {canEditFields && (
+                        <button
+                          onClick={() => removePersonStatus(item.id, item.personName, 'VACACIONES')}
+                          className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                          title="Remover de la lista"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 🟠 INCAPACIDAD */}
+            {incapacidades.length > 0 && (
+              <div className="bg-orange-50/70 border border-orange-200 rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-extrabold text-orange-900 flex items-center gap-2">
+                    🟠 INCAPACIDAD ({incapacidades.length})
+                  </h3>
+                  {canEditFields && (
+                    <button
+                      onClick={() => openStatusModal('INCAPACIDAD')}
+                      className="text-[11px] font-bold text-orange-700 hover:text-orange-900 bg-orange-100 px-2 py-0.5 rounded-full border border-orange-300 transition-colors"
+                    >
+                      + Editar Lista
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {incapacidades.map(item => (
+                    <div key={item.id || item.personName} className="bg-white rounded-xl p-3 border border-orange-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                        {item.notes && <p className="text-[10px] text-slate-500 italic mt-0.5">📝 {item.notes}</p>}
+                      </div>
+                      {canEditFields && (
+                        <button
+                          onClick={() => removePersonStatus(item.id, item.personName, 'INCAPACIDAD')}
+                          className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                          title="Remover de la lista"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}
@@ -2666,6 +2891,110 @@ export function PlanDiarioClient({
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE REGISTRO DE STATUS DE PERSONAL (DESCANSOS / VACACIONES / INCAPACIDAD) ── */}
+      {statusModalType && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-100 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+                {statusModalType === 'DESCANSO' && '🟢 Registrar Descansos'}
+                {statusModalType === 'VACACIONES' && '🔵 Registrar Vacaciones'}
+                {statusModalType === 'INCAPACIDAD' && '🟠 Registrar Incapacidad'}
+              </h2>
+              <button
+                onClick={() => setStatusModalType(null)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Selecciona del listado completo de personal (técnicos, supervisores, ingenieros) quienes irán en la lista de <strong>{statusModalType}</strong> para la fecha <strong>{weekendOf}</strong>.
+            </p>
+
+            {/* Buscador de personal */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o perfil..."
+                value={statusSearchTerm}
+                onChange={(e) => setStatusSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Lista de personal con Checkboxes */}
+            <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-100">
+              {fullPersonnelList
+                .filter(p => p.name.toLowerCase().includes(statusSearchTerm.toLowerCase()) || p.subtitle.toLowerCase().includes(statusSearchTerm.toLowerCase()))
+                .map(person => {
+                  const isChecked = selectedNamesForModal.has(person.name);
+                  return (
+                    <label
+                      key={person.id || person.name}
+                      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-colors ${
+                        isChecked ? 'bg-indigo-50/80 border border-indigo-200' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">{person.name}</p>
+                        <p className="text-[10px] text-slate-500">{person.subtitle}</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          const next = new Set(selectedNamesForModal);
+                          if (e.target.checked) next.add(person.name);
+                          else next.delete(person.name);
+                          setSelectedNamesForModal(next);
+                        }}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                      />
+                    </label>
+                  );
+                })}
+            </div>
+
+            {/* Observaciones / Notas opcionales */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Notas / Observaciones (Opcional)</label>
+              <input
+                type="text"
+                placeholder="Ej: Permiso autorizado, reposo médico..."
+                value={statusModalNotes}
+                onChange={(e) => setStatusModalNotes(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Footer / Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <span className="text-xs font-semibold text-slate-500">
+                {selectedNamesForModal.size} seleccionado{selectedNamesForModal.size !== 1 ? 's' : ''}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setStatusModalType(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={saveStatusModal}
+                  disabled={savingStatusModal}
+                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                >
+                  {savingStatusModal ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : 'Guardar Lista'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

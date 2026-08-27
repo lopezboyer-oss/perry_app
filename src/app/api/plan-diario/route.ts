@@ -212,13 +212,59 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { date, companyName, activities, personnelStatus } = body;
+    const { date, companyName, activities, personnelStatus, action, statusType, personNames, notes } = body;
 
     if (!date || !companyName) {
       return NextResponse.json({ error: 'Fecha y Empresa son requeridas' }, { status: 400 });
     }
 
     const targetDate = new Date(`${date}T12:00:00.000Z`);
+
+    // Handler para guardar estado específico de personal (DESCANSO, VACACIONES, INCAPACIDAD)
+    if (action === 'save-status-type') {
+      const plan = await prisma.dailyWorkPlan.upsert({
+        where: {
+          planDate_companyName: {
+            planDate: targetDate,
+            companyName,
+          },
+        },
+        create: {
+          planDate: targetDate,
+          companyName,
+          status: 'PUBLICADO',
+        },
+        update: {
+          status: 'PUBLICADO',
+          updatedAt: new Date(),
+        },
+      });
+
+      await prisma.dailyWorkPlanPersonnelStatus.deleteMany({
+        where: {
+          dailyWorkPlanId: plan.id,
+          statusType: statusType,
+        },
+      });
+
+      if (Array.isArray(personNames) && personNames.length > 0) {
+        await prisma.dailyWorkPlanPersonnelStatus.createMany({
+          data: personNames.map((name: string) => ({
+            dailyWorkPlanId: plan.id,
+            personName: name,
+            statusType: statusType,
+            originCompany: companyName,
+            notes: notes || null,
+          })),
+        });
+      }
+
+      const updatedStatuses = await prisma.dailyWorkPlanPersonnelStatus.findMany({
+        where: { dailyWorkPlanId: plan.id },
+      });
+
+      return NextResponse.json({ ok: true, personnelStatus: updatedStatuses });
+    }
 
     // Upsert DailyWorkPlan
     const plan = await prisma.dailyWorkPlan.upsert({

@@ -123,9 +123,6 @@ export const activityTypeLabels: Record<string, string> = {
   CONSORCIO: 'Actividades en Traila / Oficina',
   CAPACITACION: 'Capacitación',
   SOPORTE_INTERNO: 'Soporte Interempresa',
-  DESCANSO: 'Descanso',
-  VACACIONES: 'Vacaciones',
-  INCAPACIDAD: 'Incapacidad',
 };
 
 /**
@@ -163,9 +160,6 @@ export const activityTypeColors: Record<string, string> = {
   CONSORCIO: 'bg-cyan-100 text-cyan-800 border-cyan-200',
   CAPACITACION: 'bg-teal-100 text-teal-800 border-teal-200',
   SOPORTE_INTERNO: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  DESCANSO: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  VACACIONES: 'bg-sky-100 text-sky-800 border-sky-200',
-  INCAPACIDAD: 'bg-orange-100 text-orange-800 border-orange-200',
 };
 
 /**
