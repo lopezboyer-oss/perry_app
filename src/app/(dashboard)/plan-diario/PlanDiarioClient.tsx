@@ -15,10 +15,9 @@ import {
   UserCheck,
   Briefcase,
   X,
+  Building2,
 } from 'lucide-react';
 import { exportDailyPlanPDFClient } from '@/lib/pdf/daily-plan-pdf-exporter';
-
-const COMPANIES = ['TODAS', 'GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE'];
 
 interface Activity {
   id?: string;
@@ -69,9 +68,10 @@ interface PlanDiarioClientProps {
     companyName?: string | null;
     baseCompany?: { name?: string | null } | null;
   };
+  initialActiveCompany: string;
 }
 
-export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
+export function PlanDiarioClient({ user, initialActiveCompany }: PlanDiarioClientProps) {
   const userRole = user?.role || 'INGENIERO';
   const userEmail = (user?.email || '').toLowerCase().trim();
 
@@ -81,32 +81,18 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
   );
   const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
 
-  // Roles 1 y 2 pueden filtrar todas las empresas (Vista Consolidada): ADMIN, ADMINISTRACION o Directores
-  const canFilterAllCompanies = isDirector || ['ADMIN', 'ADMINISTRACION'].includes(userRole);
+  // Active company selected from top-right global CompanySwitcher
+  const selectedCompany = initialActiveCompany || 'TODAS';
 
-  // Empresa base del usuario
-  const userCompany = (user?.companyName || user?.baseCompany?.name || '').toUpperCase().trim();
-
-  // Initial date defaults to 2026-08-27 (where initial seeded data lives)
+  // Initial date defaults to 2026-08-27 (where initial demo data lives)
   const [selectedDate, setSelectedDate] = useState('2026-08-27');
-  const [selectedCompany, setSelectedCompany] = useState('TODAS');
   const [plans, setPlans] = useState<Plan[]>([]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Restricción automática por empresa si no es Admin/Administración
-  useEffect(() => {
-    if (!canFilterAllCompanies && userCompany) {
-      const match = COMPANIES.find((c) => c !== 'TODAS' && (userCompany.includes(c) || c.includes(userCompany)));
-      if (match) {
-        setSelectedCompany(match);
-      }
-    }
-  }, [canFilterAllCompanies, userCompany]);
-
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingCompany, setEditingCompany] = useState('GRUPO CASEME');
+  const [editingCompany, setEditingCompany] = useState(selectedCompany === 'TODAS' ? 'GRUPO CASEME' : selectedCompany);
   const [modalActivities, setModalActivities] = useState<Activity[]>([]);
   const [modalPersonnelStatus, setModalPersonnelStatus] = useState<PersonnelStatus[]>([]);
 
@@ -243,8 +229,8 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
     exportDailyPlanPDFClient({
       dateStr: selectedDate,
       selectedCompany,
-      plans: plans || [],
-      warnings: warnings || [],
+      plans: displayPlans || [],
+      warnings: displayWarnings || [],
     });
   };
 
@@ -332,7 +318,7 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
         </div>
       </div>
 
-      {/* Date & Company Selection Bar */}
+      {/* Date & Active Company Indicator Bar */}
       <div className="bg-slate-900/80 backdrop-blur p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Date Selector */}
         <div className="flex items-center gap-3 w-full md:w-auto">
@@ -345,26 +331,18 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
           />
         </div>
 
-        {/* Company Filter Tabs (Restricted by Role & Company) */}
-        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          {COMPANIES.filter((comp) => {
-            if (canFilterAllCompanies) return true;
-            if (comp === 'TODAS') return false;
-            if (!userCompany) return true;
-            return userCompany.includes(comp) || comp.includes(userCompany);
-          }).map((comp) => (
-            <button
-              key={comp}
-              onClick={() => setSelectedCompany(comp)}
-              className={`py-2 px-3.5 rounded-xl font-bold text-xs transition-all whitespace-nowrap ${
-                selectedCompany === comp
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/40'
-                  : 'bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800/80'
-              }`}
-            >
-              {comp === 'TODAS' ? '🌐 TODAS (CONSOLIDADO)' : comp}
-            </button>
-          ))}
+        {/* Unified Active Company Badge (Controlled by top-right header CompanySwitcher) */}
+        <div className="flex items-center gap-2 bg-indigo-950/60 border border-indigo-500/30 px-4 py-2 rounded-xl text-indigo-300 font-black text-xs shadow-inner">
+          <Building2 className="w-4 h-4 text-indigo-400 shrink-0" />
+          <span>
+            Empresa Seleccionada: {' '}
+            <strong className="text-white">
+              {selectedCompany === 'TODAS' ? '🌐 TODAS (VISTA CONSOLIDADA)' : selectedCompany}
+            </strong>
+          </span>
+          <span className="text-[10px] text-slate-400 font-semibold ml-2 border-l border-indigo-500/30 pl-2">
+            (Cambiar en selector superior ↗️)
+          </span>
         </div>
       </div>
 
@@ -655,14 +633,9 @@ export function PlanDiarioClient({ user }: PlanDiarioClientProps) {
                 <select
                   value={editingCompany}
                   onChange={(e) => setEditingCompany(e.target.value)}
-                  disabled={!canFilterAllCompanies}
-                  className="bg-slate-950 border border-slate-800 text-white font-bold text-sm px-4 py-2.5 rounded-xl w-full max-w-xs focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                  className="bg-slate-950 border border-slate-800 text-white font-bold text-sm px-4 py-2.5 rounded-xl w-full max-w-xs focus:outline-none focus:border-indigo-500"
                 >
-                  {COMPANIES.filter((c) => {
-                    if (canFilterAllCompanies) return c !== 'TODAS';
-                    if (!userCompany) return c !== 'TODAS';
-                    return userCompany.includes(c) || c.includes(userCompany);
-                  }).map((c) => (
+                  {['GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE'].map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
