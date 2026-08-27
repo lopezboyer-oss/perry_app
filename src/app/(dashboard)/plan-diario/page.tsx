@@ -153,7 +153,8 @@ export default async function PlanDiarioPage({
         id: true,
         name: true,
         role: true,
-        userCompanies: {
+        baseCompany: { select: { name: true } },
+        companies: {
           select: { company: { select: { name: true } } },
         },
       },
@@ -265,7 +266,7 @@ export default async function PlanDiarioPage({
         id: u.id,
         name: u.name,
         role: u.role,
-        companyName: u.userCompanies?.[0]?.company?.name || null,
+        companyName: u.baseCompany?.name || u.companies?.[0]?.company?.name || null,
       }))}
       initialPersonnelStatusList={initialPersonnelStatusList.map(ps => ({
         id: ps.id,
