@@ -343,13 +343,14 @@ export async function POST(req: NextRequest) {
     if (groupMap.groupCategory === 'ADMINISTRATIVO_FINANCIERO') {
       const cleanedText = cleanTriggerTags(messageText);
 
-      // Check if message is a Payroll Report (Nómina / Raya / Finiquito / Vacaciones)
+      // Check if message is a Real Payroll Report (MUST have media attached OR explicit financial dispersion keywords with numbers)
       const isPayrollKeyword = /n[oó]mina|raya|finiquito|sueldo|vacaciones|percepcion|deducci[oó]n|raya\s*\d+/i.test(cleanedText);
+      const hasExplicitPayrollData = mediaUrls.length > 0 || (/gran\s*total|total\s*nomina|dispersi[oó]n|santander|contpaq|total\s*efectivo|\$\s*\d+/i.test(cleanedText) && isPayrollKeyword);
 
-      let isPayroll = isPayrollKeyword;
+      let isPayroll = false;
       let payrollReport: any = null;
 
-      if (isPayrollKeyword || mediaUrls.length > 0) {
+      if (hasExplicitPayrollData) {
         payrollReport = await parsePayrollMessageWithGemini({
           messageText: cleanedText,
           senderName: payload.senderName || payload.senderPhone,
@@ -358,7 +359,7 @@ export async function POST(req: NextRequest) {
           imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
         });
 
-        if (payrollReport && payrollReport.isPayrollReport) {
+        if (payrollReport && payrollReport.isPayrollReport && (payrollReport.totalAmount > 0 || mediaUrls.length > 0)) {
           isPayroll = true;
         }
       }

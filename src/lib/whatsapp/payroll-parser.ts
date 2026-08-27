@@ -64,7 +64,7 @@ export async function parsePayrollMessageWithGemini(params: {
   const prompt = `Analiza detenidamente esta imagen y/o texto recibido en el grupo de WhatsApp "${groupName || 'ADMINISTRACION'}":
 
 INSTRUCCIONES DE EXTRACCIÓN DE NÓMINA / RAYA SEMANAL:
-1. "isPayrollReport": boolean (true si la imagen o texto corresponde a un reporte de Nómina, Raya Semanal, Dispersión de Sueldos, Asistencia o Finiquitos. false si es un estado de cuenta o saldo bancario).
+1. "isPayrollReport": boolean (true SI Y SÓLO SI el contenido es un REPORTE O HOJA REAL DE NÓMINA / RAYA / DISPERSIÓN DE SUELDOS con datos financieros a dispersar. "isPayrollReport" DEBE SER FALSE si es conversación casual de chat, preguntas u opiniones sobre nóminas como "revisen la nómina", "haré un retiro para la nómina" o carece de documento adjunto o desglose financiero cuantitativo).
 2. "isMainPayrollReport": boolean (true si el documento es la NÓMINA PRINCIPAL / DISPERSIÓN COMPLETA DE SUELDOS. false si es ÚNICAMENTE un reporte auxiliar de Tiempo Extra, Horas Extra o Asistencia).
 3. "companyName": Nombre de la empresa ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE"). Si no se especifica, usa "${defaultCompany}".
 4. "periodNumber": Período o número de raya (ej. "Raya 34", "Raya 35", "Semana 34"). Extrae del texto o del título de la hoja.
@@ -128,27 +128,44 @@ Responde ÚNICAMENTE en formato JSON plano válido sin marcas de markdown:
 
     if (!res.ok) {
       console.warn('[PAYROLL PARSER] Error en API Gemini. Ejecutando fallback.');
-      return fallbackPayrollParser(messageText, defaultCompany, formattedDate);
+      return fallbackPayrollParser(messageText, defaultCompany, formattedDate, Boolean(imageUrl));
     }
 
     const jsonResponse = await res.json();
     const rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) return fallbackPayrollParser(messageText, defaultCompany, formattedDate);
+    if (!rawText) return fallbackPayrollParser(messageText, defaultCompany, formattedDate, Boolean(imageUrl));
 
     const parsed: GeminiParsedPayrollReport = JSON.parse(rawText);
     parsed.companyName = normalizeCompanyName(parsed.companyName || defaultCompany);
     return parsed;
   } catch (err) {
     console.error('[PAYROLL PARSER] Error procesando nómina con Gemini:', err);
-    return fallbackPayrollParser(messageText, defaultCompany, formattedDate);
+    return fallbackPayrollParser(messageText, defaultCompany, formattedDate, Boolean(imageUrl));
   }
 }
 
 function fallbackPayrollParser(
   text: string,
   companyName: string,
-  dateStr: string
+  dateStr: string,
+  hasMedia: boolean = false
 ): GeminiParsedPayrollReport {
+  const hasExplicitPayrollData = hasMedia || (/gran\s*total|total\s*nomina|dispersi[oó]n|santander|contpaq|total\s*efectivo|\$\s*\d+/i.test(text) && /raya|semana|n[oó]mina/i.test(text));
+
+  if (!hasExplicitPayrollData) {
+    return {
+      isPayrollReport: false,
+      isMainPayrollReport: false,
+      companyName: normalizeCompanyName(companyName),
+      periodNumber: 'Raya Semanal',
+      reportDate: dateStr,
+      totalAmount: 0,
+      employeeCount: 0,
+      bankBreakdown: [],
+      observations: null,
+    };
+  }
+
   // Regex to capture "Raya 34", "Raya 35", etc.
   const rayaMatch = text.match(/raya\s*(\d+)/i) || text.match(/semana\s*(\d+)/i);
   const periodNumber = rayaMatch ? `Raya ${rayaMatch[1]}` : 'Raya Semanal';
