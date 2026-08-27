@@ -1658,9 +1658,21 @@ export function PlanDiarioClient({
 
       {/* ── PERSONNEL STATUS CARDS (DESCANSOS, VACACIONES, INCAPACIDAD) ── */}
       {(() => {
-        const descansos = personnelStatusList.filter(s => s.statusType === 'DESCANSO');
-        const vacaciones = personnelStatusList.filter(s => s.statusType === 'VACACIONES');
-        const incapacidades = personnelStatusList.filter(s => s.statusType === 'INCAPACIDAD');
+        const isCompanyMatch = (originCo: string | null | undefined) => {
+          if (!companyName || companyName === 'Todas las empresas' || companyName === 'TODAS' || companyName === 'Todas') return true;
+          if (!originCo) return true;
+          const currentUpper = companyName.toUpperCase().trim();
+          const originUpper = originCo.toUpperCase().trim();
+          if (currentUpper.includes('CASEME') || currentUpper.includes('GLOBAL')) {
+            return originUpper.includes('CASEME') || originUpper.includes('GLOBAL');
+          }
+          return currentUpper.includes(originUpper) || originUpper.includes(currentUpper);
+        };
+
+        const visiblePersonnelStatus = personnelStatusList.filter(s => isCompanyMatch(s.originCompany));
+        const descansos = visiblePersonnelStatus.filter(s => s.statusType === 'DESCANSO');
+        const vacaciones = visiblePersonnelStatus.filter(s => s.statusType === 'VACACIONES');
+        const incapacidades = visiblePersonnelStatus.filter(s => s.statusType === 'INCAPACIDAD');
 
         if (descansos.length === 0 && vacaciones.length === 0 && incapacidades.length === 0) return null;
 
@@ -1686,13 +1698,20 @@ export function PlanDiarioClient({
                   {descansos.map(item => (
                     <div key={item.id || item.personName} className="bg-white rounded-xl p-3 border border-emerald-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
                       <div>
-                        <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                          {item.originCompany && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              {item.originCompany}
+                            </span>
+                          )}
+                        </div>
                         {item.notes && <p className="text-[10px] text-slate-500 italic mt-0.5">📝 {item.notes}</p>}
                       </div>
                       {canEditFields && (
                         <button
                           onClick={() => removePersonStatus(item.id, item.personName, 'DESCANSO')}
-                          className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                          className="text-slate-400 hover:text-red-600 transition-colors p-1 ml-2"
                           title="Remover de la lista"
                         >
                           <Trash2 size={13} />
@@ -1724,13 +1743,20 @@ export function PlanDiarioClient({
                   {vacaciones.map(item => (
                     <div key={item.id || item.personName} className="bg-white rounded-xl p-3 border border-sky-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
                       <div>
-                        <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                          {item.originCompany && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-200">
+                              {item.originCompany}
+                            </span>
+                          )}
+                        </div>
                         {item.notes && <p className="text-[10px] text-slate-500 italic mt-0.5">📝 {item.notes}</p>}
                       </div>
                       {canEditFields && (
                         <button
                           onClick={() => removePersonStatus(item.id, item.personName, 'VACACIONES')}
-                          className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                          className="text-slate-400 hover:text-red-600 transition-colors p-1 ml-2"
                           title="Remover de la lista"
                         >
                           <Trash2 size={13} />
@@ -1762,13 +1788,20 @@ export function PlanDiarioClient({
                   {incapacidades.map(item => (
                     <div key={item.id || item.personName} className="bg-white rounded-xl p-3 border border-orange-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
                       <div>
-                        <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-slate-800">{item.personName}</p>
+                          {item.originCompany && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-200">
+                              {item.originCompany}
+                            </span>
+                          )}
+                        </div>
                         {item.notes && <p className="text-[10px] text-slate-500 italic mt-0.5">📝 {item.notes}</p>}
                       </div>
                       {canEditFields && (
                         <button
                           onClick={() => removePersonStatus(item.id, item.personName, 'INCAPACIDAD')}
-                          className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                          className="text-slate-400 hover:text-red-600 transition-colors p-1 ml-2"
                           title="Remover de la lista"
                         >
                           <Trash2 size={13} />
