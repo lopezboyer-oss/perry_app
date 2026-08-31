@@ -571,25 +571,95 @@ interface PhotoItem {
       )}
 
       <div className="card p-6">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-lg font-semibold text-slate-800">Horario y Duración</h2>
-          <button
-            type="button"
-            onClick={() => {
-              setForm({
-                ...form,
-                startTime: '08:00',
-                endTime: '17:00',
-                actualStartTime: '08:00',
-                actualEndTime: '17:00',
-                durationMinutes: '540'
-              });
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer"
-            title="Llenar rápidamente horario regular de 08:00 a 17:00"
-          >
-            ☀️ Turno Regular (08:00 - 17:00)
-          </button>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setForm({
+                  ...form,
+                  startTime: '08:00',
+                  endTime: '10:00',
+                  actualStartTime: '08:00',
+                  actualEndTime: '10:00',
+                  durationMinutes: '120'
+                });
+              }}
+              className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer touch-manipulation"
+              title="8:00 am a 10:00 am"
+            >
+              8:00 am - 10:00 am
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setForm({
+                  ...form,
+                  startTime: '10:00',
+                  endTime: '12:00',
+                  actualStartTime: '10:00',
+                  actualEndTime: '12:00',
+                  durationMinutes: '120'
+                });
+              }}
+              className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer touch-manipulation"
+              title="10:00 am a 12:00 pm"
+            >
+              10:00 am - 12:00 pm
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setForm({
+                  ...form,
+                  startTime: '13:00',
+                  endTime: '15:00',
+                  actualStartTime: '13:00',
+                  actualEndTime: '15:00',
+                  durationMinutes: '120'
+                });
+              }}
+              className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer touch-manipulation"
+              title="1:00 pm a 3:00 pm"
+            >
+              1:00 pm - 3:00 pm
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setForm({
+                  ...form,
+                  startTime: '15:00',
+                  endTime: '17:00',
+                  actualStartTime: '15:00',
+                  actualEndTime: '17:00',
+                  durationMinutes: '120'
+                });
+              }}
+              className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer touch-manipulation"
+              title="3:00 pm a 5:00 pm"
+            >
+              3:00 pm - 5:00 pm
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setForm({
+                  ...form,
+                  startTime: '08:00',
+                  endTime: '17:00',
+                  actualStartTime: '08:00',
+                  actualEndTime: '17:00',
+                  durationMinutes: '540'
+                });
+              }}
+              className="px-2.5 py-1 text-[11px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer touch-manipulation"
+              title="Turno Regular (08:00 a 17:00)"
+            >
+              ☀️ Turno Regular
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
