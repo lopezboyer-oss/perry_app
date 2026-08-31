@@ -68,7 +68,11 @@ async function handleCriticalUpdate(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all items that are NOT cerrado/descartado, with logs
+    // Análisis y envío de puntos críticos suspendido temporalmente por indicación de Dirección
+    return NextResponse.json({
+      status: 'SUSPENDED',
+      message: 'El análisis y envío del listado de puntos críticos está temporalmente suspendido por indicación de Dirección.',
+    });
     const openItems = await prisma.criticalItemTracking.findMany({
       where: {
         groupId: TARGET_GROUP_ID,

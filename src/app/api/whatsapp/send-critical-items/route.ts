@@ -22,7 +22,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let body: any = {};
+    // Envío de puntos críticos suspendido temporalmente por indicación de Dirección
+    return NextResponse.json({
+      status: 'SUSPENDED',
+      message: 'El análisis y envío del listado de puntos críticos está temporalmente suspendido por indicación de Dirección.',
+    });
     try { body = await req.json(); } catch {}
 
     const items: Array<{

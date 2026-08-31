@@ -515,15 +515,8 @@ export async function POST(req: NextRequest) {
       // Check if there is a mathematical discrepancy ONLY if it's a real bank balance report with non-zero accounts
       const hasRealAccounts = financialReport.accounts && financialReport.accounts.some(a => a.initialBalance > 0 || a.finalBalance > 0);
       if (financialReport.hasErrors && financialReport.errorSummary && hasRealAccounts) {
-        console.warn(`[FINANCIAL AUDIT WARN] ${groupMap.groupName}: ${financialReport.errorSummary}`);
-        
-        const warnMessage = `⚠️ *Perry Intelligence — Validación de Saldos*\n\nSe detectó una observación matemática en el reporte de *${financialReport.companyName}*:\n\n${financialReport.errorSummary}\n\n_Por favor verificar los montos reportados. 🤖_`;
-        
-        await sendWhatsappGroupMessage({
-          groupId: payload.groupId,
-          messageText: warnMessage,
-          replyToMessageId: payload.messageId,
-        });
+        console.warn(`[FINANCIAL AUDIT WARN - SUSPENDIDO] ${groupMap.groupName}: ${financialReport.errorSummary} (Mensaje de advertencia suspendido por indicación de Dirección)`);
+        // NOTA: El envío de mensaje de advertencia por WhatsApp para saldos está suspendido temporalmente por indicación de Dirección.
       }
 
       // Save raw message log
