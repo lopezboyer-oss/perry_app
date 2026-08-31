@@ -79,8 +79,35 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // Query DB
-    const [totalCount, logs] = await Promise.all([
+    // 2. Fetch Activity photos
+    const activityWhere: any = {
+      OR: [
+        { photosBefore: { not: null } },
+        { photosAfter: { not: null } },
+        { manPowerPhotos: { not: null } },
+      ],
+    };
+
+    if (startDate || endDate) {
+      activityWhere.date = {};
+      if (startDate) activityWhere.date.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        activityWhere.date.lte = end;
+      }
+    }
+
+    if (search) {
+      activityWhere.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { workOrderFolio: { contains: search, mode: 'insensitive' } },
+        { projectArea: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Query DB for logs & activities
+    const [totalCount, logs, activitiesWithPhotos] = await Promise.all([
       prisma.whatsappMessageLog.count({ where }),
       prisma.whatsappMessageLog.findMany({
         where,
@@ -88,9 +115,19 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
       }),
+      prisma.activity.findMany({
+        where: activityWhere,
+        include: {
+          user: { select: { name: true } },
+          client: { select: { name: true } },
+          company: { select: { name: true, shortName: true } },
+        },
+        orderBy: { date: 'desc' },
+        take: 100,
+      }),
     ]);
 
-    // Format evidencias list
+    // Format evidencias list from WhatsApp logs
     const items: any[] = [];
     logs.forEach((log) => {
       if (!log.mediaUrls) return;
@@ -101,7 +138,7 @@ export async function GET(req: NextRequest) {
 
       if (!Array.isArray(urls) || urls.length === 0) return;
 
-      const groupInfo = groupMap.get(log.groupId);
+      const groupInfo = groupMap.get(log.groupId || '');
       const gNameUpper = (groupInfo?.groupName || '').toUpperCase();
       let companyName = groupInfo ? companyMap.get(groupInfo.companyId || '') || 'GRUPO CASEME' : 'COORDINACIÓN MULTIEMPRESA';
       
@@ -133,9 +170,44 @@ export async function GET(req: NextRequest) {
           summary: parsedInfo.summary || '',
           workOrderFolio: groupInfo?.workOrderFolio || parsedInfo.workOrderFolio || null,
           createdAt: log.createdAt,
+          source: 'WHATSAPP',
         });
       });
     });
+
+    // Format evidencias list from Activity uploads
+    activitiesWithPhotos.forEach((act) => {
+      const allPhotoJson = [act.photosBefore, act.photosAfter, act.manPowerPhotos].filter(Boolean);
+      allPhotoJson.forEach((jsonStr) => {
+        let photoArray: any[] = [];
+        try {
+          photoArray = typeof jsonStr === 'string' ? JSON.parse(jsonStr as string) : jsonStr;
+        } catch {}
+        if (!Array.isArray(photoArray)) return;
+
+        photoArray.forEach((p, pIdx) => {
+          if (!p.url) return;
+          items.push({
+            id: `act_${act.id}_${p.id || pIdx}`,
+            logId: act.id,
+            url: p.url,
+            senderName: p.uploadedBy || act.user?.name || 'Registro en Actividad',
+            senderPhone: '',
+            groupId: 'ACTIVIDADES',
+            groupName: `Actividad: ${act.title}`,
+            companyName: act.company?.name || 'GRUPO CASEME',
+            caption: `[Actividad] ${act.title}${act.projectArea ? ' - ' + act.projectArea : ''}`,
+            summary: `Cliente: ${act.client?.name || 'N/A'} | Folio: ${act.workOrderFolio || 'N/A'}`,
+            workOrderFolio: act.workOrderFolio || null,
+            activityId: act.id,
+            createdAt: p.uploadedAt || act.createdAt,
+            source: 'ACTIVIDAD',
+          });
+        });
+      });
+    });
+
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return NextResponse.json({
       items,

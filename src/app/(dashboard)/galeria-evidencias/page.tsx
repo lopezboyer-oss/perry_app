@@ -325,10 +325,15 @@ export default function GaleriaEvidenciasPage() {
                     loading="lazy"
                   />
                   {/* Overlay badge */}
-                  <div className="absolute top-2 left-2 flex gap-1">
+                  <div className="absolute top-2 left-2 flex gap-1 flex-wrap max-w-[90%]">
                     <span className="px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-slate-700 text-[10px] font-bold text-indigo-300">
                       {item.companyName}
                     </span>
+                    {(item as any).source === 'ACTIVIDAD' && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-950/90 backdrop-blur-md border border-emerald-500/50 text-[10px] font-bold text-emerald-300">
+                        📌 Actividad
+                      </span>
+                    )}
                   </div>
                   {/* Hover zoom icon */}
                   <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

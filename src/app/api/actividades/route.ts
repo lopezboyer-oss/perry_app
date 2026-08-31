@@ -90,6 +90,8 @@ export async function POST(req: NextRequest) {
         isManPower: data.isManPower || false,
         manPowerEquipo: data.manPowerEquipo ? data.manPowerEquipo.toUpperCase().slice(0, 6) : null,
         manPowerPhotos: data.manPowerPhotos || null,
+        photosBefore: data.photosBefore || null,
+        photosAfter: data.photosAfter || null,
       },
     });
 

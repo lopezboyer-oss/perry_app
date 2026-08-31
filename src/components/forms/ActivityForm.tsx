@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, ArrowLeft, Search, Loader2 } from 'lucide-react';
+import { Save, ArrowLeft, Search, Loader2, Upload, Camera, X } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { TimeInput24h } from '@/components/ui/TimeInput24h';
 import { activityTypeLabels, activityStatusLabels, calculateDuration, getLocalToday, CONSORTIUM_COMPANIES } from '@/lib/utils';
@@ -53,7 +53,96 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
     weekendNotes: initialData?.weekendNotes || '',
   });
 
+interface PhotoItem {
+  id: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy?: string;
+}
+
   const [equiposList, setEquiposList] = useState<string[]>([]);
+  const [photosList, setPhotosList] = useState<PhotoItem[]>(() => {
+    if (!initialData?.photosBefore) return [];
+    try {
+      return typeof initialData.photosBefore === 'string'
+        ? JSON.parse(initialData.photosBefore)
+        : initialData.photosBefore;
+    } catch {
+      return [];
+    }
+  });
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+
+  const compressFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_DIM = 1200;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_DIM) {
+              height *= MAX_DIM / width;
+              width = MAX_DIM;
+            }
+          } else {
+            if (height > MAX_DIM) {
+              width *= MAX_DIM / height;
+              height = MAX_DIM;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+          }
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = () => resolve((e.target?.result as string) || '');
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const availableSlots = 20 - photosList.length;
+    if (availableSlots <= 0) {
+      alert('Has alcanzado el límite máximo de 20 fotografías por actividad.');
+      return;
+    }
+
+    const filesToProcess = files.slice(0, availableSlots);
+    if (files.length > availableSlots) {
+      alert(`Solo se procesarán ${availableSlots} foto(s) para no exceder el límite de 20.`);
+    }
+
+    setUploadingPhotos(true);
+    try {
+      const compressedUrls = await Promise.all(filesToProcess.map((f) => compressFile(f)));
+      const validUrls = compressedUrls.filter(Boolean);
+      const newItems: PhotoItem[] = validUrls.map((url, idx) => ({
+        id: `${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+        url,
+        uploadedAt: new Date().toISOString(),
+      }));
+      setPhotosList((prev) => [...prev, ...newItems]);
+    } catch (err) {
+      console.error('Error al comprimir imágenes:', err);
+      alert('Ocurrió un error al procesar algunas imágenes.');
+    } finally {
+      setUploadingPhotos(false);
+      if (e.target) e.target.value = '';
+    }
+  };
 
   // On mount, read active company from cookie if no companyId set, and fetch equipos
   useEffect(() => {
@@ -207,6 +296,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         equipmentStatus: form.isManPower ? (form.equipmentStatus || null) : null,
         suggestedAction: form.isManPower ? (form.suggestedAction || null) : null,
         weekendNotes: form.isManPower ? (form.weekendNotes || null) : null,
+        photosBefore: photosList.length > 0 ? JSON.stringify(photosList) : null,
       };
 
       const url = isEdit ? `/api/actividades/${initialData.id}` : '/api/actividades';
@@ -617,6 +707,67 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
             />
           </div>
         </div>
+      </div>
+
+      {/* Registro Fotográfico y Evidencias (Hasta 20 fotos) */}
+      <div className="card p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              📸 Registro Fotográfico y Evidencias de Campo
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Puedes subir hasta 20 fotos en bloque desde móvil o escritorio ({photosList.length}/20)
+            </p>
+          </div>
+          {photosList.length < 20 && (
+            <label className={`inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all touch-manipulation ${uploadingPhotos ? 'opacity-50 pointer-events-none' : ''}`}>
+              {uploadingPhotos ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+              <span>{uploadingPhotos ? 'Procesando fotos...' : 'Subir Fotos en Bloque'}</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFilesSelected}
+                className="hidden"
+                disabled={uploadingPhotos || photosList.length >= 20}
+              />
+            </label>
+          )}
+        </div>
+
+        {photosList.length === 0 ? (
+          <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50/50">
+            <Camera className="mx-auto text-slate-300 mb-2" size={36} />
+            <p className="text-sm font-semibold text-slate-700">Sin fotos adjuntas</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Haz clic o pulsa en "Subir Fotos en Bloque" para seleccionar hasta 20 imágenes de tu galería o cámara
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {photosList.map((photo, idx) => (
+              <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-900 aspect-square shadow-xs">
+                <img
+                  src={photo.url}
+                  alt={`Evidencia ${idx + 1}`}
+                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPhotosList((prev) => prev.filter((p) => p.id !== photo.id))}
+                  className="absolute top-1.5 right-1.5 p-2 bg-red-600/90 hover:bg-red-700 text-white rounded-full shadow-md transition-colors z-10 touch-manipulation"
+                  title="Eliminar foto"
+                >
+                  <X size={14} />
+                </button>
+                <div className="absolute bottom-0 inset-x-0 p-1 bg-gradient-to-t from-black/70 to-transparent text-[10px] text-white/90 font-mono text-center">
+                  #{idx + 1}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {error && (
