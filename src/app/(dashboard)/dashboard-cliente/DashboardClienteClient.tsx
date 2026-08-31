@@ -283,12 +283,12 @@ export function DashboardClienteClient({
   const [extraDaySaving, setExtraDaySaving] = useState(false);
 
   const isReadOnly = userRole === 'CLIENTE';
-  const canAssign = !isReadOnly && ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canAssign = !isReadOnly && ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = !isReadOnly && ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canEditFields = !isReadOnly && ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canEditFields = !isReadOnly && ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canViewAudit = true; // All profiles can now see Notas Auditoría
   const canManageExtraDays = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canCancelAny = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canCancelAny = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canCancelOwn = userRole === 'INGENIERO';
 
   const canEditAuditImage = (act: Activity) => {

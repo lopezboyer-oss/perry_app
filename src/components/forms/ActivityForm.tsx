@@ -481,7 +481,26 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
       )}
 
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Horario y Duración</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h2 className="text-lg font-semibold text-slate-800">Horario y Duración</h2>
+          <button
+            type="button"
+            onClick={() => {
+              setForm({
+                ...form,
+                startTime: '08:00',
+                endTime: '17:00',
+                actualStartTime: '08:00',
+                actualEndTime: '17:00',
+                durationMinutes: '540'
+              });
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors cursor-pointer"
+            title="Llenar rápidamente horario regular de 08:00 a 17:00"
+          >
+            ☀️ Turno Regular (08:00 - 17:00)
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Hora Inicio</label>

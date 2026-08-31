@@ -65,7 +65,7 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
     }
   });
 
-  const canEdit = userRole === 'ADMIN' || userRole === 'SUPERVISOR' || activity.userId === currentUserId;
+  const canEdit = userRole === 'ADMIN' || userRole === 'ADMINISTRACION' || userRole === 'SUPERVISOR' || activity.userId === currentUserId;
 
   const handleDelete = async () => {
     if (!confirm('¿Estás seguro de eliminar esta actividad?')) return;

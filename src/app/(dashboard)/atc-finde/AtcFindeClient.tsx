@@ -282,15 +282,15 @@ export function AtcFindeClient({
   const [extraDayLabel, setExtraDayLabel] = useState('');
   const [extraDaySaving, setExtraDaySaving] = useState(false);
 
-  const canAssign = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canAssign = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canEditFields = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canEditFields = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canViewAudit = true; // All profiles can now see Notas Auditoría
   const canEditAudit = userRole === 'SUPERVISOR_SAFETY_LP' || userIsSafetyAuditor; // Safety & LP + Auditor Safety
   const canViewAlertNotes = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditAlertNotes = userRole === 'SUPERVISOR_SAFETY_LP';
   const canManageExtraDays = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canCancelAny = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canCancelAny = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canCancelOwn = userRole === 'INGENIERO';
 
   const canEditAuditImage = (act: Activity) => {
