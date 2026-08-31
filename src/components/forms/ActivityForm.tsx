@@ -33,13 +33,16 @@ interface PhotoItem {
   uploadedBy?: string;
 }
 
-const ACTIVITY_TYPE_CONFIG: { [key: string]: { label: string; icon: string; desc: string; color: string } } = {
-  VISITA_CAMPO: { label: 'Visita de Campo', icon: '🛠️', desc: 'Servicio en planta o sitio', color: 'indigo' },
-  COTIZACION: { label: 'Cotización', icon: '📋', desc: 'Levantamiento y propuesta', color: 'blue' },
-  SOPORTE_INTERNO: { label: 'Soporte Interempresa', icon: '🧑‍💻', desc: 'Apoyo técnico interno', color: 'cyan' },
-  CONSORCIO: { label: 'Consorcio', icon: '🏢', desc: 'Soporte cruzado empresas', color: 'purple' },
-  CAPACITACION: { label: 'Capacitación', icon: '🎓', desc: 'Entrenamiento técnico', color: 'emerald' },
-};
+const ALL_ACTIVITY_TYPES: { key: string; label: string }[] = [
+  { key: 'VISITA_CAMPO', label: 'Visita de Campo' },
+  { key: 'COTIZACION', label: 'Cotización' },
+  { key: 'EJECUCION', label: 'Ejecución' },
+  { key: 'PLANEACION', label: 'Planeación' },
+  { key: 'DISENO', label: 'Diseño' },
+  { key: 'CONSORCIO', label: 'Consorcio' },
+  { key: 'CAPACITACION', label: 'Capacitación' },
+  { key: 'SOPORTE_INTERNO', label: 'Soporte Interempresa' },
+];
 
 export function ActivityForm({ users, clients, currentUserId, userRole, initialData, prefillFolio }: Props) {
   const router = useRouter();
@@ -471,33 +474,26 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
           </div>
         </div>
 
-        {/* Segmented Chips for Activity Type */}
+        {/* Small Segmented Buttons for Activity Type (All 8 types, no emojis, no descriptions) */}
         <div className="mb-5">
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
             Tipo de Actividad *
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-            {Object.entries(ACTIVITY_TYPE_CONFIG).map(([typeKey, cfg]) => {
-              const isSelected = form.type === typeKey;
+          <div className="flex flex-wrap items-center gap-1.5">
+            {ALL_ACTIVITY_TYPES.map((t) => {
+              const isSelected = form.type === t.key;
               return (
                 <button
-                  key={typeKey}
+                  key={t.key}
                   type="button"
-                  onClick={() => setForm({ ...form, type: typeKey })}
-                  className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all cursor-pointer touch-manipulation ${
+                  onClick={() => setForm({ ...form, type: t.key })}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer touch-manipulation ${
                     isSelected
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-300/50'
-                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs font-bold ring-2 ring-indigo-300/50'
+                      : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200'
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-lg">{cfg.icon}</span>
-                    {isSelected && <Check size={14} className="text-white font-bold" />}
-                  </div>
-                  <span className="text-xs font-bold leading-snug">{cfg.label}</span>
-                  <span className={`text-[10px] line-clamp-1 mt-0.5 ${isSelected ? 'text-indigo-100' : 'text-slate-400'}`}>
-                    {cfg.desc}
-                  </span>
+                  {t.label}
                 </button>
               );
             })}
