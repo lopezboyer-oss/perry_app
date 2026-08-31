@@ -405,7 +405,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
           </div>
 
           {/* Quick Folio Input */}
-          <div className="flex items-center gap-2 bg-slate-950/80 p-1.5 rounded-xl border border-indigo-400/30 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <input
               type="text"
               maxLength={6}
@@ -418,15 +418,15 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
                 }
               }}
               placeholder="Folio Odoo (ej: S06309)"
-              className="bg-transparent text-white font-mono text-sm px-3 py-1.5 focus:outline-hidden w-full md:w-48 placeholder:text-slate-500 uppercase"
+              className="!bg-slate-900 !text-white !border-indigo-400/40 font-mono text-sm px-3.5 py-2 rounded-xl w-full md:w-52 placeholder:!text-slate-400 uppercase font-bold focus:!border-indigo-400 focus:!ring-2 focus:!ring-indigo-400/30 shadow-inner"
             />
             <button
               type="button"
               onClick={() => lookupOdoo()}
               disabled={odooLoading || !form.workOrderFolio}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer shrink-0 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0 shadow-md touch-manipulation"
             >
-              {odooLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              {odooLoading ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
               <span>{odooLoading ? 'Buscando...' : 'Cargar Odoo'}</span>
             </button>
           </div>
@@ -664,7 +664,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
                   onChange={(e) => setForm({ ...form, workOrderFolio: e.target.value.toUpperCase().slice(0, 6) })}
                   onBlur={() => lookupOdoo()}
                   placeholder="Ej: S06309"
-                  className="flex-1 font-mono uppercase text-sm font-semibold"
+                  className="flex-1 font-mono uppercase text-sm font-bold !bg-white !text-slate-900 border border-slate-300 rounded-lg placeholder:text-slate-400"
                 />
                 <button
                   type="button"
