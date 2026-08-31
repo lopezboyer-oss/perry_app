@@ -33,16 +33,7 @@ interface PhotoItem {
   uploadedBy?: string;
 }
 
-const ALL_ACTIVITY_TYPES: { key: string; label: string }[] = [
-  { key: 'VISITA_CAMPO', label: 'Visita de Campo' },
-  { key: 'COTIZACION', label: 'Cotización' },
-  { key: 'EJECUCION', label: 'Ejecución' },
-  { key: 'PLANEACION', label: 'Planeación' },
-  { key: 'DISENO', label: 'Diseño' },
-  { key: 'CONSORCIO', label: 'Consorcio' },
-  { key: 'CAPACITACION', label: 'Capacitación' },
-  { key: 'SOPORTE_INTERNO', label: 'Soporte Interempresa' },
-];
+
 
 export function ActivityForm({ users, clients, currentUserId, userRole, initialData, prefillFolio }: Props) {
   const router = useRouter();
@@ -474,26 +465,29 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
           </div>
         </div>
 
-        {/* Small Segmented Buttons for Activity Type (All 8 types, no emojis, no descriptions) */}
+        {/* Small Segmented Buttons for Activity Type (Original Enabled Types from activityTypeLabels) */}
         <div className="mb-5">
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
             Tipo de Actividad *
           </label>
           <div className="flex flex-wrap items-center gap-1.5">
-            {ALL_ACTIVITY_TYPES.map((t) => {
-              const isSelected = form.type === t.key;
+            {Object.entries(activityTypeLabels).map(([typeKey, label]) => {
+              const isSelected = form.type === typeKey;
               return (
                 <button
-                  key={t.key}
+                  key={typeKey}
                   type="button"
-                  onClick={() => setForm({ ...form, type: t.key })}
+                  onClick={() => {
+                    const newStatus = (typeKey !== 'COTIZACION' && form.status === 'EN_PROGRESO') ? 'PENDIENTE' : form.status;
+                    setForm({ ...form, type: typeKey, status: newStatus });
+                  }}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer touch-manipulation ${
                     isSelected
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs font-bold ring-2 ring-indigo-300/50'
                       : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border-slate-200'
                   }`}
                 >
-                  {t.label}
+                  {label}
                 </button>
               );
             })}
