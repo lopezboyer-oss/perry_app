@@ -61,11 +61,11 @@ export default async function ActividadDetailPage({
           currentUserId={session.user.id}
           userRole={session.user.role}
           userAccessCrearPlanes={!!(session.user as any).accessCrearPlanes}
-          initialData={{
+          initialData={JSON.parse(JSON.stringify({
             ...activity,
             date: toInputDate(activity.date),
             commitmentDate: toInputDate(activity.commitmentDate),
-          }}
+          }))}
         />
       </div>
     );

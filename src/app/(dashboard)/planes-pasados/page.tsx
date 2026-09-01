@@ -86,12 +86,12 @@ export default async function PlanesPasadosPage({
       weekendDates={weekendDates}
       selectedWeekend={selectedWeekend}
       activities={activities.map((a: any) => ({ ...a, date: a.date.toISOString(), teraUploadedAt: a.teraUploadedAt?.toISOString() || null, teraAuditorUploadedAt: a.teraAuditorUploadedAt?.toISOString() || null, timeRegistryEntries: (a.timeRegistryEntries || []).map((e: any) => ({ ...e, registeredAt: e.registeredAt?.toISOString() || '' })) }))}
-      techAssignments={techAssignments}
-      safetyAssignments={safetyAssignments}
-      vehicleAssignments={vehicleAssignments}
-      driverAssignments={driverAssignments}
-      equipAssignments={equipAssignments}
-      userSafetyAssignments={userSafetyAssignments}
+      techAssignments={JSON.parse(JSON.stringify(techAssignments))}
+      safetyAssignments={JSON.parse(JSON.stringify(safetyAssignments))}
+      vehicleAssignments={JSON.parse(JSON.stringify(vehicleAssignments))}
+      driverAssignments={JSON.parse(JSON.stringify(driverAssignments))}
+      equipAssignments={JSON.parse(JSON.stringify(equipAssignments))}
+      userSafetyAssignments={JSON.parse(JSON.stringify(userSafetyAssignments))}
       userRole={role}
       userId={session.user.id}
       userName={session.user.name || 'Desconocido'}
