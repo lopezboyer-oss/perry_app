@@ -9,6 +9,13 @@ interface ExportPDFParams {
   technicians?: any[];
   weekendOf: string;
   companyName: string;
+  personnelStatusList?: {
+    id?: string;
+    personName: string;
+    statusType: string;
+    originCompany?: string | null;
+    notes?: string | null;
+  }[];
 }
 
 export function exportWeekendPDFClient({
@@ -19,6 +26,7 @@ export function exportWeekendPDFClient({
   equipAssignments,
   weekendOf,
   companyName,
+  personnelStatusList = [],
 }: ExportPDFParams) {
   const daysOfWeekFull = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
   const daysOfWeekTitle = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -123,6 +131,11 @@ export function exportWeekendPDFClient({
     alert('Por favor habilita las ventanas emergentes en tu navegador para generar el PDF.');
     return;
   }
+
+  const descansos = (personnelStatusList || []).filter(p => p.statusType === 'DESCANSO');
+  const vacaciones = (personnelStatusList || []).filter(p => p.statusType === 'VACACIONES');
+  const incapacidades = (personnelStatusList || []).filter(p => p.statusType === 'INCAPACIDAD');
+  const hasPersonnelStatus = descansos.length > 0 || vacaciones.length > 0 || incapacidades.length > 0;
 
   const htmlContent = `<!DOCTYPE html>
 <html lang="es">
@@ -387,6 +400,80 @@ export function exportWeekendPDFClient({
       })
       .join('')}
   </div>
+
+  <!-- SECCIÓN STATUS PERSONAL (DESCANSOS / VACACIONES / INCAPACIDAD) -->
+  ${hasPersonnelStatus ? `
+  <div style="margin-top: 14px; margin-bottom: 14px; page-break-inside: avoid !important; break-inside: avoid !important;">
+    <div style="font-size: 11px; font-weight: 800; color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+      <span>👥 STATUS Y DISPONIBILIDAD DE PERSONAL</span>
+      <span style="font-size: 9px; color: #64748b; font-weight: 600;">Total: ${personnelStatusList.length} registros</span>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(${[descansos.length > 0, vacaciones.length > 0, incapacidades.length > 0].filter(Boolean).length || 1}, 1fr); gap: 10px;">
+      
+      ${descansos.length > 0 ? `
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size: 11px; font-weight: 900; color: #166534; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+          <span>🟢 DESCANSOS</span>
+          <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; border-radius: 9999px; padding: 1px 6px; font-size: 9px;">${descansos.length}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          ${descansos.map(d => `
+            <div style="background: #ffffff; border: 1px solid #dcfce7; border-radius: 6px; padding: 5px 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                <span style="font-size: 10px; font-weight: 800; color: #1e293b;">${d.personName}</span>
+                ${d.originCompany ? `<span style="font-size: 8px; font-weight: 700; background: #dcfce7; color: #166534; padding: 1px 4px; border-radius: 4px;">${d.originCompany}</span>` : ''}
+              </div>
+              ${d.notes ? `<div style="font-size: 8.5px; color: #64748b; font-style: italic; margin-top: 2px;">📝 ${d.notes}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+
+      ${vacaciones.length > 0 ? `
+      <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size: 11px; font-weight: 900; color: #075985; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+          <span>🔵 VACACIONES</span>
+          <span style="background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; border-radius: 9999px; padding: 1px 6px; font-size: 9px;">${vacaciones.length}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          ${vacaciones.map(v => `
+            <div style="background: #ffffff; border: 1px solid #e0f2fe; border-radius: 6px; padding: 5px 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                <span style="font-size: 10px; font-weight: 800; color: #1e293b;">${v.personName}</span>
+                ${v.originCompany ? `<span style="font-size: 8px; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 1px 4px; border-radius: 4px;">${v.originCompany}</span>` : ''}
+              </div>
+              ${v.notes ? `<div style="font-size: 8.5px; color: #64748b; font-style: italic; margin-top: 2px;">📝 ${v.notes}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+
+      ${incapacidades.length > 0 ? `
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size: 11px; font-weight: 900; color: #92400e; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+          <span>🟠 INCAPACIDAD</span>
+          <span style="background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; border-radius: 9999px; padding: 1px 6px; font-size: 9px;">${incapacidades.length}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          ${incapacidades.map(inc => `
+            <div style="background: #ffffff; border: 1px solid #fef3c7; border-radius: 6px; padding: 5px 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                <span style="font-size: 10px; font-weight: 800; color: #1e293b;">${inc.personName}</span>
+                ${inc.originCompany ? `<span style="font-size: 8px; font-weight: 700; background: #fef3c7; color: #92400e; padding: 1px 4px; border-radius: 4px;">${inc.originCompany}</span>` : ''}
+              </div>
+              ${inc.notes ? `<div style="font-size: 8.5px; color: #64748b; font-style: italic; margin-top: 2px;">📝 ${inc.notes}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+
+    </div>
+  </div>
+  ` : ''}
 
   <!-- FOOTER -->
   <div class="footer">

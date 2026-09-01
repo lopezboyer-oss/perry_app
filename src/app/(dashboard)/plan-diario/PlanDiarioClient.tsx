@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/timezone';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
@@ -874,6 +875,80 @@ export function PlanDiarioClient({
     // Summary row
     html += `<tr><td colspan="${headers.length}" style="background:#e0e7ff;color:#4f46e5;font-weight:bold;padding:8px;border:1px solid #c7d2fe;font-size:9.5pt;font-family:Calibri,Arial;">Total actividades: ${rowsData.length} · Generado: ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Tijuana' })} ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })} hrs</td></tr>`;
 
+    // ── PERSONNEL STATUS SECTIONS: DESCANSOS, VACACIONES, INCAPACIDAD ──
+    const visiblePersonnelStatus = personnelStatusList.filter(s => isCompanyMatch(s.originCompany));
+    const descansos = visiblePersonnelStatus.filter(s => s.statusType === 'DESCANSO');
+    const vacaciones = visiblePersonnelStatus.filter(s => s.statusType === 'VACACIONES');
+    const incapacidades = visiblePersonnelStatus.filter(s => s.statusType === 'INCAPACIDAD');
+
+    if (descansos.length > 0 || vacaciones.length > 0 || incapacidades.length > 0) {
+      // Blank spacer row
+      html += `<tr><td colspan="${headers.length}" style="border:none;height:16px;"></td></tr>`;
+
+      // Main Section Header
+      html += `<tr><td colspan="${headers.length}" style="background:#1e293b;color:#ffffff;font-weight:bold;font-size:11pt;padding:8px 10px;font-family:Calibri,Arial;">👥 STATUS Y DISPONIBILIDAD DE PERSONAL</td></tr>`;
+
+      // 🟢 DESCANSOS
+      if (descansos.length > 0) {
+        html += `<tr><td colspan="${headers.length}" style="background:#059669;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 10px;font-family:Calibri,Arial;">🟢 DESCANSOS (${descansos.length})</td></tr>`;
+        html += `<tr>
+          <th style="${thStyle};width:30px;">#</th>
+          <th colspan="4" style="${thStyle}">Nombre del Personal</th>
+          <th colspan="3" style="${thStyle}">Empresa</th>
+          <th colspan="6" style="${thStyle}">Notas / Observaciones</th>
+        </tr>`;
+        descansos.forEach((d, idx) => {
+          const bg = idx % 2 === 0 ? '#ffffff' : '#f0fdf4';
+          html += `<tr>
+            <td style="background:${bg};text-align:center;font-weight:bold;color:#059669;padding:5px 8px;border:1px solid #bbf7d0;font-size:9.5pt;font-family:Calibri,Arial;">${idx + 1}</td>
+            <td colspan="4" style="background:${bg};font-weight:bold;color:#1e293b;padding:5px 8px;border:1px solid #bbf7d0;font-size:9.5pt;font-family:Calibri,Arial;">${d.personName}</td>
+            <td colspan="3" style="background:${bg};text-align:center;font-weight:600;color:#059669;padding:5px 8px;border:1px solid #bbf7d0;font-size:9pt;font-family:Calibri,Arial;">${d.originCompany || '-'}</td>
+            <td colspan="6" style="background:${bg};font-style:italic;color:#475569;padding:5px 8px;border:1px solid #bbf7d0;font-size:9.5pt;font-family:Calibri,Arial;">${d.notes || '-'}</td>
+          </tr>`;
+        });
+      }
+
+      // 🔵 VACACIONES
+      if (vacaciones.length > 0) {
+        html += `<tr><td colspan="${headers.length}" style="background:#0284c7;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 10px;font-family:Calibri,Arial;">🔵 VACACIONES (${vacaciones.length})</td></tr>`;
+        html += `<tr>
+          <th style="${thStyle};width:30px;">#</th>
+          <th colspan="4" style="${thStyle}">Nombre del Personal</th>
+          <th colspan="3" style="${thStyle}">Empresa</th>
+          <th colspan="6" style="${thStyle}">Notas / Observaciones</th>
+        </tr>`;
+        vacaciones.forEach((v, idx) => {
+          const bg = idx % 2 === 0 ? '#ffffff' : '#f0f9ff';
+          html += `<tr>
+            <td style="background:${bg};text-align:center;font-weight:bold;color:#0284c7;padding:5px 8px;border:1px solid #bae6fd;font-size:9.5pt;font-family:Calibri,Arial;">${idx + 1}</td>
+            <td colspan="4" style="background:${bg};font-weight:bold;color:#1e293b;padding:5px 8px;border:1px solid #bae6fd;font-size:9.5pt;font-family:Calibri,Arial;">${v.personName}</td>
+            <td colspan="3" style="background:${bg};text-align:center;font-weight:600;color:#0284c7;padding:5px 8px;border:1px solid #bae6fd;font-size:9pt;font-family:Calibri,Arial;">${v.originCompany || '-'}</td>
+            <td colspan="6" style="background:${bg};font-style:italic;color:#475569;padding:5px 8px;border:1px solid #bae6fd;font-size:9.5pt;font-family:Calibri,Arial;">${v.notes || '-'}</td>
+          </tr>`;
+        });
+      }
+
+      // 🟠 INCAPACIDAD
+      if (incapacidades.length > 0) {
+        html += `<tr><td colspan="${headers.length}" style="background:#d97706;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 10px;font-family:Calibri,Arial;">🟠 INCAPACIDAD (${incapacidades.length})</td></tr>`;
+        html += `<tr>
+          <th style="${thStyle};width:30px;">#</th>
+          <th colspan="4" style="${thStyle}">Nombre del Personal</th>
+          <th colspan="3" style="${thStyle}">Empresa</th>
+          <th colspan="6" style="${thStyle}">Notas / Observaciones</th>
+        </tr>`;
+        incapacidades.forEach((inc, idx) => {
+          const bg = idx % 2 === 0 ? '#ffffff' : '#fffbeb';
+          html += `<tr>
+            <td style="background:${bg};text-align:center;font-weight:bold;color:#d97706;padding:5px 8px;border:1px solid #fde68a;font-size:9.5pt;font-family:Calibri,Arial;">${idx + 1}</td>
+            <td colspan="4" style="background:${bg};font-weight:bold;color:#1e293b;padding:5px 8px;border:1px solid #fde68a;font-size:9.5pt;font-family:Calibri,Arial;">${inc.personName}</td>
+            <td colspan="3" style="background:${bg};text-align:center;font-weight:600;color:#d97706;padding:5px 8px;border:1px solid #fde68a;font-size:9pt;font-family:Calibri,Arial;">${inc.originCompany || '-'}</td>
+            <td colspan="6" style="background:${bg};font-style:italic;color:#475569;padding:5px 8px;border:1px solid #fde68a;font-size:9.5pt;font-family:Calibri,Arial;">${inc.notes || '-'}</td>
+          </tr>`;
+        });
+      }
+    }
+
     html += '</table></body></html>';
 
     const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
@@ -997,6 +1072,75 @@ export function PlanDiarioClient({
       const summaryParts = Object.entries(companyCounts).map(([co, cnt]) => `${co}: ${cnt}`).join(' · ');
 
       html += `<tr><td colspan="${headers.length}" style="background:#ede9fe;color:#7c3aed;font-weight:bold;padding:8px;border:1px solid #c4b5fd;font-size:9.5pt;font-family:Calibri,Arial;">Total: ${rowsData.length} actividades · ${summaryParts} · Generado: ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Tijuana' })} ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Tijuana' })} hrs</td></tr>`;
+
+      // ── MULTIEMPRESA PERSONNEL STATUS SECTIONS ──
+      const allPersonnelStatus = personnelStatusList;
+      const descansosMulti = allPersonnelStatus.filter(s => s.statusType === 'DESCANSO');
+      const vacacionesMulti = allPersonnelStatus.filter(s => s.statusType === 'VACACIONES');
+      const incapacidadesMulti = allPersonnelStatus.filter(s => s.statusType === 'INCAPACIDAD');
+
+      if (descansosMulti.length > 0 || vacacionesMulti.length > 0 || incapacidadesMulti.length > 0) {
+        html += `<tr><td colspan="${headers.length}" style="border:none;height:16px;"></td></tr>`;
+        html += `<tr><td colspan="${headers.length}" style="background:#1e293b;color:#ffffff;font-weight:bold;font-size:11pt;padding:8px 10px;font-family:Calibri,Arial;">👥 STATUS Y DISPONIBILIDAD DE PERSONAL (MULTIEMPRESA)</td></tr>`;
+
+        if (descansosMulti.length > 0) {
+          html += `<tr><td colspan="${headers.length}" style="background:#059669;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 10px;font-family:Calibri,Arial;">🟢 DESCANSOS (${descansosMulti.length})</td></tr>`;
+          html += `<tr>
+            <th style="${thStyle};width:30px;">#</th>
+            <th colspan="4" style="${thStyle}">Nombre del Personal</th>
+            <th colspan="3" style="${thStyle}">Empresa</th>
+            <th colspan="7" style="${thStyle}">Notas / Observaciones</th>
+          </tr>`;
+          descansosMulti.forEach((d, idx) => {
+            const bg = idx % 2 === 0 ? '#ffffff' : '#f0fdf4';
+            html += `<tr>
+              <td style="background:${bg};text-align:center;font-weight:bold;color:#059669;padding:5px 8px;border:1px solid #bbf7d0;font-size:9.5pt;font-family:Calibri,Arial;">${idx + 1}</td>
+              <td colspan="4" style="background:${bg};font-weight:bold;color:#1e293b;padding:5px 8px;border:1px solid #bbf7d0;font-size:9.5pt;font-family:Calibri,Arial;">${d.personName}</td>
+              <td colspan="3" style="background:${bg};text-align:center;font-weight:600;color:#059669;padding:5px 8px;border:1px solid #bbf7d0;font-size:9pt;font-family:Calibri,Arial;">${d.originCompany || '-'}</td>
+              <td colspan="7" style="background:${bg};font-style:italic;color:#475569;padding:5px 8px;border:1px solid #bbf7d0;font-size:9.5pt;font-family:Calibri,Arial;">${d.notes || '-'}</td>
+            </tr>`;
+          });
+        }
+
+        if (vacacionesMulti.length > 0) {
+          html += `<tr><td colspan="${headers.length}" style="background:#0284c7;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 10px;font-family:Calibri,Arial;">🔵 VACACIONES (${vacacionesMulti.length})</td></tr>`;
+          html += `<tr>
+            <th style="${thStyle};width:30px;">#</th>
+            <th colspan="4" style="${thStyle}">Nombre del Personal</th>
+            <th colspan="3" style="${thStyle}">Empresa</th>
+            <th colspan="7" style="${thStyle}">Notas / Observaciones</th>
+          </tr>`;
+          vacacionesMulti.forEach((v, idx) => {
+            const bg = idx % 2 === 0 ? '#ffffff' : '#f0f9ff';
+            html += `<tr>
+              <td style="background:${bg};text-align:center;font-weight:bold;color:#0284c7;padding:5px 8px;border:1px solid #bae6fd;font-size:9.5pt;font-family:Calibri,Arial;">${idx + 1}</td>
+              <td colspan="4" style="background:${bg};font-weight:bold;color:#1e293b;padding:5px 8px;border:1px solid #bae6fd;font-size:9.5pt;font-family:Calibri,Arial;">${v.personName}</td>
+              <td colspan="3" style="background:${bg};text-align:center;font-weight:600;color:#0284c7;padding:5px 8px;border:1px solid #bae6fd;font-size:9pt;font-family:Calibri,Arial;">${v.originCompany || '-'}</td>
+              <td colspan="7" style="background:${bg};font-style:italic;color:#475569;padding:5px 8px;border:1px solid #bae6fd;font-size:9.5pt;font-family:Calibri,Arial;">${v.notes || '-'}</td>
+            </tr>`;
+          });
+        }
+
+        if (incapacidadesMulti.length > 0) {
+          html += `<tr><td colspan="${headers.length}" style="background:#d97706;color:#ffffff;font-weight:bold;font-size:10pt;padding:6px 10px;font-family:Calibri,Arial;">🟠 INCAPACIDAD (${incapacidadesMulti.length})</td></tr>`;
+          html += `<tr>
+            <th style="${thStyle};width:30px;">#</th>
+            <th colspan="4" style="${thStyle}">Nombre del Personal</th>
+            <th colspan="3" style="${thStyle}">Empresa</th>
+            <th colspan="7" style="${thStyle}">Notas / Observaciones</th>
+          </tr>`;
+          incapacidadesMulti.forEach((inc, idx) => {
+            const bg = idx % 2 === 0 ? '#ffffff' : '#fffbeb';
+            html += `<tr>
+              <td style="background:${bg};text-align:center;font-weight:bold;color:#d97706;padding:5px 8px;border:1px solid #fde68a;font-size:9.5pt;font-family:Calibri,Arial;">${idx + 1}</td>
+              <td colspan="4" style="background:${bg};font-weight:bold;color:#1e293b;padding:5px 8px;border:1px solid #fde68a;font-size:9.5pt;font-family:Calibri,Arial;">${inc.personName}</td>
+              <td colspan="3" style="background:${bg};text-align:center;font-weight:600;color:#d97706;padding:5px 8px;border:1px solid #fde68a;font-size:9pt;font-family:Calibri,Arial;">${inc.originCompany || '-'}</td>
+              <td colspan="7" style="background:${bg};font-style:italic;color:#475569;padding:5px 8px;border:1px solid #fde68a;font-size:9.5pt;font-family:Calibri,Arial;">${inc.notes || '-'}</td>
+            </tr>`;
+          });
+        }
+      }
+
       html += '</table></body></html>';
 
       const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
@@ -1016,6 +1160,7 @@ export function PlanDiarioClient({
   // ── PDF EXPORT (Ejecutivo Gráfico) ──
   const exportPDF = () => {
     try {
+      const visiblePersonnelStatus = personnelStatusList.filter(s => isCompanyMatch(s.originCompany));
       exportWeekendPDFClient({
         activities,
         techAssignments,
@@ -1025,6 +1170,7 @@ export function PlanDiarioClient({
         technicians,
         weekendOf,
         companyName,
+        personnelStatusList: visiblePersonnelStatus,
       });
     } catch (err) {
       console.error('Error generando PDF:', err);
