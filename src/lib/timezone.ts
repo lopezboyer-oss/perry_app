@@ -34,6 +34,13 @@ export function getTijuanaToday(): string {
 }
 
 /**
+ * Alias de compatibilidad para getTijuanaToday
+ */
+export function getLocalToday(): string {
+  return getTijuanaToday();
+}
+
+/**
  * Obtiene el día de la semana (0=Dom, 6=Sáb) de una fecha
  * según la zona horaria de Tijuana, NO UTC.
  */

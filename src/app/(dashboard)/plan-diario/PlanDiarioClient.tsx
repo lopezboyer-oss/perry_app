@@ -46,6 +46,9 @@ interface Activity {
   cancelledBy?: string | null;
   cancelReason?: string | null;
   cancelNotes?: string | null;
+  multiDayGroupId?: string | null;
+  multiDayIndex?: number | null;
+  multiDayTotalDays?: number | null;
 }
 
 interface Technician { id: string; name: string; type: string; isCruzVerde: boolean; phone?: string | null; contractorId?: string | null; contractor?: { id: string; name: string } | null; linkedUserId?: string | null; }
@@ -525,13 +528,11 @@ export function PlanDiarioClient({
     setLotoState(Object.fromEntries(activities.map((a) => [a.id, a.loto])));
     setPoState(Object.fromEntries(activities.map((a) => [a.id, a.purchaseOrder || ''])));
     setFolioState(Object.fromEntries(activities.map((a) => [a.id, a.workOrderFolio || ''])));
-    setActualStartTimes(Object.fromEntries(activities.map((a) => [a.id, a.actualStartTime || ''])));
-    setActualEndTimes(Object.fromEntries(activities.map((a) => [a.id, a.actualEndTime || ''])));
     setAuditImages(Object.fromEntries(activities.map((a) => [a.id, a.safetyAuditImage || null])));
     setTeraFolios(Object.fromEntries(activities.map((a) => [a.id, a.teraFolio || ''])));
     setTeraExemptState(Object.fromEntries(activities.map((a) => [a.id, a.teraExempt])));
     setTeraUploadInfo(Object.fromEntries(activities.map((a) => [a.id, { at: a.teraUploadedAt, by: a.teraUploadedBy }])));
-    setWeekendNotesState(Object.fromEntries(activities.map((a) => [a.id, a.weekendNotes || ''])));
+    setNotesState(Object.fromEntries(activities.map((a) => [a.id, a.weekendNotes || ''])));
     setAuditNotesState(Object.fromEntries(activities.map((a) => [a.id, a.auditNotes || ''])));
     setAlertNotesState(Object.fromEntries(activities.map((a) => [a.id, a.alertNotes || ''])));
     setTimeRegistries(Object.fromEntries(activities.map((a) => [a.id, a.timeRegistryEntries || []])));
@@ -856,7 +857,7 @@ export function PlanDiarioClient({
       const dayLabel = dayNames[d.getDay()] || '';
       const isLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
       const multiDayBadge = a.multiDayTotalDays && a.multiDayTotalDays > 1 ? `[Día ${a.multiDayIndex || 1}/${a.multiDayTotalDays}] ` : '';
-      const primarySup = act.user?.name || '-';
+      const primarySup = a.user?.name || '-';
       const extraSups = (supervisorAssignments || [])
         .filter(s => s.activityId === a.id)
         .map(s => `${s.user?.name || 'Supervisor'} (${s.role === 'CAPACITACION' ? 'Capacitación' : 'Apoyo'})`);
