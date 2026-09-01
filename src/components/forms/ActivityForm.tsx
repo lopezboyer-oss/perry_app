@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { TimeInput24h } from '@/components/ui/TimeInput24h';
+import { QuickDatePicker } from '@/components/ui/QuickDatePicker';
+import { parseLocalDate } from '@/lib/timezone';
 import { 
   activityTypeLabels, 
   activityStatusLabels, 
@@ -519,24 +521,27 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha *</label>
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-              className="w-full text-sm font-medium"
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-5">
+            <QuickDatePicker
+              label="Fecha *"
               required
+              value={form.date}
+              onChange={(newDate) => {
+                setForm({ ...form, date: newDate });
+                if (isMultiDay && endDate && endDate < newDate) {
+                  setEndDate(newDate);
+                }
+              }}
             />
           </div>
 
-          <div>
+          <div className="md:col-span-4">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Responsable *</label>
             <select
               value={form.userId}
               onChange={(e) => setForm({ ...form, userId: e.target.value })}
-              className="w-full text-sm font-medium"
+              className="w-full text-sm font-semibold !bg-white !border-slate-300 rounded-lg py-2 px-3 focus:!ring-2 focus:!ring-indigo-500"
               required
             >
               {users.map((u) => (
@@ -545,12 +550,12 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
             </select>
           </div>
 
-          <div>
+          <div className="md:col-span-3">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Estatus *</label>
             <select
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full text-sm font-medium"
+              className="w-full text-sm font-semibold !bg-white !border-slate-300 rounded-lg py-2 px-3 focus:!ring-2 focus:!ring-indigo-500"
               disabled={!isEdit && form.date > getLocalToday()}
             >
               {Object.entries(activityStatusLabels).map(([k, v]) => {
@@ -564,7 +569,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
 
         {/* Multi-Day Selector */}
         {!isEdit && (
-          <div className="mt-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+          <div className="mt-3 p-3.5 bg-indigo-50/80 border border-indigo-100 rounded-xl">
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -575,29 +580,76 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
                     setEndDate(form.date);
                   }
                 }}
-                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
               />
-              <span className="text-xs font-bold text-indigo-900">
+              <span className="text-xs font-bold text-indigo-950">
                 📅 Actividad Multidía (Generar automáticamente para varios días de trabajo)
               </span>
             </label>
 
             {isMultiDay && (
-              <div className="mt-2.5 pl-6 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in">
+              <div className="mt-3 pl-6 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in">
                 <div>
-                  <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider mb-1">Fecha Fin *</label>
-                  <input
-                    type="date"
-                    min={form.date}
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full text-xs font-semibold !bg-white !border-indigo-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+                  <QuickDatePicker
+                    label="Fecha Fin *"
                     required={isMultiDay}
+                    minDate={form.date}
+                    value={endDate || form.date}
+                    onChange={(newEnd) => setEndDate(newEnd)}
+                    showPresets={false}
                   />
+                  {/* Quick multi-day pills */}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = parseLocalDate(form.date);
+                        d.setDate(d.getDate() + 1);
+                        const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+                        setEndDate(`${y}-${m}-${day}`);
+                      }}
+                      className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100/70 hover:bg-indigo-200 text-indigo-800 border border-indigo-200 transition-colors"
+                    >
+                      +1 día (2 días)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = parseLocalDate(form.date);
+                        d.setDate(d.getDate() + 2);
+                        const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+                        setEndDate(`${y}-${m}-${day}`);
+                      }}
+                      className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100/70 hover:bg-indigo-200 text-indigo-800 border border-indigo-200 transition-colors"
+                    >
+                      +2 días (3 días)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = parseLocalDate(form.date);
+                        d.setDate(d.getDate() + 4);
+                        const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+                        setEndDate(`${y}-${m}-${day}`);
+                      }}
+                      className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100/70 hover:bg-indigo-200 text-indigo-800 border border-indigo-200 transition-colors"
+                    >
+                      5 días laborales
+                    </button>
+                  </div>
                 </div>
+
                 {endDate && endDate > form.date && (
-                  <div className="flex items-center text-xs text-indigo-700 font-medium pt-3 sm:pt-4">
-                    ✨ Se crearán actividades vinculadas para cada día. Los recursos de cada fecha se asignarán de forma independiente en el Plan Diario.
+                  <div className="flex flex-col justify-center bg-white/80 p-3 rounded-lg border border-indigo-200/80 text-xs text-indigo-900 font-medium space-y-1">
+                    <p className="font-bold text-indigo-700">
+                      ✨ Resumen Multidía:
+                    </p>
+                    <p>
+                      Se crearán actividades vinculadas independientes desde el <strong>{form.date}</strong> hasta el <strong>{endDate}</strong>.
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Cada fecha tendrá sus recursos asignados de forma independiente en el Plan Diario.
+                    </p>
                   </div>
                 )}
               </div>
@@ -1026,12 +1078,11 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Fecha Compromiso</label>
-            <input
-              type="date"
+            <QuickDatePicker
+              label="Fecha Compromiso"
               value={form.commitmentDate}
-              onChange={(e) => setForm({ ...form, commitmentDate: e.target.value })}
-              className="w-full text-sm font-medium"
+              onChange={(newDate) => setForm({ ...form, commitmentDate: newDate })}
+              showPresets={true}
             />
           </div>
 

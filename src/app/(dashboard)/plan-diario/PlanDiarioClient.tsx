@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw } from 'lucide-react';
+import { CalendarDays, Download, Plus, X, AlertTriangle, Shield, ShieldCheck, HardHat, Search, MessageSquare, FileWarning, Loader2, ImagePlus, Trash2, Eye, Clock, Ban, Copy, Check, ExternalLink, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/timezone';
 import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
 import { exportWeekendPDFClient } from '@/lib/pdf/weekend-pdf-exporter';
+import { QuickDatePicker } from '@/components/ui/QuickDatePicker';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 
@@ -1698,29 +1699,67 @@ export function PlanDiarioClient({
               <CalendarDays className="w-8 h-8 text-indigo-600" /> Plan Diario de Trabajo
             </h1>
 
-            {/* HOY & MAÑANA Quick Filter Buttons */}
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+            {/* Quick Date Navigator Bar with Steppers & Date Picker */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  const d = parseLocalDate(weekendOf);
+                  d.setDate(d.getDate() - 1);
+                  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+                  router.push(`/plan-diario?date=${y}-${m}-${day}`);
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 text-xs font-extrabold flex items-center gap-0.5 shadow-2xs transition-colors cursor-pointer"
+                title="Día anterior (-1 día)"
+              >
+                <ChevronLeft size={14} /> -1d
+              </button>
+
               <button
                 onClick={() => router.push(`/plan-diario?date=${todayDateStr}`)}
-                className={`px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   isTodayActive
                     ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                📅 HOY ({todayDateStr})
+                📅 HOY
               </button>
 
               <button
                 onClick={() => router.push(`/plan-diario?date=${tomorrowDateStr}`)}
-                className={`px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                   isTomorrowActive
                     ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
-                🌅 MAÑANA ({tomorrowDateStr})
+                🌅 MAÑANA
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const d = parseLocalDate(weekendOf);
+                  d.setDate(d.getDate() + 1);
+                  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+                  router.push(`/plan-diario?date=${y}-${m}-${day}`);
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 text-xs font-extrabold flex items-center gap-0.5 shadow-2xs transition-colors cursor-pointer"
+                title="Día siguiente (+1 día)"
+              >
+                +1d <ChevronRight size={14} />
+              </button>
+
+              <input
+                type="date"
+                value={weekendOf}
+                onChange={(e) => {
+                  if (e.target.value) router.push(`/plan-diario?date=${e.target.value}`);
+                }}
+                className="px-2.5 py-1 text-xs font-bold bg-white text-indigo-900 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-2xs"
+                title="Seleccionar otra fecha del calendario"
+              />
             </div>
           </div>
 
@@ -2061,28 +2100,27 @@ export function PlanDiarioClient({
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Fecha</label>
-                <input
-                  type="date"
+                <QuickDatePicker
+                  label="Fecha del Día Extra"
+                  required
                   value={extraDayDate}
-                  onChange={e => setExtraDayDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  onChange={(d) => setExtraDayDate(d)}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Etiqueta <span className="text-slate-400">(opcional)</span></label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Etiqueta <span className="text-slate-400 normal-case">(opcional)</span></label>
                 <input
                   type="text"
                   value={extraDayLabel}
                   onChange={e => setExtraDayLabel(e.target.value)}
-                  placeholder="Ej: Lunes Festivo, Día del Trabajo"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  placeholder="Ej: Lunes Festivo, Paro Técnico"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 />
               </div>
               <button
                 onClick={addExtraDay}
                 disabled={!extraDayDate || extraDaySaving}
-                className="w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50"
+                className="w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
               >
                 {extraDaySaving ? 'Guardando...' : 'Agregar al Plan'}
               </button>

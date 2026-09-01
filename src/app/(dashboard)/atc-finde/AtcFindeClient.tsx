@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { TimeRegistryModal, TimeRegistryEntryData } from '@/components/ui/TimeRegistryModal';
 import { canViewEconomicAnalysis } from '@/lib/permissions';
 import { exportWeekendPDFClient } from '@/lib/pdf/weekend-pdf-exporter';
+import { QuickDatePicker } from '@/components/ui/QuickDatePicker';
 
 // ─── TYPES ──────────────────────────────────────────────────────
 
@@ -1564,28 +1565,27 @@ export function AtcFindeClient({
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Fecha</label>
-                <input
-                  type="date"
+                <QuickDatePicker
+                  label="Fecha del Día Extra"
+                  required
                   value={extraDayDate}
-                  onChange={e => setExtraDayDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  onChange={(d) => setExtraDayDate(d)}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Etiqueta <span className="text-slate-400">(opcional)</span></label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Etiqueta <span className="text-slate-400 normal-case">(opcional)</span></label>
                 <input
                   type="text"
                   value={extraDayLabel}
                   onChange={e => setExtraDayLabel(e.target.value)}
                   placeholder="Ej: Lunes Festivo, Día del Trabajo"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 />
               </div>
               <button
                 onClick={addExtraDay}
                 disabled={!extraDayDate || extraDaySaving}
-                className="w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50"
+                className="w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-bold hover:bg-amber-700 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
               >
                 {extraDaySaving ? 'Guardando...' : 'Agregar al Plan'}
               </button>
