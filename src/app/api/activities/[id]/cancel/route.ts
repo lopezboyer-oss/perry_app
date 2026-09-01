@@ -20,10 +20,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No auth' }, { status: 401 });
 
-  // Permission: ADMIN, SUPERVISOR, SUPERVISOR_SAFETY_LP, ADMINISTRACION can cancel any.
+  // Permission: ADMIN, SUPERVISOR, SUPERVISOR_SAFETY_LP, ADMINISTRACION, or accessCrearPlanes can cancel any.
   // INGENIERO can cancel only their own activities (checked after fetching).
   const role = session.user.role;
-  const canCancelAny = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'ADMINISTRACION'].includes(role);
+  const userAccessCrearPlanes = !!(session.user as any).accessCrearPlanes;
+  const canCancelAny = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'ADMINISTRACION'].includes(role) || userAccessCrearPlanes;
   if (!canCancelAny && role !== 'INGENIERO') {
     return NextResponse.json({ error: 'Sin permisos para cancelar actividades' }, { status: 403 });
   }

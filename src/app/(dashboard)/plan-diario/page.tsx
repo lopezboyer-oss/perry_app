@@ -251,6 +251,7 @@ export default async function PlanDiarioPage({
       userId={userId}
       userName={session.user.name || 'Desconocido'}
       currentUserEmail={session.user.email || ''}
+      userAccessCrearPlanes={!!(session.user as any).accessCrearPlanes}
       weekendOf={selectedDateStr}
       weekendLabel={`Plan Diario del ${selectedDateStr}`}
       planDays={planDays}

@@ -113,6 +113,7 @@ interface Props {
   planDays: PlanDay[];
   companyName: string;
   userIsSafetyAuditor: boolean;
+  userAccessCrearPlanes?: boolean;
   allCompanyActivities: AllCompanyActivity[];
   preloadedConflicts: Record<string, string[]>;
   currentUserEmail?: string;
@@ -234,7 +235,7 @@ export function ManPowerClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
-  userRole, userId, userName, currentUserEmail = '', weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, allCompanyActivities, preloadedConflicts,
+  userRole, userId, userName, currentUserEmail = '', weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, userAccessCrearPlanes = false, allCompanyActivities, preloadedConflicts,
 }: Props) {
   const router = useRouter();
   const [techAssignments, setTechAssignments] = useState(initialTechAssignments);
@@ -485,19 +486,20 @@ export function ManPowerClient({
     }
   };
 
-  const canAssign = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canSupervisor = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole) || userAccessCrearPlanes;
+  const canAssign = canSupervisor;
   const canAssignSafetyDedicado = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canEditFields = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canEditFields = canSupervisor;
   const canViewAudit = true; // All profiles can now see Notas Auditoría
   const canEditAudit = userRole === 'SUPERVISOR_SAFETY_LP' || userIsSafetyAuditor; // Safety & LP + Auditor Safety
   const canViewAlertNotes = ['ADMIN', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
   const canEditAlertNotes = userRole === 'SUPERVISOR_SAFETY_LP';
-  const canManageExtraDays = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
-  const canCancelAny = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole);
+  const canManageExtraDays = canSupervisor;
+  const canCancelAny = canSupervisor;
   const canCancelOwn = userRole === 'INGENIERO';
 
   const canEditAuditImage = (act: Activity) => {
-    if (['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)) return true;
+    if (canSupervisor) return true;
     if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
     // Sup Operativo assigned to this activity (any of the 3 sources)
     if (isSupOperativoForActivity(act.id)) return true;
@@ -618,8 +620,7 @@ export function ManPowerClient({
   ];
 
   const canEditNotes = (act: Activity) => {
-    if (userRole === 'ADMIN' || userRole === 'SUPERVISOR_SAFETY_LP') return true;
-    if (userRole === 'SUPERVISOR') return true;
+    if (canSupervisor) return true;
     if (userRole === 'INGENIERO' && act.user?.id === userId) return true;
     // Sup Operativo assigned to this activity
     if (isSupOperativoForActivity(act.id)) return true;
@@ -2654,7 +2655,7 @@ export function ManPowerClient({
                       {(() => {
                         const entries = timeRegistries[act.id] || [];
                         const count = entries.length;
-                        const canEditRegistry = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole)
+                        const canEditRegistry = canSupervisor
                           || (userRole === 'INGENIERO' && act.user?.id === userId)
                           || isSupOperativoForActivity(act.id);
                         return canEditRegistry ? (

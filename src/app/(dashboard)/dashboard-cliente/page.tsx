@@ -268,6 +268,7 @@ export default async function DashboardClientePage() {
       userId={userId}
       userName={session.user.name || 'Desconocido'}
       currentUserEmail={session.user.email || ''}
+      userAccessCrearPlanes={!!(session.user as any).accessCrearPlanes}
       weekendOf={saturday}
       weekendLabel={weekendLabel}
       planDays={planDays}

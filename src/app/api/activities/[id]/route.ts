@@ -58,7 +58,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = await req.json();
 
   const role = session.user.role;
-  const isSupervisorOrAbove = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role);
+  const userAccessCrearPlanes = !!(session.user as any).accessCrearPlanes;
+  const isSupervisorOrAbove = ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role) || userAccessCrearPlanes;
   if (!isSupervisorOrAbove && activity.userId !== session.user.id) {
     const isSup = await isSupOperativo(params.id, session.user.id, session.user.name || '');
     if (isSup) {

@@ -34,6 +34,7 @@ model User {
   accessDrivers        Boolean @default(false)
   accessElevationEquip Boolean @default(false)
   accessManPower       Boolean @default(false) // Permiso para acceder al dashboard Man Power
+  accessCrearPlanes    Boolean @default(false) // Permiso para crear y editar planes de trabajo (nivel supervisor)
   excludeFromCompanyLogs Boolean @default(false) // Hide from company-filtered attendance logs (for transversal roles like Safety)
   supervisorId      String?
   supervisor        User?     @relation("SupervisorTeam", fields: [supervisorId], references: [id])

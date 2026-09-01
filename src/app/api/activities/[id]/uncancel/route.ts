@@ -8,7 +8,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   // Same permissions as cancel
   const role = session.user.role;
-  const canUncancelAny = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'ADMINISTRACION'].includes(role);
+  const userAccessCrearPlanes = !!(session.user as any).accessCrearPlanes;
+  const canUncancelAny = ['ADMIN', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP', 'ADMINISTRACION'].includes(role) || userAccessCrearPlanes;
   if (!canUncancelAny && role !== 'INGENIERO') {
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
   }

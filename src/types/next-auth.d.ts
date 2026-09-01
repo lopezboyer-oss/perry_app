@@ -11,6 +11,8 @@ declare module 'next-auth' {
       accessVehicles?: boolean;
       accessDrivers?: boolean;
       accessElevationEquip?: boolean;
+      accessManPower?: boolean;
+      accessCrearPlanes?: boolean;
     };
   }
 
@@ -27,5 +29,7 @@ declare module 'next-auth/jwt' {
     accessVehicles?: boolean;
     accessDrivers?: boolean;
     accessElevationEquip?: boolean;
+    accessManPower?: boolean;
+    accessCrearPlanes?: boolean;
   }
 }

@@ -17,6 +17,7 @@ interface Props {
   activity: any;
   userRole: string;
   currentUserId: string;
+  userAccessCrearPlanes?: boolean;
 }
 
 interface PhotoItem {
@@ -37,7 +38,7 @@ interface PendingItem {
   closedBy: string | null;
 }
 
-export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
+export function ActivityDetail({ activity, userRole, currentUserId, userAccessCrearPlanes }: Props) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
@@ -65,7 +66,7 @@ export function ActivityDetail({ activity, userRole, currentUserId }: Props) {
     }
   });
 
-  const canEdit = userRole === 'ADMIN' || userRole === 'ADMINISTRACION' || userRole === 'SUPERVISOR' || activity.userId === currentUserId;
+  const canEdit = userRole === 'ADMIN' || userRole === 'ADMINISTRACION' || userRole === 'SUPERVISOR' || userRole === 'SUPERVISOR_SAFETY_LP' || !!userAccessCrearPlanes || activity.userId === currentUserId;
 
   const handleDelete = async () => {
     if (!confirm('¿Estás seguro de eliminar esta actividad?')) return;

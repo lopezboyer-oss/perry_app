@@ -22,6 +22,7 @@ interface Props {
   clients: { id: string; name: string; contacts: { id: string; name: string }[] }[];
   currentUserId: string;
   userRole: string;
+  userAccessCrearPlanes?: boolean;
   initialData?: any;
   prefillFolio?: string;
 }
@@ -35,7 +36,7 @@ interface PhotoItem {
 
 
 
-export function ActivityForm({ users, clients, currentUserId, userRole, initialData, prefillFolio }: Props) {
+export function ActivityForm({ users, clients, currentUserId, userRole, userAccessCrearPlanes = false, initialData, prefillFolio }: Props) {
   const router = useRouter();
   const isEdit = !!initialData?.id;
   const [loading, setLoading] = useState(false);
@@ -573,7 +574,7 @@ export function ActivityForm({ users, clients, currentUserId, userRole, initialD
         </div>
 
         {/* ManPower Switch */}
-        {(userRole === 'ADMIN' || userRole === 'SUPERVISOR' || userRole === 'SUPERVISOR_SAFETY_LP' || userRole === 'ADMINISTRACION') && (
+        {(userRole === 'ADMIN' || userRole === 'SUPERVISOR' || userRole === 'SUPERVISOR_SAFETY_LP' || userRole === 'ADMINISTRACION' || userAccessCrearPlanes) && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <label className="inline-flex items-center gap-3 cursor-pointer p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
               <input

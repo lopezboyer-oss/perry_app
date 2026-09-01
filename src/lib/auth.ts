@@ -20,7 +20,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
-          select: { id: true, name: true, email: true, passwordHash: true, role: true, isActive: true, isSafetyAuditor: true, accessManPower: true, accessSafetyDedicado: true, accessVehicles: true, accessDrivers: true, accessElevationEquip: true },
+          select: { id: true, name: true, email: true, passwordHash: true, role: true, isActive: true, isSafetyAuditor: true, accessManPower: true, accessCrearPlanes: true, accessSafetyDedicado: true, accessVehicles: true, accessDrivers: true, accessElevationEquip: true },
         });
 
         if (!user || user.isActive === false) return null;
@@ -39,6 +39,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           role: user.role,
           isSafetyAuditor: user.isSafetyAuditor,
           accessManPower: user.accessManPower,
+          accessCrearPlanes: user.accessCrearPlanes,
         };
       },
     }),

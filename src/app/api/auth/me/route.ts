@@ -12,5 +12,7 @@ export async function GET() {
     accessVehicles: (session.user as any).accessVehicles || false,
     accessDrivers: (session.user as any).accessDrivers || false,
     accessElevationEquip: (session.user as any).accessElevationEquip || false,
+    accessManPower: (session.user as any).accessManPower || false,
+    accessCrearPlanes: (session.user as any).accessCrearPlanes || false,
   });
 }

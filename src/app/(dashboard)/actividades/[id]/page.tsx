@@ -60,6 +60,7 @@ export default async function ActividadDetailPage({
           clients={clients}
           currentUserId={session.user.id}
           userRole={session.user.role}
+          userAccessCrearPlanes={!!(session.user as any).accessCrearPlanes}
           initialData={{
             ...activity,
             date: toInputDate(activity.date),
@@ -84,6 +85,7 @@ export default async function ActividadDetailPage({
       }}
       userRole={session.user.role}
       currentUserId={session.user.id}
+      userAccessCrearPlanes={!!(session.user as any).accessCrearPlanes}
     />
   );
 }

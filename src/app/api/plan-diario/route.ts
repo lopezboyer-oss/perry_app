@@ -198,15 +198,16 @@ export async function POST(req: NextRequest) {
     }
 
     const userRole = (session.user as any)?.role || 'INGENIERO';
+    const userAccessCrearPlanes = !!(session.user as any)?.accessCrearPlanes;
     const userEmail = ((session.user as any)?.email || '').toLowerCase().trim();
     const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(
       (e) => userEmail.includes(e.split('@')[0])
     );
-    const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
+    const canEdit = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole) || userAccessCrearPlanes;
 
     if (!canEdit) {
       return NextResponse.json(
-        { error: 'Acceso restringido: Solo Dirección (ADMIN), Administración y Supervisores pueden modificar el Plan Diario.' },
+        { error: 'Acceso restringido: Solo Dirección (ADMIN), Administración, Supervisores o usuarios autorizados para Crear Planes pueden modificar el Plan Diario.' },
         { status: 403 }
       );
     }
@@ -416,11 +417,12 @@ export async function DELETE(req: NextRequest) {
     }
 
     const userRole = (session.user as any)?.role || 'INGENIERO';
+    const userAccessCrearPlanes = !!(session.user as any)?.accessCrearPlanes;
     const userEmail = ((session.user as any)?.email || '').toLowerCase().trim();
     const isDirector = ['lopezboyer@gmail.com', 'enrique.lopez.gsi@gmail.com', 'carlos.sevilla@grupocaseme.com', 'carlos.lopez@gsingenieria.mx'].some(
       (e) => userEmail.includes(e.split('@')[0])
     );
-    const canDelete = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR'].includes(userRole);
+    const canDelete = isDirector || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(userRole) || userAccessCrearPlanes;
 
     if (!canDelete) {
       return NextResponse.json({ error: 'Acceso restringido para eliminar planes' }, { status: 403 });

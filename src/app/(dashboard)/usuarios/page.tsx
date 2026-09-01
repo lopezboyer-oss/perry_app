@@ -19,6 +19,7 @@ interface UserData {
   accessDrivers?: boolean;
   accessElevationEquip: boolean;
   accessManPower: boolean;
+  accessCrearPlanes?: boolean;
   supervisorId: string | null;
   supervisor: { name: string } | null;
   isActive: boolean;
@@ -169,6 +170,7 @@ export default function UsuariosPage() {
       accessDrivers: user.accessDrivers || false,
       accessElevationEquip: user.accessElevationEquip || false,
       accessManPower: user.accessManPower || false,
+      accessCrearPlanes: user.accessCrearPlanes || false,
       baseCompanyId: user.baseCompanyId,
       companyIds: user.companies?.map(c => c.companyId) || [],
       defaultCompanyId: defaultUC?.companyId || null,

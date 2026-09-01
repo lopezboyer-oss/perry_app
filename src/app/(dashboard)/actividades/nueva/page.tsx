@@ -89,6 +89,7 @@ export default async function NuevaActividadPage({
         clients={clients}
         currentUserId={session.user.id}
         userRole={session.user.role}
+        userAccessCrearPlanes={!!(session.user as any).accessCrearPlanes}
         prefillFolio={prefillFolio}
         initialData={continuarData}
       />
