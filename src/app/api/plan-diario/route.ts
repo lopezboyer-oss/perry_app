@@ -272,11 +272,7 @@ export async function POST(req: NextRequest) {
             ...(companyName && companyName !== 'Todas las empresas' ? { companyName } : {}),
           },
           ...(companyName && companyName !== 'Todas las empresas' ? {
-            OR: [
-              { originCompany: companyName },
-              { originCompany: null },
-              { originCompany: '' },
-            ],
+            originCompany: companyName,
           } : {}),
         },
         orderBy: { personName: 'asc' },

@@ -298,6 +298,7 @@ export function PlanDiarioClient({
   // Personnel Status Modal State (DESCANSOS, VACACIONES, INCAPACIDAD)
   const [personnelStatusList, setPersonnelStatusList] = useState<{ id: string; personName: string; statusType: string; originCompany?: string | null; notes?: string | null }[]>(initialPersonnelStatusList || []);
   const [statusModalType, setStatusModalType] = useState<'DESCANSO' | 'VACACIONES' | 'INCAPACIDAD' | null>(null);
+  const [statusModalCompanyFilter, setStatusModalCompanyFilter] = useState<'ACTIVE' | 'ALL'>('ACTIVE');
   const [statusSearchTerm, setStatusSearchTerm] = useState('');
   const [selectedNamesForModal, setSelectedNamesForModal] = useState<Set<string>>(new Set());
   const [statusModalNotes, setStatusModalNotes] = useState('');
@@ -329,12 +330,12 @@ export function PlanDiarioClient({
     });
     (technicians || []).forEach(t => {
       if (t && t.name && !namesMap.has(t.name.toLowerCase().trim())) {
-        const techCo = (t as any).contractor?.name || (t.type ? `Técnico ${t.type}` : null);
+        const techCo = (t as any).baseCompany?.name || (t as any).contractor?.name || (t.type ? `Técnico ${t.type}` : null);
         namesMap.set(t.name.toLowerCase().trim(), {
           id: t.id,
           name: t.name,
           subtitle: `Técnico ${t.type || ''}`,
-          companyName: techCo,
+          companyName: (t as any).baseCompany?.name || (t as any).contractor?.name || null,
         });
       }
     });
@@ -345,6 +346,7 @@ export function PlanDiarioClient({
     setStatusModalType(type);
     setStatusSearchTerm('');
     setStatusModalNotes('');
+    setStatusModalCompanyFilter(companyName && companyName !== 'Todas las empresas' && companyName !== 'TODAS' && companyName !== 'Todas' ? 'ACTIVE' : 'ALL');
     const existingNames = personnelStatusList
       .filter(s => s.statusType === type && isCompanyMatch(s.originCompany))
       .map(s => s.personName);
@@ -1931,17 +1933,6 @@ export function PlanDiarioClient({
 
       {/* ── PERSONNEL STATUS CARDS (DESCANSOS, VACACIONES, INCAPACIDAD) ── */}
       {(() => {
-        const isCompanyMatch = (originCo: string | null | undefined) => {
-          if (!companyName || companyName === 'Todas las empresas' || companyName === 'TODAS' || companyName === 'Todas') return true;
-          if (!originCo) return true;
-          const currentUpper = companyName.toUpperCase().trim();
-          const originUpper = originCo.toUpperCase().trim();
-          if (currentUpper.includes('CASEME') || currentUpper.includes('GLOBAL')) {
-            return originUpper.includes('CASEME') || originUpper.includes('GLOBAL');
-          }
-          return currentUpper.includes(originUpper) || originUpper.includes(currentUpper);
-        };
-
         const visiblePersonnelStatus = personnelStatusList.filter(s => isCompanyMatch(s.originCompany));
         const descansos = visiblePersonnelStatus.filter(s => s.statusType === 'DESCANSO');
         const vacaciones = visiblePersonnelStatus.filter(s => s.statusType === 'VACACIONES');
@@ -3270,6 +3261,34 @@ export function PlanDiarioClient({
               Selecciona del listado completo de personal (técnicos, supervisores, ingenieros) quienes irán en la lista de <strong>{statusModalType}</strong> para la fecha <strong>{weekendOf}</strong>.
             </p>
 
+            {/* Filtro de Empresa */}
+            {companyName && companyName !== 'Todas las empresas' && companyName !== 'TODAS' && companyName !== 'Todas' && (
+              <div className="flex bg-slate-100 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setStatusModalCompanyFilter('ACTIVE')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    statusModalCompanyFilter === 'ACTIVE'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🏢 Solo {companyName}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusModalCompanyFilter('ALL')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    statusModalCompanyFilter === 'ALL'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🌐 Todo el Personal
+                </button>
+              </div>
+            )}
+
             {/* Buscador de personal */}
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -3285,7 +3304,16 @@ export function PlanDiarioClient({
             {/* Lista de personal con Checkboxes */}
             <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-100">
               {fullPersonnelList
-                .filter(p => p.name.toLowerCase().includes(statusSearchTerm.toLowerCase()) || p.subtitle.toLowerCase().includes(statusSearchTerm.toLowerCase()))
+                .filter(p => {
+                  if (statusModalCompanyFilter === 'ACTIVE' && companyName && companyName !== 'Todas las empresas' && companyName !== 'TODAS' && companyName !== 'Todas') {
+                    if (!isCompanyMatch(p.companyName)) return false;
+                  }
+                  return (
+                    p.name.toLowerCase().includes(statusSearchTerm.toLowerCase()) ||
+                    p.subtitle.toLowerCase().includes(statusSearchTerm.toLowerCase()) ||
+                    (p.companyName && p.companyName.toLowerCase().includes(statusSearchTerm.toLowerCase()))
+                  );
+                })
                 .map(person => {
                   const isChecked = selectedNamesForModal.has(person.name);
                   return (
