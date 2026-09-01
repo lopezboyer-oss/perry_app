@@ -64,6 +64,65 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const isMultiDay = Boolean(data.isMultiDay && data.endDate && data.endDate > data.date);
+
+    if (isMultiDay) {
+      // Generate all dates in the range
+      const dates: string[] = [];
+      const curr = parseLocalDate(data.date);
+      const endD = parseLocalDate(data.endDate!);
+      while (curr <= endD) {
+        const y = curr.getFullYear();
+        const m = String(curr.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(curr.getDate()).padStart(2, '0');
+        dates.push(`${y}-${m}-${dayStr}`);
+        curr.setDate(curr.getDate() + 1);
+      }
+
+      const groupId = `mdg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const totalDays = dates.length;
+
+      const createdActivities = await prisma.$transaction(
+        dates.map((dateStr, idx) =>
+          prisma.activity.create({
+            data: {
+              date: parseLocalDate(dateStr),
+              userId: data.userId,
+              type: data.type as any,
+              status: data.status as any,
+              title: toSentenceCase(data.title),
+              clientId: data.clientId || null,
+              contactId: data.contactId || null,
+              workOrderFolio: data.workOrderFolio || null,
+              purchaseOrder: data.purchaseOrder || null,
+              projectArea: data.projectArea || null,
+              result: data.result || null,
+              nextStep: data.nextStep || null,
+              commitmentDate: data.commitmentDate ? new Date(data.commitmentDate) : null,
+              startTime: data.startTime || null,
+              endTime: data.endTime || null,
+              durationMinutes: data.durationMinutes || null,
+              location: data.location || null,
+              notes: data.notes || null,
+              consortiumCompany: data.consortiumCompany || null,
+              continuedFromId: data.continuedFromId || null,
+              companyId,
+              isManPower: data.isManPower || false,
+              manPowerEquipo: data.manPowerEquipo ? data.manPowerEquipo.toUpperCase().slice(0, 6) : null,
+              manPowerPhotos: data.manPowerPhotos || null,
+              photosBefore: data.photosBefore || null,
+              photosAfter: data.photosAfter || null,
+              multiDayGroupId: groupId,
+              multiDayIndex: idx + 1,
+              multiDayTotalDays: totalDays,
+            },
+          })
+        )
+      );
+
+      return NextResponse.json(createdActivities[0], { status: 201 });
+    }
+
     const activity = await prisma.activity.create({
       data: {
         date: parseLocalDate(data.date),
@@ -92,6 +151,9 @@ export async function POST(req: NextRequest) {
         manPowerPhotos: data.manPowerPhotos || null,
         photosBefore: data.photosBefore || null,
         photosAfter: data.photosAfter || null,
+        multiDayGroupId: data.multiDayGroupId || null,
+        multiDayIndex: data.multiDayIndex || null,
+        multiDayTotalDays: data.multiDayTotalDays || null,
       },
     });
 

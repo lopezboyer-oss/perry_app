@@ -49,6 +49,7 @@ model User {
   activities    Activity[]
   dailyReports  DailyReport[]
   userSafetyAssignments WeekendUserSafetyAssignment[]
+  weekendSupervisorAssignments WeekendSupervisorAssignment[]
   invoiceReceipts InvoiceReceipt[]
   timeClockEntries TimeClockEntry[]
   odooFolioComments OdooFolioComment[]
@@ -161,6 +162,9 @@ model Activity {
   clientComments        String?      @db.Text // JSON array [{id, author, comment, createdAt}]
   pendingItems          String?      @db.Text // JSON array [{id, title, status, createdBy, createdAt, closedAt, closedBy}]
   reportSource          String?      @default("MANUAL") // MANUAL | WHATSAPP_BOT | CAMPO_WEB
+  multiDayGroupId       String?             // UUID que agrupa actividades de una misma serie multidía
+  multiDayIndex         Int?                // Número de día en la secuencia (ej. 1, 2, 3...)
+  multiDayTotalDays     Int?                // Total de días de la serie multidía (ej. 4)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -170,6 +174,7 @@ model Activity {
   weekendDriverAssignments  WeekendDriverAssignment[]
   weekendEquipAssignments   WeekendEquipAssignment[]
   weekendUserSafetyAssignments WeekendUserSafetyAssignment[]
+  weekendSupervisorAssignments WeekendSupervisorAssignment[]
   timeRegistryEntries          TimeRegistryEntry[]
   timeClockEntries             TimeClockEntry[]
   equipRecords                 EquipRecord[]
@@ -375,6 +380,22 @@ model WeekendUserSafetyAssignment {
   weekendOf  String
 
   @@unique([activityId, userId, weekendOf])
+}
+
+model WeekendSupervisorAssignment {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String   @default("APOYO") // "TITULAR" | "APOYO" | "CAPACITACION"
+  weekendOf  String
+  createdAt  DateTime @default(now())
+
+  @@unique([activityId, userId, weekendOf, role])
+  @@index([activityId])
+  @@index([userId])
+  @@index([weekendOf])
 }
 
 // ─── DÍAS EXTRA (Plan ATC Finde) ────────────────────────────────

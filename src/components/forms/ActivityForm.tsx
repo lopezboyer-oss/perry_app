@@ -84,6 +84,8 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
       return [];
     }
   });
+  const [isMultiDay, setIsMultiDay] = useState(false);
+  const [endDate, setEndDate] = useState('');
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   // Voice dictation states
@@ -354,6 +356,8 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
         suggestedAction: form.isManPower ? (form.suggestedAction || null) : null,
         weekendNotes: form.isManPower ? (form.weekendNotes || null) : null,
         photosBefore: photosList.length > 0 ? JSON.stringify(photosList) : null,
+        isMultiDay: !isEdit && isMultiDay,
+        endDate: !isEdit && isMultiDay && endDate ? endDate : null,
       };
 
       const url = isEdit ? `/api/actividades/${initialData.id}` : '/api/actividades';
@@ -557,6 +561,49 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
             </select>
           </div>
         </div>
+
+        {/* Multi-Day Selector */}
+        {!isEdit && (
+          <div className="mt-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isMultiDay}
+                onChange={(e) => {
+                  setIsMultiDay(e.target.checked);
+                  if (e.target.checked && !endDate) {
+                    setEndDate(form.date);
+                  }
+                }}
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+              />
+              <span className="text-xs font-bold text-indigo-900">
+                📅 Actividad Multidía (Generar automáticamente para varios días de trabajo)
+              </span>
+            </label>
+
+            {isMultiDay && (
+              <div className="mt-2.5 pl-6 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in">
+                <div>
+                  <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider mb-1">Fecha Fin *</label>
+                  <input
+                    type="date"
+                    min={form.date}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full text-xs font-semibold !bg-white !border-indigo-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+                    required={isMultiDay}
+                  />
+                </div>
+                {endDate && endDate > form.date && (
+                  <div className="flex items-center text-xs text-indigo-700 font-medium pt-3 sm:pt-4">
+                    ✨ Se crearán actividades vinculadas para cada día. Los recursos de cada fecha se asignarán de forma independiente en el Plan Diario.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Title / Description */}
         <div className="mt-4">

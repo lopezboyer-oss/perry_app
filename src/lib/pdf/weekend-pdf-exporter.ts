@@ -5,6 +5,7 @@ interface ExportPDFParams {
   techAssignments: any[];
   safetyAssignments: any[];
   userSafetyAssignments: any[];
+  supervisorAssignments?: any[];
   equipAssignments: any[];
   technicians?: any[];
   weekendOf: string;
@@ -23,6 +24,7 @@ export function exportWeekendPDFClient({
   techAssignments,
   safetyAssignments,
   userSafetyAssignments,
+  supervisorAssignments = [],
   equipAssignments,
   weekendOf,
   companyName,
@@ -86,15 +88,26 @@ export function exportWeekendPDFClient({
 
   activities.forEach(act => {
     const actDateStr = typeof act.date === 'string' ? act.date.substring(0, 10) : new Date(act.date).toISOString().substring(0, 10);
+    const multiDayBadge = act.multiDayTotalDays && act.multiDayTotalDays > 1 ? `[Día ${act.multiDayIndex || 1}/${act.multiDayTotalDays}] ` : '';
+    
+    // Multiple supervisors string
+    const primarySup = act.user?.name || '';
+    const additionalSups = (supervisorAssignments || [])
+      .filter((s: any) => s.activityId === act.id)
+      .map((s: any) => `${s.user?.name || s.userName} (${s.role === 'CAPACITACION' ? 'Capacitación' : 'Apoyo'})`);
+    const allSupervisors = primarySup
+      ? (additionalSups.length > 0 ? `${primarySup}, ${additionalSups.join(', ')}` : primarySup)
+      : (additionalSups.join(', ') || '—');
+
     const itemData = {
       id: act.id,
-      title: act.title,
+      title: `${multiDayBadge}${act.title}`,
       folio: act.workOrderFolio,
       time: `${act.startTime || '08:00'} - ${act.endTime || '17:00'} hrs${
         act.startTime && Number(act.startTime.substring(0, 2)) >= 18 ? ' (Nocturno)' : ''
       }`,
       client: act.client?.name || act.contact?.name || '—',
-      supervisor: act.user?.name || '—',
+      supervisor: allSupervisors,
       techs: getTechsForActivity(act.id),
       loto: act.loto,
       safety: getSafetyForActivity(act.id),

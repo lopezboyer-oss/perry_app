@@ -92,6 +92,7 @@ interface Props {
   driverAssignments: DriverAssignment[];
   equipAssignments: EquipAssignment[];
   userSafetyAssignments: UserSafetyAssignment[];
+  supervisorAssignments?: { id: string; activityId: string; userId: string; role: string; user: { id: string; name: string; role?: string } }[];
   userRole: string;
   userId: string;
   userName: string;
@@ -224,6 +225,7 @@ export function PlanDiarioClient({
   driverAssignments: initialDriverAssignments,
   equipAssignments: initialEquipAssignments,
   userSafetyAssignments: initialUserSafetyAssignments,
+  supervisorAssignments: initialSupervisorAssignments = [],
   userRole, userId, userName, currentUserEmail = '', weekendOf, weekendLabel, planDays, companyName, userIsSafetyAuditor, userAccessCrearPlanes = false, allCompanyActivities, preloadedConflicts,
   allPersonnelUsers = [],
   initialPersonnelStatusList = [],
@@ -235,6 +237,7 @@ export function PlanDiarioClient({
   const [driverAssignments, setDriverAssignments] = useState(initialDriverAssignments);
   const [equipAssignments, setEquipAssignments] = useState(initialEquipAssignments);
   const [userSafetyAssignments, setUserSafetyAssignments] = useState(initialUserSafetyAssignments);
+  const [supervisorAssignments, setSupervisorAssignments] = useState(initialSupervisorAssignments || []);
   const [conflictAlerts, setConflictAlerts] = useState<Record<string, string[]>>(preloadedConflicts);
 
   const [lotoState, setLotoState] = useState<Record<string, boolean>>(Object.fromEntries(activities.map((a) => [a.id, a.loto])));
@@ -298,7 +301,7 @@ export function PlanDiarioClient({
 
   const isCompanyMatch = (originCo: string | null | undefined) => {
     if (!companyName || companyName === 'Todas las empresas' || companyName === 'TODAS' || companyName === 'Todas') return true;
-    if (!originCo) return true;
+    if (!originCo) return false;
     const currentUpper = companyName.toUpperCase().trim();
     const originUpper = originCo.toUpperCase().trim();
     if (currentUpper.includes('CASEME') || currentUpper.includes('GLOBAL')) {
@@ -507,6 +510,46 @@ export function PlanDiarioClient({
     setOdooLoading((p) => ({ ...p, [actId]: false }));
   };
 
+  // Reactive prop synchronization: ensures all assignments, status, and fields sync immediately on entry/date/company switch without F5
+  useEffect(() => {
+    setTechAssignments(initialTechAssignments);
+    setSafetyAssignments(initialSafetyAssignments);
+    setVehicleAssignments(initialVehicleAssignments);
+    setDriverAssignments(initialDriverAssignments);
+    setEquipAssignments(initialEquipAssignments);
+    setUserSafetyAssignments(initialUserSafetyAssignments);
+    setSupervisorAssignments(initialSupervisorAssignments || []);
+    setPersonnelStatusList(initialPersonnelStatusList || []);
+    setConflictAlerts(preloadedConflicts || {});
+    setLotoState(Object.fromEntries(activities.map((a) => [a.id, a.loto])));
+    setPoState(Object.fromEntries(activities.map((a) => [a.id, a.purchaseOrder || ''])));
+    setFolioState(Object.fromEntries(activities.map((a) => [a.id, a.workOrderFolio || ''])));
+    setActualStartTimes(Object.fromEntries(activities.map((a) => [a.id, a.actualStartTime || ''])));
+    setActualEndTimes(Object.fromEntries(activities.map((a) => [a.id, a.actualEndTime || ''])));
+    setAuditImages(Object.fromEntries(activities.map((a) => [a.id, a.safetyAuditImage || null])));
+    setTeraFolios(Object.fromEntries(activities.map((a) => [a.id, a.teraFolio || ''])));
+    setTeraExemptState(Object.fromEntries(activities.map((a) => [a.id, a.teraExempt])));
+    setTeraUploadInfo(Object.fromEntries(activities.map((a) => [a.id, { at: a.teraUploadedAt, by: a.teraUploadedBy }])));
+    setWeekendNotesState(Object.fromEntries(activities.map((a) => [a.id, a.weekendNotes || ''])));
+    setAuditNotesState(Object.fromEntries(activities.map((a) => [a.id, a.auditNotes || ''])));
+    setAlertNotesState(Object.fromEntries(activities.map((a) => [a.id, a.alertNotes || ''])));
+    setTimeRegistries(Object.fromEntries(activities.map((a) => [a.id, a.timeRegistryEntries || []])));
+    setCancelledIds(new Set(activities.filter(a => a.status === 'CANCELADA').map(a => a.id)));
+  }, [
+    initialTechAssignments,
+    initialSafetyAssignments,
+    initialVehicleAssignments,
+    initialDriverAssignments,
+    initialEquipAssignments,
+    initialUserSafetyAssignments,
+    initialSupervisorAssignments,
+    initialPersonnelStatusList,
+    preloadedConflicts,
+    activities,
+    weekendOf,
+    companyName,
+  ]);
+
   // Auto-lookup on page load for all activities with a folio
   useEffect(() => {
     if (!canEditFields) return;
@@ -517,7 +560,7 @@ export function PlanDiarioClient({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [weekendOf, companyName]);
 
   // Safety Designado dropdown: Cruz Verde techs + Safety Dedicados + Users with isSafetyDesignado
   const designadoOptions = [
@@ -564,6 +607,16 @@ export function PlanDiarioClient({
         return;
       }
 
+      // Detect supervisor assignment
+      if (type === 'SUPERVISOR_APOYO' || type === 'CO_SUPERVISOR') {
+        const body = { type: 'SUPERVISOR_APOYO', activityId, weekendOf, userId: personId, supervisorRole: 'APOYO' };
+        const res = await fetch('/api/weekend-assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Error al asignar supervisor'); return; }
+        setSupervisorAssignments((prev) => [...prev, data.assignment]);
+        return;
+      }
+
       const body: any = { type, activityId, weekendOf };
       if (type === 'SAFETY_DEDICADO') body.safetyDedicadoId = personId;
       else if (type === 'VEHICLE') body.vehicleId = personId;
@@ -598,6 +651,7 @@ export function PlanDiarioClient({
       else if (assignmentType === 'DRIVER') setDriverAssignments((p) => p.filter((a) => a.id !== assignmentId));
       else if (assignmentType === 'EQUIP') setEquipAssignments((p) => p.filter((a) => a.id !== assignmentId));
       else if (assignmentType === 'USER_SAFETY_DESIGNADO') setUserSafetyAssignments((p) => p.filter((a) => a.id !== assignmentId));
+      else if (assignmentType === 'SUPERVISOR') setSupervisorAssignments((p) => p.filter((a) => a.id !== assignmentId));
       else setTechAssignments((p) => p.filter((a) => a.id !== assignmentId));
     } catch { alert('Error de conexión'); }
   };
@@ -800,14 +854,19 @@ export function PlanDiarioClient({
       const d = parseLocalDate(dateOnlyStr);
       const dayLabel = dayNames[d.getDay()] || '';
       const isLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
+      const multiDayBadge = a.multiDayTotalDays && a.multiDayTotalDays > 1 ? `[Día ${a.multiDayIndex || 1}/${a.multiDayTotalDays}] ` : '';
+      const primarySup = a.user?.name || '-';
+      const extraSups = (supervisorAssignments || []).filter(s => s.activityId === a.id).map(s => `${s.user.name} (${s.role === 'CAPACITACION' ? 'Capacitación' : 'Apoyo'})`);
+      const resp = extraSups.length > 0 ? (primarySup !== '-' ? `${primarySup}, ${extraSups.join(', ')}` : extraSups.join(', ')) : primarySup;
+
       return {
         num: i + 1,
         day: `${formatDate(a.date)} ${dayLabel}`,
         start: a.startTime || '-',
         end: a.endTime || '-',
-        resp: a.user?.name || '-',
+        resp,
         contact: a.contact?.name || '-',
-        activity: a.title,
+        activity: `${multiDayBadge}${a.title}`,
         folio: folioState[a.id] || '-',
         loto: isLoto ? 'SÍ' : 'NO',
         isLoto,
@@ -1167,6 +1226,7 @@ export function PlanDiarioClient({
         techAssignments,
         safetyAssignments,
         userSafetyAssignments,
+        supervisorAssignments,
         equipAssignments,
         technicians,
         weekendOf,
@@ -2438,11 +2498,55 @@ export function PlanDiarioClient({
                         );
                       })()}
                     </td>
-                    <td><span className="text-xs font-medium text-slate-700">{act.user?.name || '-'}</span></td>
+                    <td>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-semibold text-slate-800">{act.user?.name || '-'}</span>
+                        {/* Co-Supervisores / Apoyo asignados */}
+                        {supervisorAssignments.filter((s) => s.activityId === act.id).map((sa) => (
+                          <span
+                            key={sa.id}
+                            className="inline-flex items-center justify-between gap-1 text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded shadow-2xs"
+                          >
+                            <span>👤 {sa.user.name} <span className="text-[9px] opacity-75">({sa.role === 'CAPACITACION' ? 'Capacitación' : 'Apoyo'})</span></span>
+                            {canAssign && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemove(sa.id, 'SUPERVISOR')}
+                                className="text-indigo-400 hover:text-red-500 font-bold ml-1 cursor-pointer"
+                                title="Quitar supervisor"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </span>
+                        ))}
+                        {canAssign && (
+                          <div className="mt-0.5">
+                            <AssignDropdown
+                              label="+ Apoyo / Capacitación"
+                              colorClass="border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/70"
+                              options={allPersonnelUsers
+                                .filter((u) => u.id !== act.user?.id && !supervisorAssignments.some(sa => sa.activityId === act.id && sa.userId === u.id))
+                                .map((u) => ({ id: u.id, name: u.name, badge: u.role }))}
+                              assigned={supervisorAssignments
+                                .filter((s) => s.activityId === act.id)
+                                .map((s) => ({ assignmentId: s.id, id: s.userId, name: s.user.name }))}
+                              onAssign={(id) => handleAssign('SUPERVISOR_APOYO', act.id, id)}
+                              onRemove={(asgId) => handleRemove(asgId, 'SUPERVISOR')}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     <td><span className="text-xs font-medium text-slate-800">{act.contact?.name || '-'}</span></td>
                     <td>
                       <p className={`font-semibold text-xs leading-snug cursor-pointer hover:text-indigo-600 ${cancelledIds.has(act.id) ? 'line-through text-red-400' : 'text-slate-800'}`} onClick={() => router.push(`/actividades/${act.id}`)}>
                         {cancelledIds.has(act.id) && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-red-100 text-red-700 border border-red-200 px-1 py-0.5 rounded-full mr-1 align-middle no-underline" style={{ textDecoration: 'none' }}>❌ CANCELADA</span>}
+                        {act.multiDayTotalDays && act.multiDayTotalDays > 1 && !cancelledIds.has(act.id) && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded-full mr-1 align-middle">
+                            📅 Día {act.multiDayIndex || 1}/{act.multiDayTotalDays}
+                          </span>
+                        )}
                         {act.continuedFromId && act.type === 'EJECUCION' && !cancelledIds.has(act.id) && <span className="inline-flex items-center gap-0.5 text-[8px] font-bold bg-violet-100 text-violet-700 border border-violet-200 px-1 py-0.5 rounded-full mr-1 align-middle">🔄 CONT.</span>}
                         {act.title.length > 60 ? act.title.substring(0, 60) + '...' : act.title}
                       </p>

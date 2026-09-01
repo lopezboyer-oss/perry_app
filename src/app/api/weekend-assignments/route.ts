@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const weekendOf = req.nextUrl.searchParams.get('weekendOf');
     if (!weekendOf) return NextResponse.json({ error: 'weekendOf requerido' }, { status: 400 });
 
-    const [techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments] = await Promise.all([
+    const [techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments, supervisorAssignments] = await Promise.all([
       prisma.weekendTechAssignment.findMany({
         where: { weekendOf },
         include: { technician: true },
@@ -32,9 +32,13 @@ export async function GET(req: NextRequest) {
         where: { weekendOf },
         include: { equip: true },
       }),
+      prisma.weekendSupervisorAssignment.findMany({
+        where: { weekendOf },
+        include: { user: { select: { id: true, name: true, role: true } } },
+      }),
     ]);
 
-    return NextResponse.json({ techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments });
+    return NextResponse.json({ techAssignments, safetyAssignments, vehicleAssignments, driverAssignments, equipAssignments, supervisorAssignments });
   } catch (error) {
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
   }
@@ -203,6 +207,23 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({ assignment, conflicts }, { status: 201 });
+
+    // ── SUPERVISOR DE APOYO / CAPACITACIÓN ──
+    } else if (type === 'SUPERVISOR_APOYO' || type === 'CO_SUPERVISOR' || type === 'SUPERVISOR') {
+      const { userId, supervisorRole } = body;
+      if (!userId) return NextResponse.json({ error: 'userId requerido' }, { status: 400 });
+
+      const assignment = await prisma.weekendSupervisorAssignment.create({
+        data: {
+          activityId,
+          userId,
+          role: supervisorRole || 'APOYO',
+          weekendOf,
+        },
+        include: { user: { select: { id: true, name: true, role: true } } },
+      });
+
+      return NextResponse.json({ assignment }, { status: 201 });
     }
 
     return NextResponse.json({ error: 'Tipo no válido' }, { status: 400 });
@@ -238,6 +259,8 @@ export async function DELETE(req: NextRequest) {
       await prisma.weekendEquipAssignment.delete({ where: { id: assignmentId } });
     } else if (assignmentType === 'USER_SAFETY_DESIGNADO') {
       await prisma.weekendUserSafetyAssignment.delete({ where: { id: assignmentId } });
+    } else if (assignmentType === 'SUPERVISOR_ASSIGNMENT' || assignmentType === 'SUPERVISOR') {
+      await prisma.weekendSupervisorAssignment.delete({ where: { id: assignmentId } });
     } else {
       await prisma.weekendTechAssignment.delete({ where: { id: assignmentId } });
     }

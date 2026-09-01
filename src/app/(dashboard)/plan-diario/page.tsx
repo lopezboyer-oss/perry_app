@@ -81,7 +81,7 @@ export default async function PlanDiarioPage({
     vehicles, drivers, elevationEquips,
     techAssignments, safetyAssignments,
     vehicleAssignments, driverAssignments, equipAssignments,
-    safetyDesignadoUsers, userSafetyAssignments,
+    safetyDesignadoUsers, userSafetyAssignments, supervisorAssignments,
     allCompanyActivities, allPersonnelUsers, initialPersonnelStatusList,
   ] = await Promise.all([
     prisma.activity.findMany({
@@ -116,6 +116,9 @@ export default async function PlanDiarioPage({
         cancelledBy: true,
         cancelReason: true,
         cancelNotes: true,
+        multiDayGroupId: true,
+        multiDayIndex: true,
+        multiDayTotalDays: true,
         user: { select: { id: true, name: true } },
         client: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true } },
@@ -135,6 +138,7 @@ export default async function PlanDiarioPage({
     prisma.weekendEquipAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { equip: true } }),
     prisma.user.findMany({ where: { isActive: true, isSafetyDesignado: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
     prisma.weekendUserSafetyAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { user: { select: { id: true, name: true } } } }),
+    prisma.weekendSupervisorAssignment.findMany({ where: { weekendOf: selectedDateStr }, include: { user: { select: { id: true, name: true, role: true } } } }),
     prisma.activity.findMany({
       where: allCompanyWhere,
       select: {
@@ -167,7 +171,15 @@ export default async function PlanDiarioPage({
             gte: startOfDay,
             lte: endOfDay,
           },
+          ...(companyName !== 'Todas las empresas' ? { companyName } : {}),
         },
+        ...(companyName !== 'Todas las empresas' ? {
+          OR: [
+            { originCompany: companyName },
+            { originCompany: null },
+            { originCompany: '' },
+          ],
+        } : {}),
       },
       orderBy: { personName: 'asc' },
     }),
@@ -247,6 +259,7 @@ export default async function PlanDiarioPage({
       equipAssignments={equipAssignments}
       safetyDesignadoUsers={safetyDesignadoUsers}
       userSafetyAssignments={userSafetyAssignments}
+      supervisorAssignments={supervisorAssignments}
       userRole={role}
       userId={userId}
       userName={session.user.name || 'Desconocido'}

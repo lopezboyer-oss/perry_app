@@ -269,7 +269,15 @@ export async function POST(req: NextRequest) {
               gte: startRange,
               lte: endRange,
             },
+            ...(companyName && companyName !== 'Todas las empresas' ? { companyName } : {}),
           },
+          ...(companyName && companyName !== 'Todas las empresas' ? {
+            OR: [
+              { originCompany: companyName },
+              { originCompany: null },
+              { originCompany: '' },
+            ],
+          } : {}),
         },
         orderBy: { personName: 'asc' },
       });

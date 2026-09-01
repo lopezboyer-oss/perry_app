@@ -36,10 +36,14 @@ export const activitySchema = z.object({
   actualEndTime: z.string().optional().nullable(),
   equipmentStatus: z.string().optional().nullable(),
   suggestedAction: z.string().optional().nullable(),
-  weekendNotes: z.string().optional().nullable(),
   photosBefore: z.string().optional().nullable(),
   photosAfter: z.string().optional().nullable(),
   pendingItems: z.string().optional().nullable(),
+  isMultiDay: z.boolean().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+  multiDayGroupId: z.string().optional().nullable(),
+  multiDayIndex: z.number().optional().nullable(),
+  multiDayTotalDays: z.number().optional().nullable(),
 }).refine((data) => {
   if (data.status === 'EN_PROGRESO' && data.type !== 'COTIZACION') {
     return false;

@@ -600,6 +600,41 @@ export function ManPowerClient({
     setOdooLoading((p) => ({ ...p, [actId]: false }));
   };
 
+  // Reactive prop synchronization: ensures all assignments, status, and fields sync immediately on entry/date/company switch without F5
+  useEffect(() => {
+    setTechAssignments(initialTechAssignments);
+    setSafetyAssignments(initialSafetyAssignments);
+    setVehicleAssignments(initialVehicleAssignments);
+    setDriverAssignments(initialDriverAssignments);
+    setEquipAssignments(initialEquipAssignments);
+    setUserSafetyAssignments(initialUserSafetyAssignments);
+    setConflictAlerts(preloadedConflicts || {});
+    setLotoState(Object.fromEntries(activities.map((a) => [a.id, a.loto])));
+    setPoState(Object.fromEntries(activities.map((a) => [a.id, a.purchaseOrder || ''])));
+    setFolioState(Object.fromEntries(activities.map((a) => [a.id, a.workOrderFolio || ''])));
+    setEquipoState(Object.fromEntries(activities.map((a) => [a.id, a.manPowerEquipo || ''])));
+    setAuditImages(Object.fromEntries(activities.map((a) => [a.id, a.safetyAuditImage || null])));
+    setTeraFolios(Object.fromEntries(activities.map((a) => [a.id, a.teraFolio || ''])));
+    setTeraExemptState(Object.fromEntries(activities.map((a) => [a.id, a.teraExempt])));
+    setTeraUploadInfo(Object.fromEntries(activities.map((a) => [a.id, { at: a.teraUploadedAt, by: a.teraUploadedBy }])));
+    setNotesState(Object.fromEntries(activities.map((a) => [a.id, a.weekendNotes || ''])));
+    setAuditNotesState(Object.fromEntries(activities.map((a) => [a.id, a.auditNotes || ''])));
+    setAlertNotesState(Object.fromEntries(activities.map((a) => [a.id, a.alertNotes || ''])));
+    setTimeRegistries(Object.fromEntries(activities.map((a) => [a.id, a.timeRegistryEntries || []])));
+    setCancelledIds(new Set(activities.filter(a => a.status === 'CANCELADA').map(a => a.id)));
+  }, [
+    initialTechAssignments,
+    initialSafetyAssignments,
+    initialVehicleAssignments,
+    initialDriverAssignments,
+    initialEquipAssignments,
+    initialUserSafetyAssignments,
+    preloadedConflicts,
+    activities,
+    weekendOf,
+    companyName,
+  ]);
+
   // Auto-lookup on page load for all activities with a folio
   useEffect(() => {
     if (!canEditFields) return;
@@ -610,7 +645,7 @@ export function ManPowerClient({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [weekendOf, companyName]);
 
   // Safety Designado dropdown: Cruz Verde techs + Safety Dedicados + Users with isSafetyDesignado
   const designadoOptions = [
