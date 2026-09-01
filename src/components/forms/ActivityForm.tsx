@@ -358,8 +358,8 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
         suggestedAction: form.isManPower ? (form.suggestedAction || null) : null,
         weekendNotes: form.isManPower ? (form.weekendNotes || null) : null,
         photosBefore: photosList.length > 0 ? JSON.stringify(photosList) : null,
-        isMultiDay: !isEdit && isMultiDay,
-        endDate: !isEdit && isMultiDay && endDate ? endDate : null,
+        isMultiDay: isMultiDay,
+        endDate: isMultiDay && endDate ? endDate : null,
       };
 
       const url = isEdit ? `/api/actividades/${initialData.id}` : '/api/actividades';
@@ -567,57 +567,58 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
           </div>
         </div>
 
-        {/* Multi-Day Selector */}
-        {!isEdit && (
-          <div className={`p-4 rounded-2xl border transition-all duration-200 ${
-            isMultiDay
-              ? 'bg-gradient-to-r from-indigo-50/90 via-violet-50/90 to-purple-50/90 border-indigo-200 shadow-sm'
-              : 'bg-slate-50/80 border-slate-200/80 hover:bg-indigo-50/40 hover:border-indigo-200'
-          }`}>
-            <label className="flex items-center justify-between cursor-pointer select-none">
-              <div className="flex items-center gap-2.5">
-                <span className="p-1.5 rounded-lg bg-indigo-100 text-indigo-700 text-sm">📅</span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-800">
-                      Actividad Multidía (Varios días consecutivos)
-                    </span>
-                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-indigo-600 text-white tracking-wider shadow-xs">
-                      Nuevo
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Genera una actividad por cada día en el plan para asignar recursos de forma independiente.
-                  </p>
+        {/* Multi-Day Selector (Available in both New and Edit modes) */}
+        <div className={`p-4 rounded-2xl border transition-all duration-200 ${
+          isMultiDay
+            ? 'bg-gradient-to-r from-indigo-50/90 via-violet-50/90 to-purple-50/90 border-indigo-200 shadow-sm'
+            : 'bg-slate-50/80 border-slate-200/80 hover:bg-indigo-50/40 hover:border-indigo-200'
+        }`}>
+          <label className="flex items-center justify-between cursor-pointer select-none">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-indigo-100 text-indigo-700 text-sm">📅</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-800">
+                    {isEdit ? 'Actividad Multidía (Replicar / Extender a varios días)' : 'Actividad Multidía (Varios días consecutivos)'}
+                  </span>
+                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-indigo-600 text-white tracking-wider shadow-xs">
+                    Nuevo
+                  </span>
                 </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {isEdit 
+                    ? 'Genera copias vinculadas de esta actividad para las siguientes fechas seleccionadas.'
+                    : 'Genera una actividad por cada día en el plan para asignar recursos de forma independiente.'}
+                </p>
               </div>
-              <div className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isMultiDay}
-                  onChange={(e) => {
-                    setIsMultiDay(e.target.checked);
-                    if (e.target.checked && !endDate) {
-                      setEndDate(form.date);
-                    }
-                  }}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-              </div>
-            </label>
+            </div>
+            <div className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isMultiDay}
+                onChange={(e) => {
+                  setIsMultiDay(e.target.checked);
+                  if (e.target.checked && !endDate) {
+                    setEndDate(form.date);
+                  }
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </div>
+          </label>
 
-            {isMultiDay && (
-              <div className="mt-4 pt-3 border-t border-indigo-100/80 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
-                <div>
-                  <QuickDatePicker
-                    label="Fecha Fin de la Actividad *"
-                    required={isMultiDay}
-                    minDate={form.date}
-                    value={endDate || form.date}
-                    onChange={(newEnd) => setEndDate(newEnd)}
-                    showPresets={false}
-                  />
+          {isMultiDay && (
+            <div className="mt-4 pt-3 border-t border-indigo-100/80 grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+              <div>
+                <QuickDatePicker
+                  label="Fecha Fin de la Actividad *"
+                  required={isMultiDay}
+                  minDate={form.date}
+                  value={endDate || form.date}
+                  onChange={(newEnd) => setEndDate(newEnd)}
+                  showPresets={false}
+                />
                   {/* Quick multi-day pills */}
                   <div className="flex flex-wrap gap-1.5 mt-2.5">
                     <button

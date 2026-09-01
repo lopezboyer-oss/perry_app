@@ -57,6 +57,66 @@ export async function PUT(
 
     const data = parsed.data;
 
+    const isMultiDay = Boolean(data.isMultiDay && data.endDate && data.endDate > data.date);
+    let multiDayGroupId = data.multiDayGroupId || null;
+    let multiDayIndex = data.multiDayIndex || null;
+    let multiDayTotalDays = data.multiDayTotalDays || null;
+
+    if (isMultiDay) {
+      // Generate all dates in range
+      const dates: string[] = [];
+      const curr = parseLocalDate(data.date);
+      const endD = parseLocalDate(data.endDate!);
+      while (curr <= endD) {
+        const y = curr.getFullYear();
+        const m = String(curr.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(curr.getDate()).padStart(2, '0');
+        dates.push(`${y}-${m}-${dayStr}`);
+        curr.setDate(curr.getDate() + 1);
+      }
+
+      multiDayGroupId = multiDayGroupId || `mdg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      multiDayIndex = 1;
+      multiDayTotalDays = dates.length;
+
+      // Replicate activity for the remaining dates in the range
+      const remainingDates = dates.slice(1);
+      if (remainingDates.length > 0) {
+        await prisma.$transaction(
+          remainingDates.map((dateStr, idx) =>
+            prisma.activity.create({
+              data: {
+                date: parseLocalDate(dateStr),
+                userId: data.userId,
+                type: data.type as any,
+                status: 'PENDIENTE',
+                title: toSentenceCase(data.title),
+                clientId: data.clientId || null,
+                contactId: data.contactId || null,
+                workOrderFolio: data.workOrderFolio || null,
+                purchaseOrder: data.purchaseOrder || null,
+                projectArea: data.projectArea || null,
+                startTime: data.startTime || null,
+                endTime: data.endTime || null,
+                actualStartTime: data.actualStartTime || data.startTime || null,
+                actualEndTime: data.actualEndTime || data.endTime || null,
+                durationMinutes: data.durationMinutes || null,
+                location: data.location || null,
+                notes: data.notes || null,
+                consortiumCompany: data.type === 'CONSORCIO' ? (data.consortiumCompany || null) : null,
+                companyId: data.companyId || null,
+                isManPower: data.isManPower || false,
+                manPowerEquipo: data.isManPower && data.manPowerEquipo ? data.manPowerEquipo.toUpperCase().slice(0, 6) : null,
+                multiDayGroupId,
+                multiDayIndex: idx + 2,
+                multiDayTotalDays,
+              },
+            })
+          )
+        );
+      }
+    }
+
     const activity = await prisma.activity.update({
       where: { id: params.id },
       data: {
@@ -91,6 +151,7 @@ export async function PUT(
         photosBefore: data.photosBefore !== undefined ? data.photosBefore : undefined,
         photosAfter: data.photosAfter !== undefined ? data.photosAfter : undefined,
         pendingItems: data.pendingItems !== undefined ? data.pendingItems : undefined,
+        ...(multiDayGroupId ? { multiDayGroupId, multiDayIndex, multiDayTotalDays } : {}),
       },
     });
 
