@@ -855,8 +855,10 @@ export function PlanDiarioClient({
       const dayLabel = dayNames[d.getDay()] || '';
       const isLoto = lotoState[a.id] !== undefined ? lotoState[a.id] : a.loto;
       const multiDayBadge = a.multiDayTotalDays && a.multiDayTotalDays > 1 ? `[Día ${a.multiDayIndex || 1}/${a.multiDayTotalDays}] ` : '';
-      const primarySup = a.user?.name || '-';
-      const extraSups = (supervisorAssignments || []).filter(s => s.activityId === a.id).map(s => `${s.user.name} (${s.role === 'CAPACITACION' ? 'Capacitación' : 'Apoyo'})`);
+      const primarySup = act.user?.name || '-';
+      const extraSups = (supervisorAssignments || [])
+        .filter(s => s.activityId === a.id)
+        .map(s => `${s.user?.name || 'Supervisor'} (${s.role === 'CAPACITACION' ? 'Capacitación' : 'Apoyo'})`);
       const resp = extraSups.length > 0 ? (primarySup !== '-' ? `${primarySup}, ${extraSups.join(', ')}` : extraSups.join(', ')) : primarySup;
 
       return {
@@ -2502,12 +2504,12 @@ export function PlanDiarioClient({
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-semibold text-slate-800">{act.user?.name || '-'}</span>
                         {/* Co-Supervisores / Apoyo asignados */}
-                        {supervisorAssignments.filter((s) => s.activityId === act.id).map((sa) => (
+                        {(supervisorAssignments || []).filter((s) => s.activityId === act.id).map((sa) => (
                           <span
                             key={sa.id}
                             className="inline-flex items-center justify-between gap-1 text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded shadow-2xs"
                           >
-                            <span>👤 {sa.user.name} <span className="text-[9px] opacity-75">({sa.role === 'CAPACITACION' ? 'Capacitación' : 'Apoyo'})</span></span>
+                            <span>👤 {sa.user?.name || 'Supervisor'} <span className="text-[9px] opacity-75">({sa.role === 'CAPACITACION' ? 'Capacitación' : 'Apoyo'})</span></span>
                             {canAssign && (
                               <button
                                 type="button"
@@ -2526,11 +2528,11 @@ export function PlanDiarioClient({
                               label="+ Apoyo / Capacitación"
                               colorClass="border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100/70"
                               options={allPersonnelUsers
-                                .filter((u) => u.id !== act.user?.id && !supervisorAssignments.some(sa => sa.activityId === act.id && sa.userId === u.id))
+                                .filter((u) => u.id !== act.user?.id && !(supervisorAssignments || []).some(sa => sa.activityId === act.id && sa.userId === u.id))
                                 .map((u) => ({ id: u.id, name: u.name, badge: u.role }))}
-                              assigned={supervisorAssignments
+                              assigned={(supervisorAssignments || [])
                                 .filter((s) => s.activityId === act.id)
-                                .map((s) => ({ assignmentId: s.id, id: s.userId, name: s.user.name }))}
+                                .map((s) => ({ assignmentId: s.id, id: s.userId, name: s.user?.name || 'Supervisor' }))}
                               onAssign={(id) => handleAssign('SUPERVISOR_APOYO', act.id, id)}
                               onRemove={(asgId) => handleRemove(asgId, 'SUPERVISOR')}
                             />

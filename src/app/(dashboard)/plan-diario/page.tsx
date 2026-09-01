@@ -245,21 +245,21 @@ export default async function PlanDiarioPage({
         date: a.date.toISOString(),
         teraUploadedAt: a.teraUploadedAt?.toISOString() || null,
         teraAuditorUploadedAt: a.teraAuditorUploadedAt?.toISOString() || null,
-        timeRegistryEntries: a.timeRegistryEntries.map(e => ({ ...e, registeredAt: e.registeredAt.toISOString() })),
+        timeRegistryEntries: (a.timeRegistryEntries || []).map(e => ({ ...e, registeredAt: e.registeredAt.toISOString() })),
       }))}
-      technicians={technicians}
-      safetyDedicados={safetyDedicados}
-      vehicles={vehicles}
-      drivers={drivers}
-      elevationEquips={elevationEquips}
-      techAssignments={techAssignments}
-      safetyAssignments={safetyAssignments}
-      vehicleAssignments={vehicleAssignments}
-      driverAssignments={driverAssignments}
-      equipAssignments={equipAssignments}
-      safetyDesignadoUsers={safetyDesignadoUsers}
-      userSafetyAssignments={userSafetyAssignments}
-      supervisorAssignments={supervisorAssignments}
+      technicians={JSON.parse(JSON.stringify(technicians))}
+      safetyDedicados={JSON.parse(JSON.stringify(safetyDedicados))}
+      vehicles={JSON.parse(JSON.stringify(vehicles))}
+      drivers={JSON.parse(JSON.stringify(drivers))}
+      elevationEquips={JSON.parse(JSON.stringify(elevationEquips))}
+      techAssignments={JSON.parse(JSON.stringify(techAssignments))}
+      safetyAssignments={JSON.parse(JSON.stringify(safetyAssignments))}
+      vehicleAssignments={JSON.parse(JSON.stringify(vehicleAssignments))}
+      driverAssignments={JSON.parse(JSON.stringify(driverAssignments))}
+      equipAssignments={JSON.parse(JSON.stringify(equipAssignments))}
+      safetyDesignadoUsers={JSON.parse(JSON.stringify(safetyDesignadoUsers))}
+      userSafetyAssignments={JSON.parse(JSON.stringify(userSafetyAssignments))}
+      supervisorAssignments={JSON.parse(JSON.stringify(supervisorAssignments))}
       userRole={role}
       userId={userId}
       userName={session.user.name || 'Desconocido'}
