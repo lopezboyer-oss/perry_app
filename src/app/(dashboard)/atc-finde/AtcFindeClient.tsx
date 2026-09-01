@@ -1411,6 +1411,15 @@ export function AtcFindeClient({
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
+          {canSupervisor && (
+            <button
+              onClick={() => router.push(`/actividades/nueva?date=${weekendOf}`)}
+              className="btn-primary !text-[10px] !py-1 !px-2.5 !gap-1 !bg-indigo-600 hover:!bg-indigo-700 !text-white leading-tight text-center font-bold shadow-xs transition-all"
+              title="Crear nueva actividad individual o multidía para este fin de semana"
+            >
+              <Plus size={13} /> Nueva /<br/>Multidía
+            </button>
+          )}
           {canManageExtraDays && (
             <button onClick={() => setShowExtraDayDialog(true)} className="btn-secondary !text-[10px] !py-1 !px-2 !gap-1 !bg-amber-50 !text-amber-700 !border-amber-300 hover:!bg-amber-100 leading-tight text-center">
               <Plus size={12} /> Día<br/>Extra

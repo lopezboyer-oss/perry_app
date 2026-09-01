@@ -8,7 +8,7 @@ import { getLocalToday } from '@/lib/utils';
 export default async function NuevaActividadPage({
   searchParams,
 }: {
-  searchParams: { folio?: string; continuar?: string };
+  searchParams: { folio?: string; continuar?: string; date?: string };
 }) {
   const session = await auth();
   if (!session) redirect('/login');
@@ -34,6 +34,12 @@ export default async function NuevaActividadPage({
   // ── "Continuar" mode: pre-fill from existing activity ──
   let continuarData: any = undefined;
   let heading = 'Nueva Actividad';
+
+  if (searchParams.date && !searchParams.continuar) {
+    continuarData = {
+      date: searchParams.date,
+    };
+  }
 
   if (searchParams.continuar) {
     const source = await prisma.activity.findUnique({
