@@ -321,7 +321,7 @@ export function exportDailyPlanPDFClient({
                           ${act.supervisorOperativo ? `<div><strong>Operativo:</strong> ${act.supervisorOperativo}</div>` : ''}
                           ${act.supervisorCotizador ? `<div><strong>Cotizador:</strong> ${act.supervisorCotizador}</div>` : ''}
                           ${act.supervisorTMMBC ? `<div><strong>TMMBC:</strong> ${act.supervisorTMMBC}</div>` : ''}
-                          ${act.safetyDedicado ? `<div style="color:#166534;"><strong>Safety:</strong> ${act.safetyDedicado}</div>` : ''}
+                          ${act.safetyDedicado ? `<div style="color:#166534;"><strong>Safety:</strong> ${act.safetyDedicado}</div>` : '<div><strong>Safety:</strong> no</div>'}
                         </td>
                         <td style="font-weight:700; font-family:monospace;">
                           ${act.cotizacionFolio ? `<div>Cot: ${act.cotizacionFolio}</div>` : ''}

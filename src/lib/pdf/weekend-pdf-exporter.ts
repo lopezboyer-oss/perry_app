@@ -56,16 +56,35 @@ export function exportWeekendPDFClient({
     return '—';
   };
 
-  const getSafetyForActivity = (actId: string) => {
-    const assignedUser = userSafetyAssignments.find(u => u.activityId === actId);
-    if (assignedUser?.user?.name) {
-      return { isDedicated: true, name: assignedUser.user.name };
+  const getSupOperativoForActivity = (actId: string) => {
+    const sups: string[] = [];
+    // Ingenieros / Usuarios asignados como Supervisor Operativo
+    const assignedUsers = (userSafetyAssignments || []).filter(u => u.activityId === actId);
+    assignedUsers.forEach(u => {
+      if (u.user?.name && !sups.includes(u.user.name)) sups.push(u.user.name);
+    });
+    // Safety Dedicado actuando en rol DESIGNADO (columna Sup Operativo)
+    const assignedDesignados = (safetyAssignments || []).filter(s => s.activityId === actId && s.role === 'DESIGNADO');
+    assignedDesignados.forEach(s => {
+      if (s.safetyDedicado?.name && !sups.includes(s.safetyDedicado.name)) sups.push(s.safetyDedicado.name);
+    });
+    // Técnico Cruz Verde con rol SAFETY_DESIGNADO si fue asignado en esa columna
+    const assignedTechDesignados = (techAssignments || []).filter(t => t.activityId === actId && t.role === 'SAFETY_DESIGNADO');
+    assignedTechDesignados.forEach(t => {
+      const name = t.technician?.name || t.technicianName;
+      if (name && !sups.includes(name)) sups.push(name);
+    });
+
+    return sups.length > 0 ? sups.join(', ') : null;
+  };
+
+  const getSafetyDedicadoForActivity = (actId: string) => {
+    // Exclusivamente personal de la columna Safety Dedicado (rol DEDICADO)
+    const dedicados = (safetyAssignments || []).filter(s => s.activityId === actId && s.role !== 'DESIGNADO');
+    if (dedicados.length > 0) {
+      return dedicados.map(d => d.safetyDedicado?.name || 'Safety').join(', ');
     }
-    const assignedExt = safetyAssignments.find(s => s.activityId === actId);
-    if (assignedExt?.safetyDedicado?.name) {
-      return { isDedicated: true, name: assignedExt.safetyDedicado.name };
-    }
-    return { isDedicated: false, name: 'NO DEDICADO' };
+    return null;
   };
 
   const getEquipForActivity = (actId: string) => {
@@ -99,6 +118,9 @@ export function exportWeekendPDFClient({
       ? (additionalSups.length > 0 ? `${primarySup}, ${additionalSups.join(', ')}` : primarySup)
       : (additionalSups.join(', ') || '—');
 
+    const supOperativoName = getSupOperativoForActivity(act.id);
+    const safetyDedicadoName = getSafetyDedicadoForActivity(act.id);
+
     const itemData = {
       id: act.id,
       title: `${multiDayBadge}${act.title}`,
@@ -108,9 +130,10 @@ export function exportWeekendPDFClient({
       }`,
       client: act.client?.name || act.contact?.name || '—',
       supervisor: allSupervisors,
+      supOperativo: supOperativoName,
+      safetyDedicado: safetyDedicadoName,
       techs: getTechsForActivity(act.id),
       loto: act.loto,
-      safety: getSafetyForActivity(act.id),
       equip: getEquipForActivity(act.id),
       notes: act.weekendNotes,
     };
@@ -126,7 +149,7 @@ export function exportWeekendPDFClient({
   // KPI Counts
   const totalActsCount = activities.length;
   const elevationEquipCount = activities.filter(a => getEquipForActivity(a.id) !== 'N/A').length;
-  const safetyDedicatedCount = activities.filter(a => getSafetyForActivity(a.id).isDedicated).length;
+  const safetyDedicatedCount = activities.filter(a => getSafetyDedicadoForActivity(a.id) !== null).length;
 
   const generationTime = new Date().toLocaleString('es-MX', {
     timeZone: 'America/Tijuana',
@@ -391,13 +414,17 @@ export function exportWeekendPDFClient({
               <div class="act-card-title">${act.title}</div>
               <div class="act-meta">
                 <div><strong>CONTACTO / CLIENTE:</strong> ${act.client}</div>
-                <div><strong>RESPONSABLE / SUP:</strong> ${act.supervisor}</div>
+                <div><strong>RESPONSABLE:</strong> ${act.supervisor}</div>
+                <div><strong>SUP. OPERATIVO:</strong> ${act.supOperativo || '—'}</div>
                 <div><strong>TÉCNICOS:</strong> ${act.techs}</div>
               </div>
               <div class="badges-row">
                 <span class="badge">LOTO: ${act.loto ? 'SI' : 'NO'}</span>
-                <span class="badge ${act.safety.isDedicated ? 'green' : ''}">SAFETY: ${
-                act.safety.isDedicated ? act.safety.name : 'NO'
+                <span class="badge ${act.supOperativo ? 'green' : ''}">SUP. OPERATIVO: ${
+                act.supOperativo || 'NO'
+              }</span>
+                <span class="badge ${act.safetyDedicado ? 'green' : ''}">SAFETY DEDICADO: ${
+                act.safetyDedicado ? act.safetyDedicado : 'no'
               }</span>
                 <span class="badge ${act.equip !== 'N/A' ? 'yellow' : ''}">ELEVACIÓN: ${
                 act.equip !== 'N/A' ? `🚜 ${act.equip}` : 'N/A'
