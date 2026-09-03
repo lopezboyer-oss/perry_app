@@ -148,6 +148,26 @@ select {
     focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20;
 }
 
+/* Modal de auditoría de nóminas: forzar fondo oscuro y texto blanco de alto contraste */
+.audit-input,
+.audit-input[type="text"],
+.audit-input[type="number"],
+textarea.audit-input,
+select.audit-input {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+  border-color: #64748b !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.audit-input-total,
+.audit-input-total[type="number"] {
+  background-color: #1e293b !important;
+  color: #34d399 !important;
+  border-color: #10b981 !important;
+  -webkit-text-fill-color: #34d399 !important;
+}
+
 /* Button base */
 .btn {
   @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium 

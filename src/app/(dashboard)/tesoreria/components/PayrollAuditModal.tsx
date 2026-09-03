@@ -427,12 +427,13 @@ export function PayrollAuditModal({
                       <select
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-slate-800 border-2 border-slate-600 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-indigo-400 focus:bg-slate-700 transition-all shadow-inner"
+                        style={{ backgroundColor: '#1e293b', color: '#ffffff', borderColor: '#475569' }}
+                        className="audit-input w-full px-3.5 py-2.5 rounded-xl text-xs font-bold border-2 focus:outline-none focus:border-indigo-400 transition-all shadow-inner"
                       >
-                        <option value="GRUPO CASEME" className="bg-slate-800 text-white">GRUPO CASEME</option>
-                        <option value="DROBOTS" className="bg-slate-800 text-white">DROBOTS</option>
-                        <option value="OPUS INGENIUM" className="bg-slate-800 text-white">OPUS INGENIUM</option>
-                        <option value="VULCAN FORGE" className="bg-slate-800 text-white">VULCAN FORGE</option>
+                        <option value="GRUPO CASEME" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>GRUPO CASEME</option>
+                        <option value="DROBOTS" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>DROBOTS</option>
+                        <option value="OPUS INGENIUM" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>OPUS INGENIUM</option>
+                        <option value="VULCAN FORGE" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>VULCAN FORGE</option>
                       </select>
                     </div>
 
@@ -445,7 +446,8 @@ export function PayrollAuditModal({
                         value={periodNumber}
                         onChange={(e) => setPeriodNumber(e.target.value)}
                         placeholder="ej. Raya 34"
-                        className="w-full px-3.5 py-2.5 bg-slate-800 border-2 border-slate-600 rounded-xl text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-slate-700 transition-all shadow-inner"
+                        style={{ backgroundColor: '#1e293b', color: '#ffffff', borderColor: '#475569' }}
+                        className="audit-input w-full px-3.5 py-2.5 rounded-xl text-xs font-bold border-2 placeholder-slate-400 focus:outline-none focus:border-indigo-400 transition-all shadow-inner"
                       />
                     </div>
                   </div>
@@ -461,7 +463,8 @@ export function PayrollAuditModal({
                         step="0.01"
                         value={totalAmount}
                         onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
-                        className="w-full px-3.5 py-2.5 bg-slate-800 border-2 border-emerald-500 rounded-xl text-base font-black text-emerald-300 font-mono tracking-tight focus:outline-none focus:border-emerald-400 focus:bg-slate-700 transition-all shadow-inner"
+                        style={{ backgroundColor: '#1e293b', color: '#34d399', borderColor: '#10b981' }}
+                        className="audit-input-total w-full px-3.5 py-2.5 rounded-xl text-base font-black font-mono border-2 tracking-tight focus:outline-none focus:border-emerald-400 transition-all shadow-inner"
                       />
                     </div>
 
@@ -473,7 +476,8 @@ export function PayrollAuditModal({
                         type="number"
                         value={employeeCount}
                         onChange={(e) => setEmployeeCount(parseInt(e.target.value, 10) || 0)}
-                        className="w-full px-3.5 py-2.5 bg-slate-800 border-2 border-slate-600 rounded-xl text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-slate-700 transition-all shadow-inner"
+                        style={{ backgroundColor: '#1e293b', color: '#ffffff', borderColor: '#475569' }}
+                        className="audit-input w-full px-3.5 py-2.5 rounded-xl text-xs font-bold border-2 placeholder-slate-400 focus:outline-none focus:border-indigo-400 transition-all shadow-inner"
                       />
                     </div>
                   </div>
@@ -507,7 +511,8 @@ export function PayrollAuditModal({
                       value={observations}
                       onChange={(e) => setObservations(e.target.value)}
                       placeholder="Notas adicionales..."
-                      className="w-full px-3.5 py-2 bg-slate-800 border-2 border-slate-600 rounded-xl text-xs font-semibold text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-slate-700 transition-all resize-none shadow-inner"
+                      style={{ backgroundColor: '#1e293b', color: '#ffffff', borderColor: '#475569' }}
+                      className="audit-input w-full px-3.5 py-2 rounded-xl text-xs font-semibold border-2 placeholder-slate-400 focus:outline-none focus:border-indigo-400 transition-all resize-none shadow-inner"
                     />
                   </div>
                 </div>

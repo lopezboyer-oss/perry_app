@@ -88,47 +88,25 @@ export async function POST(
       }
     }
 
-    const auditPrompt = `Actúa como un Auditor Contable y Especialista Forense en Dispersión de Nóminas Industriales y de Construcción.
-Tu tarea es auditar detalladamente este documento / hoja de nómina ${isPdfFile ? '(archivo PDF)' : '(imagen)'} para clasificarlo con precisión y extraer las cifras cuantitativas con exactitud matemática.
+    const auditPrompt = `Eres un Auditor Contable. Analiza rápidamente este documento de nómina ${isPdfFile ? '(PDF multipágina)' : '(imagen)'} y extrae en JSON plano:
 
-DATOS ACTUALES EN LA FICHA DE PERRY APP:
-- Empresa Asignada: "${payroll.companyName}"
-- Periodo Asignado: "${payroll.periodNumber || 'N/A'}"
-- Monto Registrado Actualmente: $${payroll.totalAmount} MXN
-- Mensaje original en el chat: "${payroll.rawMessage || ''}"
+DATOS EN PERRY APP:
+- Empresa: "${payroll.companyName}"
+- Periodo: "${payroll.periodNumber || 'N/A'}"
+- Monto Registrado: $${payroll.totalAmount} MXN
 
-INSTRUCCIONES DE AUDITORÍA Y CLASIFICACIÓN ESTRICTA:
-1. "classification": Clasifica taxativamente el documento en uno de estos 3 valores:
-   - "NOMINA_COMPLETA": Si es la nómina semanal/quincenal principal o concentrado de dispersión con el total de sueldos de la plantilla.
-   - "REPORTE_PARCIAL_HORAS_EXTRA": Si el documento es ÚNICAMENTE un listado de Horas Extras, Tiempo Extraordinario, Asistencia, o un comprobante/finiquito individual de un solo trabajador, y NO la dispersión total de sueldos.
-   - "NO_ES_NOMINA": Si la imagen o PDF corresponde a una factura, comprobante bancario, foto de material, cotización o texto irrelevante que fue detectado erróneamente.
+INSTRUCCIONES CLAVE:
+1. "classification": "NOMINA_COMPLETA" (si es dispersión de sueldos), "REPORTE_PARCIAL_HORAS_EXTRA" (si es solo tiempo extra/horas extra), o "NO_ES_NOMINA" (si es factura o documento ajeno).
+2. "confidence": "ALTA" | "MEDIA" | "BAJA".
+3. "detectedCompany": Empresa identificada ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE", etc.).
+4. "detectedPeriod": Periodo o raya (ej. "Raya 34").
+5. "totalAmount": Gran Total Neto a Dispersar (número decimal). Si hay bancos y efectivo, suma ambos. Si es PDF multipágina, busca el total concentrado neto general.
+6. "employeeCount": Número total de trabajadores listados.
+7. "bankBreakdown": [{"bankOrSource": string, "amount": number}].
+8. "auditNotes": Nota ejecutiva de máximo 1 o 2 oraciones sobre sumas o discrepancias.
+9. "hasDiscrepancies": true si el total difiere de $${payroll.totalAmount}.
 
-2. "confidence": Nivel de certeza de la lectura: "ALTA", "MEDIA", o "BAJA".
-
-3. "detectedCompany": Nombre de la empresa identificada en el documento ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE", u otra visible).
-
-4. "detectedPeriod": Periodo o raya identificado en el documento (ej. "Raya 34", "Semana 34").
-
-5. "totalAmount": Gran Total Neto a Dispersar en número decimal.
-   - Si hay columnas separadas de dispersión bancaria (CONTPAQ / SANTANDER) y EFECTIVO, el total debe ser la suma de ambos componentes.
-   - En archivos PDF con múltiples páginas, busca el concentrado final o suma los totales generales netos.
-
-6. "employeeCount": Número de personas o filas con empleados listados.
-
-7. "bankBreakdown": Arreglo de fuentes y montos:
-   [
-     { "bankOrSource": "SANTANDER (CONTPAQ)", "amount": 35200.00 },
-     { "bankOrSource": "EFECTIVO", "amount": 7650.00 }
-   ]
-
-8. "auditNotes": Explicación ejecutiva y concisa para Dirección sobre lo que se observa:
-   - ¿Coinciden las sumas aritméticas visibles?
-   - ¿Es nómina completa o solo tiempo extra?
-   - ¿Qué discrepancias existen con los $${payroll.totalAmount} registrados originalmente?
-
-9. "hasDiscrepancies": boolean (true si el total detectado difiere del monto registrado previamente o si hay errores de suma en el documento).
-
-Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
+Responde ÚNICAMENTE este JSON:
 {
   "classification": "NOMINA_COMPLETA" | "REPORTE_PARCIAL_HORAS_EXTRA" | "NO_ES_NOMINA",
   "confidence": "ALTA" | "MEDIA" | "BAJA",
@@ -136,9 +114,7 @@ Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
   "detectedPeriod": string,
   "totalAmount": number,
   "employeeCount": number,
-  "bankBreakdown": [
-    { "bankOrSource": string, "amount": number }
-  ],
+  "bankBreakdown": [{"bankOrSource": string, "amount": number}],
   "observations": string,
   "auditNotes": string,
   "hasDiscrepancies": boolean
@@ -147,10 +123,10 @@ Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
     const parts: any[] = [{ text: auditPrompt }];
     if (imagePart) parts.push(imagePart);
 
-    // Llamada directa y ultra-rápida a gemini-2.5-flash (el modelo probado y activo en Perry App)
+    // Llamada directa a gemini-2.5-flash con timeout ampliado a 24s y límite de tokens
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     const geminiController = new AbortController();
-    const geminiTimeout = setTimeout(() => geminiController.abort(), 18000);
+    const geminiTimeout = setTimeout(() => geminiController.abort(), 24000);
 
     let geminiRes: Response;
     try {
@@ -164,6 +140,7 @@ Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
           contents: [{ parts }],
           generationConfig: {
             temperature: 0.1,
+            maxOutputTokens: 800,
             responseMimeType: 'application/json',
           },
         }),
