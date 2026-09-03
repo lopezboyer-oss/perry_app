@@ -131,54 +131,60 @@ Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
     const parts: any[] = [{ text: auditPrompt }];
     if (imagePart) parts.push(imagePart);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    
-    // Strict 14s timeout for Gemini call
-    const geminiController = new AbortController();
-    const geminiTimeout = setTimeout(() => geminiController.abort(), 14000);
+    // ESTRATEGIA HÍBRIDA:
+    // 1. Intentar primero con el modelo avanzado de mayor precisión forense (gemini-2.5-pro)
+    // 2. Si hay error o falta de cuota en Pro, fallback automático a gemini-2.5-flash
+    const modelsToTry = ['gemini-2.5-pro', 'gemini-2.5-flash'];
+    let rawText: string | null = null;
+    let usedModel = '';
 
-    let geminiRes: Response;
-    try {
-      geminiRes = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts }],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json',
+    for (const modelName of modelsToTry) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const geminiController = new AbortController();
+      const geminiTimeout = setTimeout(() => geminiController.abort(), 15000);
+
+      try {
+        const geminiRes = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Referer: 'https://perryapp.netlify.app/',
           },
-        }),
-        signal: geminiController.signal,
-      });
-    } catch (fetchErr: any) {
-      clearTimeout(geminiTimeout);
-      const isTimeout = fetchErr.name === 'AbortError';
-      return NextResponse.json(
-        {
-          error: isTimeout
-            ? 'El análisis de visión con IA tardó más de lo esperado. Por favor reintenta.'
-            : `Error de conexión con Gemini: ${fetchErr.message}`,
-        },
-        { status: 504 }
-      );
-    } finally {
-      clearTimeout(geminiTimeout);
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: 'application/json',
+            },
+          }),
+          signal: geminiController.signal,
+        });
+        clearTimeout(geminiTimeout);
+
+        if (geminiRes.ok) {
+          const jsonResponse = await geminiRes.json();
+          rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text || null;
+          if (rawText) {
+            usedModel = modelName;
+            console.log(`[REANALYZE] Auditoría exitosa utilizando modelo: ${modelName}`);
+            break;
+          }
+        } else {
+          const errStatus = geminiRes.status;
+          const errBody = await geminiRes.text();
+          console.warn(`[REANALYZE] Modelo ${modelName} devolvió ${errStatus}: ${errBody.substring(0, 150)}. Intentando siguiente modelo...`);
+        }
+      } catch (callErr: any) {
+        clearTimeout(geminiTimeout);
+        console.warn(`[REANALYZE] Error o timeout en llamada a ${modelName}:`, callErr.message);
+      }
     }
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error('[REANALYZE GEMINI ERROR]', errText);
+    if (!rawText) {
       return NextResponse.json(
-        { error: 'Error comunicándose con el motor de visión de Gemini', details: errText },
+        { error: 'No se pudo obtener respuesta del servicio de IA de Gemini. Por favor reintenta.' },
         { status: 502 }
       );
-    }
-
-    const jsonResponse = await geminiRes.json();
-    const rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      return NextResponse.json({ error: 'Gemini no retornó contenido analizable' }, { status: 500 });
     }
 
     // Clean any accidental markdown code fence wrapping
@@ -197,6 +203,7 @@ Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
     return NextResponse.json({
       success: true,
       audit: auditData,
+      modelUsed: usedModel,
       currentRecord: {
         id: payroll.id,
         companyName: payroll.companyName,

@@ -116,7 +116,10 @@ Responde ÚNICAMENTE en formato JSON plano válido sin marcas de markdown:
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Referer: 'https://perryapp.netlify.app/',
+      },
       body: JSON.stringify({
         contents: [{ parts }],
         generationConfig: {
