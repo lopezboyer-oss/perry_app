@@ -676,7 +676,6 @@ export function ActivityForm({ users, clients, currentUserId, userRole, userAcce
               </div>
             )}
           </div>
-        )}
 
         {/* Title / Description */}
         <div className="mt-4">

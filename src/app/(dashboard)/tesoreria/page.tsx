@@ -29,7 +29,9 @@ import {
   X,
   ImageIcon,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
+import { PayrollAuditModal, PayrollAuditData } from './components/PayrollAuditModal';
 
 interface AccountBalance {
   id: string;
@@ -94,12 +96,78 @@ export default function TesoreriaPage() {
     signedImageUrl?: string | null;
   } | null>(null);
 
+  // Payroll Audit & Deletion state
+  const [auditingId, setAuditingId] = useState<string | null>(null);
+  const [auditModalPayroll, setAuditModalPayroll] = useState<any | null>(null);
+  const [auditData, setAuditData] = useState<PayrollAuditData | null>(null);
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [deleteConfirmPayroll, setDeleteConfirmPayroll] = useState<any | null>(null);
+  const [isDeletingPayroll, setIsDeletingPayroll] = useState(false);
+
   // API Key Management state
   const [showKeysModal, setShowKeysModal] = useState(false);
   const [apiKeys, setApiKeys] = useState<ApiKeyRecord[]>([]);
   const [newKeyName, setNewKeyName] = useState('');
   const [creatingKey, setCreatingKey] = useState(false);
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+
+  const handleStartAudit = async (pay: any) => {
+    setAuditingId(pay.id);
+    setAuditModalPayroll(pay);
+    setAuditData(null);
+    setIsAuditing(true);
+
+    try {
+      const res = await fetch(`/api/treasury/nominas/${pay.id}/reanalyze`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(`Error al analizar con IA: ${err.error || 'No se pudo completar el análisis'}`);
+        setIsAuditing(false);
+        setAuditingId(null);
+        return;
+      }
+      const json = await res.json();
+      setAuditData(json.audit);
+    } catch (err: any) {
+      alert(`Error en análisis: ${err.message}`);
+    } finally {
+      setIsAuditing(false);
+      setAuditingId(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmPayroll) return;
+    setIsDeletingPayroll(true);
+    try {
+      const res = await fetch(`/api/treasury/nominas/${deleteConfirmPayroll.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(`Error al eliminar: ${err.error || 'Error desconocido'}`);
+        return;
+      }
+      setPayrolls((prev) => prev.filter((p) => p.id !== deleteConfirmPayroll.id));
+      setDeleteConfirmPayroll(null);
+    } catch (err: any) {
+      alert(`Error al eliminar: ${err.message}`);
+    } finally {
+      setIsDeletingPayroll(false);
+    }
+  };
+
+  const handlePayrollUpdated = (updatedLog: any) => {
+    setPayrolls((prev) =>
+      prev.map((p) => (p.id === updatedLog.id ? { ...p, ...updatedLog } : p))
+    );
+  };
+
+  const handlePayrollDeleted = (deletedId: string) => {
+    setPayrolls((prev) => prev.filter((p) => p.id !== deletedId));
+  };
 
   const fetchTreasuryData = async () => {
     setLoading(true);
@@ -480,6 +548,7 @@ export default function TesoreriaPage() {
 
                     const isAppr = pay.status === 'APROBADA_TOKENIZADA' || pay.status === 'APROBADA_FIRMA_MANUAL';
                     const isRej = pay.status === 'RECHAZADA';
+                    const isAux = pay.status === 'REPORTE_AUXILIAR';
 
                     return (
                       <div
@@ -498,10 +567,12 @@ export default function TesoreriaPage() {
                                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                                   : isRej
                                   ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                  : isAux
+                                  ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                                   : 'bg-amber-500/10 text-amber-300 border border-amber-500/20 animate-pulse'
                               }`}
                             >
-                              {isAppr ? '✅ APROBADA' : isRej ? '❌ RECHAZADA' : '⏳ PENDIENTE'}
+                              {isAppr ? '✅ APROBADA' : isRej ? '❌ RECHAZADA' : isAux ? '📎 AUXILIAR / HORAS EXTRA' : '⏳ PENDIENTE'}
                             </span>
                           </div>
 
@@ -564,7 +635,7 @@ export default function TesoreriaPage() {
                         </div>
 
                         {/* Action Buttons Bar */}
-                        <div className="pt-3 border-t border-slate-800 flex items-center gap-2">
+                        <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center gap-2">
                           {/* Image Viewer Button */}
                           {pay.imageUrl || pay.signedImageUrl ? (
                             <button
@@ -576,11 +647,27 @@ export default function TesoreriaPage() {
                                 })
                               }
                               className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center space-x-1.5 transition-all"
+                              title="Ver hoja completa"
                             >
                               <Eye className="w-3.5 h-3.5 text-indigo-400" />
                               <span>Ver Hoja</span>
                             </button>
                           ) : null}
+
+                          {/* AI Audit Button */}
+                          <button
+                            onClick={() => handleStartAudit(pay)}
+                            disabled={auditingId === pay.id}
+                            className="py-2 px-3 bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/30 text-indigo-300 font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all shadow-sm"
+                            title="Analizar cantidades y estructura con IA"
+                          >
+                            {auditingId === pay.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                            ) : (
+                              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                            )}
+                            <span>{auditingId === pay.id ? 'Analizando...' : 'Analizar con IA'}</span>
+                          </button>
 
                           {/* Token Signature Button / Comprobante */}
                           {pay.tokenHash ? (
@@ -588,14 +675,22 @@ export default function TesoreriaPage() {
                               href={isAppr ? `/nominas/comprobante/${pay.tokenHash}` : `/nominas/firmar/${pay.tokenHash}`}
                               target="_blank"
                               rel="noreferrer"
-                              className={`flex-1 py-2 px-3 ${isAppr ? 'bg-emerald-600/20 hover:bg-emerald-600/30 border-emerald-500/30 text-emerald-300' : 'bg-indigo-600/20 hover:bg-indigo-600/30 border-indigo-500/30 text-indigo-300'} border font-bold rounded-xl text-xs text-center transition-all flex items-center justify-center space-x-1.5`}
+                              className={`flex-1 py-2 px-3 ${isAppr ? 'bg-emerald-600/20 hover:bg-emerald-600/30 border-emerald-500/30 text-emerald-300' : 'bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-200'} border font-bold rounded-xl text-xs text-center transition-all flex items-center justify-center space-x-1.5`}
                             >
-                              <Sparkles className={`w-3.5 h-3.5 ${isAppr ? 'text-emerald-400' : 'text-indigo-400'}`} />
-                              <span>{isAppr ? '📜 Comprobante Firma' : '✍️ Firma Digital'}</span>
+                              <span>{isAppr ? '📜 Comprobante' : '✍️ Firma Digital'}</span>
                             </a>
                           ) : (
-                            <span className="text-[10px] text-slate-500">Sin token generado</span>
+                            <span className="text-[10px] text-slate-500">Sin token</span>
                           )}
+
+                          {/* Delete Card Button */}
+                          <button
+                            onClick={() => setDeleteConfirmPayroll(pay)}
+                            className="p-2 bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-500/30 rounded-xl transition-all"
+                            title="Eliminar este registro de nómina"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     );
@@ -1016,6 +1111,60 @@ export default function TesoreriaPage() {
                 alt="Hoja de Nómina"
                 className="max-h-[75vh] w-auto object-contain rounded-lg border border-slate-800 shadow-2xl"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PAYROLL AI AUDIT & VISUAL VALIDATION MODAL */}
+      {auditModalPayroll && (
+        <PayrollAuditModal
+          payroll={auditModalPayroll}
+          auditData={auditData}
+          isLoading={isAuditing}
+          onClose={() => {
+            setAuditModalPayroll(null);
+            setAuditData(null);
+          }}
+          onUpdate={handlePayrollUpdated}
+          onDelete={handlePayrollDeleted}
+        />
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirmPayroll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center space-x-3 text-rose-400">
+              <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-100">¿Eliminar registro de nómina?</h3>
+                <p className="text-[11px] text-slate-400">{deleteConfirmPayroll.companyName} — {deleteConfirmPayroll.periodNumber || 'Raya Semanal'}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+              Esta acción descartará permanentemente esta tarjeta de nómina y cancelará el enlace tokenizado de firma digital. Úsalo si el registro fue generado por una imagen preliminar, un reporte auxiliar o un falso positivo.
+            </p>
+
+            <div className="flex items-center justify-end space-x-2 pt-2">
+              <button
+                onClick={() => setDeleteConfirmPayroll(null)}
+                disabled={isDeletingPayroll}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeletingPayroll}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg shadow-rose-900/20"
+              >
+                {isDeletingPayroll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Confirmar y Borrar
+              </button>
             </div>
           </div>
         </div>

@@ -1,0 +1,175 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
+import { canAccessTreasuryDashboard } from '@/lib/permissions';
+
+export const maxDuration = 60; // Allow up to 60s for vision analysis
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    const email = (session.user as any)?.email || '';
+    if (!canAccessTreasuryDashboard(email)) {
+      return NextResponse.json({ error: 'Acceso restringido a nóminas' }, { status: 403 });
+    }
+
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json({ error: 'ID de nómina requerido' }, { status: 400 });
+    }
+
+    const payroll = await prisma.payrollLog.findUnique({
+      where: { id },
+    });
+
+    if (!payroll) {
+      return NextResponse.json({ error: 'Registro de nómina no encontrado' }, { status: 404 });
+    }
+
+    const targetImageUrl = payroll.imageUrl || payroll.signedImageUrl;
+    if (!targetImageUrl && !payroll.rawMessage) {
+      return NextResponse.json(
+        { error: 'Este registro no cuenta con imagen adjunta ni texto para analizar.' },
+        { status: 400 }
+      );
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'GEMINI_API_KEY no configurada en el servidor' }, { status: 500 });
+    }
+
+    // Download image to base64 if available
+    let imagePart: { inlineData: { mimeType: string; data: string } } | null = null;
+    if (targetImageUrl) {
+      try {
+        const imgRes = await fetch(targetImageUrl);
+        if (imgRes.ok) {
+          const arrayBuffer = await imgRes.arrayBuffer();
+          const base64Data = Buffer.from(arrayBuffer).toString('base64');
+          const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+          imagePart = {
+            inlineData: {
+              mimeType: contentType.split(';')[0].trim(),
+              data: base64Data,
+            },
+          };
+        }
+      } catch (err: any) {
+        console.warn('[REANALYZE] Error descargando imagen de nómina:', err);
+      }
+    }
+
+    const auditPrompt = `Actúa como un Auditor Contable y Especialista Forense en Dispersión de Nóminas Industriales y de Construcción.
+Tu tarea es auditar detalladamente esta hoja / documento de nómina para validar si es una nómina completa o un fragmento, y extraer las cifras cuantitativas con exactitud matemática.
+
+DATOS ACTUALES EN LA FICHA DE PERRY APP:
+- Empresa Asignada: "${payroll.companyName}"
+- Periodo Asignado: "${payroll.periodNumber || 'N/A'}"
+- Monto Registrado Actualmente: $${payroll.totalAmount} MXN
+- Mensaje original en el chat: "${payroll.rawMessage || ''}"
+
+INSTRUCCIONES DE AUDITORÍA Y CLASIFICACIÓN ESTRICTA:
+1. "classification": Clasifica taxativamente el documento en uno de estos 3 valores:
+   - "NOMINA_COMPLETA": Si es la nómina semanal/quincenal principal o concentrado de dispersión con el total de sueldos de la plantilla.
+   - "REPORTE_PARCIAL_HORAS_EXTRA": Si el documento es ÚNICAMENTE un listado de Horas Extras, Tiempo Extraordinario, Asistencia, o un comprobante/finiquito individual de un solo trabajador, y NO la dispersión total de sueldos.
+   - "NO_ES_NOMINA": Si la imagen corresponde a una factura, comprobante bancario, foto de material, cotización o texto irrelevante que fue detectado erróneamente.
+
+2. "confidence": Nivel de certeza de la lectura: "ALTA", "MEDIA", o "BAJA".
+
+3. "detectedCompany": Nombre de la empresa identificada en el documento ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE", u otra visible).
+
+4. "detectedPeriod": Periodo o raya identificado en el documento (ej. "Raya 34", "Semana 34").
+
+5. "totalAmount": Gran Total Neto a Dispersar en número decimal.
+   - ATENCIÓN: Si hay columnas separadas de dispersión bancaria (CONTPAQ / SANTANDER) y EFECTIVO, el total debe ser la suma de ambos componentes.
+   - Si es "NO_ES_NOMINA" o solo horas extra, indica la suma cuantitativa que realmente contiene el documento.
+
+6. "employeeCount": Número de personas o filas con empleados listados.
+
+7. "bankBreakdown": Arreglo de fuentes y montos:
+   [
+     { "bankOrSource": "SANTANDER (CONTPAQ)", "amount": 35200.00 },
+     { "bankOrSource": "EFECTIVO", "amount": 7650.00 }
+   ]
+
+8. "auditNotes": Explicación ejecutiva y clara para Dirección sobre lo que se observa:
+   - ¿Coinciden las sumas aritméticas visibles?
+   - ¿Es nómina completa o solo tiempo extra?
+   - ¿Qué discrepancias existen con los $${payroll.totalAmount} registrados originalmente?
+
+9. "hasDiscrepancies": boolean (true si el total detectado difiere del monto registrado previamente o si hay errores de suma en el documento).
+
+Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
+{
+  "classification": "NOMINA_COMPLETA" | "REPORTE_PARCIAL_HORAS_EXTRA" | "NO_ES_NOMINA",
+  "confidence": "ALTA" | "MEDIA" | "BAJA",
+  "detectedCompany": string,
+  "detectedPeriod": string,
+  "totalAmount": number,
+  "employeeCount": number,
+  "bankBreakdown": [
+    { "bankOrSource": string, "amount": number }
+  ],
+  "observations": string,
+  "auditNotes": string,
+  "hasDiscrepancies": boolean
+}`;
+
+    const parts: any[] = [{ text: auditPrompt }];
+    if (imagePart) parts.push(imagePart);
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const geminiRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: {
+          temperature: 0.1,
+          responseMimeType: 'application/json',
+        },
+      }),
+    });
+
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      console.error('[REANALYZE GEMINI ERROR]', errText);
+      return NextResponse.json(
+        { error: 'Error comunicándose con el motor de visión de Gemini', details: errText },
+        { status: 502 }
+      );
+    }
+
+    const jsonResponse = await geminiRes.json();
+    const rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      return NextResponse.json({ error: 'Gemini no retornó contenido analizable' }, { status: 500 });
+    }
+
+    const auditData = JSON.parse(rawText);
+
+    return NextResponse.json({
+      success: true,
+      audit: auditData,
+      currentRecord: {
+        id: payroll.id,
+        companyName: payroll.companyName,
+        periodNumber: payroll.periodNumber,
+        totalAmount: payroll.totalAmount,
+        employeeCount: payroll.employeeCount,
+        imageUrl: targetImageUrl,
+      },
+    });
+  } catch (error: any) {
+    console.error('[REANALYZE API ERROR]', error);
+    return NextResponse.json({ error: error.message || 'Error en análisis con IA' }, { status: 500 });
+  }
+}

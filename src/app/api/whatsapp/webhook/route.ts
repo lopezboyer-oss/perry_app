@@ -430,29 +430,35 @@ export async function POST(req: NextRequest) {
               totalAmount: payrollReport.totalAmount || 0,
               employeeCount: payrollReport.employeeCount || 0,
               bankBreakdown: payrollReport.bankBreakdown ? JSON.stringify(payrollReport.bankBreakdown) : null,
-              observations: payrollReport.observations || payload.messageText || null,
+              observations: payrollReport.isMainPayrollReport === false
+                ? `[REPORTE AUXILIAR / HORAS EXTRA] ${payrollReport.observations || ''}`.trim()
+                : payrollReport.observations || payload.messageText || null,
               rawMessage: payload.messageText || null,
               imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
               senderName: payload.senderName || payload.senderPhone,
               senderPhone: payload.senderPhone,
-              status: 'PENDIENTE_FIRMA',
+              status: payrollReport.isMainPayrollReport === false ? 'REPORTE_AUXILIAR' : 'PENDIENTE_FIRMA',
               tokenHash: randomToken,
             },
           });
 
-          // Enviar enlace tokenizado de firma digital a WhatsApp (Opción 1: Sin análisis de saldos ni opinión matemática)
-          const notifMsg = `📋 *SOLICITUD DE FIRMA DIGITAL — NÓMINA*\n` +
-            `🏢 *Empresa:* ${payrollReport.companyName.toUpperCase()}\n` +
-            `📅 *Periodo:* ${payrollReport.periodNumber || 'Raya Semanal'}\n` +
-            `📁 *Documento:* Reporte de nómina recibido para revisión\n\n` +
-            `✍️ *Acceso para revisión y firma digital:*\n${signUrl}\n\n` +
-            `⏳ *Estatus:* Pendiente de Firma Directiva\n` +
-            `_Perry Intelligence 🤖_`;
+          // Solo enviar solicitud de firma si es la NÓMINA PRINCIPAL completa (no si es un auxiliar de horas extra o fracción)
+          if (payrollReport.isMainPayrollReport !== false) {
+            const notifMsg = `📋 *SOLICITUD DE FIRMA DIGITAL — NÓMINA*\n` +
+              `🏢 *Empresa:* ${payrollReport.companyName.toUpperCase()}\n` +
+              `📅 *Periodo:* ${payrollReport.periodNumber || 'Raya Semanal'}\n` +
+              `📁 *Documento:* Reporte de nómina recibido para revisión\n\n` +
+              `✍️ *Acceso para revisión y firma digital:*\n${signUrl}\n\n` +
+              `⏳ *Estatus:* Pendiente de Firma Directiva\n` +
+              `_Perry Intelligence 🤖_`;
 
-          await sendWhatsappGroupMessage({
-            groupId: payload.groupId,
-            messageText: notifMsg,
-          });
+            await sendWhatsappGroupMessage({
+              groupId: payload.groupId,
+              messageText: notifMsg,
+            });
+          } else {
+            console.log(`[PAYROLL INGESTION] Archivo clasificado como auxiliar/horas extra para ${payrollReport.companyName}. Omitiendo aviso de firma para evitar falsos positivos.`);
+          }
         }
 
         // Save raw message log SILENTLY without warnings
