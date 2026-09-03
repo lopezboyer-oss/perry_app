@@ -5,6 +5,63 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
+function reconcileAndFormatAuditData(rawParsed: any): any {
+  let detectedCompany = String(rawParsed?.detectedCompany || '').trim();
+  let detectedPeriod = String(rawParsed?.detectedPeriod || 'Raya Semanal').trim();
+  let employeeCount = parseInt(String(rawParsed?.employeeCount), 10) || 0;
+  let totalAmount = typeof rawParsed?.totalAmount === 'number'
+    ? rawParsed.totalAmount
+    : parseFloat(String(rawParsed?.totalAmount || '0').replace(/,/g, '')) || 0;
+
+  let bankBreakdown = Array.isArray(rawParsed?.bankBreakdown) ? rawParsed.bankBreakdown : [];
+
+  // 1. Sanitizar y limpiar bankBreakdown
+  const cleanBanks = bankBreakdown
+    .map((b: any) => ({
+      bankOrSource: String(b?.bankOrSource || 'Banco').trim().toUpperCase(),
+      amount: typeof b?.amount === 'number'
+        ? b.amount
+        : parseFloat(String(b?.amount || '0').replace(/,/g, '')) || 0,
+    }))
+    .filter((b: any) => b.amount > 0 || b.bankOrSource.length > 0);
+
+  const bankSum = cleanBanks.reduce((acc: number, b: any) => acc + b.amount, 0);
+
+  // 2. Conciliación de Coherencia Aritmética:
+  // Si los bancos suman un monto positivo y hay discrepancia con totalAmount:
+  if (bankSum > 0) {
+    if (totalAmount <= 0 || Math.abs(totalAmount - bankSum) > 0.5) {
+      // Priorizamos la suma de las fuentes netas para evitar que totalAmount sea el bruto/percepciones
+      totalAmount = Math.round(bankSum * 100) / 100;
+    }
+  } else if (totalAmount > 0 && cleanBanks.length === 0) {
+    // Si la IA identificó el total pero no desglosó bancos, asignamos la fuente principal
+    cleanBanks.push({
+      bankOrSource: 'SANTANDER (CONTPAQ)',
+      amount: totalAmount,
+    });
+  }
+
+  // 3. Generar nota de auditoría cuantitativa consistente y legible
+  const fmt = (num: number) =>
+    `$${num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`;
+
+  const breakdownSummary = cleanBanks
+    .map((b: any) => `${b.bankOrSource}: $${b.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`)
+    .join(' + ');
+
+  const auditNotes = `Nómina ${detectedCompany || ''} (${detectedPeriod}): Gran Total Neto a Dispersar ${fmt(totalAmount)} [${breakdownSummary}] para ${employeeCount} empleados.`;
+
+  return {
+    detectedCompany,
+    detectedPeriod,
+    totalAmount,
+    employeeCount,
+    bankBreakdown: cleanBanks,
+    auditNotes,
+  };
+}
+
 function parseAuditResponse(rawText: string): any {
   let cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
@@ -16,7 +73,8 @@ function parseAuditResponse(rawText: string): any {
 
   // 1. Direct JSON parse
   try {
-    return JSON.parse(cleaned);
+    const direct = JSON.parse(cleaned);
+    return reconcileAndFormatAuditData(direct);
   } catch {}
 
   // 2. Repair bracket/quote unbalance if cut off
@@ -30,28 +88,25 @@ function parseAuditResponse(rawText: string): any {
     const openCurl = (repaired.match(/\{/g) || []).length;
     const closeCurl = (repaired.match(/\}/g) || []).length;
     for (let i = 0; i < openCurl - closeCurl; i++) repaired += '}';
-    return JSON.parse(repaired);
+    const repairedJson = JSON.parse(repaired);
+    return reconcileAndFormatAuditData(repairedJson);
   } catch {}
 
   // 3. Robust Regex Extraction fallback
   const totalMatch = rawText.match(/["']?totalAmount["']?\s*:\s*([\d,.]+)/i);
   const employeeMatch = rawText.match(/["']?employeeCount["']?\s*:\s*(\d+)/i);
-  const classMatch = rawText.match(/["']?classification["']?\s*:\s*["']([^"']+)["']/i);
   const periodMatch = rawText.match(/["']?detectedPeriod["']?\s*:\s*["']([^"']+)["']/i);
   const companyMatch = rawText.match(/["']?detectedCompany["']?\s*:\s*["']([^"']+)["']/i);
-  const notesMatch = rawText.match(/["']?auditNotes["']?\s*:\s*["']([^"']+)["']/i);
 
   const parsedTotal = totalMatch ? parseFloat(totalMatch[1].replace(/,/g, '')) : 0;
 
-  return {
-    classification: classMatch ? classMatch[1] : 'NOMINA_COMPLETA',
+  return reconcileAndFormatAuditData({
     detectedCompany: companyMatch ? companyMatch[1] : '',
     detectedPeriod: periodMatch ? periodMatch[1] : 'Raya Semanal',
     totalAmount: isNaN(parsedTotal) ? 0 : parsedTotal,
     employeeCount: employeeMatch ? parseInt(employeeMatch[1], 10) : 0,
     bankBreakdown: [],
-    auditNotes: notesMatch ? notesMatch[1] : 'Documento analizado con visión artificial.',
-  };
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -97,13 +152,23 @@ export async function POST(req: NextRequest) {
       if (mimeMatch) mimeType = mimeMatch[1];
     }
 
-    const prompt = `Eres un Auditor Contable. Analiza este documento de nómina ${companyHint ? `de la empresa "${companyHint}"` : ''} y extrae en JSON plano:
-1. "detectedCompany": Empresa ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE", etc.).
-2. "detectedPeriod": Periodo o raya (ej. "Raya 35").
-3. "totalAmount": Gran Total Neto a Dispersar (número decimal). Si hay bancos y efectivo, suma ambos. Si es PDF multipágina, busca el gran total concentrado neto general.
-4. "employeeCount": Número total de empleados/trabajadores listados.
-5. "bankBreakdown": [{"bankOrSource": string, "amount": number}].
-6. "auditNotes": Breve resumen de 1 o 2 oraciones sobre lo detectado en la hoja.
+    const prompt = `Eres un Auditor Contable y Financiero. Analiza detenidamente este documento de nómina ${companyHint ? `de la empresa "${companyHint}"` : ''} y extrae en JSON plano con EXACTITUD MATEMÁTICA:
+
+REGLAS CRÍTICAS DE EXTRACCIÓN Y CUADRE:
+1. "totalAmount": GRAN TOTAL NETO A DISPERSAR (número decimal, ej. 137414.12 o 46941.40).
+   - IMPORTANTE: Debe ser el "NETO A PAGAR", "TOTAL A DISPERSAR" o "LÍQUIDO A RECIBIR" (el dinero real que sale del banco o caja para pagar sueldos).
+   - NUNCA uses "Total Percepciones", "Subtotal Bruto", ni subtotales parciales de una sola página.
+   - Si el documento contiene dispersión bancaria y pago en efectivo, "totalAmount" es la SUMA de ambas fuentes (Bancos + Efectivo).
+
+2. "bankBreakdown": Lista de desembolsos por cada banco o fuente de pago:
+   - "bankOrSource": Nombre de la fuente (ej. "SANTANDER", "BANAMEX", "BBVA", "EFECTIVO", "CHEQUE").
+   - "amount": Monto en número decimal para esa fuente.
+   - REGLA DE ORO DE CUADRE: La suma de todos los "amount" en "bankBreakdown" DEBE COINCIDIR EXACTAMENTE con "totalAmount".
+
+3. "detectedCompany": Empresa ("GRUPO CASEME", "DROBOTS", "OPUS INGENIUM", "VULCAN FORGE", etc.).
+4. "detectedPeriod": Periodo o raya (ej. "Raya 35", "Semana 35", "Período 35").
+5. "employeeCount": Conteo total de trabajadores o renglones listados.
+6. "auditNotes": Resumen ejecutivo breve indicando: Gran Total Neto extraído, desglose por bancos/efectivo, y empleados.
 
 Responde ÚNICAMENTE en JSON válido con esta estructura:
 {

@@ -5,6 +5,34 @@ import { canAccessTreasuryDashboard } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
+function reconcileReanalyzeData(raw: any, fallbackRecord: any): any {
+  let totalAmount = typeof raw?.totalAmount === 'number'
+    ? raw.totalAmount
+    : parseFloat(String(raw?.totalAmount || '0').replace(/,/g, '')) || fallbackRecord.totalAmount || 0;
+
+  let bankBreakdown = Array.isArray(raw?.bankBreakdown) ? raw.bankBreakdown : [];
+  const cleanBanks = bankBreakdown
+    .map((b: any) => ({
+      bankOrSource: String(b?.bankOrSource || 'Banco').trim().toUpperCase(),
+      amount: typeof b?.amount === 'number'
+        ? b.amount
+        : parseFloat(String(b?.amount || '0').replace(/,/g, '')) || 0,
+    }))
+    .filter((b: any) => b.amount > 0 || b.bankOrSource.length > 0);
+
+  const bankSum = cleanBanks.reduce((acc: number, b: any) => acc + b.amount, 0);
+  if (bankSum > 0 && Math.abs(totalAmount - bankSum) > 0.5) {
+    totalAmount = Math.round(bankSum * 100) / 100;
+  }
+
+  return {
+    ...raw,
+    totalAmount,
+    bankBreakdown: cleanBanks,
+    hasDiscrepancies: Math.abs(totalAmount - fallbackRecord.totalAmount) > 1,
+  };
+}
+
 function parseAuditResponse(rawText: string, fallbackRecord: any): any {
   let cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
@@ -17,7 +45,8 @@ function parseAuditResponse(rawText: string, fallbackRecord: any): any {
 
   // 1. Direct JSON parse
   try {
-    return JSON.parse(cleaned);
+    const direct = JSON.parse(cleaned);
+    return reconcileReanalyzeData(direct, fallbackRecord);
   } catch {
     console.warn('[REANALYZE] Direct JSON parse failed, attempting syntax repair...');
   }
@@ -41,7 +70,8 @@ function parseAuditResponse(rawText: string, fallbackRecord: any): any {
     const closeCurl = (repaired.match(/\}/g) || []).length;
     for (let i = 0; i < openCurl - closeCurl; i++) repaired += '}';
 
-    return JSON.parse(repaired);
+    const repairedObj = JSON.parse(repaired);
+    return reconcileReanalyzeData(repairedObj, fallbackRecord);
   } catch {
     console.warn('[REANALYZE] Repaired JSON parse failed, using robust regex extraction...');
   }
@@ -57,7 +87,7 @@ function parseAuditResponse(rawText: string, fallbackRecord: any): any {
 
   const parsedTotal = totalMatch ? parseFloat(totalMatch[1].replace(/,/g, '')) : fallbackRecord.totalAmount || 0;
 
-  return {
+  return reconcileReanalyzeData({
     classification: (classMatch ? classMatch[1] : 'NOMINA_COMPLETA') as any,
     confidence: (confMatch ? confMatch[1] : 'ALTA') as any,
     detectedCompany: companyMatch ? companyMatch[1] : fallbackRecord.companyName,
@@ -68,7 +98,7 @@ function parseAuditResponse(rawText: string, fallbackRecord: any): any {
     observations: fallbackRecord.observations || '',
     auditNotes: notesMatch ? notesMatch[1] : 'Auditoría cuantitativa extraída del documento de nómina.',
     hasDiscrepancies: Math.abs(parsedTotal - fallbackRecord.totalAmount) > 1,
-  };
+  }, fallbackRecord);
 }
 
 export async function POST(

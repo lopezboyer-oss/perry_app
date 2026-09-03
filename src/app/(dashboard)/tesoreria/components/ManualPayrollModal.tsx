@@ -167,10 +167,10 @@ export function ManualPayrollModal({
       const detected = json.detected;
 
       if (detected) {
-        if (detected.totalAmount && detected.totalAmount > 0) {
-          setTotalAmount(detected.totalAmount.toString());
+        if (detected.totalAmount !== undefined && detected.totalAmount !== null && Number(detected.totalAmount) > 0) {
+          setTotalAmount(Number(detected.totalAmount).toFixed(2));
         }
-        if (detected.employeeCount && detected.employeeCount > 0) {
+        if (detected.employeeCount && Number(detected.employeeCount) > 0) {
           setEmployeeCount(detected.employeeCount.toString());
         }
         if (detected.detectedPeriod) {
@@ -186,8 +186,8 @@ export function ManualPayrollModal({
         if (Array.isArray(detected.bankBreakdown) && detected.bankBreakdown.length > 0) {
           setBankList(
             detected.bankBreakdown.map((b: any) => ({
-              bankOrSource: b.bankOrSource || 'Banco',
-              amount: Number(b.amount) || 0,
+              bankOrSource: (b.bankOrSource || 'Banco').toUpperCase(),
+              amount: parseFloat(Number(b.amount || 0).toFixed(2)),
             }))
           );
         }
@@ -521,6 +521,60 @@ export function ManualPayrollModal({
                   )}
                 </div>
               ))}
+            </div>
+
+            {/* Live Bank Reconciliation Bar */}
+            <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs gap-2 mt-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-slate-400">Suma del desglose:</span>
+                <span className="font-mono font-bold text-slate-100">
+                  ${bankList
+                    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+                    .toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                {(() => {
+                  const sumBanks = bankList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                  const parsedTotal = parseFloat(totalAmount.replace(/,/g, '')) || 0;
+                  const diff = Math.abs(parsedTotal - sumBanks);
+
+                  if (parsedTotal > 0 && diff < 0.05) {
+                    return (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold text-[10px] border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Cuadrado al 100% con Gran Total
+                      </span>
+                    );
+                  }
+                  if (parsedTotal > 0 && diff >= 0.05) {
+                    return (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold text-[10px] border border-amber-500/30">
+                        Diferencia con Gran Total: ${(parsedTotal - sumBanks).toFixed(2)}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+
+              {(() => {
+                const sumBanks = bankList.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                const parsedTotal = parseFloat(totalAmount.replace(/,/g, '')) || 0;
+                const diff = Math.abs(parsedTotal - sumBanks);
+
+                if (sumBanks > 0 && diff >= 0.05) {
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setTotalAmount(sumBanks.toFixed(2))}
+                      className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-200 rounded-lg font-bold text-[11px] transition-all flex items-center gap-1 active:scale-95 shadow-sm"
+                      title="Copiar la suma de los bancos directamente al campo de Gran Total"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-300" />
+                      <span>Igualar Gran Total a suma (${sumBanks.toFixed(2)})</span>
+                    </button>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
 
