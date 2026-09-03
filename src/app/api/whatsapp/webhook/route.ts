@@ -440,13 +440,14 @@ export async function POST(req: NextRequest) {
             },
           });
 
-          // Send 1-click tokenized authorization link to WhatsApp Admin Group
-          const notifMsg = `📋 *NÓMINA DETECTADA — ${payrollReport.companyName.toUpperCase()}*\n` +
+          // Enviar enlace tokenizado de firma digital a WhatsApp (Opción 1: Sin análisis de saldos ni opinión matemática)
+          const notifMsg = `📋 *SOLICITUD DE FIRMA DIGITAL — NÓMINA*\n` +
+            `🏢 *Empresa:* ${payrollReport.companyName.toUpperCase()}\n` +
             `📅 *Periodo:* ${payrollReport.periodNumber || 'Raya Semanal'}\n` +
-            `💰 *Gran Total:* $${(payrollReport.totalAmount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` +
-            `${payrollReport.observations ? `📝 *Obs:* ${payrollReport.observations}\n` : ''}\n` +
-            `✍️ *Autorizar y Firmar Digitalmente en Perry App:* \n${signUrl}\n\n` +
-            `_Estatus: ⏳ Pendiente de Firma Directiva 🤖_`;
+            `📁 *Documento:* Reporte de nómina recibido para revisión\n\n` +
+            `✍️ *Acceso para revisión y firma digital:*\n${signUrl}\n\n` +
+            `⏳ *Estatus:* Pendiente de Firma Directiva\n` +
+            `_Perry Intelligence 🤖_`;
 
           await sendWhatsappGroupMessage({
             groupId: payload.groupId,
