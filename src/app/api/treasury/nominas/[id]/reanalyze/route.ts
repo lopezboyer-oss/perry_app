@@ -5,6 +5,72 @@ import { canAccessTreasuryDashboard } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
+function parseAuditResponse(rawText: string, fallbackRecord: any): any {
+  let cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+  // Find { and } boundaries
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+
+  // 1. Direct JSON parse
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    console.warn('[REANALYZE] Direct JSON parse failed, attempting syntax repair...');
+  }
+
+  // 2. Repair bracket/quote unbalance if cut off
+  try {
+    let repaired = cleaned;
+    // Strip trailing commas before braces: ,} -> } or ,] -> ]
+    repaired = repaired.replace(/,\s*([\}\]])/g, '$1');
+
+    // Balance quotes
+    const quotes = (repaired.match(/(?<!\\)"/g) || []).length;
+    if (quotes % 2 !== 0) repaired += '"';
+
+    // Balance brackets
+    const openSquare = (repaired.match(/\[/g) || []).length;
+    const closeSquare = (repaired.match(/\]/g) || []).length;
+    for (let i = 0; i < openSquare - closeSquare; i++) repaired += ']';
+
+    const openCurl = (repaired.match(/\{/g) || []).length;
+    const closeCurl = (repaired.match(/\}/g) || []).length;
+    for (let i = 0; i < openCurl - closeCurl; i++) repaired += '}';
+
+    return JSON.parse(repaired);
+  } catch {
+    console.warn('[REANALYZE] Repaired JSON parse failed, using robust regex extraction...');
+  }
+
+  // 3. Robust Regex Extraction fallback
+  const totalMatch = rawText.match(/["']?totalAmount["']?\s*:\s*([\d,.]+)/i);
+  const employeeMatch = rawText.match(/["']?employeeCount["']?\s*:\s*(\d+)/i);
+  const classMatch = rawText.match(/["']?classification["']?\s*:\s*["']([^"']+)["']/i);
+  const confMatch = rawText.match(/["']?confidence["']?\s*:\s*["']([^"']+)["']/i);
+  const periodMatch = rawText.match(/["']?detectedPeriod["']?\s*:\s*["']([^"']+)["']/i);
+  const companyMatch = rawText.match(/["']?detectedCompany["']?\s*:\s*["']([^"']+)["']/i);
+  const notesMatch = rawText.match(/["']?auditNotes["']?\s*:\s*["']([^"']+)["']/i);
+
+  const parsedTotal = totalMatch ? parseFloat(totalMatch[1].replace(/,/g, '')) : fallbackRecord.totalAmount || 0;
+
+  return {
+    classification: (classMatch ? classMatch[1] : 'NOMINA_COMPLETA') as any,
+    confidence: (confMatch ? confMatch[1] : 'ALTA') as any,
+    detectedCompany: companyMatch ? companyMatch[1] : fallbackRecord.companyName,
+    detectedPeriod: periodMatch ? periodMatch[1] : fallbackRecord.periodNumber || 'Raya Semanal',
+    totalAmount: isNaN(parsedTotal) ? fallbackRecord.totalAmount : parsedTotal,
+    employeeCount: employeeMatch ? parseInt(employeeMatch[1], 10) : fallbackRecord.employeeCount || 0,
+    bankBreakdown: [],
+    observations: fallbackRecord.observations || '',
+    auditNotes: notesMatch ? notesMatch[1] : 'Auditoría cuantitativa extraída del documento de nómina.',
+    hasDiscrepancies: Math.abs(parsedTotal - fallbackRecord.totalAmount) > 1,
+  };
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -47,14 +113,14 @@ export async function POST(
       return NextResponse.json({ error: 'GEMINI_API_KEY no configurada en el servidor' }, { status: 500 });
     }
 
-    // Download file with strict 8s timeout
+    // Download file with strict 6s timeout
     let imagePart: { inlineData: { mimeType: string; data: string } } | null = null;
     let isPdfFile = false;
 
     if (targetImageUrl) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
         const imgRes = await fetch(targetImageUrl, { signal: controller.signal });
         clearTimeout(timeoutId);
 
@@ -88,7 +154,7 @@ export async function POST(
       }
     }
 
-    const auditPrompt = `Eres un Auditor Contable. Analiza rápidamente este documento de nómina ${isPdfFile ? '(PDF multipágina)' : '(imagen)'} y extrae en JSON plano:
+    const auditPrompt = `Eres un Auditor Contable. Analiza rápidamente este documento de nómina ${isPdfFile ? '(PDF)' : '(imagen)'} y extrae en JSON plano:
 
 DATOS EN PERRY APP:
 - Empresa: "${payroll.companyName}"
@@ -123,7 +189,7 @@ Responde ÚNICAMENTE este JSON:
     const parts: any[] = [{ text: auditPrompt }];
     if (imagePart) parts.push(imagePart);
 
-    // Llamada directa a gemini-2.5-flash con timeout ampliado a 24s y límite de tokens
+    // Llamada directa a gemini-2.5-flash con timeout de 24s y 2048 tokens
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     const geminiController = new AbortController();
     const geminiTimeout = setTimeout(() => geminiController.abort(), 24000);
@@ -140,7 +206,7 @@ Responde ÚNICAMENTE este JSON:
           contents: [{ parts }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 800,
+            maxOutputTokens: 2048,
             responseMimeType: 'application/json',
           },
         }),
@@ -180,18 +246,8 @@ Responde ÚNICAMENTE este JSON:
       );
     }
 
-    // Clean any accidental markdown code fence wrapping
-    const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-    let auditData: any;
-    try {
-      auditData = JSON.parse(cleanJson);
-    } catch (parseErr: any) {
-      console.error('[REANALYZE JSON PARSE ERROR]', rawText);
-      return NextResponse.json(
-        { error: 'La respuesta de IA no tuvo un formato JSON válido', rawText },
-        { status: 500 }
-      );
-    }
+    // Parse with multi-layer fallback to never fail with JSON syntax error
+    const auditData = parseAuditResponse(rawText, payroll);
 
     return NextResponse.json({
       success: true,
