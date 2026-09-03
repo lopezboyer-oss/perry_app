@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Sparkles,
@@ -19,6 +19,8 @@ import {
   Save,
   Loader2,
   FileSpreadsheet,
+  FileText,
+  Eye,
 } from 'lucide-react';
 
 export interface PayrollAuditData {
@@ -56,7 +58,15 @@ export function PayrollAuditModal({
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
-  // Form state initialized with either auditData or current payroll values
+  // Determine if it's a PDF initially
+  const rawFileUrl = payroll.imageUrl || payroll.signedImageUrl;
+  const initialIsPdf =
+    Boolean(rawFileUrl && rawFileUrl.toLowerCase().includes('.pdf')) ||
+    payroll.companyName?.includes('CASEME');
+
+  const [isPdf, setIsPdf] = useState<boolean>(initialIsPdf);
+
+  // Form state
   const [companyName, setCompanyName] = useState<string>(
     auditData?.detectedCompany || payroll.companyName || 'GRUPO CASEME'
   );
@@ -82,7 +92,20 @@ export function PayrollAuditModal({
     })()
   );
 
-  const imageUrl = payroll.imageUrl || payroll.signedImageUrl;
+  // When AI audit finishes, automatically populate fields with AI findings
+  useEffect(() => {
+    if (auditData) {
+      if (auditData.detectedCompany) setCompanyName(auditData.detectedCompany);
+      if (auditData.detectedPeriod) setPeriodNumber(auditData.detectedPeriod);
+      if (auditData.totalAmount !== undefined) setTotalAmount(auditData.totalAmount);
+      if (auditData.employeeCount !== undefined) setEmployeeCount(auditData.employeeCount);
+      if (auditData.observations) setObservations(auditData.observations);
+      if (auditData.bankBreakdown) setBankBreakdown(auditData.bankBreakdown);
+    }
+  }, [auditData]);
+
+  // Clean media streaming endpoint from our backend proxy
+  const mediaProxyUrl = `/api/treasury/nominas/${payroll.id}/media`;
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.25, 3));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.5));
@@ -144,43 +167,48 @@ export function PayrollAuditModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/90 backdrop-blur-md">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-6xl h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/90 backdrop-blur-md">
+      <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-6xl h-[94vh] flex flex-col overflow-hidden shadow-2xl">
         {/* Header Bar */}
-        <div className="p-4 sm:px-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div className="p-3 sm:px-6 border-b border-slate-700 flex items-center justify-between bg-slate-950">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 bg-indigo-600/20 border border-indigo-500/30 rounded-2xl">
               <Sparkles className="w-5 h-5 text-indigo-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-bold text-slate-100">
+                <h3 className="text-sm sm:text-base font-bold text-white">
                   Auditoría Visual & Validación con IA
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-indigo-500/30">
                   {payroll.companyName}
                 </span>
+                {isPdf && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                    <FileText className="w-3 h-3" /> PDF
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-400">
-                Inspección lado a lado de la hoja original contra las cantidades estructuradas por Gemini 2.5
+                Inspección del documento original contra las cifras de nómina y desglose bancario
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            {imageUrl && (
+            {rawFileUrl && (
               <a
-                href={imageUrl}
+                href={mediaProxyUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition-all"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md"
               >
                 <ExternalLink className="w-3.5 h-3.5" /> Abrir Original
               </a>
             )}
             <button
               onClick={onClose}
-              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-all"
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs transition-all border border-slate-700"
               title="Cerrar modal"
             >
               <X className="w-5 h-5" />
@@ -191,133 +219,189 @@ export function PayrollAuditModal({
         {/* Modal Content - Side by Side Grid */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
           {/* LEFT COLUMN: Visual Document Viewer (7 cols on desktop) */}
-          <div className="lg:col-span-7 bg-black flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 relative h-72 lg:h-full overflow-hidden">
+          <div className="lg:col-span-7 bg-slate-950 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 relative h-80 lg:h-full overflow-hidden">
             {/* Viewer Controls Toolbar */}
-            <div className="absolute top-3 left-3 z-10 flex items-center space-x-1.5 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-700/80 shadow-lg">
-              <button
-                onClick={handleZoomIn}
-                className="p-1.5 hover:bg-slate-800 text-slate-200 rounded-lg transition-colors"
-                title="Acercar (+)"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleZoomOut}
-                className="p-1.5 hover:bg-slate-800 text-slate-200 rounded-lg transition-colors"
-                title="Alejar (-)"
-              >
-                <ZoomOut className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleResetZoom}
-                className="p-1.5 hover:bg-slate-800 text-slate-200 rounded-lg transition-colors"
-                title="Restablecer vista"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-              <span className="text-[10px] font-mono text-slate-400 px-2">
-                {Math.round(zoom * 100)}%
-              </span>
+            <div className="p-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between z-10">
+              <div className="flex items-center space-x-1.5">
+                {!isPdf && (
+                  <>
+                    <button
+                      onClick={handleZoomIn}
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors border border-slate-700"
+                      title="Acercar (+)"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={handleZoomOut}
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors border border-slate-700"
+                      title="Alejar (-)"
+                    >
+                      <ZoomOut className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={handleResetZoom}
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors border border-slate-700"
+                      title="Restablecer vista"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                    <span className="text-[11px] font-mono text-slate-300 px-2 font-bold">
+                      {Math.round(zoom * 100)}%
+                    </span>
+                  </>
+                )}
+                {isPdf && (
+                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-amber-400" /> Visor de Documento PDF
+                  </span>
+                )}
+              </div>
+
+              {rawFileUrl && (
+                <button
+                  onClick={() => setIsPdf(!isPdf)}
+                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[11px] font-semibold border border-slate-700 transition-colors flex items-center gap-1"
+                >
+                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                  {isPdf ? 'Cambiar a Imagen' : 'Ver como PDF'}
+                </button>
+              )}
             </div>
 
-            {/* Image Canvas Container */}
-            <div className="flex-1 overflow-auto flex items-center justify-center p-4">
-              {imageUrl ? (
-                <div
-                  style={{
-                    transform: `scale(${zoom})`,
-                    transformOrigin: 'center center',
-                    transition: 'transform 0.15s ease-out',
-                  }}
-                  className="max-w-full max-h-full flex items-center justify-center"
-                >
-                  <img
-                    src={imageUrl}
-                    alt="Hoja de Nómina Auditada"
-                    className="max-w-full max-h-[75vh] object-contain rounded-lg border border-slate-800 shadow-2xl"
-                  />
-                </div>
+            {/* Document Canvas Container */}
+            <div className="flex-1 overflow-auto flex items-center justify-center p-2 sm:p-4 bg-slate-950">
+              {rawFileUrl ? (
+                isPdf ? (
+                  <div className="w-full h-full flex flex-col rounded-xl overflow-hidden border border-slate-700 shadow-xl bg-white">
+                    <iframe
+                      src={`${mediaProxyUrl}#toolbar=1&navpanes=0`}
+                      className="w-full h-full min-h-[400px] border-0"
+                      title="Documento PDF de Nómina"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      transform: `scale(${zoom})`,
+                      transformOrigin: 'center center',
+                      transition: 'transform 0.15s ease-out',
+                    }}
+                    className="max-w-full max-h-full flex items-center justify-center"
+                  >
+                    <img
+                      src={mediaProxyUrl}
+                      alt="Hoja de Nómina Auditada"
+                      className="max-w-full max-h-[70vh] object-contain rounded-lg border border-slate-700 shadow-2xl"
+                      onError={() => setIsPdf(true)}
+                    />
+                  </div>
+                )
               ) : (
                 <div className="text-center p-8 text-slate-500 space-y-2">
                   <FileSpreadsheet className="w-12 h-12 mx-auto text-slate-600" />
-                  <p className="text-xs">No se adjuntó imagen a este registro.</p>
-                  <p className="text-[11px] text-slate-600">El reporte se basó en texto del chat.</p>
+                  <p className="text-xs text-slate-400 font-semibold">No se adjuntó archivo a este registro.</p>
+                  <p className="text-[11px] text-slate-500">El reporte se basó en texto del chat.</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* RIGHT COLUMN: AI Audit Results & Interactive Validation Form (5 cols on desktop) */}
-          <div className="lg:col-span-5 bg-slate-900/90 flex flex-col justify-between overflow-y-auto p-4 sm:p-6 space-y-5">
+          <div className="lg:col-span-5 bg-slate-900 flex flex-col justify-between overflow-y-auto p-4 sm:p-6 space-y-5">
             {isLoading ? (
-              <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-16 text-center">
-                <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
-                <p className="text-sm font-bold text-slate-200">
+              <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-16 text-center">
+                <div className="p-4 bg-indigo-600/20 border border-indigo-500/30 rounded-3xl animate-pulse">
+                  <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
+                </div>
+                <p className="text-base font-bold text-white">
                   Analizando cantidades y estructura con IA...
                 </p>
-                <p className="text-xs text-slate-400 max-w-xs">
-                  Gemini 2.5 está auditando las sumas, dispersión por banco y clasificando la hoja.
+                <p className="text-xs text-slate-300 max-w-xs leading-relaxed">
+                  Gemini está auditando las cifras, dispersión por banco y clasificando el documento de nómina.
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {/* AI Classification Badge & Verdict */}
+                {/* AI Diagnostic Badge & Notes */}
                 {auditData ? (
-                  <div className="space-y-2">
+                  <div className="p-4 rounded-2xl border space-y-3 bg-slate-950 border-slate-700 shadow-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400">
-                        Dictamen de Inteligencia Artificial:
+                      <span className="text-[11px] font-black uppercase tracking-wider text-indigo-400">
+                        Veredicto del Auditor IA
                       </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-                        Certeza {auditData.confidence}
+                      <span
+                        className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                          auditData.confidence === 'ALTA'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            : auditData.confidence === 'MEDIA'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                            : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                        }`}
+                      >
+                        Certeza: {auditData.confidence}
                       </span>
                     </div>
 
-                    {auditData.classification === 'NOMINA_COMPLETA' ? (
-                      <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-start space-x-3">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    {/* Classification Banner */}
+                    <div className="flex items-center gap-2.5">
+                      {auditData.classification === 'NOMINA_COMPLETA' ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-emerald-300">
+                              Nómina Principal Confirmada
+                            </p>
+                            <p className="text-[11px] text-slate-300">
+                              Contiene la dispersión completa de sueldos de la plantilla.
+                            </p>
+                          </div>
+                        </>
+                      ) : auditData.classification === 'REPORTE_PARCIAL_HORAS_EXTRA' ? (
+                        <>
+                          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-amber-300">
+                              Reporte Parcial / Horas Extra
+                            </p>
+                            <p className="text-[11px] text-slate-300">
+                              Parece ser un anexo de tiempo extra, no la nómina total.
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-rose-300">
+                              No Corresponde a Nómina
+                            </p>
+                            <p className="text-[11px] text-slate-300">
+                              El documento no parece ser un reporte de dispersión de raya.
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Discrepancy warning */}
+                    {auditData.hasDiscrepancies && (
+                      <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl flex items-start gap-2 text-xs text-amber-200">
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-xs font-bold text-emerald-300">
-                            Nómina Oficial Completa (Raya Semanal)
-                          </p>
-                          <p className="text-[11px] text-emerald-400/80 mt-0.5">
-                            El documento contiene concentrado general de dispersión con importes netos a pagar.
-                          </p>
-                        </div>
-                      </div>
-                    ) : auditData.classification === 'REPORTE_PARCIAL_HORAS_EXTRA' ? (
-                      <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start space-x-3">
-                        <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-bold text-amber-300">
-                            Reporte Parcial / Auxiliar de Horas Extras
-                          </p>
-                          <p className="text-[11px] text-amber-400/80 mt-0.5">
-                            Advertencia: Este archivo parece ser solo un reporte secundario o desglose parcial, no la nómina total.
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start space-x-3">
-                        <XCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-bold text-rose-300">
-                            Documento No Corresponde a Nómina
-                          </p>
-                          <p className="text-[11px] text-rose-400/80 mt-0.5">
-                            Falso positivo detectado: la imagen no corresponde a una hoja de sueldos o salarios.
-                          </p>
+                          <span className="font-bold">Discrepancia detectada: </span>
+                          Las cantidades detectadas difieren del monto registrado originalmente (${payroll.totalAmount.toLocaleString('es-MX')}).
                         </div>
                       </div>
                     )}
 
                     {/* Audit Notes from AI */}
                     {auditData.auditNotes && (
-                      <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl space-y-1 text-xs">
-                        <p className="font-bold text-indigo-300 text-[10px] uppercase">
-                          Observaciones del Auditor IA:
+                      <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl space-y-1 text-xs">
+                        <p className="font-bold text-indigo-300 text-[10px] uppercase tracking-wider">
+                          Observaciones de la IA:
                         </p>
-                        <p className="text-slate-300 text-[11px] leading-relaxed">
+                        <p className="text-slate-200 text-xs leading-relaxed">
                           {auditData.auditNotes}
                         </p>
                       </div>
@@ -326,68 +410,70 @@ export function PayrollAuditModal({
                 ) : null}
 
                 {/* Validation Form */}
-                <div className="space-y-3 pt-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <span>Valores a Registrar en la Ficha</span>
-                  </h4>
+                <div className="bg-slate-950 border border-slate-700 p-4 sm:p-5 rounded-2xl space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                      <span>Valores a Registrar en la Ficha</span>
+                    </h4>
+                    <span className="text-[10px] font-bold text-slate-400">Campos editables</span>
+                  </div>
 
                   {/* Company & Period Row */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mb-1">
-                        <Building2 className="w-3.5 h-3.5 text-indigo-400" /> Empresa
+                      <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5 mb-1.5">
+                        <Building2 className="w-4 h-4 text-indigo-400" /> Empresa
                       </label>
                       <select
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
-                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3.5 py-2.5 bg-slate-800 border-2 border-slate-600 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-indigo-400 focus:bg-slate-700 transition-all shadow-inner"
                       >
-                        <option value="GRUPO CASEME">GRUPO CASEME</option>
-                        <option value="DROBOTS">DROBOTS</option>
-                        <option value="OPUS INGENIUM">OPUS INGENIUM</option>
-                        <option value="VULCAN FORGE">VULCAN FORGE</option>
+                        <option value="GRUPO CASEME" className="bg-slate-800 text-white">GRUPO CASEME</option>
+                        <option value="DROBOTS" className="bg-slate-800 text-white">DROBOTS</option>
+                        <option value="OPUS INGENIUM" className="bg-slate-800 text-white">OPUS INGENIUM</option>
+                        <option value="VULCAN FORGE" className="bg-slate-800 text-white">VULCAN FORGE</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mb-1">
-                        <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Periodo / Raya
+                      <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5 mb-1.5">
+                        <Calendar className="w-4 h-4 text-indigo-400" /> Periodo / Raya
                       </label>
                       <input
                         type="text"
                         value={periodNumber}
                         onChange={(e) => setPeriodNumber(e.target.value)}
                         placeholder="ej. Raya 34"
-                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                      >
-                      </input>
+                        className="w-full px-3.5 py-2.5 bg-slate-800 border-2 border-slate-600 rounded-xl text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-slate-700 transition-all shadow-inner"
+                      />
                     </div>
                   </div>
 
                   {/* Total Amount & Employees Row */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mb-1">
-                        <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Gran Total ($ MXN)
+                      <label className="text-xs font-bold text-emerald-300 flex items-center gap-1.5 mb-1.5">
+                        <DollarSign className="w-4 h-4 text-emerald-400" /> Gran Total ($ MXN)
                       </label>
                       <input
                         type="number"
                         step="0.01"
                         value={totalAmount}
                         onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                        className="w-full px-3.5 py-2.5 bg-slate-800 border-2 border-emerald-500 rounded-xl text-base font-black text-emerald-300 font-mono tracking-tight focus:outline-none focus:border-emerald-400 focus:bg-slate-700 transition-all shadow-inner"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mb-1">
-                        <Users className="w-3.5 h-3.5 text-indigo-400" /> Conteo Empleados
+                      <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5 mb-1.5">
+                        <Users className="w-4 h-4 text-indigo-400" /> Conteo Empleados
                       </label>
                       <input
                         type="number"
                         value={employeeCount}
                         onChange={(e) => setEmployeeCount(parseInt(e.target.value, 10) || 0)}
-                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                        className="w-full px-3.5 py-2.5 bg-slate-800 border-2 border-slate-600 rounded-xl text-xs font-bold text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-slate-700 transition-all shadow-inner"
                       />
                     </div>
                   </div>
@@ -395,14 +481,14 @@ export function PayrollAuditModal({
                   {/* Bank Breakdown List */}
                   {bankBreakdown.length > 0 && (
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-semibold text-slate-400 block">
+                      <label className="text-xs font-bold text-slate-200 block">
                         Desglose Detectado por Banco / Efectivo:
                       </label>
-                      <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1 divide-y divide-slate-800/80">
+                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs space-y-1.5 divide-y divide-slate-800">
                         {bankBreakdown.map((item, idx) => (
-                          <div key={idx} className="flex justify-between pt-1">
-                            <span className="text-slate-300 font-medium">{item.bankOrSource}</span>
-                            <span className="font-mono text-emerald-400 font-bold">
+                          <div key={idx} className="flex justify-between items-center pt-1.5">
+                            <span className="text-slate-200 font-semibold">{item.bankOrSource}</span>
+                            <span className="font-mono text-emerald-400 font-bold text-xs">
                               ${item.amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
@@ -413,7 +499,7 @@ export function PayrollAuditModal({
 
                   {/* Observations */}
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-400 block mb-1">
+                    <label className="text-xs font-bold text-slate-200 block mb-1.5">
                       Observaciones / Notas:
                     </label>
                     <textarea
@@ -421,70 +507,64 @@ export function PayrollAuditModal({
                       value={observations}
                       onChange={(e) => setObservations(e.target.value)}
                       placeholder="Notas adicionales..."
-                      className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none"
+                      className="w-full px-3.5 py-2 bg-slate-800 border-2 border-slate-600 rounded-xl text-xs font-semibold text-white placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-slate-700 transition-all resize-none shadow-inner"
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Bottom Actions Bar */}
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-2">
+            {/* Action Buttons Footer */}
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
               {showDeleteConfirm ? (
-                <div className="w-full bg-rose-950/40 border border-rose-500/30 p-3 rounded-2xl flex items-center justify-between">
-                  <div className="text-xs text-rose-300 font-semibold">
-                    ¿Confirmar eliminación permanente?
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                      className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                    >
-                      {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      Sí, Borrar
-                    </button>
-                    <button
-                      onClick={() => setShowDeleteConfirm(false)}
-                      className="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-xl text-xs"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
+                <div className="flex items-center space-x-2 bg-rose-950/60 border border-rose-800/80 p-2 rounded-2xl">
+                  <span className="text-xs font-bold text-rose-300">¿Confirmas borrar?</span>
+                  <button
+                    disabled={isDeleting}
+                    onClick={handleDelete}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow-md"
+                  >
+                    {isDeleting ? 'Borrando...' : 'Sí, eliminar'}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all"
+                  >
+                    Cancelar
+                  </button>
                 </div>
               ) : (
-                <>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="px-3 py-2 bg-rose-950/30 hover:bg-rose-900/40 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
-                    title="Descartar y borrar este registro"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Borrar Ficha</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={onClose}
-                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-900/20"
-                    >
-                      {isSaving ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Save className="w-3.5 h-3.5" />
-                      )}
-                      <span>Guardar Cambios</span>
-                    </button>
-                  </div>
-                </>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-rose-200 border border-rose-800/60 rounded-xl text-xs font-bold transition-all"
+                >
+                  <Trash2 className="w-4 h-4" /> Descartar Nómina
+                </button>
               )}
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold transition-all border border-slate-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isSaving || isLoading}
+                  onClick={handleSave}
+                  className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-900/20"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span>Guardar y Validar</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
