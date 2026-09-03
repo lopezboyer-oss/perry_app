@@ -1,6 +1,5 @@
 [functions]
   external_node_modules = ["bcryptjs"]
-  timeout = 26
 
 [functions."*"]
   node_bundler = "esbuild"
