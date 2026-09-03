@@ -3,11 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { canAccessTreasuryDashboard } from '@/lib/permissions';
 
-export const maxDuration = 60; // Allow up to 60s for vision analysis
+export const maxDuration = 26; // Netlify max serverless execution duration
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
@@ -16,11 +16,12 @@ export async function POST(
     }
 
     const email = (session.user as any)?.email || '';
-    if (!canAccessTreasuryDashboard(email)) {
+    const userRole = (session.user as any)?.role || '';
+    if (!canAccessTreasuryDashboard(email) && userRole !== 'ADMIN') {
       return NextResponse.json({ error: 'Acceso restringido a nóminas' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     if (!id) {
       return NextResponse.json({ error: 'ID de nómina requerido' }, { status: 400 });
     }
@@ -46,11 +47,15 @@ export async function POST(
       return NextResponse.json({ error: 'GEMINI_API_KEY no configurada en el servidor' }, { status: 500 });
     }
 
-    // Download image to base64 if available
+    // Download image with strict 8s timeout to avoid serverless timeout
     let imagePart: { inlineData: { mimeType: string; data: string } } | null = null;
     if (targetImageUrl) {
       try {
-        const imgRes = await fetch(targetImageUrl);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const imgRes = await fetch(targetImageUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (imgRes.ok) {
           const arrayBuffer = await imgRes.arrayBuffer();
           const base64Data = Buffer.from(arrayBuffer).toString('base64');
@@ -63,7 +68,7 @@ export async function POST(
           };
         }
       } catch (err: any) {
-        console.warn('[REANALYZE] Error descargando imagen de nómina:', err);
+        console.warn('[REANALYZE] Error o timeout descargando imagen de nómina:', err.message);
       }
     }
 
@@ -127,17 +132,39 @@ Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
     if (imagePart) parts.push(imagePart);
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: 'application/json',
+    
+    // Strict 14s timeout for Gemini call
+    const geminiController = new AbortController();
+    const geminiTimeout = setTimeout(() => geminiController.abort(), 14000);
+
+    let geminiRes: Response;
+    try {
+      geminiRes = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json',
+          },
+        }),
+        signal: geminiController.signal,
+      });
+    } catch (fetchErr: any) {
+      clearTimeout(geminiTimeout);
+      const isTimeout = fetchErr.name === 'AbortError';
+      return NextResponse.json(
+        {
+          error: isTimeout
+            ? 'El análisis de visión con IA tardó más de lo esperado. Por favor reintenta.'
+            : `Error de conexión con Gemini: ${fetchErr.message}`,
         },
-      }),
-    });
+        { status: 504 }
+      );
+    } finally {
+      clearTimeout(geminiTimeout);
+    }
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
@@ -154,7 +181,18 @@ Responde ÚNICAMENTE con un JSON plano válido con la siguiente estructura:
       return NextResponse.json({ error: 'Gemini no retornó contenido analizable' }, { status: 500 });
     }
 
-    const auditData = JSON.parse(rawText);
+    // Clean any accidental markdown code fence wrapping
+    const cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    let auditData: any;
+    try {
+      auditData = JSON.parse(cleanJson);
+    } catch (parseErr: any) {
+      console.error('[REANALYZE JSON PARSE ERROR]', rawText);
+      return NextResponse.json(
+        { error: 'La respuesta de IA no tuvo un formato JSON válido', rawText },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

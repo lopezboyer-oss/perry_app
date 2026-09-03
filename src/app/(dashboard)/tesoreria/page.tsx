@@ -121,15 +121,35 @@ export default function TesoreriaPage() {
       const res = await fetch(`/api/treasury/nominas/${pay.id}/reanalyze`, {
         method: 'POST',
       });
+
+      let json: any = null;
+      try {
+        const text = await res.text();
+        json = JSON.parse(text);
+      } catch {
+        // En caso de que la respuesta sea HTML (por timeout o error de servidor de Netlify)
+      }
+
       if (!res.ok) {
-        const err = await res.json();
-        alert(`Error al analizar con IA: ${err.error || 'No se pudo completar el análisis'}`);
+        const errorMsg =
+          json?.error ||
+          json?.message ||
+          (res.status === 504
+            ? 'Tiempo de espera agotado en el servidor (504). Por favor intenta de nuevo.'
+            : res.status === 401
+            ? 'Sesión expirada o no autorizada. Por favor recarga la página.'
+            : `Error del servidor (${res.status})`);
+        alert(`Error al analizar con IA: ${errorMsg}`);
         setIsAuditing(false);
         setAuditingId(null);
         return;
       }
-      const json = await res.json();
-      setAuditData(json.audit);
+
+      if (json && json.audit) {
+        setAuditData(json.audit);
+      } else {
+        alert('No se pudieron extraer datos de auditoría para esta hoja.');
+      }
     } catch (err: any) {
       alert(`Error en análisis: ${err.message}`);
     } finally {

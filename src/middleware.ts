@@ -17,6 +17,9 @@ export default auth((req) => {
   if (isPublicRoute) {
     response = NextResponse.next();
   } else if (!isLoggedIn) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
     response = NextResponse.redirect(new URL('/login', req.url));
   } else {
     const userRole = (req.auth?.user as any)?.role;

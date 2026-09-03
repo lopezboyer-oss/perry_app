@@ -6,7 +6,7 @@ import { canAccessTreasuryDashboard } from '@/lib/permissions';
 // DELETE: Eliminar permanentemente un registro de nómina (falso positivo, error o duplicado)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
@@ -19,7 +19,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Acceso restringido a nóminas' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     if (!id) {
       return NextResponse.json({ error: 'ID de nómina requerido' }, { status: 400 });
     }
@@ -50,7 +50,7 @@ export async function DELETE(
 // PATCH: Actualizar datos de la nómina (cantidades validadas, desglose, periodo u observaciones)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
@@ -63,7 +63,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Acceso restringido a nóminas' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     if (!id) {
       return NextResponse.json({ error: 'ID de nómina requerido' }, { status: 400 });
     }
