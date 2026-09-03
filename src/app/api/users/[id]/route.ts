@@ -13,7 +13,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const { id } = params;
     const body = await req.json();
-    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip, accessManPower, accessCrearPlanes, weeklySalary } = body;
+    const { name, email, password, role, supervisorId, isSafetyDesignado, isSafetyAuditor, baseCompanyId, companyIds, defaultCompanyId, accessSafetyDedicado, accessVehicles, accessDrivers, accessElevationEquip, accessManPower, accessCrearPlanes, accessNominas, weeklySalary } = body;
 
     // Only ADMIN MAESTRO can assign/keep the ADMIN role
     if (role === 'ADMIN' && session.user.role !== 'ADMIN') {
@@ -107,8 +107,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     return NextResponse.json(updatedUser);
-  } catch (error) {
-    return NextResponse.json({ error: 'Error updating user' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[UPDATE USER ERROR]', error);
+    return NextResponse.json({ error: error.message || 'Error updating user' }, { status: 500 });
   }
 }
 

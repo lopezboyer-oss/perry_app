@@ -172,6 +172,7 @@ export default function UsuariosPage() {
       accessElevationEquip: user.accessElevationEquip || false,
       accessManPower: user.accessManPower || false,
       accessCrearPlanes: user.accessCrearPlanes || false,
+      accessNominas: user.accessNominas || false,
       baseCompanyId: user.baseCompanyId,
       companyIds: user.companies?.map(c => c.companyId) || [],
       defaultCompanyId: defaultUC?.companyId || null,
@@ -181,8 +182,39 @@ export default function UsuariosPage() {
   };
   const handleDelete = async (user: UserData) => { if (!window.confirm(`¿Eliminar a ${user.name}?`)) return; await fetch(`/api/users/${user.id}`, { method: 'DELETE' }); await fetchAll(); };
   const handleFormSubmit = async (data: UserFormData) => {
-    if (editingUser?.id) { const res = await fetch(`/api/users/${editingUser.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (!res.ok) throw new Error(await res.text()); }
-    else { const res = await fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (!res.ok) throw new Error(await res.text()); }
+    if (editingUser?.id) {
+      const res = await fetch(`/api/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        let errMsg = 'Error al actualizar usuario';
+        try {
+          const errJson = await res.json();
+          errMsg = errJson.error || errMsg;
+        } catch {
+          errMsg = await res.text();
+        }
+        throw new Error(errMsg);
+      }
+    } else {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        let errMsg = 'Error al crear usuario';
+        try {
+          const errJson = await res.json();
+          errMsg = errJson.error || errMsg;
+        } catch {
+          errMsg = await res.text();
+        }
+        throw new Error(errMsg);
+      }
+    }
     await fetchAll();
   };
 

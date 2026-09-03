@@ -114,8 +114,9 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
     try {
       await onSubmit(formData);
       onOpenChange(false);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('[SUBMIT USER ERROR]', error);
+      alert(error.message || 'Error al guardar el usuario. Revisa la información e intenta de nuevo.');
     } finally {
       setLoading(false);
     }
