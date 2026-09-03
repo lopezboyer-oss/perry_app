@@ -438,8 +438,8 @@ export function ManualPayrollModal({
                 <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
                 Gran Total a Dispersar (Neto MXN)
               </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-emerald-400">
+              <div className="flex rounded-xl overflow-hidden border border-slate-700 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 bg-slate-900 shadow-inner">
+                <span className="inline-flex items-center justify-center px-3.5 bg-slate-800 text-emerald-400 font-black font-mono text-sm border-r border-slate-700 select-none">
                   $
                 </span>
                 <input
@@ -448,7 +448,7 @@ export function ManualPayrollModal({
                   onChange={(e) => setTotalAmount(e.target.value)}
                   placeholder="0.00"
                   style={{ backgroundColor: '#1e293b', color: '#10b981' }}
-                  className="audit-input-total w-full p-3 pl-8 rounded-xl border border-slate-700 text-sm font-black font-mono focus:outline-none focus:border-emerald-500"
+                  className="audit-input-total w-full px-3.5 py-3 text-sm font-black font-mono focus:outline-none border-0"
                 />
               </div>
             </div>
@@ -496,8 +496,8 @@ export function ManualPayrollModal({
                     style={{ backgroundColor: '#1e293b', color: '#ffffff' }}
                     className="audit-input flex-1 p-2.5 rounded-xl border border-slate-700 text-xs font-semibold focus:outline-none focus:border-indigo-500"
                   />
-                  <div className="relative w-36 sm:w-44">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-400">
+                  <div className="flex rounded-xl overflow-hidden border border-slate-700 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 bg-slate-900 shadow-inner w-36 sm:w-48 shrink-0">
+                    <span className="inline-flex items-center justify-center px-2.5 bg-slate-800 text-emerald-400 font-bold font-mono text-xs border-r border-slate-700 select-none">
                       $
                     </span>
                     <input
@@ -507,7 +507,7 @@ export function ManualPayrollModal({
                       onChange={(e) => handleBankChange(idx, 'amount', e.target.value)}
                       placeholder="0.00"
                       style={{ backgroundColor: '#1e293b', color: '#10b981' }}
-                      className="audit-input w-full p-2.5 pl-6 rounded-xl border border-slate-700 text-xs font-mono font-bold focus:outline-none focus:border-emerald-500"
+                      className="audit-input w-full px-2.5 py-2.5 text-xs font-mono font-bold focus:outline-none border-0"
                     />
                   </div>
                   {bankList.length > 1 && (

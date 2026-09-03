@@ -456,16 +456,21 @@ export function PayrollAuditModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-emerald-300 flex items-center gap-1.5 mb-1.5">
-                        <DollarSign className="w-4 h-4 text-emerald-400" /> Gran Total ($ MXN)
+                        <DollarSign className="w-4 h-4 text-emerald-400" /> Gran Total (MXN)
                       </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={totalAmount}
-                        onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
-                        style={{ backgroundColor: '#1e293b', color: '#34d399', borderColor: '#10b981' }}
-                        className="audit-input-total w-full px-3.5 py-2.5 rounded-xl text-base font-black font-mono border-2 tracking-tight focus:outline-none focus:border-emerald-400 transition-all shadow-inner"
-                      />
+                      <div className="flex rounded-xl overflow-hidden border-2 border-emerald-500/80 bg-slate-900 shadow-inner">
+                        <span className="inline-flex items-center justify-center px-3.5 bg-slate-800 text-emerald-400 font-black font-mono text-base border-r border-slate-700 select-none">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={totalAmount}
+                          onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
+                          style={{ backgroundColor: '#1e293b', color: '#34d399' }}
+                          className="audit-input-total w-full px-3.5 py-2 text-base font-black font-mono tracking-tight focus:outline-none border-0"
+                        />
+                      </div>
                     </div>
 
                     <div>
