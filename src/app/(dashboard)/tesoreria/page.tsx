@@ -189,6 +189,37 @@ export default function TesoreriaPage() {
     setPayrolls((prev) => prev.filter((p) => p.id !== deletedId));
   };
 
+  // Escuchar eventos de firma digital desde la pestaña de firma para actualizar en tiempo real
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'PERRY_PAYROLL_SIGNED' && event.data.log) {
+        setPayrolls((prev) =>
+          prev.map((p) => (p.id === event.data.log.id ? { ...p, ...event.data.log } : p))
+        );
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'perry_payroll_last_signed' && event.newValue) {
+        try {
+          const parsed = JSON.parse(event.newValue);
+          if (parsed.log) {
+            setPayrolls((prev) =>
+              prev.map((p) => (p.id === parsed.log.id ? { ...p, ...parsed.log } : p))
+            );
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   const fetchTreasuryData = async () => {
     setLoading(true);
     setError(null);

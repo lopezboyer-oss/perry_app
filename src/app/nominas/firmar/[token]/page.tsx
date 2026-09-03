@@ -56,6 +56,7 @@ export default function FirmarNominaPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   const fetchPayroll = async () => {
     setLoading(true);
@@ -80,6 +81,29 @@ export default function FirmarNominaPage() {
   useEffect(() => {
     if (token) fetchPayroll();
   }, [token]);
+
+  // Manejo de cuenta regresiva y cierre automático de la ventana
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      // Intentar cerrar la pestaña
+      try {
+        window.close();
+      } catch (e) {
+        console.warn('Could not auto-close window:', e);
+      }
+      // Fallback si el navegador no permite cerrar por política de scripts: redirigir a tesorería
+      const fallbackTimer = setTimeout(() => {
+        router.push('/tesoreria');
+      }, 300);
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [countdown, router]);
 
   const handleAuthorize = async (action: 'APPROVE' | 'REJECT') => {
     setSubmitting(true);
@@ -107,6 +131,24 @@ export default function FirmarNominaPage() {
           ? `Nómina autorizada y tokenizada con éxito por ${json.log.signedBy}. Se ha notificado al grupo de WhatsApp.`
           : `La nómina ha sido rechazada por ${json.log.signedBy}. Se ha notificado al grupo de WhatsApp.`
       );
+
+      // 1. Notificar a la ventana principal de Tesorería para actualizar la tarjeta en tiempo real
+      try {
+        if (typeof window !== 'undefined') {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({ type: 'PERRY_PAYROLL_SIGNED', token, log: json.log }, '*');
+          }
+          localStorage.setItem(
+            'perry_payroll_last_signed',
+            JSON.stringify({ token, time: Date.now(), log: json.log })
+          );
+        }
+      } catch (e) {
+        console.warn('Error en broadcast de firma:', e);
+      }
+
+      // 2. Iniciar cuenta regresiva de 3 segundos para auto-cierre
+      setCountdown(3);
     } catch (err: any) {
       setError(err.message || 'Error autorizando nómina');
     } finally {
@@ -189,11 +231,43 @@ export default function FirmarNominaPage() {
           </div>
         </div>
 
-        {/* Success Alert */}
-        {successMsg && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-300 text-xs font-semibold flex items-center space-x-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-            <span>{successMsg}</span>
+        {/* Success Alert & Auto-close Card */}
+        {countdown !== null && (
+          <div className="p-6 bg-gradient-to-br from-emerald-950/90 to-slate-950 border-2 border-emerald-500 rounded-3xl text-center space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-emerald-500/20 border-2 border-emerald-500/40 rounded-full flex items-center justify-center mx-auto text-emerald-400">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-emerald-300">¡Nómina Firmada y Autorizada con Éxito!</h2>
+              <p className="text-xs text-slate-300 mt-1">
+                Autorizado por <strong className="text-white">{log.signedBy}</strong>. Notificación enviada al grupo.
+              </p>
+            </div>
+
+            <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 flex items-center justify-between text-xs max-w-sm mx-auto">
+              <span className="text-slate-300 font-semibold">Cerrando ventana automáticamente:</span>
+              <span className="font-mono font-black text-emerald-400 text-sm bg-emerald-950 px-3 py-1 rounded-lg border border-emerald-500/40">
+                {countdown}s
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2 justify-center pt-1">
+              <button
+                onClick={() => {
+                  window.close();
+                  setTimeout(() => router.push('/tesoreria'), 200);
+                }}
+                className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                <span>✕ Cerrar Ventana Ahora</span>
+              </button>
+              <button
+                onClick={() => router.push('/tesoreria')}
+                className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all border border-slate-700"
+              >
+                Volver a Tesorería Directiva
+              </button>
+            </div>
           </div>
         )}
 
