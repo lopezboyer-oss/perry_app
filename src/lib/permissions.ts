@@ -86,6 +86,13 @@ export const canAccessTreasuryDashboard = (email: string) => {
   return allowed.some(e => normalized.includes(e) || normalized.includes('lopezboyer') || normalized.includes('enrique.lopez'));
 };
 
+/** Verifica si un usuario tiene acceso al módulo de nóminas (Directores, Admin o Asistentes con accessNominas) */
+export const canAccessPayrollModule = (user: { email: string; role?: string; accessNominas?: boolean } | null) => {
+  if (!user) return false;
+  if (canAccessTreasuryDashboard(user.email) || user.role === 'ADMIN') return true;
+  return Boolean(user.accessNominas);
+};
+
 /** Resolves official Director name for tokenized digital signatures */
 export const resolveDirectorSignerName = (email: string, userName?: string): string => {
   const normEmail = (email || '').toLowerCase().trim();

@@ -12,6 +12,7 @@ export const authConfig = {
         token.isSafetyAuditor = (user as any).isSafetyAuditor || false;
         token.accessManPower = (user as any).accessManPower || false;
         token.accessCrearPlanes = (user as any).accessCrearPlanes || false;
+        token.accessNominas = (user as any).accessNominas || false;
         token.accessSafetyDedicado = (user as any).accessSafetyDedicado || false;
         token.accessVehicles = (user as any).accessVehicles || false;
         token.accessDrivers = (user as any).accessDrivers || false;
@@ -36,6 +37,7 @@ export const authConfig = {
               accessElevationEquip: true,
               accessManPower: true,
               accessCrearPlanes: true,
+              accessNominas: true,
               companies: {
                 select: {
                   companyId: true,
@@ -58,6 +60,7 @@ export const authConfig = {
             token.accessElevationEquip = freshUser.accessElevationEquip || false;
             token.accessManPower = freshUser.accessManPower || false;
             token.accessCrearPlanes = freshUser.accessCrearPlanes || false;
+            token.accessNominas = freshUser.accessNominas || false;
 
             // Fetch isCruzVerde if role is TECNICO
             if (freshUser.role === 'TECNICO') {
@@ -92,6 +95,7 @@ export const authConfig = {
         (session.user as any).accessElevationEquip = token.accessElevationEquip || false;
         (session.user as any).accessManPower = token.accessManPower || false;
         (session.user as any).accessCrearPlanes = token.accessCrearPlanes || false;
+        (session.user as any).accessNominas = token.accessNominas || false;
         (session.user as any).isCruzVerde = token.isCruzVerde || false;
       }
       return session;

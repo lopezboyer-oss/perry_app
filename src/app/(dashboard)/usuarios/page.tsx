@@ -20,6 +20,7 @@ interface UserData {
   accessElevationEquip: boolean;
   accessManPower: boolean;
   accessCrearPlanes?: boolean;
+  accessNominas?: boolean;
   supervisorId: string | null;
   supervisor: { name: string } | null;
   isActive: boolean;

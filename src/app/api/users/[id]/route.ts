@@ -67,6 +67,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       accessElevationEquip: accessElevationEquip || false,
       accessManPower: accessManPower || false,
       accessCrearPlanes: accessCrearPlanes || false,
+      accessNominas: accessNominas || false,
       baseCompanyId: baseCompanyId || undefined,
       ...(isAdmin && weeklySalary !== undefined && { weeklySalary: Number(weeklySalary) || 0 }),
     };

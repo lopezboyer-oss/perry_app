@@ -32,6 +32,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { PayrollAuditModal, PayrollAuditData } from './components/PayrollAuditModal';
+import { ManualPayrollModal } from './components/ManualPayrollModal';
 
 interface AccountBalance {
   id: string;
@@ -90,6 +91,9 @@ export default function TesoreriaPage() {
   const [selectedCompany, setSelectedCompany] = useState<string>('TODAS');
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
   const [payrollSearch, setPayrollSearch] = useState('');
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [isDirector, setIsDirector] = useState(true);
+  const [allowedCompanies, setAllowedCompanies] = useState<string[]>([]);
   const [activeImageModal, setActiveImageModal] = useState<{
     title: string;
     imageUrl: string;
@@ -229,21 +233,38 @@ export default function TesoreriaPage() {
         fetch('/api/treasury/nominas'),
       ]);
 
-      if (!balRes.ok) {
-        if (balRes.status === 403) {
-          setError('Acceso denegado: Este módulo de Tesorería Directiva es de uso exclusivo para la Dirección General.');
+      if (payRes.ok) {
+        const payJson = await payRes.json();
+        setPayrolls(payJson.logs || []);
+        const userIsDirector = Boolean(payJson.isDirector);
+        setIsDirector(userIsDirector);
+
+        if (!userIsDirector) {
+          // Asistente: fijar vista en NOMINAS y limitar a su(s) empresa(s)
+          setActiveView('NOMINAS');
+          const userCompanies = payJson.userAssignedCompanies || payJson.allowedCompanies || [];
+          setAllowedCompanies(userCompanies);
+          if (userCompanies.length > 0) {
+            setSelectedCompany(userCompanies[0]);
+          }
+        } else {
+          setAllowedCompanies(['GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE']);
+        }
+      } else if (!balRes.ok) {
+        if (balRes.status === 403 && payRes.status === 403) {
+          setError('Acceso denegado: No cuentas con permisos para consultar información de tesorería o nóminas.');
         } else {
           setError('Error al cargar la información de tesorería.');
         }
         setLoading(false);
         return;
       }
-      const json = await balRes.json();
-      setData(json);
 
-      if (payRes.ok) {
-        const payJson = await payRes.json();
-        setPayrolls(payJson.logs || []);
+      if (balRes.ok) {
+        const json = await balRes.json();
+        setData(json);
+      } else {
+        setData(null);
       }
     } catch (err: any) {
       setError(err.message || 'Error de conexión');
@@ -481,17 +502,19 @@ export default function TesoreriaPage() {
 
       {/* Main View Switcher (Saldos vs Nóminas) */}
       <div className="flex items-center space-x-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-2xl w-fit shadow-lg">
-        <button
-          onClick={() => setActiveView('BALANCES')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-            activeView === 'BALANCES'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-          }`}
-        >
-          <Landmark className="w-4 h-4" />
-          <span>Saldos Bancarios & Flujo</span>
-        </button>
+        {isDirector && (
+          <button
+            onClick={() => setActiveView('BALANCES')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeView === 'BALANCES'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Landmark className="w-4 h-4" />
+            <span>Saldos Bancarios & Flujo</span>
+          </button>
+        )}
         <button
           onClick={() => setActiveView('NOMINAS')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -520,32 +543,49 @@ export default function TesoreriaPage() {
                 </p>
               </div>
 
-              {/* Input de Búsqueda por Período / Raya */}
-              <div className="relative min-w-[240px]">
-                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  value={payrollSearch}
-                  onChange={(e) => setPayrollSearch(e.target.value)}
-                  placeholder="Buscar semana o raya (ej. Raya 34)..."
-                  className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {/* Botón Cargar Nómina Manual */}
+                <button
+                  onClick={() => setIsManualModalOpen(true)}
+                  className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-1.5 shrink-0 active:scale-95"
+                  title="Subir documento de nómina manualmente y generar token de firma"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Cargar Nómina Manual</span>
+                </button>
+
+                {/* Input de Búsqueda por Período / Raya */}
+                <div className="relative min-w-[200px]">
+                  <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={payrollSearch}
+                    onChange={(e) => setPayrollSearch(e.target.value)}
+                    placeholder="Buscar semana o raya..."
+                    className="w-full pl-9 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Selector Superior de Empresas (Filtro por Empresa) */}
             <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 overflow-x-auto">
-              <button
-                onClick={() => setSelectedCompany('TODAS')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  selectedCompany === 'TODAS'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                }`}
-              >
-                🌐 Todas las Empresas ({(payrolls || []).length})
-              </button>
-              {['GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE'].map((comp) => {
+              {isDirector && (
+                <button
+                  onClick={() => setSelectedCompany('TODAS')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                    selectedCompany === 'TODAS'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                  }`}
+                >
+                  🌐 Todas las Empresas ({(payrolls || []).length})
+                </button>
+              )}
+              {(isDirector
+                ? ['GRUPO CASEME', 'DROBOTS', 'OPUS INGENIUM', 'VULCAN FORGE']
+                : allowedCompanies
+              ).map((comp) => {
                 const compCount = (payrolls || []).filter((p) => p.companyName === comp).length;
                 return (
                   <button
@@ -1181,6 +1221,18 @@ export default function TesoreriaPage() {
           onDelete={handlePayrollDeleted}
         />
       )}
+
+      {/* MANUAL PAYROLL UPLOAD MODAL */}
+      <ManualPayrollModal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        onPayrollCreated={(newPay) => {
+          setPayrolls((prev) => [newPay, ...prev]);
+        }}
+        isDirector={isDirector}
+        allowedCompanies={allowedCompanies}
+        defaultCompany={selectedCompany !== 'TODAS' ? selectedCompany : undefined}
+      />
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirmPayroll && (

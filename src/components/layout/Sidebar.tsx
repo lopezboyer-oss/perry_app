@@ -221,6 +221,30 @@ export function Sidebar({ user }: SidebarProps) {
               })}
             </div>
           )}
+
+          {/* SECCIÓN NÓMINAS PARA ASISTENTES ADMINISTRATIVOS */}
+          {!isDirectorExclusive && (user as any)?.accessNominas && (
+            <div className="mt-4 border-t border-indigo-500/30 pt-3 space-y-1">
+              {!collapsed && (
+                <div className="px-3 pb-1 text-[10px] font-black text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                  <span>📋 NÓMINAS</span>
+                </div>
+              )}
+              <Link
+                href="/tesoreria"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200',
+                  pathname === '/tesoreria'
+                    ? 'bg-indigo-600/25 text-indigo-200 border border-indigo-400/40 shadow-sm shadow-indigo-500/10'
+                    : 'text-indigo-400 hover:text-indigo-100 hover:bg-indigo-500/15'
+                )}
+                title={collapsed ? 'Nóminas' : undefined}
+              >
+                <Building2 className="w-5 h-5 flex-shrink-0 text-indigo-400" />
+                {!collapsed && <span>Nóminas</span>}
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Collapse button */}
@@ -276,8 +300,8 @@ export function Sidebar({ user }: SidebarProps) {
               </Link>
             );
           })}
-          {/* Tesorería y Perry Intelligence — mobile (Exclusivo Dirección en CYAN) */}
-          {isDirectorExclusive && (
+          {/* Tesorería y Perry Intelligence — mobile (Exclusivo Dirección en CYAN o Nóminas en Índigo para Asistentes) */}
+          {isDirectorExclusive ? (
             <Link
               href="/tesoreria"
               className={cn(
@@ -288,7 +312,18 @@ export function Sidebar({ user }: SidebarProps) {
               <Building2 className="w-5 h-5" />
               <span className="truncate max-w-[60px]">Tesorería</span>
             </Link>
-          )}
+          ) : (user as any)?.accessNominas ? (
+            <Link
+              href="/tesoreria"
+              className={cn(
+                'flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg text-xs transition-colors font-semibold',
+                pathname === '/tesoreria' ? 'text-indigo-600' : 'text-slate-500 hover:text-indigo-600'
+              )}
+            >
+              <Building2 className="w-5 h-5" />
+              <span className="truncate max-w-[60px]">Nóminas</span>
+            </Link>
+          ) : null}
         </nav>
       </div>
     </>

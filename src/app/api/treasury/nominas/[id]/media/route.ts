@@ -40,16 +40,27 @@ export async function GET(
       return NextResponse.json({ error: 'No hay archivo adjunto' }, { status: 404 });
     }
 
-    const res = await fetch(fileUrl);
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Error al obtener el archivo desde el almacenamiento' }, { status: 502 });
+    let buffer: Buffer;
+    let mimeType = 'application/octet-stream';
+
+    if (fileUrl.startsWith('data:')) {
+      const commaIdx = fileUrl.indexOf(',');
+      const header = fileUrl.substring(0, commaIdx);
+      const base64Data = fileUrl.substring(commaIdx + 1);
+      buffer = Buffer.from(base64Data, 'base64');
+      const mimeMatch = header.match(/data:([^;]+);/);
+      if (mimeMatch) mimeType = mimeMatch[1];
+    } else {
+      const res = await fetch(fileUrl);
+      if (!res.ok) {
+        return NextResponse.json({ error: 'Error al obtener el archivo desde el almacenamiento' }, { status: 502 });
+      }
+      const arrayBuffer = await res.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+      mimeType = res.headers.get('content-type') || 'application/octet-stream';
     }
 
-    const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     // Detect true MIME type from magic numbers
-    let mimeType = res.headers.get('content-type') || 'application/octet-stream';
     if (buffer.length >= 4) {
       if (buffer.slice(0, 4).toString() === '%PDF') {
         mimeType = 'application/pdf';

@@ -20,6 +20,7 @@ export interface UserFormData {
   accessElevationEquip?: boolean;
   accessManPower?: boolean;
   accessCrearPlanes?: boolean;
+  accessNominas?: boolean;
   baseCompanyId?: string | null;
   companyIds?: string[];          // empresas a las que tiene acceso
   defaultCompanyId?: string | null; // empresa por defecto al login
@@ -60,6 +61,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
     accessElevationEquip: false,
     accessManPower: false,
     accessCrearPlanes: false,
+    accessNominas: false,
     baseCompanyId: null,
     companyIds: [],
     defaultCompanyId: null,
@@ -86,6 +88,7 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
           accessElevationEquip: initialData.accessElevationEquip || false,
           accessManPower: initialData.accessManPower || false,
           accessCrearPlanes: initialData.accessCrearPlanes || false,
+          accessNominas: initialData.accessNominas || false,
           baseCompanyId: initialData.baseCompanyId || null,
           companyIds: initialData.companyIds || [],
           defaultCompanyId: initialData.defaultCompanyId || null,
@@ -313,6 +316,22 @@ export function UserFormDialog({ open, onOpenChange, onSubmit, initialData, supe
                       className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     <span className="text-sm font-medium text-slate-700">Crear Planes</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer col-span-2 mt-1 p-2.5 bg-indigo-50/70 rounded-xl border border-indigo-100 hover:bg-indigo-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={formData.accessNominas || false}
+                      onChange={(e) => setFormData({ ...formData, accessNominas: e.target.checked })}
+                      className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <div>
+                      <span className="text-sm font-bold text-indigo-950 flex items-center gap-1.5">
+                        📋 Carga y Revisión de Nóminas
+                      </span>
+                      <span className="text-[11px] text-indigo-700 block">
+                        Permite acceso a nóminas limitado exclusivamente a su empresa asignada (sin ver saldos bancarios generales).
+                      </span>
+                    </div>
                   </label>
                 </div>
               </div>
