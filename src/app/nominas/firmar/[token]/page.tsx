@@ -99,7 +99,7 @@ export default function FirmarNominaPage() {
       }
       // Fallback si el navegador no permite cerrar por política de scripts: redirigir a tesorería
       const fallbackTimer = setTimeout(() => {
-        router.push('/tesoreria');
+        router.push('/tesoreria?view=nominas');
       }, 300);
       return () => clearTimeout(fallbackTimer);
     }
@@ -255,17 +255,17 @@ export default function FirmarNominaPage() {
               <button
                 onClick={() => {
                   window.close();
-                  setTimeout(() => router.push('/tesoreria'), 200);
+                  setTimeout(() => router.push('/tesoreria?view=nominas'), 200);
                 }}
                 className="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center justify-center gap-2"
               >
                 <span>✕ Cerrar Ventana Ahora</span>
               </button>
               <button
-                onClick={() => router.push('/tesoreria')}
+                onClick={() => router.push('/tesoreria?view=nominas')}
                 className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all border border-slate-700"
               >
-                Volver a Tesorería Directiva
+                Volver al Panel de Nóminas
               </button>
             </div>
           </div>

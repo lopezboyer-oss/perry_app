@@ -79,6 +79,7 @@ export function ManualPayrollModal({
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [aiAnalysisNotes, setAiAnalysisNotes] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [signImmediately, setSignImmediately] = useState<boolean>(isDirector);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -243,6 +244,7 @@ export function ManualPayrollModal({
           bankBreakdown: bankList,
           observations,
           fileData,
+          signImmediately: isDirector && signImmediately,
         }),
       });
 
@@ -592,6 +594,34 @@ export function ManualPayrollModal({
               className="audit-input w-full p-3 rounded-xl border border-slate-700 text-xs focus:outline-none focus:border-indigo-500"
             />
           </div>
+
+          {/* Direct Authorization for Directors */}
+          {isDirector && (
+            <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3 shadow-inner">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-400 shrink-0">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-emerald-300">
+                    Firmar y Autorizar Digitalmente de Inmediato
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Tu sesión de Dirección registrará la nómina como autorizada y generará el comprobante tokenizado en este mismo paso.
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={signImmediately}
+                  onChange={(e) => setSignImmediately(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
@@ -612,12 +642,17 @@ export function ManualPayrollModal({
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Registrando...</span>
+                <span>{isDirector && signImmediately ? 'Autorizando y Firmando...' : 'Registrando...'}</span>
+              </>
+            ) : isDirector && signImmediately ? (
+              <>
+                <ShieldCheck className="w-4 h-4 text-emerald-200" />
+                <span>✍️ Guardar y Autorizar Digitalmente Ahora</span>
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Guardar y Generar Token de Firma</span>
+                <span>💾 Guardar Nómina y Generar Token</span>
               </>
             )}
           </button>

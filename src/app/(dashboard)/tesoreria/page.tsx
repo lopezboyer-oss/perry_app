@@ -195,11 +195,33 @@ export default function TesoreriaPage() {
 
   // Escuchar eventos de firma digital desde la pestaña de firma para actualizar en tiempo real
   useEffect(() => {
+    // Detectar si la URL solicita directamente la pestaña de nóminas (?view=nominas o ?tab=nominas)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const viewParam = urlParams.get('view') || urlParams.get('tab');
+      if (viewParam && viewParam.toLowerCase() === 'nominas') {
+        setActiveView('NOMINAS');
+      }
+      const companyParam = urlParams.get('company');
+      if (companyParam) {
+        setSelectedCompany(companyParam.toUpperCase());
+      }
+    }
+
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'PERRY_PAYROLL_SIGNED' && event.data.log) {
-        setPayrolls((prev) =>
-          prev.map((p) => (p.id === event.data.log.id ? { ...p, ...event.data.log } : p))
-        );
+        const signedLog = event.data.log;
+        setActiveView('NOMINAS');
+        if (signedLog.companyName) setSelectedCompany(signedLog.companyName);
+        setPayrollSearch('');
+        setPayrolls((prev) => {
+          const exists = prev.some((p) => p.id === signedLog.id);
+          if (exists) {
+            return prev.map((p) => (p.id === signedLog.id ? { ...p, ...signedLog } : p));
+          }
+          return [signedLog, ...prev];
+        });
+        fetchTreasuryData();
       }
     };
 
@@ -208,9 +230,18 @@ export default function TesoreriaPage() {
         try {
           const parsed = JSON.parse(event.newValue);
           if (parsed.log) {
-            setPayrolls((prev) =>
-              prev.map((p) => (p.id === parsed.log.id ? { ...p, ...parsed.log } : p))
-            );
+            const signedLog = parsed.log;
+            setActiveView('NOMINAS');
+            if (signedLog.companyName) setSelectedCompany(signedLog.companyName);
+            setPayrollSearch('');
+            setPayrolls((prev) => {
+              const exists = prev.some((p) => p.id === signedLog.id);
+              if (exists) {
+                return prev.map((p) => (p.id === signedLog.id ? { ...p, ...signedLog } : p));
+              }
+              return [signedLog, ...prev];
+            });
+            fetchTreasuryData();
           }
         } catch {}
       }
@@ -1227,7 +1258,11 @@ export default function TesoreriaPage() {
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
         onPayrollCreated={(newPay) => {
-          setPayrolls((prev) => [newPay, ...prev]);
+          setActiveView('NOMINAS');
+          if (newPay.companyName) setSelectedCompany(newPay.companyName);
+          setPayrollSearch('');
+          setPayrolls((prev) => [newPay, ...prev.filter((p) => p.id !== newPay.id)]);
+          fetchTreasuryData();
         }}
         isDirector={isDirector}
         allowedCompanies={allowedCompanies}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
-import { canAccessTreasuryDashboard } from '@/lib/permissions';
+import { canAccessTreasuryDashboard, canAuthorizePayroll, resolveDirectorSignerName } from '@/lib/permissions';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       bankBreakdown,
       observations,
       fileData,
+      signImmediately,
     } = body;
 
     if (!companyName || !companyName.trim()) {
@@ -79,7 +80,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El monto total debe ser un número válido' }, { status: 400 });
     }
 
-    const tokenHash = crypto.randomBytes(16).toString('hex');
+    const tokenHash = `pay_token_${crypto.randomBytes(16).toString('hex')}`;
+
+    // Determinar si se autoriza y firma inmediatamente con la sesión directiva activa
+    const canSignNow = isDirector || canAuthorizePayroll(email, userRole);
+    const shouldAuthorizeNow = Boolean(signImmediately && canSignNow);
+    const signerName = shouldAuthorizeNow ? resolveDirectorSignerName(email, session.user.name || '') : null;
+    const signedAt = shouldAuthorizeNow ? new Date() : null;
+    const status = shouldAuthorizeNow ? 'APROBADA_TOKENIZADA' : 'PENDIENTE_FIRMA';
+    const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'IP_DIRECTA';
 
     // Create payroll record
     const newPayroll = await prisma.payrollLog.create({
@@ -94,7 +103,10 @@ export async function POST(req: NextRequest) {
             : JSON.stringify(bankBreakdown)
           : null,
         observations: (observations || '').trim() || `Cargada manualmente por ${session.user.name || session.user.email}`,
-        status: 'PENDIENTE_FIRMA',
+        status,
+        signedBy: signerName,
+        signedAt,
+        ipAddress: shouldAuthorizeNow ? clientIp : null,
         imageUrl: fileData || null,
         tokenHash,
         reportDate: new Date(),
@@ -104,7 +116,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       payroll: newPayroll,
-      message: 'Nómina registrada con éxito y token de firma generado.',
+      signedImmediately: shouldAuthorizeNow,
+      message: shouldAuthorizeNow
+        ? `Nómina registrada, autorizada y firmada digitalmente por ${signerName}.`
+        : 'Nómina registrada con éxito y token de firma generado.',
     });
   } catch (error: any) {
     console.error('[MANUAL PAYROLL ERROR]', error);
