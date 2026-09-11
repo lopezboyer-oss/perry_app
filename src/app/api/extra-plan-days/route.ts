@@ -18,13 +18,33 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ days });
 }
 
-// POST /api/extra-plan-days — create extra day (ADMIN, ADMINISTRACION, SUPERVISOR, SAFETY_LP)
+// Helper to check extra day management permissions
+async function canManageExtraDays(session: any): Promise<boolean> {
+  const role = session?.user?.role;
+  if (['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role)) {
+    return true;
+  }
+  if ((session?.user as any)?.accessCrearPlanes) {
+    return true;
+  }
+  if (session?.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { accessCrearPlanes: true, role: true },
+    });
+    if (user?.accessCrearPlanes || ['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(user?.role || '')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// POST /api/extra-plan-days — create extra day (ADMIN, ADMINISTRACION, SUPERVISOR, SAFETY_LP or accessCrearPlanes)
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-  const role = session.user.role;
-  if (!['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role)) {
+  if (!(await canManageExtraDays(session))) {
     return NextResponse.json({ error: 'Sin permisos para crear días extra' }, { status: 403 });
   }
 
@@ -63,8 +83,7 @@ export async function DELETE(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-  const role = session.user.role;
-  if (!['ADMIN', 'ADMINISTRACION', 'SUPERVISOR', 'SUPERVISOR_SAFETY_LP'].includes(role)) {
+  if (!(await canManageExtraDays(session))) {
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 });
   }
 
