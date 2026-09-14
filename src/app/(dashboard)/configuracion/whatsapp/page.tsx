@@ -338,9 +338,16 @@ export default function WhatsappConfigPage() {
     text += `📌 *SÍNTESIS GENERAL:* \n${directorSummary.executiveSummary}\n\n`;
 
     if (directorSummary.companySummaries && directorSummary.companySummaries.length > 0) {
-      text += `🏢 *DESGLOSE POR EMPRESA*\n`;
+      text += `🏢 *DESGLOSE POR EMPRESA*\n\n`;
       directorSummary.companySummaries.forEach((c) => {
-        text += `• *${c.companyName}:*\n  ${c.summary}\n\n`;
+        text += `🟢 *${c.companyName.toUpperCase()}* 🟢\n\n`;
+        const lines = c.summary
+          .split('\n')
+          .map((l: string) => l.trim())
+          .filter(Boolean)
+          .map((l: string) => (l.startsWith('▫️') || l.startsWith('•') || l.startsWith('-')) ? `  ${l}` : `  ▫️ ${l}`)
+          .join('\n');
+        text += `${lines}\n\n`;
       });
     }
 
@@ -352,14 +359,6 @@ export default function WhatsappConfigPage() {
       text += `🟢 *ASUNTOS RESUELTOS CRUZADOS (${directorSummary.resolvedCrossIssues.length})*\n`;
       directorSummary.resolvedCrossIssues.forEach((item, i) => {
         text += `${i + 1}. *${item.issue}*\n   • Detalle: ${item.resolutionDetails}\n   • Campo: _${item.originGroup}_ -> Gestión: _${item.resolutionGroup}_\n`;
-      });
-      text += `\n`;
-    }
-
-    if (directorSummary.unresolvedCriticalPending && directorSummary.unresolvedCriticalPending.length > 0) {
-      text += `🔴 *PENDIENTES CRÍTICOS REALES (${directorSummary.unresolvedCriticalPending.length})*\n`;
-      directorSummary.unresolvedCriticalPending.forEach((item, i) => {
-        text += `${i + 1}. *${item.issue}*\n   • Grupo: _${item.reportedGroup}_${item.reportedBy ? ` — Reportó: *${item.reportedBy}*` : ''} | Estatus: *${item.status}*\n`;
       });
       text += `\n`;
     }
@@ -1360,7 +1359,7 @@ export default function WhatsappConfigPage() {
                         <span className="w-2 h-2 rounded-full bg-indigo-400" />
                         <h5 className="text-xs font-bold text-indigo-300 uppercase tracking-wider">{c.companyName}</h5>
                       </div>
-                      <p className="text-xs text-slate-300 leading-relaxed">
+                      <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">
                         {c.summary}
                       </p>
                     </div>

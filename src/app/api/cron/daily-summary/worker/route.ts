@@ -126,9 +126,16 @@ function formatDirectorSummaryForWhatsApp(summary: any): string {
   text += `📌 *SÍNTESIS GENERAL:* \n${summary.executiveSummary}\n\n`;
 
   if (summary.companySummaries && summary.companySummaries.length > 0) {
-    text += `🏢 *DESGLOSE POR EMPRESA*\n`;
+    text += `🏢 *DESGLOSE POR EMPRESA*\n\n`;
     summary.companySummaries.forEach((c: any) => {
-      text += `• *${c.companyName}:*\n  ${c.summary}\n\n`;
+      text += `🟢 *${c.companyName.toUpperCase()}* 🟢\n\n`;
+      const lines = c.summary
+        .split('\n')
+        .map((l: string) => l.trim())
+        .filter(Boolean)
+        .map((l: string) => (l.startsWith('▫️') || l.startsWith('•') || l.startsWith('-')) ? `  ${l}` : `  ▫️ ${l}`)
+        .join('\n');
+      text += `${lines}\n\n`;
     });
   }
 
@@ -140,14 +147,6 @@ function formatDirectorSummaryForWhatsApp(summary: any): string {
     text += `🟢 *ASUNTOS RESUELTOS CRUZADOS (${summary.resolvedCrossIssues.length})*\n`;
     summary.resolvedCrossIssues.forEach((item: any, i: number) => {
       text += `${i + 1}. *${item.issue}*\n   • Detalle: ${item.resolutionDetails}\n   • Campo: _${item.originGroup}_ -> Gestión: _${item.resolutionGroup}_\n`;
-    });
-    text += `\n`;
-  }
-
-  if (summary.unresolvedCriticalPending && summary.unresolvedCriticalPending.length > 0) {
-    text += `🔴 *PENDIENTES CRÍTICOS REALES (${summary.unresolvedCriticalPending.length})*\n`;
-    summary.unresolvedCriticalPending.forEach((item: any, i: number) => {
-      text += `${i + 1}. *${item.issue}*\n   • Grupo: _${item.reportedGroup}_${item.reportedBy ? ` — Reportó: *${item.reportedBy}*` : ''} | Estatus: *${item.status}*\n`;
     });
     text += `\n`;
   }
