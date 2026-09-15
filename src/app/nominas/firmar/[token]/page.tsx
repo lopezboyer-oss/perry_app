@@ -24,6 +24,10 @@ interface PayrollRecord {
   periodNumber: string;
   reportDate: string;
   totalAmount: number;
+  totalAmountUSD?: number;
+  itemsCount?: number;
+  approvalType?: string;
+  metadata?: string;
   employeeCount: number;
   bankBreakdown: string;
   observations: string;
@@ -193,23 +197,59 @@ export default function FirmarNominaPage() {
   const isApproved = log.status === 'APROBADA_TOKENIZADA' || log.status === 'APROBADA_FIRMA_MANUAL';
   const isRejected = log.status === 'RECHAZADA';
 
+  const approvalType = log.approvalType || 'NOMINA';
+  let parsedMetadata: any = null;
+  try {
+    if (log.metadata) parsedMetadata = JSON.parse(log.metadata);
+  } catch {}
+
+  const formatCurrencyUSD = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 flex flex-col items-center justify-center">
       <div className="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
         {/* Header Badge */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center space-x-3">
-            <div className="p-3 bg-indigo-600/20 border border-indigo-500/30 rounded-2xl">
-              <FileText className="w-7 h-7 text-indigo-400" />
+            <div className={`p-3 rounded-2xl border ${
+              approvalType === 'PAGO_PROVEEDORES'
+                ? 'bg-blue-600/20 border-blue-500/30 text-blue-400'
+                : approvalType === 'HORAS_EXTRA'
+                ? 'bg-purple-600/20 border-purple-500/30 text-purple-400'
+                : 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+            }`}>
+              {approvalType === 'PAGO_PROVEEDORES' ? (
+                <Building2 className="w-7 h-7" />
+              ) : approvalType === 'HORAS_EXTRA' ? (
+                <Clock className="w-7 h-7" />
+              ) : (
+                <FileText className="w-7 h-7" />
+              )}
             </div>
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-full border border-indigo-500/20">
-                Firma Digital Tokenizada
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                approvalType === 'PAGO_PROVEEDORES'
+                  ? 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+                  : approvalType === 'HORAS_EXTRA'
+                  ? 'text-purple-400 bg-purple-500/10 border-purple-500/20'
+                  : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
+              }`}>
+                {approvalType === 'PAGO_PROVEEDORES'
+                  ? 'Autorización de Pago a Proveedores'
+                  : approvalType === 'HORAS_EXTRA'
+                  ? 'Revisión y Visto Bueno de Horas Extra'
+                  : 'Firma Digital Tokenizada — Nómina'}
               </span>
               <h1 className="text-xl font-black text-slate-100 mt-1">{log.companyName}</h1>
               <p className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                {log.periodNumber || 'Raya Semanal'} — {new Date(log.reportDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
+                {log.periodNumber || (approvalType === 'PAGO_PROVEEDORES' ? 'Programación de Pagos' : 'Raya Semanal')} — {new Date(log.reportDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
               </p>
             </div>
           </div>
@@ -238,7 +278,13 @@ export default function FirmarNominaPage() {
               <CheckCircle2 className="w-8 h-8" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-emerald-300">¡Nómina Firmada y Autorizada con Éxito!</h2>
+              <h2 className="text-lg font-black text-emerald-300">
+                {approvalType === 'PAGO_PROVEEDORES'
+                  ? '¡Pago a Proveedores Autorizado con Éxito!'
+                  : approvalType === 'HORAS_EXTRA'
+                  ? '¡Horas Extra Validadas con Éxito!'
+                  : '¡Nómina Firmada y Autorizada con Éxito!'}
+              </h2>
               <p className="text-xs text-slate-300 mt-1">
                 Autorizado por <strong className="text-white">{log.signedBy}</strong>. Notificación enviada al grupo.
               </p>
@@ -265,28 +311,71 @@ export default function FirmarNominaPage() {
                 onClick={() => router.push('/tesoreria?view=nominas')}
                 className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all border border-slate-700"
               >
-                Volver al Panel de Nóminas
+                Volver a Tesorería
               </button>
             </div>
           </div>
         )}
 
         {/* Total Amount Summary Card */}
-        <div className="bg-gradient-to-br from-indigo-950/60 to-slate-950 border border-indigo-500/20 p-6 rounded-2xl space-y-2 text-center shadow-inner">
-          <p className="text-xs text-indigo-300 uppercase tracking-widest font-bold">Monto Total de Nómina a Dispersar</p>
+        <div className={`border p-6 rounded-2xl space-y-2 text-center shadow-inner ${
+          approvalType === 'PAGO_PROVEEDORES'
+            ? 'bg-gradient-to-br from-blue-950/60 to-slate-950 border-blue-500/20'
+            : approvalType === 'HORAS_EXTRA'
+            ? 'bg-gradient-to-br from-purple-950/60 to-slate-950 border-purple-500/20'
+            : 'bg-gradient-to-br from-indigo-950/60 to-slate-950 border-indigo-500/20'
+        }`}>
+          <p className="text-xs text-slate-300 uppercase tracking-widest font-bold">
+            {approvalType === 'PAGO_PROVEEDORES'
+              ? 'Monto Total Programado para Dispersión'
+              : approvalType === 'HORAS_EXTRA'
+              ? 'Reporte de Horas Extraordinarias'
+              : 'Monto Total de Nómina a Dispersar'}
+          </p>
           <div className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight font-mono">
             {formatCurrency(log.totalAmount)}
           </div>
-          {log.employeeCount > 0 && (
+          {log.totalAmountUSD && log.totalAmountUSD > 0 ? (
+            <div className="text-xl sm:text-2xl font-black text-cyan-400 tracking-tight font-mono pt-1">
+              {formatCurrencyUSD(log.totalAmountUSD)}
+            </div>
+          ) : null}
+
+          {approvalType === 'PAGO_PROVEEDORES' && (log.itemsCount || 0) > 0 && (
+            <p className="text-xs text-slate-400">{log.itemsCount} partidas / pagos programados</p>
+          )}
+          {approvalType === 'NOMINA' && log.employeeCount > 0 && (
             <p className="text-xs text-slate-400">{log.employeeCount} empleados registrados</p>
+          )}
+          {approvalType === 'HORAS_EXTRA' && (log.itemsCount || 0) > 0 && (
+            <p className="text-xs text-slate-400">{log.itemsCount} técnicos registrados</p>
           )}
         </div>
 
-        {/* Bank Breakdown */}
+        {/* Key Providers / Entities Breakdown for Pago a Proveedores */}
+        {approvalType === 'PAGO_PROVEEDORES' && parsedMetadata?.keyEntities && parsedMetadata.keyEntities.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Proveedores y Conceptos Detectados
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {parsedMetadata.keyEntities.map((entity: string, idx: number) => (
+                <span
+                  key={idx}
+                  className="px-2.5 py-1 bg-slate-800/80 border border-slate-700 rounded-lg text-xs text-blue-300 font-medium"
+                >
+                  🏢 {entity}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bank Breakdown (if available) */}
         {bankBreakdownList.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Desglose de Dispersión por Banco / Fuente
+              Desglose por Banco / Fuente
             </h3>
             <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
               {bankBreakdownList.map((item, idx) => (
@@ -393,7 +482,15 @@ export default function FirmarNominaPage() {
                       className="flex-1 py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl text-xs shadow-xl transition-all flex items-center justify-center space-x-2"
                     >
                       <Sparkles className="w-4 h-4 text-emerald-200" />
-                      <span>{submitting ? 'Procesando Firma Tokenizada...' : `✍️ Autorizar y Firmar como ${userSession.signerName?.split(' ')[0]}`}</span>
+                      <span>
+                        {submitting
+                          ? 'Procesando Autorización...'
+                          : approvalType === 'PAGO_PROVEEDORES'
+                          ? `🏢 Autorizar Pago a Proveedores como ${userSession.signerName?.split(' ')[0]}`
+                          : approvalType === 'HORAS_EXTRA'
+                          ? `⏱️ Validar Horas Extra como ${userSession.signerName?.split(' ')[0]}`
+                          : `✍️ Autorizar y Firmar como ${userSession.signerName?.split(' ')[0]}`}
+                      </span>
                     </button>
                     <button
                       onClick={() => setShowRejectForm(true)}

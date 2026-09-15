@@ -91,6 +91,7 @@ export default function TesoreriaPage() {
   const [selectedCompany, setSelectedCompany] = useState<string>('TODAS');
   const [copiedCompany, setCopiedCompany] = useState<string | null>(null);
   const [payrollSearch, setPayrollSearch] = useState('');
+  const [approvalTypeFilter, setApprovalTypeFilter] = useState<'TODAS' | 'NOMINA' | 'PAGO_PROVEEDORES' | 'HORAS_EXTRA'>('TODAS');
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isDirector, setIsDirector] = useState(true);
   const [allowedCompanies, setAllowedCompanies] = useState<string[]>([]);
@@ -637,25 +638,49 @@ export default function TesoreriaPage() {
               })}
             </div>
 
+            {/* Sub-filtro por Tipo de Solicitud (Nóminas, Proveedores, Horas Extra) */}
+            <div className="flex items-center gap-2 pt-1 overflow-x-auto pb-1">
+              {[
+                { id: 'TODAS', label: 'Todas las Solicitudes', icon: '🌐' },
+                { id: 'NOMINA', label: 'Nóminas', icon: '📋' },
+                { id: 'PAGO_PROVEEDORES', label: 'Pago a Proveedores', icon: '🏢' },
+                { id: 'HORAS_EXTRA', label: 'Horas Extra', icon: '⏱️' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setApprovalTypeFilter(tab.id as any)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                    approvalTypeFilter === tab.id
+                      ? 'bg-slate-100 text-slate-900 shadow-sm'
+                      : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
             {/* Renderizado de Tarjetas de Nómina Filtradas */}
             {(() => {
               const filteredPayrolls = (payrolls || []).filter((p) => {
                 const matchesCompany = selectedCompany === 'TODAS' || p.companyName === selectedCompany;
+                const matchesType = approvalTypeFilter === 'TODAS' || (p.approvalType || 'NOMINA') === approvalTypeFilter;
                 const searchLower = payrollSearch.toLowerCase().trim();
                 const matchesSearch =
                   !searchLower ||
                   (p.periodNumber || '').toLowerCase().includes(searchLower) ||
                   (p.companyName || '').toLowerCase().includes(searchLower) ||
                   (p.observations || '').toLowerCase().includes(searchLower);
-                return matchesCompany && matchesSearch;
+                return matchesCompany && matchesType && matchesSearch;
               });
 
               if (filteredPayrolls.length === 0) {
                 return (
                   <div className="text-center py-12 text-slate-500 text-xs bg-slate-950/40 rounded-xl border border-slate-800 space-y-2">
                     <FileText className="w-8 h-8 text-slate-600 mx-auto" />
-                    <p>No se encontraron nóminas registradas para los filtros seleccionados.</p>
-                    <p className="text-[11px] text-slate-600">Al compartir una imagen de nómina en los grupos de administración de WhatsApp, Perry la procesará automáticamente.</p>
+                    <p>No se encontraron solicitudes registradas para los filtros seleccionados.</p>
+                    <p className="text-[11px] text-slate-600">Al compartir una imagen en los grupos de WhatsApp, Perry clasificará y procesará la solicitud automáticamente.</p>
                   </div>
                 );
               }
@@ -668,6 +693,7 @@ export default function TesoreriaPage() {
                       if (pay.bankBreakdown) breakdownList = JSON.parse(pay.bankBreakdown);
                     } catch {}
 
+                    const itemType = pay.approvalType || 'NOMINA';
                     const isAppr = pay.status === 'APROBADA_TOKENIZADA' || pay.status === 'APROBADA_FIRMA_MANUAL';
                     const isRej = pay.status === 'RECHAZADA';
                     const isAux = pay.status === 'REPORTE_AUXILIAR';
@@ -680,9 +706,22 @@ export default function TesoreriaPage() {
                         <div className="space-y-3">
                           {/* Top Header */}
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-100 text-sm flex items-center gap-2">
-                              🏢 {pay.companyName}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-100 text-sm">
+                                🏢 {pay.companyName}
+                              </span>
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  itemType === 'PAGO_PROVEEDORES'
+                                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                    : itemType === 'HORAS_EXTRA'
+                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                }`}
+                              >
+                                {itemType === 'PAGO_PROVEEDORES' ? 'PROVEEDORES' : itemType === 'HORAS_EXTRA' ? 'HORAS EXTRA' : 'NÓMINA'}
+                              </span>
+                            </div>
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                                 isAppr
@@ -700,20 +739,39 @@ export default function TesoreriaPage() {
 
                           {/* Period & Date */}
                           <div className="flex items-center justify-between text-xs bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
-                            <span className="text-slate-200 font-bold text-xs">{pay.periodNumber || 'Raya Semanal'}</span>
+                            <span className="text-slate-200 font-bold text-xs">{pay.periodNumber || (itemType === 'PAGO_PROVEEDORES' ? 'Programación de Pagos' : 'Raya Semanal')}</span>
                             <span className="text-slate-400 font-mono text-[11px]">
                               {pay.reportDate ? new Date(pay.reportDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : ''}
                             </span>
                           </div>
 
                           {/* Total Amount Box */}
-                          <div className="bg-gradient-to-br from-indigo-950/40 to-slate-950 p-4 rounded-xl border border-indigo-500/20 text-center space-y-0.5 shadow-inner">
-                            <p className="text-[10px] text-indigo-300 uppercase tracking-widest font-bold">Monto Total de Dispersión</p>
+                          <div className={`p-4 rounded-xl border text-center space-y-0.5 shadow-inner ${
+                            itemType === 'PAGO_PROVEEDORES'
+                              ? 'bg-gradient-to-br from-blue-950/40 to-slate-950 border-blue-500/20'
+                              : itemType === 'HORAS_EXTRA'
+                              ? 'bg-gradient-to-br from-purple-950/40 to-slate-950 border-purple-500/20'
+                              : 'bg-gradient-to-br from-indigo-950/40 to-slate-950 border-indigo-500/20'
+                          }`}>
+                            <p className="text-[10px] text-slate-300 uppercase tracking-widest font-bold">
+                              {itemType === 'PAGO_PROVEEDORES' ? 'Monto Programado a Proveedores' : itemType === 'HORAS_EXTRA' ? 'Horas Extraordinarias' : 'Monto Total de Dispersión'}
+                            </p>
                             <div className="text-2xl font-black text-emerald-400 font-mono tracking-tight">
                               {formatCurrency(pay.totalAmount || 0, 'MXN')}
                             </div>
-                            {pay.employeeCount > 0 && (
+                            {pay.totalAmountUSD && pay.totalAmountUSD > 0 ? (
+                              <div className="text-lg font-black text-cyan-400 font-mono tracking-tight pt-0.5">
+                                {formatCurrency(pay.totalAmountUSD, 'USD')}
+                              </div>
+                            ) : null}
+                            {itemType === 'PAGO_PROVEEDORES' && (pay.itemsCount || 0) > 0 && (
+                              <p className="text-[10px] text-slate-400">{pay.itemsCount} pagos / partidas programadas</p>
+                            )}
+                            {itemType === 'NOMINA' && pay.employeeCount > 0 && (
                               <p className="text-[10px] text-slate-500">{pay.employeeCount} empleados registrados</p>
+                            )}
+                            {itemType === 'HORAS_EXTRA' && (pay.itemsCount || 0) > 0 && (
+                              <p className="text-[10px] text-slate-400">{pay.itemsCount} técnicos registrados</p>
                             )}
                           </div>
 

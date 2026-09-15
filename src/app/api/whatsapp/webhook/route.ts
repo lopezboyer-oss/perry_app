@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { parseWhatsappMessageWithGemini } from '@/lib/whatsapp/parser';
 import { parseFinancialMessageWithGemini } from '@/lib/whatsapp/financial-parser';
 import { parsePayrollMessageWithGemini } from '@/lib/whatsapp/payroll-parser';
+import { classifyAndParseFinancialDocument } from '@/lib/whatsapp/financial-classifier';
 import { sendWhatsappGroupMessage, sendWhatsappVoiceNote } from '@/lib/whatsapp/service';
 import { IncomingWhatsappPayload } from '@/lib/whatsapp/types';
 import crypto from 'crypto';
@@ -343,143 +344,293 @@ export async function POST(req: NextRequest) {
     if (groupMap.groupCategory === 'ADMINISTRATIVO_FINANCIERO') {
       const cleanedText = cleanTriggerTags(messageText);
 
-      // Check if message is a Real Payroll Report (MUST have media attached OR explicit financial dispersion keywords with numbers)
-      const isPayrollKeyword = /n[oó]mina|raya|finiquito|sueldo|vacaciones|percepcion|deducci[oó]n|raya\s*\d+/i.test(cleanedText);
-      const hasExplicitPayrollData = mediaUrls.length > 0 || (/gran\s*total|total\s*nomina|dispersi[oó]n|santander|contpaq|total\s*efectivo|\$\s*\d+/i.test(cleanedText) && isPayrollKeyword);
-
-      let isPayroll = false;
-      let payrollReport: any = null;
-
-      if (hasExplicitPayrollData) {
-        payrollReport = await parsePayrollMessageWithGemini({
-          messageText: cleanedText,
-          senderName: payload.senderName || payload.senderPhone,
-          groupName: groupMap.groupName || 'Administración',
-          timestamp: payload.timestamp,
-          imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
-        });
-
-        if (payrollReport && payrollReport.isPayrollReport && (payrollReport.totalAmount > 0 || mediaUrls.length > 0)) {
-          isPayroll = true;
-        }
-      }
-
-      if (isPayroll && payrollReport) {
-        // Estandarización oficial: Todas las nóminas procesadas esta semana corresponden a Raya 34
-        if (!payrollReport.periodNumber || /33|34/i.test(payrollReport.periodNumber)) {
-          payrollReport.periodNumber = 'Raya 34';
-        }
-
-        console.log(`[PAYROLL INGESTION] Processing payroll for ${payrollReport.companyName} (${payrollReport.periodNumber})...`);
-
-        // Check if an existing PayrollLog for same company & period/date exists (anti-duplicate / manual signature update)
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        const existingPayroll = await prisma.payrollLog.findFirst({
+      // ─── A) DETECCIÓN DE CORRECCIÓN CONVERSACIONAL (Reclasificación interactiva en chat) ───
+      const isCorrectionRequest = /(pago\s*a?\s*proveedores?|cambiar\s*a\s*proveedores?|corregir\s*a\s*proveedores?|no\s*es\s*n[oó]mina|horas?\s*extras?|corregir\s*a\s*horas?\s*extras?|es\s*n[oó]mina)/i.test(cleanedText);
+      if (isCorrectionRequest) {
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+        const latestPendingApproval = await prisma.payrollLog.findFirst({
           where: {
-            companyName: payrollReport.companyName,
-            createdAt: { gte: sevenDaysAgo },
-            OR: [
-              { periodNumber: payrollReport.periodNumber },
-              { periodNumber: { contains: (payrollReport.periodNumber || '').split(' ')[1] || 'Raya' } },
-            ],
+            groupId: payload.groupId,
+            createdAt: { gte: twoHoursAgo },
           },
           orderBy: { createdAt: 'desc' },
         });
 
-        if (existingPayroll && mediaUrls.length > 0) {
-          // If incoming document is a Main Payroll Report OR has higher amount than an overtime sheet, update main payroll data!
-          if (payrollReport.isMainPayrollReport || (payrollReport.totalAmount > existingPayroll.totalAmount)) {
-            await prisma.payrollLog.update({
-              where: { id: existingPayroll.id },
-              data: {
-                totalAmount: payrollReport.totalAmount || existingPayroll.totalAmount,
-                employeeCount: payrollReport.employeeCount || existingPayroll.employeeCount,
-                bankBreakdown: payrollReport.bankBreakdown ? JSON.stringify(payrollReport.bankBreakdown) : existingPayroll.bankBreakdown,
-                observations: payrollReport.observations ? `${payrollReport.observations}` : existingPayroll.observations,
-                imageUrl: mediaUrls[0] || existingPayroll.imageUrl,
-              },
-            });
-
-            console.log(`[PAYROLL INGESTION] Promoted existing payroll #${existingPayroll.id} for ${payrollReport.companyName} with Main Payroll sheet data.`);
-          } else {
-            // Director re-uploaded signed payroll image — Update existing record cleanly!
-            await prisma.payrollLog.update({
-              where: { id: existingPayroll.id },
-              data: {
-                signedImageUrl: mediaUrls[0],
-                signedBy: payload.senderName || payload.senderPhone || 'Director',
-                signedAt: new Date(),
-                status: 'APROBADA_FIRMA_MANUAL',
-              },
-            });
-
-            console.log(`[PAYROLL INGESTION] Updated existing payroll #${existingPayroll.id} with manual signature image from ${payload.senderName}`);
+        if (latestPendingApproval) {
+          let newType = 'PAGO_PROVEEDORES';
+          let newTitle = 'Programación de Pago a Proveedores';
+          if (/horas?\s*extras?/i.test(cleanedText)) {
+            newType = 'HORAS_EXTRA';
+            newTitle = 'Revisión de Horas Extra';
+          } else if (/es\s*n[oó]mina/i.test(cleanedText)) {
+            newType = 'NOMINA';
+            newTitle = 'Raya Semanal';
           }
-        } else {
-          // New unsigned payroll report — Create new record & generate token
+
+          const updatedApproval = await prisma.payrollLog.update({
+            where: { id: latestPendingApproval.id },
+            data: {
+              approvalType: newType,
+              periodNumber: latestPendingApproval.periodNumber?.startsWith('Raya') && newType === 'PAGO_PROVEEDORES'
+                ? 'Programación de Pago a Proveedores'
+                : latestPendingApproval.periodNumber,
+              observations: `${latestPendingApproval.observations || ''}\n[Reclasificado a ${newType} por indicación en chat de ${payload.senderName || 'Administración'}]`.trim(),
+            },
+          });
+
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
+          const signUrl = `${appUrl}/nominas/firmar/${latestPendingApproval.tokenHash}`;
+
+          let confirmMsg = '';
+          if (newType === 'PAGO_PROVEEDORES') {
+            confirmMsg = `🔄 *SOLICITUD RECLASIFICADA — PAGO A PROVEEDORES*\n` +
+              `🏢 *Empresa:* ${updatedApproval.companyName}\n` +
+              `📝 *Título:* ${updatedApproval.periodNumber || 'Pago a Proveedores'}\n` +
+              (updatedApproval.totalAmount > 0 ? `💰 *Total MXN:* $${updatedApproval.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` : '') +
+              (updatedApproval.totalAmountUSD && updatedApproval.totalAmountUSD > 0 ? `💵 *Total USD:* $${updatedApproval.totalAmountUSD.toLocaleString('es-MX', { minimumFractionDigits: 2 })} USD\n` : '') +
+              `✍️ *Acceso actualizado para revisión y autorización:*\n${signUrl}\n\n` +
+              `_Corrección aplicada exitosamente por Perry 🤖_`;
+          } else if (newType === 'HORAS_EXTRA') {
+            confirmMsg = `🔄 *SOLICITUD RECLASIFICADA — HORAS EXTRA*\n` +
+              `🏢 *Empresa:* ${updatedApproval.companyName}\n` +
+              `✍️ *Acceso actualizado para revisión y visto bueno:*\n${signUrl}\n\n` +
+              `_Corrección aplicada exitosamente por Perry 🤖_`;
+          } else {
+            confirmMsg = `🔄 *SOLICITUD RECLASIFICADA — NÓMINA*\n` +
+              `🏢 *Empresa:* ${updatedApproval.companyName}\n` +
+              `✍️ *Acceso actualizado para firma digital:*\n${signUrl}\n\n` +
+              `_Corrección aplicada exitosamente por Perry 🤖_`;
+          }
+
+          await sendWhatsappGroupMessage({
+            groupId: payload.groupId,
+            messageText: confirmMsg,
+          });
+
+          console.log(`[APPROVAL RECLASSIFY] Log #${latestPendingApproval.id} reclassified to ${newType} via chat instruction from ${payload.senderName}`);
+
+          return NextResponse.json({
+            status: `Approval reclassified to ${newType}`,
+            company: updatedApproval.companyName,
+          });
+        }
+      }
+
+      // ─── B) CLASIFICACIÓN Y EXTRACCIÓN MULTIDOCUMENTO CON INTELIGENCIA ARTIFICIAL ───
+      const hasFinancialIndicator = mediaUrls.length > 0 || /factura|proveedor|pago|n[oó]mina|raya|finiquito|sueldo|horas?\s*extra|saldos?|cuenta|dispersi[oó]n|\$\s*\d+/i.test(cleanedText);
+
+      if (hasFinancialIndicator) {
+        const classifiedDoc = await classifyAndParseFinancialDocument({
+          mediaUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
+          messageText: cleanedText,
+          groupName: groupMap.groupName || 'Administración',
+          senderName: payload.senderName || payload.senderPhone,
+          timestamp: payload.timestamp,
+        });
+
+        console.log(`[FINANCIAL CLASSIFIER] DocType: ${classifiedDoc.documentType} | Confidence: ${classifiedDoc.confidence} | Company: ${classifiedDoc.companyName} | RequiresApproval: ${classifiedDoc.requiresApproval}`);
+
+        // 1. CASO: PAGO A PROVEEDORES
+        if (classifiedDoc.documentType === 'PAGO_PROVEEDORES' && classifiedDoc.requiresApproval) {
           const randomToken = 'pay_token_' + crypto.randomBytes(16).toString('hex');
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
           const signUrl = `${appUrl}/nominas/firmar/${randomToken}`;
 
-          await prisma.payrollLog.create({
+          const newLog = await prisma.payrollLog.create({
             data: {
               groupId: payload.groupId,
-              companyName: payrollReport.companyName,
-              periodNumber: payrollReport.periodNumber || 'Raya Semanal',
-              reportDate: new Date(payrollReport.reportDate || Date.now()),
-              totalAmount: payrollReport.totalAmount || 0,
-              employeeCount: payrollReport.employeeCount || 0,
-              bankBreakdown: payrollReport.bankBreakdown ? JSON.stringify(payrollReport.bankBreakdown) : null,
-              observations: payrollReport.isMainPayrollReport === false
-                ? `[REPORTE AUXILIAR / HORAS EXTRA] ${payrollReport.observations || ''}`.trim()
-                : payrollReport.observations || payload.messageText || null,
+              companyName: classifiedDoc.companyName,
+              periodNumber: classifiedDoc.titleOrPeriod || 'Programación de Pago a Proveedores',
+              reportDate: new Date(classifiedDoc.reportDate || Date.now()),
+              totalAmount: classifiedDoc.totalAmountMXN || 0,
+              totalAmountUSD: classifiedDoc.totalAmountUSD || 0,
+              itemsCount: classifiedDoc.itemsCount || 0,
+              approvalType: 'PAGO_PROVEEDORES',
+              bankBreakdown: classifiedDoc.bankBreakdown && classifiedDoc.bankBreakdown.length > 0 ? JSON.stringify(classifiedDoc.bankBreakdown) : null,
+              observations: classifiedDoc.observations || payload.messageText || null,
               rawMessage: payload.messageText || null,
               imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
+              metadata: JSON.stringify({
+                keyEntities: classifiedDoc.keyEntities,
+                reasoning: classifiedDoc.reasoning,
+                confidence: classifiedDoc.confidence,
+              }),
               senderName: payload.senderName || payload.senderPhone,
               senderPhone: payload.senderPhone,
-              status: payrollReport.isMainPayrollReport === false ? 'REPORTE_AUXILIAR' : 'PENDIENTE_FIRMA',
+              status: 'PENDIENTE_FIRMA',
               tokenHash: randomToken,
             },
           });
 
-          // Solo enviar solicitud de firma si es la NÓMINA PRINCIPAL completa (no si es un auxiliar de horas extra o fracción)
-          if (payrollReport.isMainPayrollReport !== false) {
-            const notifMsg = `📋 *SOLICITUD DE FIRMA DIGITAL — NÓMINA*\n` +
-              `🏢 *Empresa:* ${payrollReport.companyName.toUpperCase()}\n` +
-              `📅 *Periodo:* ${payrollReport.periodNumber || 'Raya Semanal'}\n` +
-              `📁 *Documento:* Reporte de nómina recibido para revisión\n\n` +
-              `✍️ *Acceso para revisión y firma digital:*\n${signUrl}\n\n` +
-              `⏳ *Estatus:* Pendiente de Firma Directiva\n` +
-              `_Perry Intelligence 🤖_`;
+          const notifMsg = `🏢 *SOLICITUD DE AUTORIZACIÓN — PAGO A PROVEEDORES*\n` +
+            `🏭 *Empresa:* ${classifiedDoc.companyName.toUpperCase()}\n` +
+            `📅 *Programación:* ${classifiedDoc.titleOrPeriod || 'Relación de Pagos'}\n` +
+            (classifiedDoc.totalAmountMXN > 0 ? `💵 *Total MXN:* $${classifiedDoc.totalAmountMXN.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` : '') +
+            (classifiedDoc.totalAmountUSD > 0 ? `💵 *Total USD:* $${classifiedDoc.totalAmountUSD.toLocaleString('es-MX', { minimumFractionDigits: 2 })} USD\n` : '') +
+            (classifiedDoc.itemsCount > 0 ? `📦 *Partidas / Pagos:* ${classifiedDoc.itemsCount} programados\n` : '') +
+            (classifiedDoc.keyEntities && classifiedDoc.keyEntities.length > 0 ? `📝 *Proveedores destacados:* ${classifiedDoc.keyEntities.slice(0, 5).join(', ')}\n` : '') +
+            (classifiedDoc.observations ? `📌 *Nota:* ${classifiedDoc.observations}\n` : '') +
+            `\n✍️ *Acceso para revisión y autorización directiva:*\n${signUrl}\n\n` +
+            `⏳ *Estatus:* Pendiente de Autorización Directiva\n` +
+            `_Perry Intelligence 🤖_`;
 
-            await sendWhatsappGroupMessage({
+          await sendWhatsappGroupMessage({
+            groupId: payload.groupId,
+            messageText: notifMsg,
+          });
+
+          await prisma.whatsappMessageLog.create({
+            data: {
+              messageId: payload.messageId,
               groupId: payload.groupId,
-              messageText: notifMsg,
-            });
-          } else {
-            console.log(`[PAYROLL INGESTION] Archivo clasificado como auxiliar/horas extra para ${payrollReport.companyName}. Omitiendo aviso de firma para evitar falsos positivos.`);
-          }
+              senderPhone: payload.senderPhone,
+              senderName: payload.senderName || 'Administrador',
+              rawMessage: payload.messageText || '[Relación de Pago a Proveedores]',
+              mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+              parsedData: JSON.stringify(classifiedDoc),
+              status: 'SUPPLIER_PAYMENTS_LOGGED',
+            },
+          });
+
+          return NextResponse.json({
+            status: 'Supplier payments logged and digital token generated',
+            company: classifiedDoc.companyName,
+            id: newLog.id,
+          });
         }
 
-        // Save raw message log SILENTLY without warnings
-        await prisma.whatsappMessageLog.create({
-          data: {
-            messageId: payload.messageId,
-            groupId: payload.groupId,
-            senderPhone: payload.senderPhone,
-            senderName: payload.senderName || 'Administrador',
-            rawMessage: payload.messageText || '[Reporte de Nómina]',
-            mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
-            parsedData: JSON.stringify(payrollReport),
-            status: 'PAYROLL_LOGGED',
-          },
-        });
+        // 2. CASO: NÓMINA (Raya Semanal / Sueldos / Finiquitos)
+        if (classifiedDoc.documentType === 'NOMINA' && classifiedDoc.requiresApproval) {
+          const randomToken = 'pay_token_' + crypto.randomBytes(16).toString('hex');
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
+          const signUrl = `${appUrl}/nominas/firmar/${randomToken}`;
 
-        return NextResponse.json({
-          status: 'Payroll logged silently and digital token link generated',
-          company: payrollReport.companyName,
-          period: payrollReport.periodNumber,
-        });
+          const newLog = await prisma.payrollLog.create({
+            data: {
+              groupId: payload.groupId,
+              companyName: classifiedDoc.companyName,
+              periodNumber: classifiedDoc.titleOrPeriod || 'Raya Semanal',
+              reportDate: new Date(classifiedDoc.reportDate || Date.now()),
+              totalAmount: classifiedDoc.totalAmountMXN || 0,
+              totalAmountUSD: 0,
+              employeeCount: classifiedDoc.itemsCount || 0,
+              itemsCount: classifiedDoc.itemsCount || 0,
+              approvalType: 'NOMINA',
+              bankBreakdown: classifiedDoc.bankBreakdown && classifiedDoc.bankBreakdown.length > 0 ? JSON.stringify(classifiedDoc.bankBreakdown) : null,
+              observations: classifiedDoc.observations || payload.messageText || null,
+              rawMessage: payload.messageText || null,
+              imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
+              metadata: JSON.stringify({
+                keyEntities: classifiedDoc.keyEntities,
+                reasoning: classifiedDoc.reasoning,
+                confidence: classifiedDoc.confidence,
+              }),
+              senderName: payload.senderName || payload.senderPhone,
+              senderPhone: payload.senderPhone,
+              status: 'PENDIENTE_FIRMA',
+              tokenHash: randomToken,
+            },
+          });
+
+          const notifMsg = `📋 *SOLICITUD DE FIRMA DIGITAL — NÓMINA*\n` +
+            `🏢 *Empresa:* ${classifiedDoc.companyName.toUpperCase()}\n` +
+            `📅 *Periodo:* ${classifiedDoc.titleOrPeriod || 'Raya Semanal'}\n` +
+            (classifiedDoc.totalAmountMXN > 0 ? `💰 *Total a Dispersar:* $${classifiedDoc.totalAmountMXN.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` : '') +
+            (classifiedDoc.itemsCount > 0 ? `👥 *Personal:* ${classifiedDoc.itemsCount} trabajadores\n` : '') +
+            `📁 *Documento:* Reporte de nómina recibido para revisión\n\n` +
+            `✍️ *Acceso para revisión y firma digital:*\n${signUrl}\n\n` +
+            `⏳ *Estatus:* Pendiente de Firma Directiva\n` +
+            `_Perry Intelligence 🤖_`;
+
+          await sendWhatsappGroupMessage({
+            groupId: payload.groupId,
+            messageText: notifMsg,
+          });
+
+          await prisma.whatsappMessageLog.create({
+            data: {
+              messageId: payload.messageId,
+              groupId: payload.groupId,
+              senderPhone: payload.senderPhone,
+              senderName: payload.senderName || 'Administrador',
+              rawMessage: payload.messageText || '[Reporte de Nómina]',
+              mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+              parsedData: JSON.stringify(classifiedDoc),
+              status: 'PAYROLL_LOGGED',
+            },
+          });
+
+          return NextResponse.json({
+            status: 'Payroll logged and digital token generated',
+            company: classifiedDoc.companyName,
+            id: newLog.id,
+          });
+        }
+
+        // 3. CASO: REVISIÓN DE HORAS EXTRA
+        if (classifiedDoc.documentType === 'REVISION_HORAS_EXTRA' && classifiedDoc.requiresApproval) {
+          const randomToken = 'pay_token_' + crypto.randomBytes(16).toString('hex');
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
+          const signUrl = `${appUrl}/nominas/firmar/${randomToken}`;
+
+          const newLog = await prisma.payrollLog.create({
+            data: {
+              groupId: payload.groupId,
+              companyName: classifiedDoc.companyName,
+              periodNumber: classifiedDoc.titleOrPeriod || 'Reporte de Horas Extra',
+              reportDate: new Date(classifiedDoc.reportDate || Date.now()),
+              totalAmount: classifiedDoc.totalAmountMXN || 0,
+              itemsCount: classifiedDoc.itemsCount || 0,
+              approvalType: 'HORAS_EXTRA',
+              observations: classifiedDoc.observations || payload.messageText || null,
+              rawMessage: payload.messageText || null,
+              imageUrl: mediaUrls.length > 0 ? mediaUrls[0] : null,
+              metadata: JSON.stringify({
+                keyEntities: classifiedDoc.keyEntities,
+                reasoning: classifiedDoc.reasoning,
+                confidence: classifiedDoc.confidence,
+              }),
+              senderName: payload.senderName || payload.senderPhone,
+              senderPhone: payload.senderPhone,
+              status: 'PENDIENTE_FIRMA',
+              tokenHash: randomToken,
+            },
+          });
+
+          const notifMsg = `⏱️ *SOLICITUD DE REVISIÓN — HORAS EXTRA*\n` +
+            `🏢 *Empresa:* ${classifiedDoc.companyName.toUpperCase()}\n` +
+            `📅 *Periodo:* ${classifiedDoc.titleOrPeriod || 'Reporte de Horas Extra'}\n` +
+            (classifiedDoc.itemsCount > 0 ? `👥 *Personal involucrado:* ${classifiedDoc.itemsCount} técnicos\n` : '') +
+            (classifiedDoc.keyEntities && classifiedDoc.keyEntities.length > 0 ? `📋 *Técnicos / Actividades:* ${classifiedDoc.keyEntities.slice(0, 5).join(', ')}\n` : '') +
+            (classifiedDoc.observations ? `📌 *Observaciones:* ${classifiedDoc.observations}\n` : '') +
+            `\n✍️ *Acceso para revisión y visto bueno directivo:*\n${signUrl}\n\n` +
+            `⏳ *Estatus:* Pendiente de Visto Bueno\n` +
+            `_Perry Intelligence 🤖_`;
+
+          await sendWhatsappGroupMessage({
+            groupId: payload.groupId,
+            messageText: notifMsg,
+          });
+
+          await prisma.whatsappMessageLog.create({
+            data: {
+              messageId: payload.messageId,
+              groupId: payload.groupId,
+              senderPhone: payload.senderPhone,
+              senderName: payload.senderName || 'Administrador',
+              rawMessage: payload.messageText || '[Reporte de Horas Extra]',
+              mediaUrls: mediaUrls.length > 0 ? JSON.stringify(mediaUrls) : null,
+              parsedData: JSON.stringify(classifiedDoc),
+              status: 'OVERTIME_LOGGED',
+            },
+          });
+
+          return NextResponse.json({
+            status: 'Overtime hours logged and digital token generated',
+            company: classifiedDoc.companyName,
+            id: newLog.id,
+          });
+        }
       }
 
       // Default Bank Account Balance Processing (Only if NOT payroll)

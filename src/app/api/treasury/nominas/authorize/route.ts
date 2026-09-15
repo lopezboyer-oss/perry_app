@@ -81,6 +81,8 @@ export async function POST(req: NextRequest) {
     const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'IP_DESCONOCIDA';
     const signerName = resolveDirectorSignerName(userEmail, userName);
 
+    const approvalType = log.approvalType || 'NOMINA';
+
     if (action === 'REJECT') {
       const updated = await prisma.payrollLog.update({
         where: { id: log.id },
@@ -95,10 +97,14 @@ export async function POST(req: NextRequest) {
 
       // Send rejection notification to WhatsApp group
       if (log.groupId) {
-        const text = `❌ *NÓMINA RECHAZADA POR DIRECCIÓN*\n` +
+        let title = 'NÓMINA RECHAZADA';
+        if (approvalType === 'PAGO_PROVEEDORES') title = 'PAGO A PROVEEDORES RECHAZADO';
+        else if (approvalType === 'HORAS_EXTRA') title = 'HORAS EXTRA OBSERVADAS / RECHAZADAS';
+
+        const text = `❌ *${title} POR DIRECCIÓN*\n` +
           `🏢 *Empresa:* ${log.companyName}\n` +
-          `📅 *Periodo:* ${log.periodNumber || 'Raya Semanal'}\n` +
-          `💰 *Monto:* $${log.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` +
+          `📅 *Detalle:* ${log.periodNumber || 'Solicitud'}\n` +
+          (log.totalAmount > 0 ? `💰 *Monto:* $${log.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` : '') +
           `👤 *Revisó:* ${signerName}\n` +
           `${notes ? `📝 *Motivo:* ${notes}\n` : ''}\n` +
           `_Notificación automática Perry Intelligence 🤖_`;
@@ -128,15 +134,37 @@ export async function POST(req: NextRequest) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
       const receiptUrl = `${appUrl}/nominas/comprobante/${token}`;
 
-      const text = `✅ *NÓMINA APROBADA Y TOKENIZADA POR DIRECCIÓN*\n` +
-        `🏢 *Empresa:* ${log.companyName}\n` +
-        `📅 *Periodo:* ${log.periodNumber || 'Raya Semanal'}\n` +
-        `💰 *Total Aprobado:* $${log.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` +
-        `✍️ *Firmado por:* ${signerName}\n` +
-        `🔒 *Hash de Token:* ${token.substring(0, 18)}...\n` +
-        `⏱️ *Fecha y Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Tijuana' })}\n\n` +
-        `📥 *Descargar Comprobante Digital (Imagen/PDF):*\n${receiptUrl}\n\n` +
-        `_Autorización digital inmutable tokenizada en Perry App 🤖_`;
+      let text = '';
+      if (approvalType === 'PAGO_PROVEEDORES') {
+        text = `✅ *PAGO A PROVEEDORES AUTORIZADO POR DIRECCIÓN GENERAL*\n` +
+          `🏢 *Empresa:* ${log.companyName}\n` +
+          `📅 *Programación:* ${log.periodNumber || 'Relación de Pagos'}\n` +
+          (log.totalAmount > 0 ? `💰 *Total MXN:* $${log.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` : '') +
+          (log.totalAmountUSD && log.totalAmountUSD > 0 ? `💵 *Total USD:* $${log.totalAmountUSD.toLocaleString('es-MX', { minimumFractionDigits: 2 })} USD\n` : '') +
+          `✍️ *Autorizó:* ${signerName}\n` +
+          `🔒 *Hash de Seguridad:* ${token.substring(0, 18)}...\n` +
+          `⏱️ *Fecha y Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Tijuana' })}\n\n` +
+          `📥 *Ver Comprobante Digital:*\n${receiptUrl}\n\n` +
+          `_Dispersión autorizada formalmente en Perry App 🤖_`;
+      } else if (approvalType === 'HORAS_EXTRA') {
+        text = `✅ *HORAS EXTRA VALIDADAS POR DIRECCIÓN GENERAL*\n` +
+          `🏢 *Empresa:* ${log.companyName}\n` +
+          `📅 *Periodo:* ${log.periodNumber || 'Reporte de Horas Extra'}\n` +
+          `✍️ *Validó:* ${signerName}\n` +
+          `🔒 *Token:* ${token.substring(0, 18)}...\n` +
+          `⏱️ *Fecha y Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Tijuana' })}\n\n` +
+          `_Tiempo extraordinario validado en Perry App 🤖_`;
+      } else {
+        text = `✅ *NÓMINA APROBADA Y TOKENIZADA POR DIRECCIÓN*\n` +
+          `🏢 *Empresa:* ${log.companyName}\n` +
+          `📅 *Periodo:* ${log.periodNumber || 'Raya Semanal'}\n` +
+          `💰 *Total Aprobado:* $${log.totalAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN\n` +
+          `✍️ *Firmado por:* ${signerName}\n` +
+          `🔒 *Hash de Token:* ${token.substring(0, 18)}...\n` +
+          `⏱️ *Fecha y Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Tijuana' })}\n\n` +
+          `📥 *Descargar Comprobante Digital (Imagen/PDF):*\n${receiptUrl}\n\n` +
+          `_Autorización digital inmutable tokenizada en Perry App 🤖_`;
+      }
 
       await sendWhatsappGroupMessage({
         groupId: log.groupId,

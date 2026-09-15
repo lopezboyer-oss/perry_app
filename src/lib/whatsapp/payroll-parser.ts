@@ -153,7 +153,8 @@ function fallbackPayrollParser(
   dateStr: string,
   hasMedia: boolean = false
 ): GeminiParsedPayrollReport {
-  const hasExplicitPayrollData = hasMedia || (/gran\s*total|total\s*nomina|dispersi[oó]n|santander|contpaq|total\s*efectivo|\$\s*\d+/i.test(text) && /raya|semana|n[oó]mina/i.test(text));
+  const isPayrollKeyword = /n[oó]mina|raya|finiquito|sueldo|vacaciones|percepcion|deducci[oó]n|raya\s*\d+/i.test(text);
+  const hasExplicitPayrollData = isPayrollKeyword && (hasMedia || /gran\s*total|total\s*nomina|dispersi[oó]n|santander|contpaq|total\s*efectivo|\$\s*\d+/i.test(text));
 
   if (!hasExplicitPayrollData) {
     return {

@@ -724,6 +724,10 @@ model PayrollLog {
   signedImageUrl     String?   @db.Text
   senderName         String?
   senderPhone        String?
+  approvalType       String    @default("NOMINA") // "NOMINA" | "PAGO_PROVEEDORES" | "HORAS_EXTRA"
+  totalAmountUSD     Float?    @default(0)
+  itemsCount         Int?      @default(0)
+  metadata           String?   @db.Text
   status             String    @default("PENDIENTE_FIRMA") // "PENDIENTE_FIRMA", "APROBADA_FIRMA_MANUAL", "APROBADA_TOKENIZADA", "RECHAZADA"
   signedBy           String?   // User / Director who authorized
   signedAt           DateTime?
@@ -735,6 +739,7 @@ model PayrollLog {
   @@index([companyName, reportDate])
   @@index([tokenHash])
   @@index([status])
+  @@index([approvalType, status])
 }
 
 // ─── PLAN DIARIO (LUNES A VIERNES) ─────────────────────────────────────────
