@@ -49,9 +49,32 @@ export async function classifyAndParseFinancialDocument(params: {
   else if (groupUpper.includes('VULCAN') || groupUpper.includes('BEHEMOTH')) defaultCompany = 'VULCAN FORGE';
   else if (groupUpper.includes('SAINPRO')) defaultCompany = 'SAINPRO';
 
+  // Heurística de detección de facturación a clientes / operaciones de entrega / PO cliente (Cuentas por cobrar)
+  const isClientBillingText = /(se\s*van\s*a\s*facturar|vamos\s*a\s*facturar|para\s*facturar(\s*al\s*cliente)?|facturar\s*(de\s*la\s*po|material|piezas|pcs)|cierre\s*de\s*po|entrega\s*(parcial|total)\s*de\s*la\s*cantidad\s*faltante|se\s*factura\s*la\s*po|orden\s*abierta)/i.test(messageText);
+
+  // Si es un mensaje ordinario de facturación a clientes o cierre de PO y no trae imagen/documento,
+  // descartar inmediatamente como solicitud de pago para evitar falsos positivos
+  if (isClientBillingText && !mediaUrl) {
+    return {
+      documentType: 'OTRO_NO_APROBACION',
+      confidence: 'ALTA',
+      reasoning: 'Instrucción operativa de facturación a cliente o cierre de PO de venta. No representa desembolso ni solicitud de pago.',
+      companyName: normalizeCompanyName(defaultCompany),
+      titleOrPeriod: 'Facturación / Despacho a Clientes',
+      reportDate: formattedDate,
+      totalAmountMXN: 0,
+      totalAmountUSD: 0,
+      itemsCount: 0,
+      bankBreakdown: [],
+      keyEntities: [],
+      observations: messageText || null,
+      requiresApproval: false,
+    };
+  }
+
   // Heurística rápida sobre el texto del mensaje
   const lowerText = messageText.toLowerCase();
-  const isExplicitSupplierText = /(pago\s*a?\s*proveedores?|relaci[oó]n\s*de\s*pagos?|facturas?\s*pendientes?|cuentas\s*por\s*pagar|programaci[oó]n\s*de\s*pagos?|orden\s*de\s*compra)/i.test(lowerText);
+  const isExplicitSupplierText = !isClientBillingText && /(pago\s*(a|de)?\s*proveedores?|relaci[oó]n\s*de\s*pagos?|facturas?\s*por\s*pagar|cuentas\s*por\s*pagar|programaci[oó]n\s*de\s*pagos?|dispersi[oó]n\s*a\s*proveedores)/i.test(lowerText);
   const isExplicitOvertimeText = /(horas?\s*extras?|tiempo\s*extra|asistencia\s*fin\s*de\s*semana|jornadas?\s*extraordinarias?)/i.test(lowerText);
   const isExplicitPayrollText = /(n[oó]mina|raya\s*\d+|lista\s*de\s*raya|dispersi[oó]n\s*de\s*sueldos?|finiquito|pago\s*de\s*raya)/i.test(lowerText);
   const isExplicitBalanceText = /(saldos?\s*bancarios?|corte\s*de\s*caja|saldos?\s*del?\s*d[ií]a|estado\s*de\s*cuenta)/i.test(lowerText);
@@ -98,7 +121,7 @@ export async function classifyAndParseFinancialDocument(params: {
 Tu objetivo es clasificar de forma EXACTA e INFALIBLE el documento recibido (imagen o texto) en una de las siguientes categorías:
 
 1. "PAGO_PROVEEDORES":
-   - Documento que programa o relaciona pagos a empresas externas, compras de materiales, rentas de equipo, facturas de proveedores, cuotas patronales SUA/IMSS, SAT, pólizas de seguros (ej. CHUBB), o liquidaciones de órdenes de compra (PO / folios Odoo).
+   - Documento que programa o relaciona pagos/egresos a empresas externas, compras de materiales, rentas de equipo, facturas de proveedores, cuotas patronales SUA/IMSS, SAT, pólizas de seguros (ej. CHUBB), o liquidaciones de órdenes de compra (PO / folios Odoo de proveedores).
    - Columnas comunes: "Proveedor", "Concepto / Descripción", "Importe", "Divisa (MXN / USD)", "Fecha Factura", "Folio Odoo".
    - Totales: Suele tener totales en MXN y/o USD (ej. "TOTAL MX", "TOTAL US").
    - ⚠️ REGLA DE ORO: Si contiene pagos a personas morales o proveedores externos para insumos/servicios, es PAGO_PROVEEDORES, NUNCA nómina.
@@ -119,6 +142,19 @@ Tu objetivo es clasificar de forma EXACTA e INFALIBLE el documento recibido (ima
 
 5. "OTRO_NO_APROBACION":
    - Fotografías de trabajos de campo, tickets individuales de gasolina/comida, capturas de chat ordinario, memes o documentos sin relación de pagos agrupados.
+   - Conversaciones casuales, avisos de entrega, instrucciones operativas de facturación a clientes o cobros.
+
+REGLAS CRÍTICAS DE PREVENCIÓN DE FALSOS POSITIVOS (LEER CON MÁXIMA PRIORIDAD):
+1. FACTURACIÓN A CLIENTES / DESPACHO / CIERRE DE PO:
+   - Si el mensaje habla de "facturar piezas/cubrecalzado/material al cliente", "se van a facturar de la PO...", "cerrar lo pendiente de la PO", "entrega parcial de piezas":
+     ESTO ES FACTURACIÓN DE VENTA / CUENTAS POR COBRAR (SALES/RECEIVABLE), NUNCA PAGO A PROVEEDORES NI NÓMINA.
+     DEBE clasificarse OBLIGATORIAMENTE como "OTRO_NO_APROBACION" con requiresApproval: false.
+2. MENSAJES DE TEXTO SIN DOCUMENTO ADJUNTO Y SIN DESEMBOLSOS MONETARIOS REALES:
+   - Una solicitud de autorización de PAGO_PROVEEDORES o NOMINA requiere OBLIGATORIAMENTE un importe monetario a pagar mayor a cero ($ > 0.00) O un documento/imagen adjunta con la relación de pagos.
+   - Si el mensaje es solo texto en una conversación ordinaria con monto $0.00 o sin importes monetarios claros, o es un comentario casual ("¿ya llegó la factura?", "avisa al proveedor", "facturamos mañana"):
+     DEBE clasificarse OBLIGATORIAMENTE como "OTRO_NO_APROBACION" con requiresApproval: false.
+3. CONVERSACIONES CASUALES:
+   - Mencionar palabras sueltas como "factura", "proveedor", "nómina", "pagar" en un chat o hacer preguntas casuales NO constituye una solicitud de autorización.
 
 DATOS DEL CONTEXTO:
 - Grupo de procedencia: "${groupName || 'Administración'}"
@@ -139,7 +175,10 @@ INSTRUCCIONES DE EXTRACCIÓN:
 - "bankBreakdown": Desglose por banco o fuente si está disponible (ej. [{"bankOrSource": "SANTANDER", "amount": 50000}, {"bankOrSource": "EFECTIVO", "amount": 12000}]).
 - "keyEntities": Lista de nombres de los proveedores principales, empleados clave o conceptos más relevantes encontrados (ej. ["CHUBB", "KM 57", "SUA", "JOSE JAVIER MURILLO"]).
 - "observations": Notas adicionales visibles (ej. "BUSCAR FACTURA EN SAT", "Actividad S02330", etc.).
-- "requiresApproval": true si es NOMINA, PAGO_PROVEEDORES o REVISION_HORAS_EXTRA con importes válidos a autorizar; false si es solo saldos u otro.
+- "requiresApproval": true ÚNICAMENTE si es NOMINA, PAGO_PROVEEDORES o REVISION_HORAS_EXTRA Y además cumple una de dos condiciones:
+  a) Cuenta con importes monetarios reales mayores a cero (totalAmountMXN > 0 o totalAmountUSD > 0).
+  b) O bien cuenta con una imagen o documento adjunto con una lista de pagos / personal a autorizar.
+  Si NO hay imagen adjunta y los montos son 0 o no especificados, requiresApproval DEBE SER false y documentType "OTRO_NO_APROBACION".
 
 Responde ÚNICAMENTE un objeto JSON plano válido con la siguiente estructura:
 {
@@ -212,15 +251,27 @@ Responde ÚNICAMENTE un objeto JSON plano válido con la siguiente estructura:
     parsed.companyName = normalizeCompanyName(parsed.companyName || defaultCompany);
     parsed.reportDate = formattedDate;
 
-    // Validación post-parse con texto explícito (guardarraíl de texto del usuario)
-    if (isExplicitSupplierText && parsed.documentType !== 'PAGO_PROVEEDORES') {
-      parsed.documentType = 'PAGO_PROVEEDORES';
-      parsed.requiresApproval = true;
-      parsed.reasoning = 'Reclasificado por indicación textual explícita de Pago a Proveedores.';
-    } else if (isExplicitOvertimeText && parsed.documentType !== 'REVISION_HORAS_EXTRA') {
-      parsed.documentType = 'REVISION_HORAS_EXTRA';
-      parsed.requiresApproval = true;
-      parsed.reasoning = 'Reclasificado por indicación textual explícita de Horas Extra.';
+    // Guardarraíl estricto contra falsos positivos:
+    // Si no hay imagen ni documento adjunto, y no hay montos a desembolsar (> 0),
+    // NUNCA debe considerarse una solicitud de aprobación.
+    const hasAttachedMedia = Boolean(imagePart);
+    const hasDisbursementAmount = (Number(parsed.totalAmountMXN) > 0 || Number(parsed.totalAmountUSD) > 0);
+
+    if (!hasAttachedMedia && !hasDisbursementAmount) {
+      parsed.requiresApproval = false;
+      parsed.documentType = 'OTRO_NO_APROBACION';
+      parsed.reasoning = parsed.reasoning || 'Mensaje de texto sin archivo adjunto ni importes monetarios cuantificables para autorizar.';
+    } else {
+      // Validación post-parse con texto explícito (solo si hay montos o imagen adjunta)
+      if (isExplicitSupplierText && parsed.documentType !== 'PAGO_PROVEEDORES') {
+        parsed.documentType = 'PAGO_PROVEEDORES';
+        parsed.requiresApproval = true;
+        parsed.reasoning = 'Reclasificado por indicación textual explícita de Pago a Proveedores.';
+      } else if (isExplicitOvertimeText && parsed.documentType !== 'REVISION_HORAS_EXTRA') {
+        parsed.documentType = 'REVISION_HORAS_EXTRA';
+        parsed.requiresApproval = true;
+        parsed.reasoning = 'Reclasificado por indicación textual explícita de Horas Extra.';
+      }
     }
 
     return parsed;
@@ -251,6 +302,7 @@ function fallbackClassifier(params: {
 }): ClassificationAndParseResult {
   const {
     messageText,
+    hasMedia,
     defaultCompany,
     formattedDate,
     isExplicitSupplierText,
@@ -259,17 +311,28 @@ function fallbackClassifier(params: {
     isExplicitBalanceText,
   } = params;
 
-  if (isExplicitSupplierText) {
+  // Extraer montos numéricos aproximados si existen en el texto
+  const amountMatch = messageText.match(/\$\s*([\d,]+(?:\.\d+)?)/) || messageText.match(/\b([\d]{1,3}(?:,\d{3})+(?:\.\d{2})?)\s*(?:mxn|pesos|usd|d[oó]lares)?\b/i);
+  let extractedAmount = 0;
+  if (amountMatch) {
+    extractedAmount = parseFloat(amountMatch[1].replace(/,/g, '')) || 0;
+  }
+  const isUSD = /usd|d[oó]lares/i.test(messageText);
+
+  // Si no hay archivo/imagen y el monto es 0, NO puede requerir aprobación
+  const canRequireApproval = hasMedia || extractedAmount > 0;
+
+  if (isExplicitSupplierText && canRequireApproval) {
     return {
       documentType: 'PAGO_PROVEEDORES',
       confidence: 'MEDIA',
-      reasoning: 'Clasificado como Pago a Proveedores por palabras clave en el mensaje.',
+      reasoning: 'Clasificado como Pago a Proveedores por palabras clave e importe/documento en el mensaje.',
       companyName: normalizeCompanyName(defaultCompany),
       titleOrPeriod: 'Programación de Pago a Proveedores',
       reportDate: formattedDate,
-      totalAmountMXN: 0,
-      totalAmountUSD: 0,
-      itemsCount: 0,
+      totalAmountMXN: isUSD ? 0 : extractedAmount,
+      totalAmountUSD: isUSD ? extractedAmount : 0,
+      itemsCount: 1,
       bankBreakdown: [],
       keyEntities: [],
       observations: messageText || null,
@@ -277,15 +340,15 @@ function fallbackClassifier(params: {
     };
   }
 
-  if (isExplicitOvertimeText) {
+  if (isExplicitOvertimeText && canRequireApproval) {
     return {
       documentType: 'REVISION_HORAS_EXTRA',
       confidence: 'MEDIA',
-      reasoning: 'Clasificado como Horas Extra por palabras clave en el mensaje.',
+      reasoning: 'Clasificado como Horas Extra por palabras clave y documento/importe en el mensaje.',
       companyName: normalizeCompanyName(defaultCompany),
       titleOrPeriod: 'Reporte de Horas Extra',
       reportDate: formattedDate,
-      totalAmountMXN: 0,
+      totalAmountMXN: extractedAmount,
       totalAmountUSD: 0,
       itemsCount: 0,
       bankBreakdown: [],
@@ -295,17 +358,17 @@ function fallbackClassifier(params: {
     };
   }
 
-  if (isExplicitPayrollText) {
+  if (isExplicitPayrollText && canRequireApproval) {
     const rayaMatch = messageText.match(/raya\s*(\d+)/i) || messageText.match(/semana\s*(\d+)/i);
     const titleOrPeriod = rayaMatch ? `Raya ${rayaMatch[1]}` : 'Raya Semanal';
     return {
       documentType: 'NOMINA',
       confidence: 'MEDIA',
-      reasoning: 'Clasificado como Nómina por palabras clave en el mensaje.',
+      reasoning: 'Clasificado como Nómina por palabras clave y documento/importe en el mensaje.',
       companyName: normalizeCompanyName(defaultCompany),
       titleOrPeriod,
       reportDate: formattedDate,
-      totalAmountMXN: 0,
+      totalAmountMXN: extractedAmount,
       totalAmountUSD: 0,
       itemsCount: 0,
       bankBreakdown: [],
@@ -336,7 +399,7 @@ function fallbackClassifier(params: {
   return {
     documentType: 'OTRO_NO_APROBACION',
     confidence: 'BAJA',
-    reasoning: 'Documento u archivo no clasificado como solicitud de aprobación.',
+    reasoning: 'Mensaje ordinario o documento sin requerimiento de aprobación directiva.',
     companyName: normalizeCompanyName(defaultCompany),
     titleOrPeriod: 'Documento Operativo',
     reportDate: formattedDate,

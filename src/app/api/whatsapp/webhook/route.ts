@@ -417,7 +417,17 @@ export async function POST(req: NextRequest) {
       }
 
       // ─── B) CLASIFICACIÓN Y EXTRACCIÓN MULTIDOCUMENTO CON INTELIGENCIA ARTIFICIAL ───
-      const hasFinancialIndicator = mediaUrls.length > 0 || /factura|proveedor|pago|n[oó]mina|raya|finiquito|sueldo|horas?\s*extra|saldos?|cuenta|dispersi[oó]n|\$\s*\d+/i.test(cleanedText);
+      // Detección de mensajes de facturación a clientes u operaciones de PO que NO son pagos a egresar
+      const isClientBillingText = /(se\s*van\s*a\s*facturar|vamos\s*a\s*facturar|para\s*facturar(\s*al\s*cliente)?|facturar\s*(de\s*la\s*po|material|piezas|pcs)|cierre\s*de\s*po|entrega\s*(parcial|total)\s*de\s*la\s*cantidad\s*faltante|se\s*factura\s*la\s*po|orden\s*abierta)/i.test(cleanedText);
+
+      // Si es puro texto sobre facturar a clientes / cerrar PO, no debe evaluarse como desembolso financiero
+      const hasFinancialIndicator = !isClientBillingText && (
+        mediaUrls.length > 0 ||
+        /(solicito|me\s*apoyan\s*con|favor\s*de)\s*(autorizar|la\s*autorizaci[oó]n|la\s*firma|la\s*aprobaci[oó]n|el\s*visto\s*bueno)/i.test(cleanedText) ||
+        (/(pago\s*(a|de)?\s*proveedores?|relaci[oó]n\s*de\s*pagos?|dispersi[oó]n|n[oó]mina|raya\s*\d+|finiquito|tiempo\s*extra|horas?\s*extra)/i.test(cleanedText) &&
+         (/\$\s*[\d,]+|\b\d{1,3}(?:,\d{3})+\b/.test(cleanedText) || /(autorizar|autorizaci[oó]n|firma|aprobar)/i.test(cleanedText))) ||
+        /(saldos?\s*bancarios?|corte\s*de\s*caja|saldos?\s*del?\s*d[ií]a|estado\s*de\s*cuenta)/i.test(cleanedText)
+      );
 
       if (hasFinancialIndicator) {
         const classifiedDoc = await classifyAndParseFinancialDocument({
@@ -430,8 +440,12 @@ export async function POST(req: NextRequest) {
 
         console.log(`[FINANCIAL CLASSIFIER] DocType: ${classifiedDoc.documentType} | Confidence: ${classifiedDoc.confidence} | Company: ${classifiedDoc.companyName} | RequiresApproval: ${classifiedDoc.requiresApproval}`);
 
+        // Regla estricta contra falsos positivos:
+        // Solo proceder con aprobación si hay un desembolso monetario cuantificable (> $0.00) O si hay un documento/imagen adjunto.
+        const hasRealDisbursement = (Number(classifiedDoc.totalAmountMXN) > 0 || Number(classifiedDoc.totalAmountUSD) > 0) || mediaUrls.length > 0;
+
         // 1. CASO: PAGO A PROVEEDORES
-        if (classifiedDoc.documentType === 'PAGO_PROVEEDORES' && classifiedDoc.requiresApproval) {
+        if (classifiedDoc.documentType === 'PAGO_PROVEEDORES' && classifiedDoc.requiresApproval && hasRealDisbursement) {
           const randomToken = 'pay_token_' + crypto.randomBytes(16).toString('hex');
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
           const signUrl = `${appUrl}/nominas/firmar/${randomToken}`;
@@ -500,7 +514,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. CASO: NÓMINA (Raya Semanal / Sueldos / Finiquitos)
-        if (classifiedDoc.documentType === 'NOMINA' && classifiedDoc.requiresApproval) {
+        if (classifiedDoc.documentType === 'NOMINA' && classifiedDoc.requiresApproval && hasRealDisbursement) {
           const randomToken = 'pay_token_' + crypto.randomBytes(16).toString('hex');
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
           const signUrl = `${appUrl}/nominas/firmar/${randomToken}`;
@@ -568,7 +582,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 3. CASO: REVISIÓN DE HORAS EXTRA
-        if (classifiedDoc.documentType === 'REVISION_HORAS_EXTRA' && classifiedDoc.requiresApproval) {
+        if (classifiedDoc.documentType === 'REVISION_HORAS_EXTRA' && classifiedDoc.requiresApproval && (hasRealDisbursement || (classifiedDoc.itemsCount && classifiedDoc.itemsCount > 0))) {
           const randomToken = 'pay_token_' + crypto.randomBytes(16).toString('hex');
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.URL || 'https://perryapp.netlify.app';
           const signUrl = `${appUrl}/nominas/firmar/${randomToken}`;
