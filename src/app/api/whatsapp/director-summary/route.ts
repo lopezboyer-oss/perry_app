@@ -143,14 +143,34 @@ export async function POST(req: NextRequest) {
     // Double security check: filter out any non-operational group logs
     const safeLogs = logs.filter((l) => l.groupId && operationalGroupIds.includes(l.groupId));
 
-    // 3b. Fetch Perry App activities for the same period
+    // 3b. Fetch Perry App activities for the period:
+    // Capture activities scheduled for this period, OR updated/completed in this period, OR created in this period
     const activities = await prisma.activity.findMany({
-      where: { date: { gte: activityDateStart, lte: activityDateEnd } },
+      where: {
+        OR: [
+          { date: { gte: activityDateStart, lte: activityDateEnd } },
+          { updatedAt: { gte: activityDateStart, lte: activityDateEnd } },
+          { createdAt: { gte: activityDateStart, lte: activityDateEnd } },
+        ],
+      },
       select: {
-        title: true, type: true, status: true, date: true,
-        result: true, nextStep: true, notes: true, weekendNotes: true,
-        workOrderFolio: true, location: true, projectArea: true,
-        equipmentStatus: true, cancelReason: true, cancelNotes: true,
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        date: true,
+        createdAt: true,
+        updatedAt: true,
+        result: true,
+        nextStep: true,
+        notes: true,
+        weekendNotes: true,
+        workOrderFolio: true,
+        location: true,
+        projectArea: true,
+        equipmentStatus: true,
+        cancelReason: true,
+        cancelNotes: true,
         company: { select: { name: true } },
         client: { select: { name: true } },
         user: { select: { name: true } },
@@ -251,10 +271,24 @@ export async function POST(req: NextRequest) {
           const parts: string[] = [];
           parts.push(a.user?.name || '?');
           parts.push(`"${a.title}"`);
-          parts.push(a.status);
+          parts.push(`[Estado: ${a.status}]`);
+
+          const wasUpdatedInPeriod = a.updatedAt >= activityDateStart && a.updatedAt <= activityDateEnd;
+          const wasCreatedInPeriod = a.createdAt >= activityDateStart && a.createdAt <= activityDateEnd;
+
+          if (wasUpdatedInPeriod && (a.status === 'COMPLETADA' || a.status === 'REALIZADA')) {
+            parts.push(`✅ COMPLETADA HOY`);
+          } else if (wasUpdatedInPeriod && !wasCreatedInPeriod) {
+            parts.push(`🔄 ACTUALIZADA HOY`);
+          } else if (wasCreatedInPeriod && a.date > activityDateEnd) {
+            parts.push(`📅 PROGRAMADA A FUTURO (${a.date.toISOString().slice(0, 10)})`);
+          }
+
           if (a.workOrderFolio) parts.push(`OT:${a.workOrderFolio}`);
           if (a.location) parts.push(a.location);
-          if (a.result) parts.push(`R:"${a.result.substring(0, 80)}"`);
+          if (a.result) parts.push(`R:"${a.result.substring(0, 120)}"`);
+          if (a.notes) parts.push(`Notas:"${a.notes.substring(0, 120)}"`);
+          if (a.weekendNotes) parts.push(`NotasFinde:"${a.weekendNotes.substring(0, 120)}"`);
           if (a.nextStep) parts.push(`Sig:"${a.nextStep.substring(0, 60)}"`);
           if (a.cancelReason) parts.push(`❌${a.cancelReason}`);
           if (a.equipmentStatus) parts.push(`Eq:${a.equipmentStatus}`);
@@ -318,6 +352,9 @@ REGLAS DE ANÁLISIS Y ESTRUCTURA OBLIGATORIAS:
    - Separa cada viñeta con un salto de línea (\n).
    - Máximo 3 a 5 viñetas concisas por empresa, destacando lo más relevante.
 3. CONCILIACIÓN WHATSAPP ↔ PERRY APP: Si un tema aparece en WhatsApp Y en una actividad formal de Perry, CRÚZALOS y prioriza la versión formal de Perry App. Si algo aparece SOLO en WhatsApp, inclúyelo como información informal. Si algo aparece SOLO en Perry App, inclúyelo como reporte formal. Menciona el folio de OT cuando esté disponible.
+   - ACTIVIDADES ACTUALIZADAS O COMPLETADAS EN EL DÍA (CRÍTICO):
+     Da máxima prioridad a las actividades marcadas con "✅ COMPLETADA HOY" o "🔄 ACTUALIZADA HOY".
+     Si un ingeniero dejó una actividad programada en días anteriores y hoy entró a reportar avances, notas ("Notas:"), resultados ("R:") o la marcó como COMPLETADA, DEBES considerar este trabajo como un logro concluido durante la jornada e incluirlo en las viñetas de la empresa correspondiente, atribuyendo el avance al ingeniero responsable.
 4. RECURSOS Y TEMAS TRANSVERSALES: Párrafo dedicado a temas en común entre empresas.
 5. CONCILIACIÓN DE ASUNTOS (Cruzar Grupos Técnicos vs Coordinación vs Actividades Perry): clasifícalo como "resolvedCrossIssues" cuando se detecte resolución.
 6. NOTA: OMITIR la sección de puntos críticos (se gestionan en canal independiente) y la sección de solicitudes de materiales.
@@ -353,7 +390,7 @@ ESTRUCTURA DE RESPUESTA EN JSON OBLIGATORIA (responde ÚNICAMENTE con este JSON 
     let res: Response;
     try {
       res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
